@@ -1,0 +1,521 @@
+// Copyright (c) 2019 Jeff Boody
+//
+// Permission is hereby granted, free of charge, to any person obtaining a
+// copy of this software and associated documentation files (the "Software"),
+// to deal in the Software without restriction, including without limitation
+// the rights to use, copy, modify, merge, publish, distribute, sublicense,
+// and/or sell copies of the Software, and to permit persons to whom the
+// Software is furnished to do so, subject to the following conditions:
+//
+// The above copyright notice and this permission notice shall be included
+// in all copies or substantial portions of the Software.
+//
+// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+// IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+// FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+// AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+// LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+// OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+// THE SOFTWARE.
+
+// sudo apt-get install graphviz
+// xdot vkk.dot
+digraph VULKAN_KIT
+{
+	label="Vulkan Kit";
+	fontsize=20;
+	size="10,1";
+	ratio=fill;
+
+	// handles
+	VkPipelineLayout      [shape=box, fillcolor=yellow, style=filled, label="VkPipelineLayout\nA pipeline layout describes the complete set of uniform data that can be\naccessed by the pipeline. The pipeline layout consists of descriptor set layouts\nand push constant ranges (zero or more of each).\nA push constant is a uniform variable in a shader that can be used\njust like a member of a uniform block but is declared in the shader\nwith a push_constant modifier. Push constants are owned by Vulkan and\ncan be pushed into the pipeline directly from the command buffer\nrather than being backed by memory."];
+	VkPipeline            [shape=box, fillcolor=yellow, style=filled, label="VkPipeline\nSee CH6"];
+	VkDescriptorSetLayout [shape=box, fillcolor=yellow, style=filled, label="VkDescriptorSetLayout\nA descriptor set layout is defined by an array of zero or more descriptor\nbindings. Each individual binding represents a resource such as a\nuniform or sampler. The resource binding number corresponds to the same\nbinding number in the shader stages."];
+	VkShaderModule        [shape=box, fillcolor=yellow, style=filled, label="VkShaderModule\nA shader module contains shader code defined in SPIR-V format."];
+	VkCommandBuffer       [shape=box, fillcolor=yellow, style=filled, label="VkCommandBuffer\nCommand buffers are used to record commands that can subsequently be submitted to a device queue."];
+	VkFramebuffer         [shape=box, fillcolor=yellow, style=filled, label="VkFramebuffer\nFramebuffers represent a collection of specific image attachments that\na render pass uses."];
+	VkImageView           [shape=box, fillcolor=yellow, style=filled, label="VkImageView\nAn ImageView object represents a contiguous range of an image\nwith additional metadata to interpret the data."];
+	VkDeviceMemory        [shape=box, fillcolor=yellow, style=filled, label="VkDeviceMemory\nA Vulkan device operates on data that must be stored in device memory\nwhich may be physically separate from CPU accessible memory"];
+	VkImage               [shape=box, fillcolor=yellow, style=filled, label="VkImage\nImages represent multidimensional arrays of data\nwhich can be used for various purposes including\nattachments and textures."];
+	VkInstance            [shape=box, fillcolor=yellow, style=filled, label="VkInstance\nAn instance is the top level handle to the Vulkan API which\nis used to enumerate physical devices attached and\nto create the window surface."];
+	VkPhysicalDevice      [shape=box, fillcolor=yellow, style=filled, label="VkPhysicalDevice\nA physical device is a handle to the GPU that can be used to\nquery physical device properties, features and extensions\nand to create a logical device."];
+	VkDevice              [shape=box, fillcolor=yellow, style=filled, label="VkDevice\nThe logical device for a particular physical device that\nrepresents a particular configuration of the physical device\nand queue(s) for submitting commands."];
+	VkSurfaceKHR          [shape=box, fillcolor=yellow, style=filled, label="VkSurfaceKHR"];
+	VkQueue               [shape=box, fillcolor=yellow, style=filled, label="VkQueue\nA queue is used to submit commands to its corresponding logical device."];
+	VkPipelineCache       [shape=box, fillcolor=yellow, style=filled, label="VkPipelineCache\nA pipeline cache allows the result of the pipeline construction to be\nreused between pipelines and and between runs of the application.\ne.g. by storing compiled shaders in the pipeline cache data"];
+	VkCommandPool         [shape=box, fillcolor=yellow, style=filled, label="VkCommandPool\nCommand pools are used to optimize allocations of command buffers.\nOperations involving command pools are NOT thread safe."];
+	VkDescriptorPool      [shape=box, fillcolor=yellow, style=filled, label="VkDescriptorPool\nDescriptor pools are used to optimize allocations of descriptor sets.\nOperations involving descriptor pools are NOT thread safe."];
+	VkFence               [shape=box, fillcolor=yellow, style=filled];
+	VkSwapchainKHR        [shape=box, fillcolor=yellow, style=filled];
+	VkRenderPass          [shape=box, fillcolor=yellow, style=filled, label="VkRenderPass\nA render pass describes how the collection of framebuffer attachments\nare used across the rendering subpasses."];
+	VkSemaphore           [shape=box, fillcolor=yellow, style=filled];
+	VkDescriptorSet       [shape=box, fillcolor=yellow, style=filled];
+	VkBuffer              [shape=box, fillcolor=yellow, style=filled];
+	VkSampler             [shape=box, fillcolor=yellow, style=filled];
+
+	// SDL handles
+	SDL_Window [shape=box, fillcolor=plum, style=filled];
+
+	// enums
+	VkImageAspectFlags    [shape=box, fillcolor=salmon, style=filled, label="VkImageAspectFlags\n(VK_IMAGE_ASPECT_*_BIT)\nCOLOR\nDEPTH\nSTENCIL"];
+	VkImageLayout         [shape=box, fillcolor=salmon, style=filled, label="VkImageLayout\n(VK_IMAGE_LAYOUT_)\nUNDEFINED\nGENERAL\nCOLOR_ATTACHMENT\nDEPTH_STENCIL_ATTACHMENT_OPTIMAL\nDEPTH_STENCIL_READ_ONLY_OPTIMAL\nSHADER_READ_ONLY_OPTIMAL\nTRANSFER_SRC_OPTIMAL\nTRANSFER_DST_OPTIMAL\nPREINITIALIZED\nPRESENT_SRC_KHR"];
+	VkMemoryPropertyFlags [shape=box, fillcolor=salmon, style=filled, label="VkMemoryPropertyFlags\n(VK_MEMORY_PROPERTY_*_BIT)\nDEVICE\nHOST_VISIBLE\nHOST_COHERENT\nHOST_CACHED\nLAZILY_ALLOCATED"];
+	VkQueueFlags          [shape=box, fillcolor=salmon, style=filled, label="VkQueueFlags\n(VK_QUEUE_*_BIT)\nGRAPHICS\nCOMPUTE\nTRANSFER\nSPARSE_BINDING"];
+	VkMemoryHeapFlagBits  [shape=box, fillcolor=salmon, style=filled, label="VkMemoryHeapFlagBits\n(VK_MEMORY_HEAP_*_BIT)\nDEVICE_LOCAL\nMULTI_INSTANCE"];
+	VkDescriptorType      [shape=box, fillcolor=salmon, style=filled, label="VkDescriptorType\n(VK_DESCRIPTOR_TYPE_)\nSAMPLER\nSAMPLED_IMAGE\nCOMBINED_IMAGE_SAMPLER\nSTORAGE_IMAGE\nUNIFORM_TEXEL_BUFFER\nSTORAGE_TEXEL_BUFFER\nUNIFORM_BUFFER\nSTORAGE_BUFFER\nUNIFORM_BUFFER_DYNAMIC\nSTORAGE_BUFFER_DYNAMIC\nINPUT_ATTACHMENT"];
+	VkPresentModeKHR      [shape=box, fillcolor=salmon, style=filled, label="VkPresentModeKHR\n(VK_PRESENT_MODE_*_KHR)\nIMMEDIATE\nMAILBOX\nFIFO\nFIFO_RELAXED\nSHARED_DEMAND_REFRESH\nSHARED_CONTINUOUS_REFRESH"];
+	VkSharingMode         [shape=box, fillcolor=salmon, style=filled, label="VkSharingMode\n(VK_SHARING_MODE_)\nEXCLUSIVE\nCONCURRENT"];
+	VkPipelineBindPoint   [shape=box, fillcolor=salmon, style=filled, label="VkPipelineBindPoint\n(VK_PIPELINE_BIND_POINT_*)\nGRAPHICS\nCOMPUTE"];
+	VkAttachmentLoadOp    [shape=box, fillcolor=salmon, style=filled, label="VkAttachmentLoadOp\n(VK_ATTACHMENT_LOAD_OP_*)\nLOAD\nCLEAR\nDONT_CARE"];
+	VkAttachmentStoreOp   [shape=box, fillcolor=salmon, style=filled, label="VkAttachmentStoreOp\n(VK_ATTACHMENT_STORE_OP_*)\nSTORE\nDONT_CARE"];
+	VkSampleCountFlagBits [shape=box, fillcolor=salmon, style=filled, label="VkSampleCountFlagBits\n(VK_SAMPLE_COUNT_*_BIT)\n1\n2\n4\n8\n16\n32\n64"];
+	VkImageViewType       [shape=box, fillcolor=salmon, style=filled, label="VkImageViewType\n(VK_IMAGE_VIEW_TYPE_*)\n1D\n2D\n3D\nCUBE\n1D_ARRAY\n2D_ARRAY\nCUBE_ARRAY"];
+
+	// SDL enums
+	SDL_WINDOW [shape=box, fillcolor=plum, style=filled, label="SDL_WINDOW_*\nFULLSCREEN\nRESIZABLE\nVULKAN\nSHOWN"];
+
+	// vkk structures
+	vkk_engine_t               [shape=box, fillcolor=green, style=filled, label="vkk_engine_t\nstruct android_app* app;\nSDL_Window* window;\nVkInstance instance;\nVkSurfaceKHR surface;\nVkPhysicalDevice physical_device;\nVkDevice device;\nuint32_t queue_family_index;\nVkQueue queue;\nVkPipelineCache pipeline_cache;\nVkCommandPool command_pool;\nuint32_t swapchain_frame;\nVkFormat swapchain_format;\nVkExtent2D swapchain_extent;\nVkColorSpaceKHR swapchain_color_space;\nuint32_t swapchain_image_count;\nVkSwapchainKHR swapchain;\nVkImage* swapchain_images;\nVkFence* swapchain_fences;\nVkRenderPass render_pass;\nint depth_transition;\nVkImage depth_image;\nVkDeviceMemory depth_memory;\nVkImageView depth_image_view;\nVkImageView* framebuffer_image_views;\nVkFramebuffer* framebuffers;\nVkCommandBuffer* command_buffers;\nuint32_t semaphore_index;\nVkSemaphore* semaphore_acquire;\nVkSemaphore* semaphore_submit;\ncc_map_t* shader_modules;"];
+	vkk_buffer_t               [shape=box, fillcolor=green, style=filled, label="vkk_buffer_t\nint dynamic;\nsize_t size;\nVkBuffer* buffer;\nVkDeviceMemory* memory;"];
+	vkk_sampler_t              [shape=box, fillcolor=green, style=filled, label="vkk_sampler_t\nVkSampler sampler;"];
+	vkk_descriptorSet_t        [shape=box, fillcolor=green, style=filled, label="vkk_descriptorSet_t\nint dynamic;\nVkDescriptorSet* ds_array;\nvkk_descriptorSetFactory_t* dsf;"];
+	vkk_descriptorSetFactory_t [shape=box, fillcolor=green, style=filled, label="vkk_descriptorSetFactory_t\nint dynamic;\nuint32_t ds_available;\nVkDescriptorSetLayout ds_layout;\ncc_list_t* dp_list;\ncc_list_t* ds_list;\nchar type_count[VKK_DESCRIPTOR_SET_TYPE_COUNT];"];
+	vkk_pipelineLayout_t       [shape=box, fillcolor=green, style=filled, label="vkk_pipelineLayout_t\nVkPipelineLayout pl;"];
+	vkk_graphicsPipeline_t     [shape=box, fillcolor=green, style=filled, label="vkk_graphicsPipeline_t\nVkPipeline pipeline;"];
+	vkk_graphicsPipelineInfo_t [shape=box, fillcolor=green, style=filled, label="vkk_graphicsPipelineInfo_t\nvkk_pipelineLayout_t* pl;\nconst char* vs;\nconst char* fs;\nuint32_t vb_count;\nvkk_vertexBufferInfo_t* vbi;\nint primitive_mode;\nint primitive_restart;\nint cull_back;\nint depth_test;\nint depth_write;\nint blend_mode;"];
+	VKK_BUFFER_USAGE           [shape=box, fillcolor=green, style=filled, label="VKK_BUFFER_USAGE\nUNIFORM\nVERTEX\nCOUNT"];
+	VKK_BLEND_MODE             [shape=box, fillcolor=green, style=filled, label="VKK_BLEND_MODE\nDISABLED\nONE_MINUS_SRC_ALPHA"];
+	VKK_PRIMITIVE_MODE         [shape=box, fillcolor=green, style=filled, label="VKK_PRIMITIVE_MODE\nTRIANGLE_LIST\nTRIANGLE_STRIP\nTRIANGLE_FAN"];
+	VKK_VERTEX_FORMAT          [shape=box, fillcolor=green, style=filled, label="VKK_VERTEX_FORMAT\nFLOAT\nINT\nSHORT"];
+	VKK_INDEX_TYPE             [shape=box, fillcolor=green, style=filled, label="VKK_INDEX_TYPE\nUSHORT\nUINT"];
+	VKK_STAGE_FLAGS            [shape=box, fillcolor=green, style=filled, label="VKK_STAGE_FLAGS\nVS\nFS"];
+	VKK_DESCRIPTOR_SET_TYPE    [shape=box, fillcolor=green, style=filled, label="VKK_DESCRIPTOR_SET_TYPE\nUNIFORM_BUFFER\nSAMPLER\nCOUNT"];
+	vkk_vertexBufferInfo_t     [shape=box, fillcolor=green, style=filled, label="vkk_vertexBufferInfo_t\nuint32_t location;\nuint32_t components;\nint format;"];
+	vkk_descriptorSetBinding_t [shape=box, fillcolor=green, style=filled, label="vkk_descriptorSetBinding_t\nuint32_t binding;\nint type;\nint stage;\nvkk_sampler_t* sampler;"];
+
+	// my app structures
+	my_app_t [shape=box, fillcolor=cyan, style=filled, label="my_app_t\nvkk_engine_t* engine;\nvkk_buffer_t* uniform_buffer;\nvkk_buffer_t* vertex_buffer;\nvkk_descriptorSetFactory_t* dsf;\nvkk_descriptorSet_t* ds;\nvkk_pipelineLayout_t* pl;\nvkk_graphicsPipeline_t* gp;\n"];
+
+	// structures
+	VkPipelineLayoutCreateInfo             [shape=box, fillcolor=orange, style=filled, label="VkPipelineLayoutCreateInfo\nVkStructureType sType;\nconst void* pNext;\nVkPipelineLayoutCreateFlags flags;\nuint32_t setLayoutCount;\nconst VkDescriptorSetLayout* pSetLayouts;\nuint32_t pushConstantRangeCount;\nconst VkPushConstantRange* pPushConstantRanges;"];
+	VkPipelineDynamicStateCreateInfo       [shape=box, fillcolor=orange, style=filled, label="VkPipelineDynamicStateCreateInfo\nVkStructureType sType;\nconst void* pNext;\nVkPipelineDynamicStateCreateFlags flags;\nuint32_t dynamicStateCount;\nconst VkDynamicState* pDynamicStates;"];
+	VkPipelineColorBlendStateCreateInfo    [shape=box, fillcolor=orange, style=filled, label="VkPipelineColorBlendStateCreateInfo\nVkStructureType sType;\nconst void* pNext;\nVkPipelineColorBlendStateCreateFlags flags;\nVkBool32 logicOpEnable;\nVkLogicOp logicOp;\nuint32_t attachmentCount;\nconst VkPipelineColorBlendAttachmentState* pAttachments;\nfloat blendConstants[4];"];
+	VkPipelineDepthStencilStateCreateInfo  [shape=box, fillcolor=orange, style=filled, label="VkPipelineDepthStencilStateCreateInfo\nVkStructureType sType;\nconst void* pNext;\nVkPipelineDepthStencilStateCreateFlags flags;\nVkBool32 depthTestEnable;\nVkBool32 depthWriteEnable;\nVkCompareOp depthCompareOp;\nVkBool32 depthBoundsTestEnable;\nVkBool32 stencilTestEnable;\nVkStencilOpState front;\nVkStencilOpState back;\nfloat minDepthBounds;\nfloat maxDepthBounds;"];
+	VkPipelineMultisampleStateCreateInfo   [shape=box, fillcolor=orange, style=filled, label="VkPipelineMultisampleStateCreateInfo\nVkStructureType sType;\nconst void* pNext;\nVkPipelineMultisampleStateCreateFlags flags;\nVkSampleCountFlagBits rasterizationSamples;\nVkBool32 sampleShadingEnable;\nfloat minSampleShading;\nconst VkSampleMask(uint32_t)* pSampleMask;\nVkBool32 alphaToCoverageEnable;\nVkBool32 alphaToOneEnable;"];
+	VkPipelineRasterizationStateCreateInfo [shape=box, fillcolor=orange, style=filled, label="VkPipelineRasterizationStateCreateInfo\nVkStructureType sType;\nconst void* pNext;\nVkPipelineRasterizationStateCreateFlags flags;\nVkBool32 depthClampEnable;\nVkBool32 rasterizerDiscardEnable;\nVkPolygonMode polygonMode;\nVkCullModeFlags cullMode;\nVkFrontFace frontFace;\nVkBool32 depthBiasEnable;\nfloat depthBiasConstantFactor;\nfloat depthBiasClamp;\nfloat depthBiasSlopeFactor;\nfloat lineWidth;"];
+	VkPipelineViewportStateCreateInfo      [shape=box, fillcolor=orange, style=filled, label="VkPipelineViewportStateCreateInfo\nVkStructureType sType;\nconst void* pNext;\nVkPipelineViewportStateCreateFlags flags;\nuint32_t viewportCount;\nconst VkViewport* pViewports;\nuint32_t scissorCount;\nconst VkRect2D* pScissors;"];
+	VkPipelineTessellationStateCreateInfo  [shape=box, fillcolor=orange, style=filled, label="VkPipelineTessellationStateCreateInfo\nVkStructureType sType;\nconst void* pNext;\nVkPipelineTessellationStateCreateFlags flags;\nuint32_t patchControlPoints;"];
+	VkPipelineInputAssemblyStateCreateInfo [shape=box, fillcolor=orange, style=filled, label="VkPipelineInputAssemblyStateCreateInfo\nVkStructureType sType;\nconst void* pNext;\nVkPipelineInputAssemblyStateCreateFlags flags;\nVkPrimitiveTopology topology;\nVkBool32 primitiveRestartEnable;"];
+	VkPipelineVertexInputStateCreateInfo   [shape=box, fillcolor=orange, style=filled, label="VkPipelineVertexInputStateCreateInfo\nVkStructureType sType;\nconst void* pNext;\nVkPipelineVertexInputStateCreateFlags flags;\nuint32_t vertexBindingDescriptionCount;\nconst VkVertexInputBindingDescription* pVertexBindingDescriptions;\nuint32_t vertexAttributeDescriptionCount;\nconst VkVertexInputAttributeDescription* pVertexAttributeDescriptions;"];
+	VkPipelineShaderStageCreateInfo        [shape=box, fillcolor=orange, style=filled, label="VkPipelineShaderStageCreateInfo\nVkStructureType sType;\nconst void* pNext;\nVkPipelineShaderStageCreateFlags flags;\nVkShaderStageFlagBits stage;\nVkShaderModule module;\nconst char* pName;\nconst VkSpecializationInfo* pSpecializationInfo;"];
+	VkGraphicsPipelineCreateInfo           [shape=box, fillcolor=orange, style=filled, label="VkGraphicsPipelineCreateInfo\nVkStructureType sType;\nconst void* pNext;\nVkPipelineCreateFlags flags;\nuint32_t stageCount;\nconst VkPipelineShaderStageCreateInfo* pStages;\nconst VkPipelineVertexInputStateCreateInfo* pVertexInputState;\nconst VkPipelineInputAssemblyStateCreateInfo* pInputAssemblyState;\nconst VkPipelineTessellationStateCreateInfo* pTessellationState;\nconst VkPipelineViewportStateCreateInfo* pViewportState;\nconst VkPipelineRasterizationStateCreateInfo* pRasterizationState;\nconst VkPipelineMultisampleStateCreateInfo* pMultisampleState;\nconst VkPipelineDepthStencilStateCreateInfo* pDepthStencilState;\nconst VkPipelineColorBlendStateCreateInfo* pColorBlendState;\nconst VkPipelineDynamicStateCreateInfo* pDynamicState;\nVkPipelineLayout layout;\nVkRenderPass renderPass;\nuint32_t subpass;\nVkPipeline basePipelineHandle;\nint32_t basePipelineIndex;"];
+	VkDescriptorSetLayoutBinding           [shape=box, fillcolor=orange, style=filled, label="VkDescriptorSetLayoutBinding\nuint32_t binding;\nVkDescriptorType descriptorType;\nuint32_t descriptorCount;\nVkShaderStageFlags stageFlags;\nconst VkSampler* pImmutableSamplers;"];
+	VkDescriptorSetLayoutCreateInfo        [shape=box, fillcolor=orange, style=filled, label="VkDescriptorSetLayoutCreateInfo\nVkStructureType sType;\nconst void* pNext;\nVkDescriptorSetLayoutCreateFlags flags;\nuint32_t bindingCount;\nconst VkDescriptorSetLayoutBinding* pBindings;"];
+	VkShaderModuleCreateInfo               [shape=box, fillcolor=orange, style=filled, label="VkShaderModuleCreateInfo\nVkStructureType sType;\nconst void* pNext;\nVkShaderModuleCreateFlags flags;\nsize_t codeSize;\nconst uint32_t* pCode;"];
+	VkCommandBufferAllocateInfo            [shape=box, fillcolor=orange, style=filled, label="VkCommandBufferAllocateInfo\nsType\nVkStructureType sType;\nconst void* pNext;\nVkCommandPool commandPool;\nVkCommandBufferLevel level;\nuint32_t commandBufferCount;"];
+	VkFramebufferCreateInfo                [shape=box, fillcolor=orange, style=filled, label="VkFramebufferCreateInfo\nsType\nVkStructureType sType;\nconst void* pNext;\nVkFramebufferCreateFlags flags;\nVkRenderPass renderPass;\nuint32_t attachmentCount;\nconst VkImageView* pAttachments;\nuint32_t width;\nuint32_t height;\nuint32_t layers;"];
+	VkMemoryRequirements                   [shape=box, fillcolor=orange, style=filled, label="VkMemoryRequirements\nVkDeviceSize(uint64_t) size;\nVkDeviceSize(uint64_t) alignment;\nuint32_t memoryTypeBits;"];
+	VkImageSubresourceRange                [shape=box, fillcolor=orange, style=filled, label="VkImageSubresourceRange\nVkImageAspectFlags aspectMask;\nuint32_t baseMipLevel;\nuint32_t levelCount;\nuint32_t baseArrayLayer;\nuint32_t layerCount;"];
+	VkComponentMapping                     [shape=box, fillcolor=orange, style=filled, label="VkComponentMapping\nVkComponentSwizzle r;\nVkComponentSwizzle g;\nVkComponentSwizzle b;\nVkComponentSwizzle a;"];
+	VkImageViewCreateInfo                  [shape=box, fillcolor=orange, style=filled, label="VkImageViewCreateInfo\nVkStructureType sType;\nconst void* pNext;\nVkImageViewCreateFlags flags;\nVkImage image;\nVkImageViewType viewType;\nVkFormat format;\nVkComponentMapping components;\nVkImageSubresourceRange subresourceRange;"];
+	VkMemoryAllocateInfo                   [shape=box, fillcolor=orange, style=filled, label="VkMemoryAllocateInfo\nVkStructureType sType;\nconst void* pNext;\nVkDeviceSize(uint64_t) allocationSize;\nuint32_t memoryTypeIndex;"];
+	VkImageCreateInfo                      [shape=box, fillcolor=orange, style=filled, label="VkImageCreateInfo\nVkStructureType sType;\nconst void* pNext;\nVkImageCreateFlags flags;\nVkImageType imageType;\nVkFormat format;\nVkExtent3D extent;\nuint32_t mipLevels;\nuint32_t arrayLayers;\nVkSampleCountFlagBits samples;\nVkImageTiling tiling;\nVkImageUsageFlags usage;\nVkSharingMode sharingMode;\nuint32_t queueFamilyIndexCount;\nconst uint32_t* pQueueFamilyIndices;\nVkImageLayout initialLayout;"];
+	VkAttachmentReference                  [shape=box, fillcolor=orange, style=filled, label="VkAttachmentReference\nuint32_t attachment; (index into VkRenderPassCreateInfo.pAttachments)\nVkImageLayout layout;"];
+	VkSubpassDependency                    [shape=box, fillcolor=orange, style=filled, label="VkSubpassDependency\nuint32_t srcSubpass;\nuint32_t dstSubpass;\nVkPipelineStageFlags srcStageMask;\nVkPipelineStageFlags dstStageMask;\nVkAccessFlags srcAccessMask;\nVkAccessFlags dstAccessMask;\nVkDependencyFlags dependencyFlags;"];
+	VkSubpassDescription                   [shape=box, fillcolor=orange, style=filled, label="VkSubpassDescription\nVkSubpassDescriptionFlags flags;\nVkPipelineBindPoint pipelineBindPoint;\nuint32_t inputAttachmentCount;\nconst VkAttachmentReference* pInputAttachments;\nuint32_t colorAttachmentCount;\nconst VkAttachmentReference* pColorAttachments;\nconst VkAttachmentReference* pResolveAttachments;\nconst VkAttachmentReference* pDepthStencilAttachment;\nuint32_t preserveAttachmentCount;\nconst uint32_t* pPreserveAttachments;"];
+	VkAttachmentDescription                [shape=box, fillcolor=orange, style=filled, label="VkAttachmentDescription\nVkAttachmentDescriptionFlags flags;\nVkFormat format;\nVkSampleCountFlagBits samples;\nVkAttachmentLoadOp loadOp;\nVkAttachmentStoreOp storeOp;\nVkAttachmentLoadOp stencilLoadOp;\nVkAttachmentStoreOp stencilStoreOp;\nVkImageLayout initialLayout;\nVkImageLayout finalLayout;"];
+	VkRenderPassCreateInfo                 [shape=box, fillcolor=orange, style=filled, label="VkRenderPassCreateInfo\nVkStructureType sType;\nconst void* pNext;\nVkRenderPassCreateFlags flags;\nuint32_t attachmentCount;\nconst VkAttachmentDescription* pAttachments;\nuint32_t subpassCount;\nconst VkSubpassDescription* pSubpasses;\nuint32_t dependencyCount;\nconst VkSubpassDependency* pDependencies;"];
+	VkSurfaceFormatKHR                     [shape=box, fillcolor=orange, style=filled, label="VkSurfaceFormatKHR\nVkFormat format;\nVkColorSpaceKHR colorSpace;"];
+	VkSurfaceCapabilitiesKHR               [shape=box, fillcolor=orange, style=filled, label="VkSurfaceCapabilitiesKHR\nuint32_t minImageCount;\nuint32_t maxImageCount;\nVkExtent2D currentExtent;\nVkExtent2D minImageExtent;\nVkExtent2D maxImageExtent;\nuint32_t maxImageArrayLayers;\nVkSurfaceTransformFlagsKHR supportedTransforms;\nVkSurfaceTransformFlagBitsKHR currentTransform;\nVkCompositeAlphaFlagsKHR supportedCompositeAlpha;\nVkImageUsageFlags supportedUsageFlags;"];
+	VkInstanceCreateInfo                   [shape=box, fillcolor=orange, style=filled, label="VkInstanceCreateInfo\nVkStructureType sType;\nconst void* pNext;\nVkInstanceCreateFlags flags;\nconst VkApplicationInfo* pApplicationInfo;\nuint32_t enabledLayerCount;\nconst char* const* ppEnabledLayerNames;\nuint32_t enabledExtensionCount;\nconst char* const* ppEnabledExtensionNames;"];
+	VkApplicationInfo                      [shape=box, fillcolor=orange, style=filled, label="VkApplicationInfo\nVkStructureType sType;\nconst void* pNext;\nconst char* pApplicationName;\nuint32_t applicationVersion;\nconst char* pEngineName;\nuint32_t engineVersion;\nuint32_t apiVersion;"];
+	VkPhysicalDeviceFeatures               [shape=box, fillcolor=orange, style=filled, label="VkPhysicalDeviceFeatures"];
+	VkPhysicalDeviceMemoryProperties       [shape=box, fillcolor=orange, style=filled, label="VkPhysicalDeviceMemoryProperties\nuint32_t memoryTypeCount;\nVkMemoryType memoryTypes[VK_MAX_MEMORY_TYPES];\nuint32_t memoryHeapCount;\nVkMemoryHeap memoryHeaps[VK_MAX_MEMORY_HEAPS];"]
+	VkMemoryType                           [shape=box, fillcolor=orange, style=filled, label="VkMemoryType\nVkMemoryPropertyFlags propertyFlags;\nuint32_t heapIndex;"];
+	VkMemoryHeap                           [shape=box, fillcolor=orange, style=filled, label="VkMemoryHeap\nVkDeviceSize(uint64_t) size;\nVkMemoryHeapFlags flags;"];
+	VkQueueFamilyProperties                [shape=box, fillcolor=orange, style=filled, label="VkQueueFamilyProperties\nVkQueueFlags queueFlags;\nuint32_t queueCount;\nuint32_t timestampValidBits;\nVkExtent3D minImageTransferGranularity;"];
+	VkDeviceCreateInfo                     [shape=box, fillcolor=orange, style=filled, label="VkDeviceCreateInfo\nVkStructureType sType;\nconst void* pNext;\nVkDeviceCreateFlags flags;\nuint32_t queueCreateInfoCount;\nconst VkDeviceQueueCreateInfo* pQueueCreateInfos;\nuint32_t enabledLayerCount;\nconst char* const* ppEnabledLayerNames;\nuint32_t enabledExtensionCount;\nconst char* const* ppEnabledExtensionNames;\nconst VkPhysicalDeviceFeatures* pEnabledFeatures;"];
+	VkDeviceQueueCreateInfo                [shape=box, fillcolor=orange, style=filled, label="VkDeviceQueueCreateInfo\nVkStructureType sType;\nconst void* pNext;\nVkDeviceQueueCreateFlags flags;\nuint32_t queueFamilyIndex;\nuint32_t queueCount;\nconst float* pQueuePriorities;"];
+	VkExtensionProperties                  [shape=box, fillcolor=orange, style=filled, label="VkExtensionProperties\nchar extensionName[VK_MAX_EXTENSION_NAME_SIZE];\nuint32_t specVersion;"];
+	VkAndroidSurfaceCreateInfoKHR          [shape=box, fillcolor=orange, style=filled, label="VkAndroidSurfaceCreateInfoKHR\nVkStructureType sType;\nconst void* pNext;\nVkAndroidSurfaceCreateFlagsKHR flags;\nstruct ANativeWindow* window;"];
+	VkPipelineCacheCreateInfo              [shape=box, fillcolor=orange, style=filled, label="VkPipelineCacheCreateInfo\nVkStructureType sType;\nconst void* pNext;\nVkPipelineCacheCreateFlags flags;\nsize_t initialDataSize;\nconst void* pInitialData;"];
+	VkCommandPoolCreateInfo                [shape=box, fillcolor=orange, style=filled, label="VkCommandPoolCreateInfo\nVkStructureType sType;\nconst void* pNext;\nVkCommandPoolCreateFlags flags;\nuint32_t queueFamilyIndex;"];
+	VkDescriptorPoolCreateInfo             [shape=box, fillcolor=orange, style=filled, label="VkDescriptorPoolCreateInfo\nVkStructureType sType;\nconst void* pNext;\nVkDescriptorPoolCreateFlags flags;\nuint32_t maxSets;\nuint32_t poolSizeCount;\nconst VkDescriptorPoolSize* pPoolSizes;"];
+	VkDescriptorPoolSize                   [shape=box, fillcolor=orange, style=filled, label="VkDescriptorPoolSize\nVkDescriptorType type;\nuint32_t descriptorCount;"];
+	VkSwapchainCreateInfoKHR               [shape=box, fillcolor=orange, style=filled, label="VkSwapchainCreateInfoKHR\nVkStructureType sType;\nconst void* pNext;\nVkSwapchainCreateFlagsKHR flags;\nVkSurfaceKHR surface;\nuint32_t minImageCount;\nVkFormat imageFormat;\nVkColorSpaceKHR imageColorSpace;\nVkExtent2D imageExtent;\nuint32_t imageArrayLayers;\nVkImageUsageFlags imageUsage;\nVkSharingMode imageSharingMode;\nuint32_t queueFamilyIndexCount;\nconst uint32_t* pQueueFamilyIndices;\nVkSurfaceTransformFlagBitsKHR preTransform;\nVkCompositeAlphaFlagBitsKHR compositeAlpha;\nVkPresentModeKHR presentMode;\nVkBool32 clipped;\nVkSwapchainKHR oldSwapchain;"];
+	VkFenceCreateInfo                      [shape=box, fillcolor=orange, style=filled, label="VkFenceCreateInfo\nVkStructureType sType;\nconst void* pNext;\nVkFenceCreateFlags flags;"];
+	VkSemaphoreCreateInfo                  [shape=box, fillcolor=orange, style=filled, label="VkSemaphoreCreateInfo\nVkStructureType sType;\nconst void* pNext;\nVkSemaphoreCreateFlags flags;"];
+	VkSamplerCreateInfo                    [shape=box, fillcolor=orange, style=filled, label="VkSamplerCreateInfo\nVkStructureType sType;\nconst void* pNext;\nVkSamplerCreateFlags flags;\nVkFilter magFilter;\nVkFilter minFilter;\nVkSamplerMipmapMode mipmapMode;\nVkSamplerAddressMode addressModeU;\nVkSamplerAddressMode addressModeV;\nVkSamplerAddressMode addressModeW;\nfloat mipLodBias;\nVkBool32 anisotropyEnable;\nfloat maxAnisotropy;\nVkBool32 compareEnable;\nVkCompareOp compareOp;\nfloat minLod;\nfloat maxLod;\nVkBorderColor borderColor;\nVkBool32 unnormalizedCoordinates;"];
+	VkPresentInfoKHR                       [shape=box, fillcolor=orange, style=filled, label="VkPresentInfoKHR\nVkStructureType sType;\nconst void* pNext;\nuint32_t waitSemaphoreCount;\nconst VkSemaphore* pWaitSemaphores;\nuint32_t swapchainCount;\nconst VkSwapchainKHR* pSwapchains;\nconst uint32_t* pImageIndices;\nVkResult* pResults;"];
+	VkSubmitInfo                           [shape=box, fillcolor=orange, style=filled, label=" VkSubmitInfo\nVkStructureType sType;\nconst void* pNext;\nuint32_t waitSemaphoreCount;\nconst VkSemaphore* pWaitSemaphores;\nconst VkPipelineStageFlags* pWaitDstStageMask;\nuint32_t commandBufferCount;\nconst VkCommandBuffer* pCommandBuffers;\nuint32_t signalSemaphoreCount;\nconst VkSemaphore* pSignalSemaphores;"];
+	VkRenderPassBeginInfo                  [shape=box, fillcolor=orange, style=filled, label="VkRenderPassBeginInfo\nVkStructureType sType;\nconst void* pNext;\nVkRenderPass renderPass;\nVkFramebuffer framebuffer;\nVkRect2D renderArea;\nuint32_t clearValueCount;\nconst VkClearValue* pClearValues;"];
+	VkCommandBufferBeginInfo               [shape=box, fillcolor=orange, style=filled, label="VkCommandBufferBeginInfo\nVkStructureType sType;\nconst void* pNext;\nVkCommandBufferUsageFlags flags;\nconst VkCommandBufferInheritanceInfo* pInheritanceInfo;"];
+	VkCommandBufferInheritanceInfo         [shape=box, fillcolor=orange, style=filled, label="VkCommandBufferInheritanceInfo\nVkStructureType sType;\nconst void* pNext;\nVkRenderPass renderPass;\nuint32_t subpass;\nVkFramebuffer framebuffer;\nVkBool32 occlusionQueryEnable;\nVkQueryControlFlags queryFlags;\nVkQueryPipelineStatisticFlags pipelineStatistics;"];
+	VkDescriptorSetAllocateInfo            [shape=box, fillcolor=orange, style=filled, label="VkDescriptorSetAllocateInfo\nVkStructureType sType;\nconst void* pNext;\nVkDescriptorPool descriptorPool;\nuint32_t descriptorSetCount;\nconst VkDescriptorSetLayout* pSetLayouts;"];
+	VkDescriptorBufferInfo                 [shape=box, fillcolor=orange, style=filled, label="VkDescriptorBufferInfo\nVkBuffer buffer;\nVkDeviceSize offset;\nVkDeviceSize range;"];
+	VkWriteDescriptorSet                   [shape=box, fillcolor=orange, style=filled, label="VkWriteDescriptorSet\nVkStructureType sType;\nconst void* pNext;\nVkDescriptorSet dstSet;\nuint32_t dstBinding;\nuint32_t dstArrayElement;\nuint32_t descriptorCount;\nVkDescriptorType descriptorType;\nconst VkDescriptorImageInfo* pImageInfo;\nconst VkDescriptorBufferInfo* pBufferInfo;\nconst VkBufferView* pTexelBufferView;"];
+	VkBufferCreateInfo                     [shape=box, fillcolor=orange, style=filled, label="VkBufferCreateInfo\nVkStructureType sType;\nconst void* pNext;\nVkBufferCreateFlags flags;\nVkDeviceSize size;\nVkBufferUsageFlags usage;\nVkSharingMode sharingMode;\nuint32_t queueFamilyIndexCount;\nconst uint32_t* pQueueFamilyIndices;"];
+	VkVertexInputBindingDescription        [shape=box, fillcolor=orange, style=filled, label="VkVertexInputBindingDescription\nuint32_t binding;\nuint32_t stride;\nVkVertexInputRate inputRate;"];
+	VkVertexInputAttributeDescription      [shape=box, fillcolor=orange, style=filled, label="VkVertexInputAttributeDescription\nuint32_t location;\nuint32_t binding;\nVkFormat format;\nuint32_t offset;"];
+
+	// functions
+	vkCreatePipelineLayout                    [fillcolor=gold, style=filled, label="VkResult vkCreatePipelineLayout(\nVkDevice device,\nconst VkPipelineLayoutCreateInfo* pCreateInfo,\nconst VkAllocationCallbacks* pAllocator,\nVkPipelineLayout* pPipelineLayout);"];
+	vkCreateGraphicsPipelines                 [fillcolor=gold, style=filled, label="VkResult vkCreateGraphicsPipelines(\nVkDevice device,\nVkPipelineCache pipelineCache,\nuint32_t createInfoCount,\nconst VkGraphicsPipelineCreateInfo* pCreateInfos,\nconst VkAllocationCallbacks* pAllocator,\nVkPipeline* pPipelines);"];
+	vkCreateDescriptorSetLayout               [fillcolor=gold, style=filled, label="VkResult vkCreateDescriptorSetLayout(\nVkDevice device,\nconst VkDescriptorSetLayoutCreateInfo* pCreateInfo,\nconst VkAllocationCallbacks* pAllocator,\nVkDescriptorSetLayout* pSetLayout);"];
+	vkCreateShaderModule                      [fillcolor=gold, style=filled, label="VkResult vkCreateShaderModule(\nVkDevice device,\nconst VkShaderModuleCreateInfo* pCreateInfo,\nconst VkAllocationCallbacks* pAllocator;\nVkShaderModule* pShaderModule);"];
+	vkAllocateCommandBuffers                  [fillcolor=gold, style=filled, label="VkResult vkAllocateCommandBuffers(\nVkDevice device,\nconst VkCommandBufferAllocateInfo* pAllocateInfo,\nVkCommandBuffer* pCommandBuffers);"];
+	vkCreateFramebuffer                       [fillcolor=gold, style=filled, label="VkResult vkCreateFramebuffer(\nVkDevice device,\nconst VkFramebufferCreateInfo* pCreateInfo,\nconst VkAllocationCallbacks* pAllocator,\nVkFramebuffer* pFramebuffer);"];
+	vkGetImageMemoryRequirements              [fillcolor=gold, style=filled, label="void vkGetImageMemoryRequirements(\nVkDevice device,\nVkImage image,\nVkMemoryRequirements* pMemoryRequirements);"];
+	vkBindImageMemory                         [fillcolor=gold, style=filled, label="VkResult vkBindImageMemory(\nVkDevice device,\nVkImage image,\nVkDeviceMemory memory,\nVkDeviceSize(uint64_t) memoryOffset);"];
+	vkCreateImageView                         [fillcolor=gold, style=filled, label="VkResult vkCreateImageView(\nVkDevice device,\nconst VkImageViewCreateInfo* pCreateInfo,\nconst VkAllocationCallbacks* pAllocator,\nVkImageView* pView);"];
+	vkAllocateMemory                          [fillcolor=gold, style=filled, label="VkResult vkAllocateMemory(\nVkDevice device,\nconst VkMemoryAllocateInfo* pAllocateInfo,\nconst VkAllocationCallbacks* pAllocator,\nVkDeviceMemory* pMemory);"];
+	vkGetPhysicalDeviceSurfaceCapabilitiesKHR [fillcolor=gold, style=filled, label="VkResult vkGetPhysicalDeviceSurfaceCapabilitiesKHR(\nVkPhysicalDevice physicalDevice,\nVkSurfaceKHR surface,\nVkSurfaceCapabilitiesKHR* pSurfaceCapabilities);"];
+	vkGetSwapchainImagesKHR                   [fillcolor=gold, style=filled, label="VkResult vkGetSwapchainImagesKHR(\nVkDevice device,\nVkSwapchainKHR swapchain,\nuint32_t* pSwapchainImageCount,\nVkImage* pSwapchainImages);"];
+	vkGetPhysicalDeviceSurfaceFormatsKHR      [fillcolor=gold, style=filled, label="VkResult vkGetPhysicalDeviceSurfaceFormatsKHR(\nVkPhysicalDevice physicalDevice,\nVkSurfaceKHR surface,\nuint32_t* pSurfaceFormatCount,\nVkSurfaceFormatKHR* pSurfaceFormats);"];
+	vkCreateInstance                          [fillcolor=gold, style=filled, label="VkResult vkCreateInstance(\nconst VkInstanceCreateInfo* pCreateInfo,\nconst VkAllocationCallbacks* pAllocator,\nVkInstance* pInstance);"];
+	vkEnumeratePhysicalDevices                [fillcolor=gold, style=filled, label="VkResult vkEnumeratePhysicalDevices(\nVkInstance instance,\nuint32_t* pPhysicalDeviceCount,\nVkPhysicalDevice* pPhysicalDevices);"];
+	vkGetPhysicalDeviceMemoryProperties       [fillcolor=gold, style=filled, label="void vkGetPhysicalDeviceMemoryProperties(\nVkPhysicalDevice physicalDevice,\nVkPhysicalDeviceMemoryProperties* pMemoryProperties);"];
+	vkGetPhysicalDeviceQueueFamilyProperties  [fillcolor=gold, style=filled, label="void vkGetPhysicalDeviceQueueFamilyProperties(\nVkPhysicalDevice physicalDevice,\nuint32_t* pQueueFamilyPropertyCount,\nVkQueueFamilyProperties* pQueueFamilyProperties);"];
+	vkCreateDevice                            [fillcolor=gold, style=filled, label="VkResult vkCreateDevice(\nVkPhysicalDevice physicalDevice,\nconst VkDeviceCreateInfo* pCreateInfo,\nconst VkAllocationCallbacks* pAllocator,\nVkDevice* pDevice);"];
+	vkEnumerateDeviceExtensionProperties      [fillcolor=gold, style=filled, label="VkResult vkEnumerateDeviceExtensionProperties(\nVkPhysicalDevice physicalDevice,\nconst char* pLayerName,\nuint32_t* pPropertyCount,\nVkExtensionProperties* pProperties);"];
+	vkDeviceWaitIdle                          [fillcolor=gold, style=filled, label="VkResult vkDeviceWaitIdle(\nVkDevice device);"];
+	vkCreateAndroidSurfaceKHR                 [fillcolor=gold, style=filled, label="VkResult vkCreateAndroidSurfaceKHR(\nVkInstance instance,\nconst VkAndroidSurfaceCreateInfoKHR* pCreateInfo,\nconst VkAllocationCallbacks* pAllocator,\nVkSurfaceKHR* pSurface);"];
+	vkGetPhysicalDeviceSurfaceSupportKHR      [fillcolor=gold, style=filled, label="VkResult vkGetPhysicalDeviceSurfaceSupportKHR(\nVkPhysicalDevice physicalDevice,\nuint32_t queueFamilyIndex,\nVkSurfaceKHR surface,\nVkBool32* pSupported);"];
+	vkGetDeviceQueue                          [fillcolor=gold, style=filled, label="void vkGetDeviceQueue(\nVkDevice device,\nuint32_t queueFamilyIndex,\nuint32_t queueIndex,\nVkQueue* pQueue);"]
+	vkCreatePipelineCache                     [fillcolor=gold, style=filled, label="VkResult vkCreatePipelineCache(\nVkDevice device,\nconst VkPipelineCacheCreateInfo* pCreateInfo,\nconst VkAllocationCallbacks* pAllocator,\nVkPipelineCache* pPipelineCache);"];
+	vkCreateCommandPool                       [fillcolor=gold, style=filled, label="VkResult vkCreateCommandPool(\nVkDevice device,\nconst VkCommandPoolCreateInfo* pCreateInfo,\nconst VkAllocationCallbacks* pAllocator,\nVkCommandPool* pCommandPool);"];
+	vkCreateDescriptorPool                    [fillcolor=gold, style=filled, label="VkResult vkCreateDescriptorPool(\nVkDevice device,\nconst VkDescriptorPoolCreateInfo* pCreateInfo,\nconst VkAllocationCallbacks* pAllocator,\nVkDescriptorPool* pDescriptorPool);"];
+	vkCreateSwapchainKHR                      [fillcolor=gold, style=filled, label="VkResult vkCreateSwapchainKHR(\nVkDevice device,\nconst VkSwapchainCreateInfoKHR* pCreateInfo,\nconst VkAllocationCallbacks* pAllocator,\nVkSwapchainKHR* pSwapchain);"];
+	vkGetPhysicalDeviceSurfacePresentModesKHR [fillcolor=gold, style=filled, label="VkResult vkGetPhysicalDeviceSurfacePresentModesKHR(\nVkPhysicalDevice physicalDevice,\nVkSurfaceKHR surface,\nuint32_t* pPresentModeCount,\nVkPresentModeKHR* pPresentModes);"];
+	vkCreateFence                             [fillcolor=gold, style=filled, label="VkResult vkCreateFence(\nVkDevice device,\nconst VkFenceCreateInfo* pCreateInfo,\nconst VkAllocationCallbacks* pAllocator,\nVkFence* pFence);"];
+	vkCreateImage                             [fillcolor=gold, style=filled, label="VkResult vkCreateImage(\nVkDevice device,\nconst VkImageCreateInfo* pCreateInfo,\nconst VkAllocationCallbacks* pAllocator,\nVkImage* pImage);"];
+	vkCreateSemaphore                         [fillcolor=gold, style=filled, label="VkResult vkCreateSemaphore(\nVkDevice device,\nconst VkSemaphoreCreateInfo* pCreateInfo,\nconst VkAllocationCallbacks* pAllocator,\nVkSemaphore* pSemaphore);"];
+	vkCreateRenderPass                        [fillcolor=gold, style=filled, label="VkResult vkCreateRenderPass(\nVkDevice device,\nconst VkRenderPassCreateInfo* pCreateInfo,\nconst VkAllocationCallbacks* pAllocator,\nVkRenderPass* pRenderPass);"];
+	vkCreateSampler                           [fillcolor=gold, style=filled, label="VkResult vkCreateSampler(\nVkDevice device,\nconst VkSamplerCreateInfo* pCreateInfo,\nconst VkAllocationCallbacks* pAllocator,\nVkSampler* pSampler);"];
+	vkCmdBindPipeline                         [fillcolor=gold, style=filled, label="void vkCmdBindPipeline(\nVkCommandBuffer commandBuffer,\nVkPipelineBindPoint pipelineBindPoint,\nVkPipeline pipeline);"];
+	vkCmdBindDescriptorSets                   [fillcolor=gold, style=filled, label="void vkCmdBindDescriptorSets(\nVkCommandBuffer commandBuffer,\nVkPipelineBindPoint pipelineBindPoint,\nVkPipelineLayout layout,\nuint32_t firstSet,\nuint32_t descriptorCount,\nconst VkDescriptorSet* pDescriptorSets,\nuint32_t dynamicOffsetCount,\nconst uint32_t* pDynamicOffsets);"];
+	vkCmdBindVertexBuffers                    [fillcolor=gold, style=filled, label="void vkCmdBindVertexBuffers(\nVkCommandBuffer commandBuffer,\nuint32_t firstBinding,\nuint32_t bindingCount,\nconst VkBuffer* pBuffers,\nconst VkDeviceSize* pOffsets);"];
+	vkCmdBindIndexBuffer                      [fillcolor=gold, style=filled, label="void vkCmdBindIndexBuffer(\nVkCommandBuffer commandBuffer,\nVkBuffer buffer,\nVkDeviceSize offset,\nVkIndexType indexType);"];
+	vkCmdDraw                                 [fillcolor=gold, style=filled, label="void vkCmdDraw(\nVkCommandBuffer commandBuffer,\nuint32_t vertexCount,\nuint32_t instanceCount,\nuint32_t firstVertex,\nuint32_t firstInstance);"];
+	vkCmdDrawIndexed                          [fillcolor=gold, style=filled, label="void vkCmdDrawIndexed(\nVkCommandBuffer commandBuffer,\nuint32_t indexCount,\nuint32_t instanceCount,\nuint32_t firstIndex,\nint32_t vertexOffset,\nuint32_t firstInstance);"];
+	vkAcquireNextImageKHR                     [fillcolor=gold, style=filled, label="VkResult vkAcquireNextImageKHR(\nVkDevice device,\nVkSwapchainKHR swapchain,\nuint64_t timeout,\nVkSemaphore semaphore,\nVkFence fence,\nuint32_t* pImageIndex);"];
+	vkWaitForFences                           [fillcolor=gold, style=filled, label="VkResult vkWaitForFences(\nVkDevice device,\nuint32_t fenceCount,\nconst VkFence* pFences,\nVkBool32 waitAll,\nuint64_t timeout);"];
+	vkResetFences                             [fillcolor=gold, style=filled, label="VkResult vkResetFences(\nVkDevice device,\nuint32_t fenceCount,\nconst VkFence* pFences);"];
+	vkResetCommandBuffer                      [fillcolor=gold, style=filled, label="VkResult vkResetCommandBuffer(\nVkCommandBuffer commandBuffer,\nVkCommandBufferResetFlags flags);"];
+	vkBeginCommandBuffer                      [fillcolor=gold, style=filled, label="VkResult vkBeginCommandBuffer(\nVkCommandBuffer commandBuffer,\nconst VkCommandBufferBeginInfo* pBeginInfo);"];
+	vkCmdSetViewport                          [fillcolor=gold, style=filled, label="void vkCmdSetViewport(\nVkCommandBuffer commandBuffer,\nuint32_t firstViewport,\nuint32_t viewportCount,\nconst VkViewport* pViewports);"];
+	vkCmdSetScissor                           [fillcolor=gold, style=filled, label="void vkCmdSetScissor(\nVkCommandBuffer commandBuffer,\nuint32_t firstScissor,\nuint32_t scissorCount,\nconst VkRect2D* pScissors);"];
+	vkCmdBeginRenderPass                      [fillcolor=gold, style=filled, label="void vkCmdBeginRenderPass(\nVkCommandBuffer commandBuffer,\nconst VkRenderPassBeginInfo* pRenderPassBegin,\nVkSubpassContents contents);"];
+	vkEndCommandBuffer                        [fillcolor=gold, style=filled, label="VkResult vkEndCommandBuffer(\nVkCommandBuffer commandBuffer);"];
+	vkQueueSubmit                             [fillcolor=gold, style=filled, label="VkResult vkQueueSubmit(\nVkQueue queue,\nuint32_t submitCount,\nconst VkSubmitInfo* pSubmits,\nVkFence fence);"];
+	vkQueuePresentKHR                         [fillcolor=gold, style=filled, label="VkResult vkQueuePresentKHR(\nVkQueue queue,\nconst VkPresentInfoKHR* pPresentInfo);"];
+	vkCmdPipelineBarrier                      [fillcolor=gold, style=filled, label="void vkCmdPipelineBarrier(\nVkCommandBuffer commandBuffer,\nVkPipelineStageFlags srcStageMask,\nVkPipelineStageFlags dstStageMask,\nVkDependencyFlags dependencyFlags,\nuint32_t memoryBarrierCount,\nconst VkMemoryBarrier* pMemoryBarriers,\nuint32_t bufferMemoryBarrierCount,\nconst VkBufferMemoryBarrier* pBufferMemoryBarriers,\nuint32_t imageMemoryBarrierCount,\nconst VkImageMemoryBarrier* pImageMemoryBarriers);"];
+	vkMapMemory                               [fillcolor=gold, style=filled, label="VkResult vkMapMemory(\nVkDevice device,\nVkDeviceMemory memory,\nVkDeviceSize offset,\nVkDeviceSize size,\nVkMemoryMapFlags flags,\nvoid** ppData);"];
+	vkUnmapMemory                             [fillcolor=gold, style=filled, label="void vkUnmapMemory(\nVkDevice device,\nVkDeviceMemory memory);"];
+	vkAllocateDescriptorSets                  [fillcolor=gold, style=filled, label="VkResult vkAllocateDescriptorSets(\nVkDevice device,\nconst VkDescriptorSetAllocateInfo* pAllocateInfo,\nVkDescriptorSet* pDescriptorSets);"];
+	vkUpdateDescriptorSets                    [fillcolor=gold, style=filled, label="void vkUpdateDescriptorSets(\nVkDevice device,\nuint32_t descriptorWriteCount,\nconst VkWriteDescriptorSet* pDescriptorWrites,\nuint32_t descriptorCopyCount,\nconst VkCopyDescriptorSet* pDescriptorCopies);"];
+	vkCreateBuffer                            [fillcolor=gold, style=filled, label="VkResult vkCreateBuffer(\nVkDevice device,\nconst VkBufferCreateInfo* pCreateInfo,\nconst VkAllocationCallbacks* pAllocator,\nVkBuffer* pBuffer);"];
+	vkBindBufferMemory                        [fillcolor=gold, style=filled, label="VkResult vkBindBufferMemory(\nVkDevice device,\nVkBuffer buffer,\nVkDeviceMemory memory,\nVkDeviceSize memoryOffset);"];
+	vkGetBufferMemoryRequirements             [fillcolor=gold, style=filled, label="void vkGetBufferMemoryRequirements(\nVkDevice device,\nVkBuffer buffer,\nVkMemoryRequirements* pMemoryRequirements);"];
+	vkCmdEndRenderPass                        [fillcolor=gold, style=filled, label="void vkCmdEndRenderPass(\nVkCommandBuffer commandBuffer);"];
+
+	// my app functions
+	my_app_new                       [fillcolor=skyblue, style=filled, label="my_app_t* my_app_new(void);"];
+	my_app_delete                    [fillcolor=skyblue, style=filled, label="void my_app_delete(my_app_t** _self);"];
+	my_app_resize                    [fillcolor=skyblue, style=filled, label="void my_app_resize(my_app_t* self);"];
+	my_app_draw                      [fillcolor=skyblue, style=filled, label="void my_app_draw(my_app_t* self);"];
+
+	// vkk functions
+	vkk_engine_new                                [fillcolor=palegreen, style=filled, label="vkk_engine_t* vkk_engine_new(\nvoid* app,\nconst char* app_name,\nuint32_t app_version);"];
+	vkk_engine_resize                             [fillcolor=palegreen, style=filled, label="int vkk_engine_resize(\nvkk_engine_t* self,\nuint32_t* _width,\nuint32_t* _height);"];
+	vkk_engine_initSDL                            [fillcolor=limegreen, style=filled, label="int vkk_engine_initSDL(\nvkk_engine_t* self,\nconst char* app_name);"];
+	vkk_engine_newInstance                        [fillcolor=limegreen, style=filled, label="int vkk_engine_newInstance(\nvkk_engine_t* self);"];
+	vkk_engine_newSurface                         [fillcolor=limegreen, style=filled, label="int vkk_engine_newSurface(\nvkk_engine_t* self);"];
+	vkk_engine_getPhysicalDevice                  [fillcolor=limegreen, style=filled, label="int vkk_engine_getPhysicalDevice(\nvkk_engine_t* self);"];
+	vkk_engine_newDevice                          [fillcolor=limegreen, style=filled, label="int vkk_engine_newDevice(\nvkk_engine_t* self);"];
+	vkk_engine_newCacheAndPools                   [fillcolor=limegreen, style=filled, label="int vkk_engine_newCacheAndPools(\nvkk_engine_t* self);"];
+	vkk_engine_newRenderpass                      [fillcolor=limegreen, style=filled, label="int vkk_engine_newRenderpass(\nvkk_engine_t* self);"];
+	vkk_engine_newSwapchain                       [fillcolor=limegreen, style=filled, label="int vkk_engine_newSwapchain(\nvkk_engine_t* self);"];
+	vkk_engine_newDepth                           [fillcolor=limegreen, style=filled, label="int vkk_engine_newDepth(\nvkk_engine_t* self);"];
+	vkk_engine_newFramebuffer                     [fillcolor=limegreen, style=filled, label="int vkk_engine_newFramebuffer(\nvkk_engine_t* self);"];
+	vkk_engine_newSwapchain2                      [fillcolor=limegreen, style=filled, label="int vkk_engine_newSwapchain(\nvkk_engine_t* self);"];
+	vkk_engine_newDepth2                          [fillcolor=limegreen, style=filled, label="int vkk_engine_newDepth(\nvkk_engine_t* self);"];
+	vkk_engine_newFramebuffer2                    [fillcolor=limegreen, style=filled, label="int vkk_engine_newFramebuffer(\nvkk_engine_t* self);"];
+	vkk_engine_newCommandBuffers                  [fillcolor=limegreen, style=filled, label="int vkk_engine_newCommandBuffers(\nvkk_engine_t* self);"];
+	vkk_engine_newSemaphores                      [fillcolor=limegreen, style=filled, label="int vkk_engine_newSemaphores(\nvkk_engine_t* self);"];
+	vkk_engine_deleteSwapchain                    [fillcolor=limegreen, style=filled, label="int vkk_engine_deleteSwapchain(\nvkk_engine_t* self);"];
+	vkk_engine_deleteDepth                        [fillcolor=limegreen, style=filled, label="int vkk_engine_deleteDepth(\nvkk_engine_t* self);"];
+	vkk_engine_deleteFramebuffer                  [fillcolor=limegreen, style=filled, label="int vkk_engine_deleteFramebuffer(\nvkk_engine_t* self);"];
+	vkk_engine_delete                             [fillcolor=palegreen, style=filled, label="void vkk_engine_delete(\nvkk_engine_t** _self);"];
+	vkk_engine_getMemoryTypeIndex                 [fillcolor=limegreen, style=filled, label="int vkk_engine_getMemoryTypeIndex(\nvkk_engine_t* self,\nuint32_t mt_bits,\nVkFlags mp_flags,\nuint32_t* mt_index);"];
+	vkk_engine_hasDeviceExtensions                [fillcolor=limegreen, style=filled, label="int vkk_engine_hasDeviceExtensions(\nvkk_engine_t* self,\nuint32_t count,\nconst char** names);"];
+	vkk_engine_importShaderModule                 [fillcolor=limegreen, style=filled, label="uint32_t* vkk_engine_importShaderModule(\nvkk_engine_t* self,\nconst char* fname,\nsize_t* size);"];
+	vkk_engine_beginFrame                         [fillcolor=palegreen, style=filled, label="void vkk_engine_beginFrame(\nvkk_engine_t* self\ncc_vec4f_t* clear_color);"];
+	vkk_engine_endFrame                           [fillcolor=palegreen, style=filled, label="void vkk_engine_endFrame(\nvkk_engine_t* self);"];
+	vkk_engine_beginSemaphore                     [fillcolor=limegreen, style=filled, label="void vkk_engine_beginSemaphore(\nvkk_engine_t* self,\nVkSemaphore* semaphore_acquire,\nVkSemaphore* semaphore_submit);"];
+	vkk_engine_endSemaphore                       [fillcolor=limegreen, style=filled, label="void vkk_engine_endSemaphore(\nvkk_engine_t* self,\nVkSemaphore* semaphore_acquire,\nVkSemaphore* semaphore_submit);"];
+	vkk_engine_getShaderModule                    [fillcolor=limegreen, style=filled, label="VkShaderModule vkk_engine_getShaderModule(\nvkk_engine_t* self,\nconst char* fname);"];
+	vkk_engine_newBuffer                          [fillcolor=palegreen, style=filled, label="vkk_buffer_t* vkk_engine_newBuffer(\nvkk_engine_t* self,\nint dynamic,\nint usage,\nsize_t size,\nconst void* buf);"];
+	vkk_engine_deleteBuffer                       [fillcolor=palegreen, style=filled, label="void vkk_engine_deleteBuffer(\nvkk_engine_t* self,\nvkk_buffer_t** _buffer);"];
+	vkk_engine_updateBuffer                       [fillcolor=palegreen, style=filled, label="void vkk_engine_updateBuffer(\nvkk_engine_t* self,\nvkk_buffer_t* buffer,\nconst void* buf);"];
+	vkk_engine_writeDescriptorSetUB               [fillcolor=palegreen, style=filled, label="void vkk_engine_writeDescriptorSetUB(\nvkk_engine_t* self,\nvkk_descriptorSet_t* ds,\nvkk_buffer_t* buffer,\nuint32_t binding);"];
+	vkk_engine_bindDescriptorSet                  [fillcolor=palegreen, style=filled, label="void vkk_engine_bindDescriptorSet(\nvkk_engine_t* self,\nvkk_pipelineLayout_t* pl,\nvkk_descriptorSet_t* ds);"];
+	vkk_engine_newDescriptorSetFactory            [fillcolor=palegreen, style=filled, label="vkk_descriptorSetFactory_t* vkk_engine_newDescriptorSetFactory(\nvkk_engine_t* self,\nint dynamic,\nuint32_t count,\nvkk_descriptorSetBinding_t* dsb_array);"];
+	vkk_engine_deleteDescriptorSetFactory         [fillcolor=palegreen, style=filled, label="void vkk_engine_deleteDescriptorSetFactory(\nvkk_engine_t* self,\nvkk_descriptorSetFactory_t** _dsf);"];
+	vkk_engine_newDescriptorSet                   [fillcolor=palegreen, style=filled, label="vkk_descriptorSet_t* vkk_engine_newDescriptorSet(\nvkk_engine_t* self,\nvkk_descriptorSetFactory_t* dsf);"];
+	vkk_engine_deleteDescriptorSet                [fillcolor=palegreen, style=filled, label="void vkk_engine_deleteDescriptorSet(\nvkk_engine_t* self,\nvkk_descriptorSet_t** _ds);"];
+	vkk_engine_newPipelineLayout                  [fillcolor=palegreen, style=filled, label="vkk_pipelineLayout_t* vkk_engine_newPipelineLayout(\nvkk_engine_t* self,\nuint32_t dsf_count,\nvkk_descriptorSetFactory_t* dsf_array);"];
+	vkk_engine_deletePipelineLayout               [fillcolor=palegreen, style=filled, label="void vkk_engine_deletePipelineLayout(vkk_engine_t* self,\nvkk_pipelineLayout_t** _pl);"];
+	vkk_engine_newGraphicsPipeline                [fillcolor=palegreen, style=filled, label="vkk_graphicsPipeline_t* vkk_engine_newGraphicsPipeline(\nvkk_engine_t* self,\nvkk_graphicsPipelineInfo_t* gpi);"];
+	vkk_engine_deleteGraphicsPipeline             [fillcolor=palegreen, style=filled, label="void vkk_engine_deleteGraphicsPipeline(\nvkk_engine_t* self,\nvkk_graphicsPipeline_t** _gp);"];
+	vkk_engine_bindGraphicsPipeline               [fillcolor=palegreen, style=filled, label="void vkk_engine_bindGraphicsPipeline(\nvkk_engine_t* self\nvkk_graphicsPipeline_t* gp);"];
+	vkk_engine_draw                               [fillcolor=palegreen, style=filled, label="void vkk_engine_draw(\nvkk_engine_t* self,\nuint32_t vertex_count,\nuint32_t vertex_buffer_count,\nvkk_buffer_t** vertex_buffers);"];
+	vkk_engine_drawIndexed                        [fillcolor=palegreen, style=filled, label="void vkk_engine_drawIndexed(\nvkk_engine_t* self,\nuint32_t vertex_count,\nuint32_t vertex_buffer_count,\nint index_type,\nvkk_buffer_t* index_buffer,\nvkk_buffer_t** vertex_buffers);"];
+	vkk_engine_newDescriptorSetPool               [fillcolor=limegreen, style=filled, label="VkDescriptorPool vkk_engine_newDescriptorSetPool(\nvkk_engine_t* self,\nvkk_descriptorSetFactory_t* dsf);"];
+	vkk_engine_newSampler                         [fillcolor=palegreen, style=filled, label="vkk_sampler_t* vkk_engine_newSampler(\nvkk_engine_t* self);"];
+	vkk_engine_deleteSampler                      [fillcolor=palegreen, style=filled, label="void vkk_engine_deleteSampler(\nvkk_engine_t* self,\nvkk_sampler_t** _sampler);"];
+
+	// SDL functions
+	SDL_Init                 [fillcolor=plum, style=filled, label="SDL_Init(SDL_INIT_VIDEO);"];
+	SDL_CreateWindow         [fillcolor=plum, style=filled, label="SDL_Window* SDL_CreateWindow(\nconst char* title,\nint x, int y,\nint w, int h,\nUint32 flags);"];
+	SDL_Vulkan_CreateSurface [fillcolor=plum, style=filled, label="SDL_bool SDL_Vulkan_CreateSurface(\nSDL_Window* window,\nVkInstance instance,\nVkSurfaceKHR* surface);"];
+
+	// parameters
+	vkCreateShaderModule                        -> VkShaderModuleCreateInfo                  [label="pCreateInfo"];
+	vkCreateRenderPass                          -> VkRenderPass                              [label="pRenderPass"];
+	vkCreateRenderPass                          -> VkRenderPassCreateInfo                    [label="pCreateInfo"];
+	vkCreateInstance                            -> VkInstance                                [label="pInstance"];
+	vkCreateInstance                            -> VkInstanceCreateInfo                      [label="pCreateInfo"];
+	VkInstanceCreateInfo                        -> VkApplicationInfo                         [label="pApplicationInfo"];
+	vkEnumeratePhysicalDevices                  -> VkPhysicalDevice                          [label="pPhysicalDevices"];
+	vkGetPhysicalDeviceMemoryProperties         -> VkPhysicalDeviceMemoryProperties          [label="pMemoryProperties"];
+	VkPhysicalDeviceMemoryProperties            -> VkMemoryType                              [label="memoryTypes"];
+	VkMemoryType                                -> VkMemoryPropertyFlags                     [label="propertyFlags"];
+	VkPhysicalDeviceMemoryProperties            -> VkMemoryHeap                              [label="memoryHeaps"];
+	vkGetPhysicalDeviceQueueFamilyProperties    -> VkQueueFamilyProperties                   [label="pQueueFamilyProperties"];
+	VkQueueFamilyProperties                     -> VkQueueFlags                              [label="queueFlags"];
+	vkCreateDevice                              -> VkDeviceCreateInfo                        [label="pCreateInfo"];
+	vkCreateDevice                              -> VkDevice                                  [label="pDevice"];
+	VkDeviceCreateInfo                          -> VkDeviceQueueCreateInfo                   [label="pQueueCreateInfos"];
+	vkEnumerateDeviceExtensionProperties        -> VkExtensionProperties                     [label="pProperties"];
+	VkMemoryHeap                                -> VkMemoryHeapFlagBits                      [label="flags"];
+	VkDeviceCreateInfo                          -> VkPhysicalDeviceFeatures                  [label="pEnabledFeatures"];
+	vkCreatePipelineCache                       -> VkPipelineCacheCreateInfo                 [label="pCreateInfo"];
+	vkCreatePipelineCache                       -> VkPipelineCache                           [label="pPipelineCache"];
+	vkCreateCommandPool                         -> VkCommandPoolCreateInfo                   [label="pCreateInfo"];
+	vkCreateCommandPool                         -> VkCommandPool                             [label="pCommandPool"];
+	vkGetDeviceQueue                            -> VkQueue                                   [label="qQueue"];
+	VkDescriptorPoolCreateInfo                  -> VkDescriptorPoolSize                      [label="pPoolSizes"];
+	vkCreateDescriptorPool                      -> VkDescriptorPoolCreateInfo                [label="pCreateInfo"];
+	vkCreateDescriptorPool                      -> VkDescriptorPool                          [label="pDescriptorPool"];
+	VkDescriptorPoolSize                        -> VkDescriptorType                          [label="type"];
+	vkCreateSwapchainKHR                        -> VkSwapchainCreateInfoKHR                  [label="pCreateInfo"];
+	vkCreateSwapchainKHR                        -> VkSwapchainKHR                            [label="pSwapchain"];
+	VkSwapchainCreateInfoKHR                    -> VkSharingMode                             [label="imageSharingMode"];
+	VkSwapchainCreateInfoKHR                    -> VkPresentModeKHR                          [label="presentMode"];
+	vkGetPhysicalDeviceSurfacePresentModesKHR   -> VkPresentModeKHR                          [label="pPresentModes"];
+	vkGetPhysicalDeviceSurfaceFormatsKHR        -> VkSurfaceFormatKHR                        [label="pSurfaceFormats"];
+	vkCreateFence                               -> VkFence                                   [label="pFence"];
+	vkCreateFence                               -> VkFenceCreateInfo                         [label="pCreateInfo"];
+	vkk_engine_new                              -> vkk_engine_t;
+	vkk_engine_new                              -> vkk_engine_initSDL                        [label="first (Linux)"];
+	vkk_engine_new                              -> vkk_engine_newInstance                    [label="second"];
+	vkk_engine_new                              -> vkk_engine_newSurface                     [label="third"];
+	vkk_engine_new                              -> vkk_engine_getPhysicalDevice              [label="fourth"];
+	vkk_engine_new                              -> vkk_engine_newDevice                      [label="fifth"];
+	vkk_engine_new                              -> vkk_engine_newCacheAndPools               [label="sixth"];
+	vkk_engine_new                              -> vkk_engine_newSwapchain                   [label="seventh"];
+	vkk_engine_new                              -> vkk_engine_newRenderpass                  [label="eighth"];
+	vkk_engine_new                              -> vkk_engine_newDepth                       [label="ninth"];
+	vkk_engine_new                              -> vkk_engine_newFramebuffer                 [label="tenth"];
+	vkk_engine_new                              -> vkk_engine_newCommandBuffers              [label="eleventh"];
+	vkk_engine_new                              -> vkk_engine_newSemaphores                  [label="twelfth"];
+	vkk_engine_resize                           -> vkDeviceWaitIdle                          [label="first"];
+	vkk_engine_resize                           -> vkk_engine_deleteDepth                    [label="second"];
+	vkk_engine_resize                           -> vkk_engine_deleteFramebuffer              [label="third"];
+	vkk_engine_resize                           -> vkk_engine_deleteSwapchain                [label="fourth"];
+	vkk_engine_resize                           -> vkk_engine_newSwapchain2                  [label="fifth"];
+	vkk_engine_resize                           -> vkk_engine_newDepth2                      [label="sixth"];
+	vkk_engine_resize                           -> vkk_engine_newFramebuffer2                [label="seventh"];
+	vkk_engine_getMemoryTypeIndex               -> vkGetPhysicalDeviceMemoryProperties;
+	vkk_engine_hasDeviceExtensions              -> vkEnumerateDeviceExtensionProperties;
+	vkk_engine_initSDL                          -> SDL_Init                                  [label="first"];
+	vkk_engine_initSDL                          -> SDL_CreateWindow                          [label="second"];
+	vkk_engine_newInstance                      -> vkCreateInstance;
+	vkk_engine_newSurface                       -> SDL_Vulkan_CreateSurface                  [label="(Linux)"];
+	vkk_engine_newSurface                       -> vkCreateAndroidSurfaceKHR                 [label="(Android)"];
+	vkk_engine_getPhysicalDevice                -> vkEnumeratePhysicalDevices;
+	vkk_engine_newDevice                        -> vkk_engine_hasDeviceExtensions            [label="first"];
+	vkk_engine_newDevice                        -> vkGetPhysicalDeviceQueueFamilyProperties  [label="second"];
+	vkk_engine_newDevice                        -> vkGetPhysicalDeviceSurfaceSupportKHR      [label="third"];
+	vkk_engine_newDevice                        -> vkCreateDevice                            [label="fourth"];
+	vkk_engine_newDevice                        -> vkGetDeviceQueue                          [label="fifth"];
+	vkk_engine_newCacheAndPools                 -> vkCreatePipelineCache                     [label="first"];
+	vkk_engine_newCacheAndPools                 -> vkCreateCommandPool                       [label="second"];
+	vkk_engine_newSwapchain                     -> vkGetPhysicalDeviceSurfaceCapabilitiesKHR [label="first"];
+	vkk_engine_newSwapchain                     -> vkGetPhysicalDeviceSurfaceFormatsKHR      [label="second"];
+	vkk_engine_newSwapchain                     -> vkGetPhysicalDeviceSurfacePresentModesKHR [label="third"];
+	vkk_engine_newSwapchain                     -> vkCreateSwapchainKHR                      [label="fourth"];
+	vkk_engine_newSwapchain                     -> vkGetSwapchainImagesKHR                   [label="fifth"];
+	vkk_engine_newSwapchain                     -> vkCreateFence                             [label="sixth"];
+	vkk_engine_newRenderpass                    -> vkCreateRenderPass;
+	vkk_engine_newDepth                         -> vkCreateImage                             [label="first"];
+	vkk_engine_newDepth                         -> vkGetImageMemoryRequirements              [label="second"];
+	vkk_engine_newDepth                         -> vkk_engine_getMemoryTypeIndex             [label="third"];
+	vkk_engine_newDepth                         -> vkAllocateMemory                          [label="fourth"];
+	vkk_engine_newDepth                         -> vkBindImageMemory                         [label="fifth"];
+	vkk_engine_newDepth                         -> vkCreateImageView                         [label="sixth"];
+	vkk_engine_newFramebuffer                   -> vkCreateImageView                         [label="first"];
+	vkk_engine_newFramebuffer                   -> vkCreateFramebuffer                       [label="second"];
+	vkk_engine_newCommandBuffers                -> vkAllocateCommandBuffers;
+	vkk_engine_newSemaphores                    -> vkCreateSemaphore;
+	my_app_new                                  -> my_app_t;
+	my_app_new                                  -> vkk_engine_new;
+	my_app_new                                  -> vkk_engine_newPipelineLayout;
+	my_app_new                                  -> vkk_engine_newGraphicsPipeline;
+	my_app_new                                  -> vkk_engine_newDescriptorSetFactory;
+	my_app_new                                  -> vkk_engine_newBuffer;
+	my_app_new                                  -> vkk_engine_newDescriptorSet;
+	my_app_new                                  -> vkk_engine_writeDescriptorSetUB;
+	my_app_new                                  -> vkk_engine_newSampler;
+	vkk_engine_newPipelineLayout                -> vkk_pipelineLayout_t;
+	vkk_engine_newPipelineLayout                -> vkCreatePipelineLayout;
+	vkk_engine_newGraphicsPipeline              -> vkk_graphicsPipelineInfo_t;
+	vkk_graphicsPipelineInfo_t                  -> VKK_PRIMITIVE_MODE [label="primitive_mode"];
+	vkk_graphicsPipelineInfo_t                  -> VKK_BLEND_MODE     [label="blend_mode"];
+	vkk_graphicsPipelineInfo_t                  -> vkk_vertexBufferInfo_t;
+	vkk_vertexBufferInfo_t                      -> VKK_VERTEX_FORMAT [label="format"];
+	vkk_engine_newGraphicsPipeline              -> vkk_graphicsPipeline_t;
+	vkk_engine_newGraphicsPipeline              -> vkCreateGraphicsPipelines;
+	vkk_engine_newGraphicsPipeline              -> vkk_engine_getShaderModule;
+	vkk_engine_newDescriptorSetPool             -> vkCreateDescriptorPool;
+	vkk_engine_getShaderModule                  -> vkCreateShaderModule;
+	vkk_engine_getShaderModule                  -> vkk_engine_importShaderModule;
+	my_app_delete                               -> vkk_engine_delete;
+	my_app_resize                               -> vkk_engine_resize;
+	my_app_draw                                 -> vkk_engine_beginFrame       [label="first"];
+	my_app_draw                                 -> vkk_engine_bindGraphicsPipeline  [label="second"];
+	vkk_engine_bindGraphicsPipeline             -> vkCmdBindPipeline;
+	my_app_draw                                 -> vkk_engine_draw             [label="fourth"];
+	my_app_draw                                 -> vkk_engine_drawIndexed      [label="fourth"];
+	vkk_engine_draw                             -> vkCmdBindVertexBuffers;
+	vkk_engine_draw                             -> vkCmdDraw;
+	vkk_engine_drawIndexed                      -> vkCmdBindIndexBuffer;
+	vkk_engine_drawIndexed                      -> vkCmdBindVertexBuffers;
+	vkk_engine_drawIndexed                      -> vkCmdDrawIndexed;
+	my_app_draw                                 -> vkk_engine_endFrame         [label="fifth"];
+	vkk_engine_beginFrame                       -> vkk_engine_beginSemaphore   [label="first"];
+	vkk_engine_beginFrame                       -> vkAcquireNextImageKHR       [label="second"];
+	vkk_engine_beginFrame                       -> vkWaitForFences             [label="third"];
+	vkk_engine_beginFrame                       -> vkResetFences               [label="fourth"];
+	vkk_engine_beginFrame                       -> vkResetCommandBuffer        [label="fifth"];
+	vkk_engine_beginFrame                       -> vkBeginCommandBuffer        [label="sixth"];
+	vkk_engine_beginFrame                       -> vkCmdPipelineBarrier        [label="seventh"];
+	vkk_engine_beginFrame                       -> vkCmdSetViewport            [label="eighth"];
+	vkk_engine_beginFrame                       -> vkCmdSetScissor             [label="ninth"];
+	vkk_engine_beginFrame                       -> vkCmdBeginRenderPass        [label="tenth"];
+	vkk_engine_endFrame                         -> vkk_engine_endSemaphore     [label="first"];
+	vkk_engine_endFrame                         -> vkCmdEndRenderPass          [label="second"];
+	vkk_engine_endFrame                         -> vkEndCommandBuffer          [label="third"];
+	vkk_engine_endFrame                         -> vkQueueSubmit               [label="fourth"];
+	vkk_engine_endFrame                         -> vkQueuePresentKHR           [label="fifth"];
+	vkCreateSampler                             -> VkSampler;
+	vkCreateSampler                             -> VkSamplerCreateInfo;
+	vkCreateGraphicsPipelines                   -> VkPipeline;
+	vkCreateGraphicsPipelines                   -> VkGraphicsPipelineCreateInfo              [label="pCreateInfos"];
+	VkGraphicsPipelineCreateInfo                -> VkPipelineShaderStageCreateInfo           [label="pStages"];
+	VkGraphicsPipelineCreateInfo                -> VkPipelineVertexInputStateCreateInfo      [label="pVertexInputState"];
+	VkGraphicsPipelineCreateInfo                -> VkPipelineInputAssemblyStateCreateInfo    [label="pInputAssemblyState"];
+	VkGraphicsPipelineCreateInfo                -> VkPipelineTessellationStateCreateInfo     [label="pTesselationState"];
+	VkGraphicsPipelineCreateInfo                -> VkPipelineViewportStateCreateInfo         [label="pViewportState"];
+	VkGraphicsPipelineCreateInfo                -> VkPipelineRasterizationStateCreateInfo    [label="pRasterizationState"];
+	VkGraphicsPipelineCreateInfo                -> VkPipelineMultisampleStateCreateInfo      [label="pMultisampleState"];
+	VkGraphicsPipelineCreateInfo                -> VkPipelineDepthStencilStateCreateInfo     [label="pDepthStencilState"];
+	VkGraphicsPipelineCreateInfo                -> VkPipelineColorBlendStateCreateInfo       [label="pColorBlendState"];
+	VkGraphicsPipelineCreateInfo                -> VkPipelineDynamicStateCreateInfo          [label="pDynamicState"];
+	vkCreateDescriptorSetLayout                 -> VkDescriptorSetLayoutCreateInfo           [label="pCreateInfo"];
+	vkCreateDescriptorSetLayout                 -> VkDescriptorSetLayout                     [label="pSetLayout"];
+	SDL_CreateWindow                            -> SDL_WINDOW                                [label="flags"];
+	SDL_CreateWindow                            -> SDL_Window;
+	SDL_Vulkan_CreateSurface                    -> VkSurfaceKHR                              [label="surface"];
+	vkCreateAndroidSurfaceKHR                   -> VkAndroidSurfaceCreateInfoKHR             [label="pCreateInfo"];
+	vkCreateAndroidSurfaceKHR                   -> VkSurfaceKHR                              [label="pSurface"];
+	vkGetPhysicalDeviceSurfaceCapabilitiesKHR   -> VkSurfaceCapabilitiesKHR                  [label="pSurfaceCapabilities"];
+	VkRenderPassCreateInfo                      -> VkAttachmentDescription                   [label="pAttachments"];
+	VkRenderPassCreateInfo                      -> VkSubpassDescription                      [label="pSubpasses"];
+	VkRenderPassCreateInfo                      -> VkSubpassDependency                       [label="pDependencies"];
+	VkSubpassDescription                        -> VkAttachmentReference                     [label="pInputAttachments\npColorAttachments\npResolveAttachments\npDepthStencilAttachment"];
+	VkSubpassDescription                        -> VkPipelineBindPoint                       [label="pipelineBindPoint"];
+	VkAttachmentDescription                     -> VkAttachmentLoadOp                        [label="loadOp\nstencilLoadOp"];
+	VkAttachmentDescription                     -> VkAttachmentStoreOp                       [label="storeOp\nstencilStoreOp"];
+	VkAttachmentReference                       -> VkImageLayout                             [label="layout"];
+	VkAttachmentDescription                     -> VkImageLayout                             [label="initialLayout\nfinalLayout"];
+	VkImageCreateInfo                           -> VkImageLayout                             [label="initialLayout"];
+	VkAttachmentDescription                     -> VkSampleCountFlagBits                     [label="samples"];
+	vkCreateImage                               -> VkImageCreateInfo                         [label="pCreateInfo"];
+	vkCreateImage                               -> VkImage                                   [label="pImage"];
+	vkAllocateMemory                            -> VkDeviceMemory                            [label="pMemory"];
+	vkAllocateMemory                            -> VkMemoryAllocateInfo                      [label="pAllocateInfo"];
+	vkCreateImageView                           -> VkImageViewCreateInfo                     [label="pCreateInfo"];
+	vkCreateImageView                           -> VkImageView                               [label="pView"];
+	VkImageViewCreateInfo                       -> VkImageViewType                           [label="viewType"];
+	VkImageViewCreateInfo                       -> VkComponentMapping                        [label="components"]
+	VkImageViewCreateInfo                       -> VkImageSubresourceRange                   [label="subresourceRange"];
+	VkImageSubresourceRange                     -> VkImageAspectFlags                        [label="aspectMask"];
+	vkGetImageMemoryRequirements                -> VkMemoryRequirements                      [label="pMemoryRequirements"];
+	vkGetBufferMemoryRequirements               -> VkMemoryRequirements                      [label="pMemoryRequirements"];
+	vkCreateFramebuffer                         -> VkFramebufferCreateInfo                   [label="pCreateInfo"];
+	vkCreateFramebuffer                         -> VkFramebuffer                             [label="pFramebuffer"];
+	vkAllocateCommandBuffers                    -> VkCommandBuffer                           [label="pCommandBuffers"];
+	vkAllocateCommandBuffers                    -> VkCommandBufferAllocateInfo               [label="pAllocateInfo"];
+	vkCreateSemaphore                           -> VkSemaphoreCreateInfo;
+	vkCreateSemaphore                           -> VkSemaphore                               [label="pSemaphore"];
+	vkCreateShaderModule                        -> VkShaderModule                            [label="pShaderModule"];
+	VkDescriptorSetLayoutCreateInfo             -> VkDescriptorSetLayoutBinding              [label="pBindings"];
+	vkCreatePipelineLayout                      -> VkPipelineLayout                          [label="pPipelineLayout"];
+	vkCreatePipelineLayout                      -> VkPipelineLayoutCreateInfo                [label="pCreateInfo"];
+	vkQueuePresentKHR                           -> VkPresentInfoKHR                          [label="pPresentInfo"];
+	vkQueueSubmit                               -> VkSubmitInfo                              [label="pSubmits"];
+	vkCmdBeginRenderPass                        -> VkRenderPassBeginInfo                     [label="pRenderPassBegin"];
+	vkBeginCommandBuffer                        -> VkCommandBufferBeginInfo                  [label="pBeginInfo"];
+	VkCommandBufferBeginInfo                    -> VkCommandBufferInheritanceInfo            [label="pInheritanceInfo"];
+	vkk_engine_newBuffer                        -> vkk_buffer_t;
+	vkk_engine_newBuffer                        -> vkCreateBuffer;
+	vkk_engine_newBuffer                        -> vkGetBufferMemoryRequirements;
+	vkk_engine_newBuffer                        -> vkk_engine_getMemoryTypeIndex;
+	vkk_engine_newBuffer                        -> vkAllocateMemory;
+	vkk_engine_newBuffer                        -> vkMapMemory;
+	vkk_engine_newBuffer                        -> vkUnmapMemory;
+	vkk_engine_newBuffer                        -> vkBindBufferMemory;
+	vkk_engine_newBuffer                        -> VKK_BUFFER_USAGE;
+	vkk_engine_updateBuffer                     -> vkMapMemory;
+	vkk_engine_updateBuffer                     -> vkUnmapMemory;
+	vkk_engine_newDescriptorSetFactory          -> vkk_descriptorSetFactory_t;
+	vkk_engine_newDescriptorSetFactory          -> vkk_descriptorSetBinding_t [label="dsb_array"];
+	vkk_engine_newDescriptorSetFactory          -> vkCreateDescriptorSetLayout;
+	vkk_engine_newDescriptorSet                 -> vkk_descriptorSet_t;
+	vkk_engine_newDescriptorSet                 -> vkAllocateDescriptorSets;
+	vkk_engine_newDescriptorSet                 -> vkk_engine_newDescriptorSetPool;
+	vkAllocateDescriptorSets                    -> VkDescriptorSetAllocateInfo;
+	vkAllocateDescriptorSets                    -> VkDescriptorSet;
+	vkk_engine_bindDescriptorSet                -> vkCmdBindDescriptorSets;
+	vkk_engine_writeDescriptorSetUB             -> vkUpdateDescriptorSets;
+	VkWriteDescriptorSet                        -> VkDescriptorBufferInfo;
+	vkUpdateDescriptorSets                      -> VkWriteDescriptorSet;
+	vkCreateBuffer                              -> VkBuffer;
+	vkCreateBuffer                              -> VkBufferCreateInfo;
+	my_app_delete                               -> vkk_engine_deleteBuffer;
+	my_app_delete                               -> vkk_engine_deleteSampler;
+	my_app_delete                               -> vkk_engine_deleteDescriptorSetFactory;
+	my_app_delete                               -> vkk_engine_deletePipelineLayout;
+	my_app_delete                               -> vkk_engine_deleteGraphicsPipeline;
+	my_app_delete                               -> vkk_engine_deleteDescriptorSet;
+	my_app_draw                                 -> vkk_engine_updateBuffer;
+	my_app_draw                                 -> vkk_engine_bindDescriptorSet      [label="third"];
+	VkPipelineVertexInputStateCreateInfo        -> VkVertexInputBindingDescription   [label="pVertexBindingDescriptions"];
+	VkPipelineVertexInputStateCreateInfo        -> VkVertexInputAttributeDescription [label="pVertexAttributeDescriptions"];
+	vkk_descriptorSetBinding_t                  -> VKK_STAGE_FLAGS                   [label="stage"];
+	vkk_descriptorSetBinding_t                  -> VKK_DESCRIPTOR_SET_TYPE           [label="type"];
+	vkk_engine_newSampler                       -> vkk_sampler_t;
+	vkk_engine_newSampler                       -> vkCreateSampler;
+}
