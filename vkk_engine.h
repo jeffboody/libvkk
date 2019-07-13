@@ -36,10 +36,10 @@
 #include "../libcc/cc_list.h"
 #include "../libcc/cc_map.h"
 
-#define VKK_PRIMITIVE_MODE_TRIANGLE_LIST  0
-#define VKK_PRIMITIVE_MODE_TRIANGLE_STRIP 1
-#define VKK_PRIMITIVE_MODE_TRIANGLE_FAN   2
-#define VKK_PRIMITIVE_MODE_TRIANGLE_COUNT 3
+#define VKK_PRIMITIVE_TRIANGLE_LIST  0
+#define VKK_PRIMITIVE_TRIANGLE_STRIP 1
+#define VKK_PRIMITIVE_TRIANGLE_FAN   2
+#define VKK_PRIMITIVE_TRIANGLE_COUNT 3
 
 #define VKK_VERTEX_FORMAT_FLOAT 0
 #define VKK_VERTEX_FORMAT_INT   1
@@ -50,17 +50,17 @@
 #define VKK_INDEX_TYPE_UINT   1
 #define VKK_INDEX_TYPE_COUNT  2
 
-#define VKK_DESCRIPTOR_SET_TYPE_UNIFORM_BUFFER 0
-#define VKK_DESCRIPTOR_SET_TYPE_SAMPLER        1
-#define VKK_DESCRIPTOR_SET_TYPE_COUNT          2
+#define VKK_UNIFORM_TYPE_BUFFER  0
+#define VKK_UNIFORM_TYPE_SAMPLER 1
+#define VKK_UNIFORM_TYPE_COUNT   2
 
 #define VKK_BUFFER_USAGE_UNIFORM 0
 #define VKK_BUFFER_USAGE_VERTEX  1
 #define VKK_BUFFER_USAGE_COUNT   2
 
-#define VKK_STAGE_FLAGS_VS   1
-#define VKK_STAGE_FLAGS_FS   2
-#define VKK_STAGE_FLAGS_VSFS 3
+#define VKK_STAGE_VS   1
+#define VKK_STAGE_FS   2
+#define VKK_STAGE_VSFS 3
 
 typedef struct
 {
@@ -81,7 +81,7 @@ typedef struct
 	int            type;
 	int            stage;
 	vkk_sampler_t* sampler;
-} vkk_descriptorSetBinding_t;
+} vkk_uniformBinding_t;
 
 typedef struct
 {
@@ -89,16 +89,15 @@ typedef struct
 	uint32_t              ds_available;
 	VkDescriptorSetLayout ds_layout;
 	cc_list_t*            dp_list;
-	cc_list_t*            ds_list;
-	char                  type_count[VKK_DESCRIPTOR_SET_TYPE_COUNT];
-} vkk_descriptorSetFactory_t;
+	cc_list_t*            us_list;
+	char                  type_count[VKK_UNIFORM_TYPE_COUNT];
+} vkk_uniformSetFactory_t;
 
 typedef struct
 {
-	int                         dynamic;
-	VkDescriptorSet*            ds_array;
-	vkk_descriptorSetFactory_t* dsf;
-} vkk_descriptorSet_t;
+	VkDescriptorSet*         ds_array;
+	vkk_uniformSetFactory_t* usf;
+} vkk_uniformSet_t;
 
 typedef struct
 {
@@ -119,7 +118,7 @@ typedef struct
 	const char*             fs;
 	uint32_t                vb_count;
 	vkk_vertexBufferInfo_t* vbi;
-	int                     primitive_mode;
+	int                     primitive;
 	int                     primitive_restart;
 	int                     cull_back;
 	int                     depth_test;
@@ -191,64 +190,64 @@ typedef struct
 	cc_map_t* shader_modules;
 } vkk_engine_t;
 
-vkk_engine_t*               vkk_engine_new(void* app,
-                                           const char* app_name,
-                                           uint32_t app_version);
-void                        vkk_engine_delete(vkk_engine_t** _self);
-void                        vkk_engine_waitForIdle(vkk_engine_t* self);
-int                         vkk_engine_resize(vkk_engine_t* self,
-                                              uint32_t* _width,
-                                              uint32_t* _height);
-int                         vkk_engine_beginFrame(vkk_engine_t* self,
-                                                  float* clear_color);
-void                        vkk_engine_endFrame(vkk_engine_t* self);
-vkk_buffer_t*               vkk_engine_newBuffer(vkk_engine_t* self,
-                                                 int dynamic,
-                                                 int usage,
-                                                 size_t size,
+vkk_engine_t*            vkk_engine_new(void* app,
+                                        const char* app_name,
+                                        uint32_t app_version);
+void                     vkk_engine_delete(vkk_engine_t** _self);
+void                     vkk_engine_waitForIdle(vkk_engine_t* self);
+int                      vkk_engine_resize(vkk_engine_t* self,
+                                           uint32_t* _width,
+                                           uint32_t* _height);
+int                      vkk_engine_beginFrame(vkk_engine_t* self,
+                                               float* clear_color);
+void                     vkk_engine_endFrame(vkk_engine_t* self);
+vkk_buffer_t*            vkk_engine_newBuffer(vkk_engine_t* self,
+                                              int dynamic,
+                                              int usage,
+                                              size_t size,
+                                              const void* buf);
+void                     vkk_engine_deleteBuffer(vkk_engine_t* self,
+                                                 vkk_buffer_t** _buffer);
+void                     vkk_engine_updateBuffer(vkk_engine_t* self,
+                                                 vkk_buffer_t* buffer,
                                                  const void* buf);
-void                        vkk_engine_deleteBuffer(vkk_engine_t* self,
-                                                    vkk_buffer_t** _buffer);
-void                        vkk_engine_updateBuffer(vkk_engine_t* self,
-                                                    vkk_buffer_t* buffer,
-                                                    const void* buf);
-vkk_descriptorSetFactory_t* vkk_engine_newDescriptorSetFactory(vkk_engine_t* self,
-                                                               int dynamic,
-                                                               uint32_t count,
-                                                               vkk_descriptorSetBinding_t* dsb_array);
-void                        vkk_engine_deleteDescriptorSetFactory(vkk_engine_t* self,
-                                                                  vkk_descriptorSetFactory_t** _dsf);
-vkk_descriptorSet_t*        vkk_engine_newDescriptorSet(vkk_engine_t* self,
-                                                        vkk_descriptorSetFactory_t* dsf);
-void                        vkk_engine_deleteDescriptorSet(vkk_engine_t* self,
-                                                           vkk_descriptorSet_t** _ds);
-void                        vkk_engine_writeDescriptorSetUB(vkk_engine_t* self,
-                                                            vkk_descriptorSet_t* ds,
-                                                            vkk_buffer_t* buffer,
-                                                            uint32_t binding);
-void                        vkk_engine_bindDescriptorSet(vkk_engine_t* self,
-                                                         vkk_pipelineLayout_t* pl,
-                                                         vkk_descriptorSet_t* ds);
-vkk_pipelineLayout_t*       vkk_engine_newPipelineLayout(vkk_engine_t* self,
-                                                         uint32_t dsf_count,
-                                                         vkk_descriptorSetFactory_t** dsf_array);
-void                        vkk_engine_deletePipelineLayout(vkk_engine_t* self,
-                                                            vkk_pipelineLayout_t** _pl);
-vkk_graphicsPipeline_t*     vkk_engine_newGraphicsPipeline(vkk_engine_t* self,
-                                                           vkk_graphicsPipelineInfo_t* gpi);
-void                        vkk_engine_deleteGraphicsPipeline(vkk_engine_t* self,
-                                                              vkk_graphicsPipeline_t** _gp);
-void                        vkk_engine_bindGraphicsPipeline(vkk_engine_t* self,
-                                                            vkk_graphicsPipeline_t* gp);
-void                        vkk_engine_draw(vkk_engine_t* self,
-                                            uint32_t vertex_count,
-                                            uint32_t vertex_buffer_count,
-                                            vkk_buffer_t** vertex_buffers);
-void                        vkk_engine_drawIndexed(vkk_engine_t* self,
-                                                   uint32_t vertex_count,
-                                                   uint32_t vertex_buffer_count,
-                                                   int index_type,
-                                                   vkk_buffer_t* index_buffer,
-                                                   vkk_buffer_t** vertex_buffers);
+vkk_uniformSetFactory_t* vkk_engine_newUniformSetFactory(vkk_engine_t* self,
+                                                         int dynamic,
+                                                         uint32_t count,
+                                                         vkk_uniformBinding_t* ub_array);
+void                     vkk_engine_deleteUniformSetFactory(vkk_engine_t* self,
+                                                            vkk_uniformSetFactory_t** _usf);
+vkk_uniformSet_t*        vkk_engine_newUniformSet(vkk_engine_t* self,
+                                                  vkk_uniformSetFactory_t* usf);
+void                     vkk_engine_deleteUniformSet(vkk_engine_t* self,
+                                                     vkk_uniformSet_t** _us);
+void                     vkk_engine_attachUniformBuffer(vkk_engine_t* self,
+                                                        vkk_uniformSet_t* us,
+                                                        vkk_buffer_t* buffer,
+                                                        uint32_t binding);
+void                     vkk_engine_bindUniformSet(vkk_engine_t* self,
+                                                   vkk_pipelineLayout_t* pl,
+                                                   vkk_uniformSet_t* us);
+vkk_pipelineLayout_t*    vkk_engine_newPipelineLayout(vkk_engine_t* self,
+                                                      uint32_t usf_count,
+                                                      vkk_uniformSetFactory_t** usf_array);
+void                     vkk_engine_deletePipelineLayout(vkk_engine_t* self,
+                                                         vkk_pipelineLayout_t** _pl);
+vkk_graphicsPipeline_t*  vkk_engine_newGraphicsPipeline(vkk_engine_t* self,
+                                                        vkk_graphicsPipelineInfo_t* gpi);
+void                     vkk_engine_deleteGraphicsPipeline(vkk_engine_t* self,
+                                                           vkk_graphicsPipeline_t** _gp);
+void                     vkk_engine_bindGraphicsPipeline(vkk_engine_t* self,
+                                                         vkk_graphicsPipeline_t* gp);
+void                     vkk_engine_draw(vkk_engine_t* self,
+                                         uint32_t vertex_count,
+                                         uint32_t vertex_buffer_count,
+                                         vkk_buffer_t** vertex_buffers);
+void                     vkk_engine_drawIndexed(vkk_engine_t* self,
+                                                uint32_t vertex_count,
+                                                uint32_t vertex_buffer_count,
+                                                int index_type,
+                                                vkk_buffer_t* index_buffer,
+                                                vkk_buffer_t** vertex_buffers);
 
 #endif

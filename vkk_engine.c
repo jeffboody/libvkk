@@ -1464,12 +1464,12 @@ vkk_engine_endSemaphore(vkk_engine_t* self,
 
 static VkDescriptorPool
 vkk_engine_newDescriptorPool(vkk_engine_t* self,
-                             vkk_descriptorSetFactory_t* dsf)
+                             vkk_uniformSetFactory_t* usf)
 {
 	assert(self);
-	assert(dsf);
+	assert(usf);
 
-	VkDescriptorType dt_map[VKK_DESCRIPTOR_SET_TYPE_COUNT] =
+	VkDescriptorType dt_map[VKK_UNIFORM_TYPE_COUNT] =
 	{
 		VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
 		VK_DESCRIPTOR_TYPE_SAMPLER,
@@ -1480,11 +1480,11 @@ vkk_engine_newDescriptorPool(vkk_engine_t* self,
 	int      i;
 	uint32_t ps_count = 0;
 	uint32_t maxSets  = VKK_DESCRIPTOR_POOL_SIZE;
-	VkDescriptorPoolSize ps_array[VKK_DESCRIPTOR_SET_TYPE_COUNT];
-	for(i = 0; i < VKK_DESCRIPTOR_SET_TYPE_COUNT; ++i)
+	VkDescriptorPoolSize ps_array[VKK_UNIFORM_TYPE_COUNT];
+	for(i = 0; i < VKK_UNIFORM_TYPE_COUNT; ++i)
 	{
 		// ensure the factory can allocate maxSets of each type
-		char type_count = dsf->type_count[i];
+		char type_count = usf->type_count[i];
 		if(type_count)
 		{
 			VkDescriptorPoolSize* ps;
@@ -1524,13 +1524,13 @@ vkk_engine_newDescriptorPool(vkk_engine_t* self,
 	}
 
 	// append the descriptor pool
-	if(cc_list_append(dsf->dp_list, NULL,
+	if(cc_list_append(usf->dp_list, NULL,
 	                  (const void*) dp) == NULL)
 	{
 		goto fail_append_dp;
 	}
 
-	dsf->ds_available = VKK_DESCRIPTOR_POOL_SIZE;
+	usf->ds_available = VKK_DESCRIPTOR_POOL_SIZE;
 
 	// success
 	return dp;
@@ -2268,16 +2268,16 @@ void vkk_engine_updateBuffer(vkk_engine_t* self,
 	}
 }
 
-vkk_descriptorSetFactory_t*
-vkk_engine_newDescriptorSetFactory(vkk_engine_t* self,
-                                   int dynamic,
-                                   uint32_t count,
-                                   vkk_descriptorSetBinding_t* dsb_array)
+vkk_uniformSetFactory_t*
+vkk_engine_newUniformSetFactory(vkk_engine_t* self,
+                                int dynamic,
+                                uint32_t count,
+                                vkk_uniformBinding_t* ub_array)
 {
 	assert(self);
-	assert(dsb_array);
+	assert(ub_array);
 
-	VkDescriptorType dt_map[VKK_DESCRIPTOR_SET_TYPE_COUNT] =
+	VkDescriptorType dt_map[VKK_UNIFORM_TYPE_COUNT] =
 	{
 		VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
 		VK_DESCRIPTOR_TYPE_SAMPLER,
@@ -2291,16 +2291,16 @@ vkk_engine_newDescriptorSetFactory(vkk_engine_t* self,
 		VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT
 	};
 
-	vkk_descriptorSetFactory_t* dsf;
-	dsf = (vkk_descriptorSetFactory_t*)
-	      CALLOC(1, sizeof(vkk_descriptorSetFactory_t));
-	if(dsf == NULL)
+	vkk_uniformSetFactory_t* usf;
+	usf = (vkk_uniformSetFactory_t*)
+	      CALLOC(1, sizeof(vkk_uniformSetFactory_t));
+	if(usf == NULL)
 	{
 		LOGE("CALLOC failed");
 		return NULL;
 	}
 
-	dsf->dynamic = dynamic;
+	usf->dynamic = dynamic;
 
 	// create temportary descriptor set layout bindings
 	VkDescriptorSetLayoutBinding* bindings;
@@ -2316,13 +2316,13 @@ vkk_engine_newDescriptorSetFactory(vkk_engine_t* self,
 	int i;
 	for(i = 0; i < count; ++i)
 	{
-		vkk_descriptorSetBinding_t*   dsb = &(dsb_array[i]);
+		vkk_uniformBinding_t*         usb = &(ub_array[i]);
 		VkDescriptorSetLayoutBinding* b   = &(bindings[i]);
-		b->binding            = dsb->binding;
-		b->descriptorType     = dt_map[dsb->type];
+		b->binding            = usb->binding;
+		b->descriptorType     = dt_map[usb->type];
 		b->descriptorCount    = 1;
-		b->stageFlags         = stage_map[dsb->stage];
-		b->pImmutableSamplers = dsb->sampler ? &dsb->sampler->sampler : NULL;
+		b->stageFlags         = stage_map[usb->stage];
+		b->pImmutableSamplers = usb->sampler ? &usb->sampler->sampler : NULL;
 	}
 
 	VkDescriptorSetLayoutCreateInfo dsl_info =
@@ -2336,121 +2336,120 @@ vkk_engine_newDescriptorSetFactory(vkk_engine_t* self,
 
 	if(vkCreateDescriptorSetLayout(self->device,
 	                               &dsl_info, NULL,
-	                               &dsf->ds_layout) != VK_SUCCESS)
+	                               &usf->ds_layout) != VK_SUCCESS)
 	{
 		LOGE("vkCreateDescriptorSetLayout failed");
 		goto fail_create_dsl;
 	}
 
-	dsf->dp_list = cc_list_new();
-	if(dsf->dp_list == NULL)
+	usf->dp_list = cc_list_new();
+	if(usf->dp_list == NULL)
 	{
 		goto fail_dp_list;
 	}
 
-	dsf->ds_list = cc_list_new();
-	if(dsf->ds_list == NULL)
+	usf->us_list = cc_list_new();
+	if(usf->us_list == NULL)
 	{
-		goto fail_ds_list;
+		goto fail_us_list;
 	}
 
 	// increment type counter
 	for(i = 0; i < count; ++i)
 	{
-		++dsf->type_count[dsb_array[i].type];
+		++usf->type_count[ub_array[i].type];
 	}
 
 	FREE(bindings);
 
 	// success
-	return dsf;
+	return usf;
 
 	// failure
-	fail_ds_list:
-		cc_list_delete(&dsf->dp_list);
+	fail_us_list:
+		cc_list_delete(&usf->dp_list);
 	fail_dp_list:
 		vkDestroyDescriptorSetLayout(self->device,
-		                             dsf->ds_layout, NULL);
+		                             usf->ds_layout, NULL);
 	fail_create_dsl:
 		FREE(bindings);
 	fail_bindings:
-		FREE(dsf);
+		FREE(usf);
 	return NULL;
 }
 
 void
-vkk_engine_deleteDescriptorSetFactory(vkk_engine_t* self,
-                                      vkk_descriptorSetFactory_t** _dsf)
+vkk_engine_deleteUniformSetFactory(vkk_engine_t* self,
+                                   vkk_uniformSetFactory_t** _usf)
 {
 	assert(self);
-	assert(_dsf);
+	assert(_usf);
 
-	vkk_descriptorSetFactory_t* dsf = *_dsf;
-	if(dsf)
+	vkk_uniformSetFactory_t* usf = *_usf;
+	if(usf)
 	{
 		cc_listIter_t* iter;
-		iter = cc_list_head(dsf->ds_list);
+		iter = cc_list_head(usf->us_list);
 		while(iter)
 		{
-			vkk_descriptorSet_t* ds;
-			ds = (vkk_descriptorSet_t*)
-			     cc_list_remove(dsf->ds_list, &iter);
-			FREE(ds->ds_array);
-			FREE(ds);
+			vkk_uniformSet_t* us;
+			us = (vkk_uniformSet_t*)
+			     cc_list_remove(usf->us_list, &iter);
+			FREE(us->ds_array);
+			FREE(us);
 		}
 
-		iter = cc_list_head(dsf->dp_list);
+		iter = cc_list_head(usf->dp_list);
 		while(iter)
 		{
 			VkDescriptorPool dp;
 			dp = (VkDescriptorPool)
-			     cc_list_remove(dsf->dp_list, &iter);
+			     cc_list_remove(usf->dp_list, &iter);
 			vkDestroyDescriptorPool(self->device, dp, NULL);
 		}
 
-		cc_list_delete(&dsf->dp_list);
-		cc_list_delete(&dsf->ds_list);
+		cc_list_delete(&usf->dp_list);
+		cc_list_delete(&usf->us_list);
 		vkDestroyDescriptorSetLayout(self->device,
-		                             dsf->ds_layout, NULL);
-		FREE(dsf);
-		*_dsf = NULL;
+		                             usf->ds_layout, NULL);
+		FREE(usf);
+		*_usf = NULL;
 	}
 }
 
-vkk_descriptorSet_t*
-vkk_engine_newDescriptorSet(vkk_engine_t* self,
-                            vkk_descriptorSetFactory_t* dsf)
+vkk_uniformSet_t*
+vkk_engine_newUniformSet(vkk_engine_t* self,
+                         vkk_uniformSetFactory_t* usf)
 {
 	assert(self);
-	assert(dsf);
+	assert(usf);
 
-	// check if a descriptor set can be reused
-	vkk_descriptorSet_t* ds;
-	cc_listIter_t* iter = cc_list_head(dsf->ds_list);
+	// check if a uniform set can be reused
+	vkk_uniformSet_t* us;
+	cc_listIter_t* iter = cc_list_head(usf->us_list);
 	if(iter)
 	{
-		ds = (vkk_descriptorSet_t*)
-		     cc_list_remove(dsf->ds_list, &iter);
-		return ds;
+		us = (vkk_uniformSet_t*)
+		     cc_list_remove(usf->us_list, &iter);
+		return us;
 	}
 
-	// create a new descriptor set
-	ds = (vkk_descriptorSet_t*)
-	     CALLOC(1, sizeof(vkk_descriptorSet_t));
-	if(ds == NULL)
+	// create a new uniform set
+	us = (vkk_uniformSet_t*)
+	     CALLOC(1, sizeof(vkk_uniformSet_t));
+	if(us == NULL)
 	{
 		LOGE("CALLOC failed");
 		return NULL;
 	}
 
 	uint32_t count;
-	count = dsf->dynamic ? self->swapchain_image_count : 1;
+	count = usf->dynamic ? self->swapchain_image_count : 1;
 
-	ds->dynamic  = dsf->dynamic;
-	ds->dsf      = dsf;
-	ds->ds_array = (VkDescriptorSet*)
+	us->usf      = usf;
+	us->ds_array = (VkDescriptorSet*)
 	               CALLOC(count, sizeof(VkDescriptorSet));
-	if(ds->ds_array == NULL)
+	if(us->ds_array == NULL)
 	{
 		LOGE("CALLOC failed");
 		goto fail_alloc;
@@ -2461,21 +2460,21 @@ vkk_engine_newDescriptorSet(vkk_engine_t* self,
 	int i;
 	for(i = 0; i < count; ++i)
 	{
-		dsl_array[i] = dsf->ds_layout;
+		dsl_array[i] = usf->ds_layout;
 	}
 
 	// allocate the descriptor set from the pool
 	int retry = 1;
 	VkDescriptorPool dp;
 	dp = (VkDescriptorPool)
-	     cc_list_peekTail(dsf->dp_list);
+	     cc_list_peekTail(usf->dp_list);
 	while(retry)
 	{
 		// create a new pool on demand
-		if((count > dsf->ds_available) || (dp == NULL))
+		if((count > usf->ds_available) || (dp == NULL))
 		{
 			// create a new pool
-			dp = vkk_engine_newDescriptorPool(self, dsf);
+			dp = vkk_engine_newDescriptorPool(self, usf);
 			if(dp == VK_NULL_HANDLE)
 			{
 				goto fail_dsp;
@@ -2494,7 +2493,7 @@ vkk_engine_newDescriptorSet(vkk_engine_t* self,
 		};
 
 		if(vkAllocateDescriptorSets(self->device, &ds_info,
-		                            ds->ds_array) != VK_SUCCESS)
+		                            us->ds_array) != VK_SUCCESS)
 		{
 			// retry with a new pool
 			if(retry)
@@ -2509,56 +2508,56 @@ vkk_engine_newDescriptorSet(vkk_engine_t* self,
 			}
 		}
 
-		dsf->ds_available -= count;
+		usf->ds_available -= count;
 		break;
 	}
 
 	// success
-	return ds;
+	return us;
 
 	// failure
 	fail_allocate_ds:
 	fail_dsp:
-		FREE(ds->ds_array);
+		FREE(us->ds_array);
 	fail_alloc:
-		FREE(ds);
+		FREE(us);
 	return NULL;
 }
 
-void vkk_engine_deleteDescriptorSet(vkk_engine_t* self,
-                                    vkk_descriptorSet_t** _ds)
+void vkk_engine_deleteUniformSet(vkk_engine_t* self,
+                                 vkk_uniformSet_t** _us)
 {
 	assert(self);
-	assert(_ds);
+	assert(_us);
 
-	vkk_descriptorSet_t* ds = *_ds;
-	if(ds)
+	vkk_uniformSet_t* us = *_us;
+	if(us)
 	{
-		if(cc_list_append(ds->dsf->ds_list, NULL,
-		                  (const void*) ds) == NULL)
+		if(cc_list_append(us->usf->us_list, NULL,
+		                  (const void*) us) == NULL)
 		{
-			// when an error occurs the descriptor set will
+			// when an error occurs the uniform set will
 			// be unreachable from the factory but the
-			// descriptor set will still be freed when the
-			// corresponding descriptor pool is freed
-			FREE(ds->ds_array);
-			FREE(ds);
+			// uniform set will still be freed when the
+			// corresponding uniform set factory is freed
+			FREE(us->ds_array);
+			FREE(us);
 		}
-		*_ds = NULL;
+		*_us = NULL;
 	}
 }
 
-void vkk_engine_writeDescriptorSetUB(vkk_engine_t* self,
-                                     vkk_descriptorSet_t* ds,
-                                     vkk_buffer_t* buffer,
-                                     uint32_t binding)
+void vkk_engine_attachUniformBuffer(vkk_engine_t* self,
+                                    vkk_uniformSet_t* us,
+                                    vkk_buffer_t* buffer,
+                                    uint32_t binding)
 {
 	assert(self);
-	assert(ds);
+	assert(us);
 	assert(buffer);
 
 	uint32_t count;
-	count = ds->dynamic ? self->swapchain_image_count : 1;
+	count = us->usf->dynamic ? self->swapchain_image_count : 1;
 
 	int i;
 	for(i = 0; i < count; ++i)
@@ -2575,7 +2574,7 @@ void vkk_engine_writeDescriptorSetUB(vkk_engine_t* self,
 		{
 			.sType            = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
 			.pNext            = NULL,
-			.dstSet           = ds->ds_array[i],
+			.dstSet           = us->ds_array[i],
 			.dstBinding       = binding,
 			.dstArrayElement  = 0,
 			.descriptorCount  = 1,
@@ -2590,34 +2589,34 @@ void vkk_engine_writeDescriptorSetUB(vkk_engine_t* self,
 	}
 }
 
-void vkk_engine_bindDescriptorSet(vkk_engine_t* self,
-                                  vkk_pipelineLayout_t* pl,
-                                  vkk_descriptorSet_t* ds)
+void vkk_engine_bindUniformSet(vkk_engine_t* self,
+                               vkk_pipelineLayout_t* pl,
+                               vkk_uniformSet_t* us)
 {
 	assert(self);
 	assert(pl);
-	assert(ds);
+	assert(us);
 
 	uint32_t idx;
-	idx = ds->dynamic ? self->swapchain_frame : 0;
+	idx = us->usf->dynamic ? self->swapchain_frame : 0;
 
-	VkDescriptorSet descriptor_set = ds->ds_array[idx];
+	VkDescriptorSet ds = us->ds_array[idx];
 
 	VkCommandBuffer cb;
 	cb = self->command_buffers[self->swapchain_frame];
 	vkCmdBindDescriptorSets(cb,
 	                        VK_PIPELINE_BIND_POINT_GRAPHICS,
-	                        pl->pl, 0, 1, &descriptor_set,
+	                        pl->pl, 0, 1, &ds,
 	                        0, NULL);
 }
 
 vkk_pipelineLayout_t*
 vkk_engine_newPipelineLayout(vkk_engine_t* self,
-                             uint32_t dsf_count,
-                             vkk_descriptorSetFactory_t** dsf_array)
+                             uint32_t usf_count,
+                             vkk_uniformSetFactory_t** usf_array)
 {
 	assert(self);
-	assert(dsf_array);
+	assert(usf_array);
 
 	vkk_pipelineLayout_t* pl;
 	pl = (vkk_pipelineLayout_t*)
@@ -2630,16 +2629,16 @@ vkk_engine_newPipelineLayout(vkk_engine_t* self,
 
 	VkDescriptorSetLayout* dsl_array;
 	dsl_array = (VkDescriptorSetLayout*)
-	            CALLOC(dsf_count, sizeof(VkDescriptorSetLayout));
+	            CALLOC(usf_count, sizeof(VkDescriptorSetLayout));
 	if(dsl_array == NULL)
 	{
 		goto fail_dsl_array;
 	}
 
 	int i;
-	for(i = 0; i < dsf_count; ++i)
+	for(i = 0; i < usf_count; ++i)
 	{
-		dsl_array[i] = dsf_array[i]->ds_layout;
+		dsl_array[i] = usf_array[i]->ds_layout;
 	}
 
 	VkPipelineLayoutCreateInfo pl_info =
@@ -2647,7 +2646,7 @@ vkk_engine_newPipelineLayout(vkk_engine_t* self,
 		.sType                  = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO,
 		.pNext                  = NULL,
 		.flags                  = 0,
-		.setLayoutCount         = dsf_count,
+		.setLayoutCount         = usf_count,
 		.pSetLayouts            = dsl_array,
 		.pushConstantRangeCount = 0,
 		.pPushConstantRanges    = NULL
@@ -2805,7 +2804,7 @@ vkk_engine_newGraphicsPipeline(vkk_engine_t* self,
 		.pVertexAttributeDescriptions    = via
 	};
 
-	VkPrimitiveTopology topology[VKK_PRIMITIVE_MODE_TRIANGLE_COUNT] =
+	VkPrimitiveTopology topology[VKK_PRIMITIVE_TRIANGLE_COUNT] =
 	{
 		VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST,
 		VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP,
@@ -2816,7 +2815,7 @@ vkk_engine_newGraphicsPipeline(vkk_engine_t* self,
 		.sType                  = VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO,
 		.pNext                  = NULL,
 		.flags                  = 0,
-		.topology               = topology[gpi->primitive_mode],
+		.topology               = topology[gpi->primitive],
 		.primitiveRestartEnable = gpi->primitive_restart
 	};
 
