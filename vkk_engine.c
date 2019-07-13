@@ -23,6 +23,7 @@
 
 #include <assert.h>
 #include <stdlib.h>
+#include <string.h>
 
 #define LOG_TAG "vkk"
 #include "../libcc/cc_log.h"
@@ -2471,7 +2472,7 @@ vkk_engine_newUniformSet(vkk_engine_t* self,
 	while(retry)
 	{
 		// create a new pool on demand
-		if((count > usf->ds_available) || (dp == NULL))
+		if((count > usf->ds_available) || (dp == VK_NULL_HANDLE))
 		{
 			// create a new pool
 			dp = vkk_engine_newDescriptorPool(self, usf);
@@ -2498,7 +2499,7 @@ vkk_engine_newUniformSet(vkk_engine_t* self,
 			// retry with a new pool
 			if(retry)
 			{
-				dp = NULL;
+				dp = VK_NULL_HANDLE;
 				continue;
 			}
 			else
