@@ -33,6 +33,30 @@
 #define VKK_DESCRIPTOR_POOL_SIZE 64
 
 /***********************************************************
+* private - vkk_image_t                                    *
+***********************************************************/
+
+static size_t
+vkk_image_size(vkk_image_t* self)
+{
+	assert(self);
+
+	size_t bpp[VKK_IMAGE_FORMAT_COUNT] =
+	{
+		2, // VKK_IMAGE_FORMAT_RGBA4444
+		2, // VKK_IMAGE_FORMAT_RGB565
+		2, // VKK_IMAGE_FORMAT_RGBA5551
+		1, // VKK_IMAGE_FORMAT_R8
+		2, // VKK_IMAGE_FORMAT_RG88
+		3, // VKK_IMAGE_FORMAT_RGB888
+		4, // VKK_IMAGE_FORMAT_RGBA8888
+		4, // VKK_IMAGE_FORMAT_DEPTH
+	};
+
+	return self->width*self->height*bpp[self->format];
+}
+
+/***********************************************************
 * private                                                  *
 ***********************************************************/
 
@@ -784,125 +808,17 @@ static int vkk_engine_newDepth(vkk_engine_t* self)
 {
 	assert(self);
 
-	VkImageCreateInfo i_info =
+	self->depth_image = vkk_engine_newImage(self,
+	                                        self->swapchain_extent.width,
+	                                        self->swapchain_extent.height,
+	                                        VKK_IMAGE_FORMAT_DEPTH,
+	                                        0, NULL);
+	if(self->depth_image == NULL)
 	{
-		.sType       = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,
-		.pNext       = NULL,
-		.flags       = 0,
-		.imageType   = VK_IMAGE_TYPE_2D,
-		.format      = VK_FORMAT_D16_UNORM,
-		.extent      =
-		{
-			self->swapchain_extent.width,
-			self->swapchain_extent.height,
-			1
-		},
-		.mipLevels   = 1,
-		.arrayLayers = 1,
-		.samples     = VK_SAMPLE_COUNT_1_BIT,
-		.tiling      = VK_IMAGE_TILING_OPTIMAL,
-		.usage       = VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT,
-		.sharingMode = VK_SHARING_MODE_EXCLUSIVE,
-		.queueFamilyIndexCount = 1,
-		.pQueueFamilyIndices   = &self->queue_family_index,
-		.initialLayout         = VK_IMAGE_LAYOUT_UNDEFINED
-	};
-
-	if(vkCreateImage(self->device, &i_info, NULL,
-	                 &self->depth_image) != VK_SUCCESS)
-	{
-		LOGE("vkCreateImage failed");
 		return 0;
 	}
 
-	VkMemoryRequirements mr;
-	vkGetImageMemoryRequirements(self->device,
-	                             self->depth_image,
-	                             &mr);
-
-	VkFlags  mp_flags = 0;
-	uint32_t mt_index;
-	if(vkk_engine_getMemoryTypeIndex(self,
-	                                 mr.memoryTypeBits,
-	                                 mp_flags,
-	                                 &mt_index) == 0)
-	{
-		goto fail_memory_type;
-	}
-
-	VkMemoryAllocateInfo ma_info =
-	{
-		.sType           = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO,
-		.pNext           = NULL,
-		.allocationSize  = mr.size,
-		.memoryTypeIndex = mt_index
-	};
-
-	if(vkAllocateMemory(self->device, &ma_info, NULL,
-	                    &self->depth_memory) != VK_SUCCESS)
-	{
-		LOGE("vkAllocateMemory failed");
-		goto fail_allocate;
-	}
-
-	if(vkBindImageMemory(self->device,
-	                     self->depth_image,
-	                     self->depth_memory,
-	                     0) != VK_SUCCESS)
-	{
-		LOGE("vkBindBufferMemory failed");
-		goto fail_bind;
-	}
-
-	VkImageViewCreateInfo iv_info =
-	{
-		.sType      = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO,
-		.pNext      = NULL,
-		.flags      = 0,
-		.image      = self->depth_image,
-		.viewType   = VK_IMAGE_VIEW_TYPE_2D,
-		.format     = VK_FORMAT_D16_UNORM,
-		.components =
-		{
-			.r = VK_COMPONENT_SWIZZLE_IDENTITY,
-			.g = VK_COMPONENT_SWIZZLE_IDENTITY,
-			.b = VK_COMPONENT_SWIZZLE_IDENTITY,
-			.a = VK_COMPONENT_SWIZZLE_IDENTITY
-		},
-		.subresourceRange =
-		{
-			.aspectMask     = VK_IMAGE_ASPECT_DEPTH_BIT,
-			.baseMipLevel   = 0,
-			.levelCount     = 1,
-			.baseArrayLayer = 0,
-			.layerCount     = 1
-		}
-	};
-
-	if(vkCreateImageView(self->device, &iv_info, NULL,
-	                     &self->depth_image_view) != VK_SUCCESS)
-	{
-		LOGE("vkCreateImageView failed");
-		goto fail_image_view;
-	}
-
-	self->depth_transition = 1;
-
-	// success
 	return 1;
-
-	// failure
-	fail_image_view:
-	fail_bind:
-		vkFreeMemory(self->device,
-		             self->depth_memory, NULL);
-		self->depth_memory = VK_NULL_HANDLE;
-	fail_allocate:
-	fail_memory_type:
-		vkDestroyImage(self->device,
-		               self->depth_image, NULL);
-		self->depth_image = VK_NULL_HANDLE;
-	return 0;
 }
 
 static void
@@ -910,21 +826,7 @@ vkk_engine_deleteDepth(vkk_engine_t* self)
 {
 	assert(self);
 
-	if(self->depth_image == VK_NULL_HANDLE)
-	{
-		return;
-	}
-
-	vkDestroyImageView(self->device,
-	                   self->depth_image_view,
-	                   NULL);
-	vkFreeMemory(self->device,
-	             self->depth_memory, NULL);
-	vkDestroyImage(self->device,
-	               self->depth_image, NULL);
-	self->depth_image_view = VK_NULL_HANDLE;
-	self->depth_memory     = VK_NULL_HANDLE;
-	self->depth_image      = VK_NULL_HANDLE;
+	vkk_engine_deleteImage(self, &self->depth_image);
 }
 
 static int vkk_engine_newFramebuffer(vkk_engine_t* self)
@@ -987,7 +889,7 @@ static int vkk_engine_newFramebuffer(vkk_engine_t* self)
 		VkImageView attachments[2] =
 		{
 			self->framebuffer_image_views[i],
-			self->depth_image_view
+			self->depth_image->image_view,
 		};
 
 		VkFramebufferCreateInfo f_info =
@@ -1091,7 +993,7 @@ static int vkk_engine_newRenderpass(vkk_engine_t* self)
 		},
 		{
 			.flags          = 0,
-			.format         = VK_FORMAT_D16_UNORM,
+			.format         = VK_FORMAT_D24_UNORM_S8_UINT,
 			.samples        = VK_SAMPLE_COUNT_1_BIT,
 			.loadOp         = VK_ATTACHMENT_LOAD_OP_CLEAR,
 			.storeOp        = VK_ATTACHMENT_STORE_OP_DONT_CARE,
@@ -1542,6 +1444,270 @@ vkk_engine_newDescriptorPool(vkk_engine_t* self,
 	return VK_NULL_HANDLE;
 }
 
+static int
+vkk_engine_uploadImage(vkk_engine_t* self,
+                       vkk_image_t* image,
+                       const void* pixels)
+{
+	assert(self);
+	assert(image);
+	assert(pixels);
+
+	// create a transfer buffer
+	size_t size = vkk_image_size(image);
+	VkBufferCreateInfo b_info =
+	{
+		.sType                 = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,
+		.pNext                 = NULL,
+		.flags                 = 0,
+		.size                  = size,
+		.usage                 = VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
+		.sharingMode           = VK_SHARING_MODE_EXCLUSIVE,
+		.queueFamilyIndexCount = 1,
+		.pQueueFamilyIndices   = &self->queue_family_index
+	};
+
+	VkBuffer buffer;
+	if(vkCreateBuffer(self->device, &b_info, NULL,
+	                  &buffer) != VK_SUCCESS)
+	{
+		LOGE("vkCreateBuffer failed");
+		return 0;
+	}
+
+	// allocate memory for the transfer buffer
+	VkMemoryRequirements mr;
+	vkGetBufferMemoryRequirements(self->device, buffer, &mr);
+
+	VkFlags mp_flags = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT |
+	                   VK_MEMORY_PROPERTY_HOST_COHERENT_BIT;
+	uint32_t mt_index;
+	if(vkk_engine_getMemoryTypeIndex(self,
+	                                 mr.memoryTypeBits,
+	                                 mp_flags,
+	                                 &mt_index) == 0)
+	{
+		goto fail_memory_type;
+	}
+
+	VkMemoryAllocateInfo ma_info =
+	{
+		.sType           = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO,
+		.pNext           = NULL,
+		.allocationSize  = mr.size,
+		.memoryTypeIndex = mt_index
+	};
+
+	VkDeviceMemory memory;
+	if(vkAllocateMemory(self->device, &ma_info, NULL,
+	                    &memory) != VK_SUCCESS)
+	{
+		LOGE("vkAllocateMemory failed");
+		goto fail_allocate_memory;
+	}
+
+	// copy pixels into transfer buffer memory
+	void* data;
+	if(vkMapMemory(self->device, memory, 0, mr.size, 0,
+	               &data) != VK_SUCCESS)
+	{
+		LOGE("vkMapMemory failed");
+		goto fail_map;
+	}
+	memcpy(data, pixels, size);
+	vkUnmapMemory(self->device, memory);
+
+	if(vkBindBufferMemory(self->device, buffer, memory,
+	                      0) != VK_SUCCESS)
+	{
+		LOGE("vkBindBufferMemory failed");
+		goto fail_bind;
+	}
+
+	// allocate a transfer command buffer
+	VkCommandBufferAllocateInfo cba_info =
+	{
+		.sType              = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO,
+		.pNext              = NULL,
+		.commandPool        = self->command_pool,
+		.level              = VK_COMMAND_BUFFER_LEVEL_PRIMARY,
+		.commandBufferCount = 1
+	};
+
+	VkCommandBuffer cb;
+	if(vkAllocateCommandBuffers(self->device, &cba_info,
+	                            &cb) != VK_SUCCESS)
+	{
+		LOGE("vkAllocateCommandBuffers failed");
+		goto fail_allocate_cb;
+	}
+
+	// begin the transfer commands
+	VkCommandBufferInheritanceInfo cbi_info =
+	{
+		.sType                = VK_STRUCTURE_TYPE_COMMAND_BUFFER_INHERITANCE_INFO,
+		.pNext                = NULL,
+		.renderPass           = VK_NULL_HANDLE,
+		.subpass              = 0,
+		.framebuffer          = VK_NULL_HANDLE,
+		.occlusionQueryEnable = VK_FALSE,
+		.queryFlags           = 0,
+		.pipelineStatistics   = 0
+	};
+
+	VkCommandBufferBeginInfo cb_info =
+	{
+		.sType            = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,
+		.pNext            = NULL,
+		.flags            = 0,
+		.pInheritanceInfo = &cbi_info
+	};
+
+	if(vkBeginCommandBuffer(cb, &cb_info) != VK_SUCCESS)
+	{
+		LOGE("vkBeginCommandBuffer failed");
+		goto fail_begin_cb;
+	}
+
+	// transition the image to copy the transfer buffer to
+	// the image
+	VkImageMemoryBarrier imb1 =
+	{
+		.sType               = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,
+		.pNext               = NULL,
+		.srcAccessMask       = 0,
+		.dstAccessMask       = VK_ACCESS_TRANSFER_WRITE_BIT,
+		.oldLayout           = VK_IMAGE_LAYOUT_UNDEFINED,
+		.newLayout           = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+		.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
+		.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
+		.image               = image->image,
+		.subresourceRange    =
+		{
+			.aspectMask     = VK_IMAGE_ASPECT_COLOR_BIT,
+			.baseMipLevel   = 0,
+			.levelCount     = 1,
+			.baseArrayLayer = 0,
+			.layerCount     = 1
+		}
+	};
+
+	vkCmdPipelineBarrier(cb,
+	                     VK_PIPELINE_STAGE_HOST_BIT,
+	                     VK_PIPELINE_STAGE_TRANSFER_BIT,
+	                     0, 0, NULL, 0 ,NULL, 1, &imb1);
+
+	// copy the transfer buffer to the image
+	VkBufferImageCopy bic =
+	{
+		.bufferOffset      = 0,
+		.bufferRowLength   = 0,
+		.bufferImageHeight = 0,
+		.imageSubresource  =
+		{
+			.aspectMask     = VK_IMAGE_ASPECT_COLOR_BIT,
+			.mipLevel       = 0,
+			.baseArrayLayer = 0,
+			.layerCount     = 1
+		},
+		.imageOffset =
+		{
+			.x = 0,
+			.y = 0,
+			.z = 0,
+		},
+		.imageExtent =
+		{
+			.width  = image->width,
+			.height = image->height,
+			.depth  = 1
+		}
+	};
+
+	vkCmdCopyBufferToImage(cb, buffer, image->image,
+	                       VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+	                       1, &bic);
+
+	// transition the image from transfer mode to shading mode
+	VkImageMemoryBarrier imb2 =
+	{
+		.sType               = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,
+		.pNext               = NULL,
+		.srcAccessMask       = VK_ACCESS_TRANSFER_WRITE_BIT,
+		.dstAccessMask       = VK_ACCESS_SHADER_READ_BIT,
+		.oldLayout           = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+		.newLayout           = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+		.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
+		.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
+		.image               = image->image,
+		.subresourceRange    =
+		{
+			.aspectMask     = VK_IMAGE_ASPECT_COLOR_BIT,
+			.baseMipLevel   = 0,
+			.levelCount     = 1,
+			.baseArrayLayer = 0,
+			.layerCount     = 1
+		}
+	};
+
+	// NOTE: this only supports textures in fragment shaders
+	vkCmdPipelineBarrier(cb,
+	                     VK_PIPELINE_STAGE_TRANSFER_BIT,
+	                     VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
+	                     0, 0, NULL, 0 ,NULL, 1, &imb2);
+
+	// end the transfer commands
+	vkEndCommandBuffer(cb);
+
+	// submit the commands
+	VkSubmitInfo s_info =
+	{
+		.sType                = VK_STRUCTURE_TYPE_SUBMIT_INFO,
+		.pNext                = NULL,
+		.waitSemaphoreCount   = 0,
+		.pWaitSemaphores      = NULL,
+		.pWaitDstStageMask    = NULL,
+		.commandBufferCount   = 1,
+		.pCommandBuffers      = &cb,
+		.signalSemaphoreCount = 0,
+		.pSignalSemaphores    = NULL
+	};
+
+	if(vkQueueSubmit(self->queue, 1, &s_info,
+	                 VK_NULL_HANDLE) != VK_SUCCESS)
+	{
+		LOGE("vkQueueSubmit failed");
+		goto fail_submit;
+	}
+	vkQueueWaitIdle(self->queue);
+
+	// release temporary objects
+	vkFreeCommandBuffers(self->device,
+	                     self->command_pool,
+	                     1, &cb);
+	vkFreeMemory(self->device, memory, NULL);
+	vkDestroyBuffer(self->device, buffer, NULL);
+
+	// success
+	return 1;
+
+	// failure
+	fail_submit:
+		vkEndCommandBuffer(cb);
+	fail_begin_cb:
+		vkFreeCommandBuffers(self->device,
+		                     self->command_pool,
+		                     1, &cb);
+	fail_allocate_cb:
+	fail_bind:
+	fail_map:
+		vkFreeMemory(self->device, memory, NULL);
+	fail_allocate_memory:
+	fail_memory_type:
+		vkDestroyBuffer(self->device, buffer, NULL);
+	return 0;
+}
+
 /***********************************************************
 * public                                                   *
 ***********************************************************/
@@ -1900,7 +2066,7 @@ int vkk_engine_beginFrame(vkk_engine_t* self,
 	                     VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
 	                     0, 0, NULL, 0 ,NULL, 1, &imb);
 
-	if(self->depth_transition)
+	if(self->depth_image->transition)
 	{
 
 		VkImageMemoryBarrier imb_depth =
@@ -1913,10 +2079,11 @@ int vkk_engine_beginFrame(vkk_engine_t* self,
 			.newLayout           = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL,
 			.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
 			.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
-			.image               = self->depth_image,
+			.image               = self->depth_image->image,
 			.subresourceRange    =
 			{
-				.aspectMask     = VK_IMAGE_ASPECT_DEPTH_BIT,
+				.aspectMask     = VK_IMAGE_ASPECT_DEPTH_BIT |
+				                  VK_IMAGE_ASPECT_STENCIL_BIT,
 				.baseMipLevel   = 0,
 				.levelCount     = 1,
 				.baseArrayLayer = 0,
@@ -1929,7 +2096,7 @@ int vkk_engine_beginFrame(vkk_engine_t* self,
 		                     VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT,
 		                     0, 0, NULL, 0 ,NULL, 1, &imb_depth);
 
-		self->depth_transition = 0;
+		self->depth_image->transition = 0;
 	}
 
 	VkViewport viewport =
@@ -2266,6 +2433,200 @@ void vkk_engine_updateBuffer(vkk_engine_t* self,
 	else
 	{
 		LOGW("vkMapMemory failed");
+	}
+}
+
+vkk_image_t* vkk_engine_newImage(vkk_engine_t* self,
+                                 uint32_t width,
+                                 uint32_t height,
+                                 int format,
+                                 int mipmap,
+                                 const void* pixels)
+{
+	// pixels may be NULL for depth buffer
+	assert(self);
+
+	// TODO - add mipmap support
+
+	vkk_image_t* image;
+	image = (vkk_image_t*) CALLOC(1, sizeof(vkk_image_t));
+	if(image == NULL)
+	{
+		LOGE("CALLOC failed");
+		return NULL;
+	}
+
+	image->width      = width;
+	image->height     = height;
+	image->format     = format;
+	image->transition = 1;
+
+	VkFormat format_map[VKK_IMAGE_FORMAT_COUNT] =
+	{
+		VK_FORMAT_R4G4B4A4_UNORM_PACK16,
+		VK_FORMAT_R5G6B5_UNORM_PACK16,
+		VK_FORMAT_R5G5B5A1_UNORM_PACK16,
+		VK_FORMAT_R8_UNORM,
+		VK_FORMAT_R8G8_UNORM,
+		VK_FORMAT_R8G8B8_UNORM,
+		VK_FORMAT_R8G8B8A8_UNORM,
+		VK_FORMAT_D24_UNORM_S8_UINT,
+	};
+
+	VkImageUsageFlags  usage      = VK_IMAGE_USAGE_TRANSFER_DST_BIT |
+	                                VK_IMAGE_USAGE_SAMPLED_BIT;
+	VkImageAspectFlags aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+	if(format == VKK_IMAGE_FORMAT_DEPTH)
+	{
+		usage         = VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT;
+		aspectMask    = VK_IMAGE_ASPECT_DEPTH_BIT |
+		                VK_IMAGE_ASPECT_STENCIL_BIT;
+	}
+
+	VkImageCreateInfo i_info =
+	{
+		.sType       = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,
+		.pNext       = NULL,
+		.flags       = 0,
+		.imageType   = VK_IMAGE_TYPE_2D,
+		.format      = format_map[format],
+		.extent      =
+		{
+			width,
+			height,
+			1
+		},
+		.mipLevels   = 1,
+		.arrayLayers = 1,
+		.samples     = VK_SAMPLE_COUNT_1_BIT,
+		.tiling      = VK_IMAGE_TILING_OPTIMAL,
+		.usage       = usage,
+		.sharingMode = VK_SHARING_MODE_EXCLUSIVE,
+		.queueFamilyIndexCount = 1,
+		.pQueueFamilyIndices   = &self->queue_family_index,
+		.initialLayout         = VK_IMAGE_LAYOUT_UNDEFINED
+	};
+
+	if(vkCreateImage(self->device, &i_info, NULL,
+	                 &image->image) != VK_SUCCESS)
+	{
+		LOGE("vkCreateImage failed");
+		goto fail_create_image;
+	}
+
+	VkMemoryRequirements mr;
+	vkGetImageMemoryRequirements(self->device,
+	                             image->image,
+	                             &mr);
+
+	VkFlags  mp_flags = 0;
+	uint32_t mt_index;
+	if(vkk_engine_getMemoryTypeIndex(self,
+	                                 mr.memoryTypeBits,
+	                                 mp_flags,
+	                                 &mt_index) == 0)
+	{
+		goto fail_memory_type;
+	}
+
+	VkMemoryAllocateInfo ma_info =
+	{
+		.sType           = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO,
+		.pNext           = NULL,
+		.allocationSize  = mr.size,
+		.memoryTypeIndex = mt_index
+	};
+
+	if(vkAllocateMemory(self->device, &ma_info, NULL,
+	                    &image->memory) != VK_SUCCESS)
+	{
+		LOGE("vkAllocateMemory failed");
+		goto fail_allocate;
+	}
+
+	if(vkBindImageMemory(self->device, image->image,
+	                     image->memory, 0) != VK_SUCCESS)
+	{
+		LOGE("vkBindBufferMemory failed");
+		goto fail_bind;
+	}
+
+	VkImageViewCreateInfo iv_info =
+	{
+		.sType      = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO,
+		.pNext      = NULL,
+		.flags      = 0,
+		.image      = image->image,
+		.viewType   = VK_IMAGE_VIEW_TYPE_2D,
+		.format     = format_map[format],
+		.components =
+		{
+			.r = VK_COMPONENT_SWIZZLE_IDENTITY,
+			.g = VK_COMPONENT_SWIZZLE_IDENTITY,
+			.b = VK_COMPONENT_SWIZZLE_IDENTITY,
+			.a = VK_COMPONENT_SWIZZLE_IDENTITY
+		},
+		.subresourceRange =
+		{
+			.aspectMask     = aspectMask,
+			.baseMipLevel   = 0,
+			.levelCount     = 1,
+			.baseArrayLayer = 0,
+			.layerCount     = 1
+		}
+	};
+
+	if(vkCreateImageView(self->device, &iv_info, NULL,
+	                     &image->image_view) != VK_SUCCESS)
+	{
+		LOGE("vkCreateImageView failed");
+		goto fail_image_view;
+	}
+
+	// textures must upload pixel data
+	if(format != VKK_IMAGE_FORMAT_DEPTH)
+	{
+		if(vkk_engine_uploadImage(self, image, pixels) == 0)
+		{
+			goto fail_upload;
+		}
+	}
+
+	// success
+	return image;
+
+	// failure
+	fail_upload:
+		vkDestroyImageView(self->device, image->image_view,
+		                   NULL);
+	fail_image_view:
+	fail_bind:
+		vkFreeMemory(self->device,
+		             image->memory, NULL);
+	fail_allocate:
+	fail_memory_type:
+		vkDestroyImage(self->device,
+		               image->image, NULL);
+	fail_create_image:
+		FREE(image);
+	return NULL;
+}
+
+void vkk_engine_deleteImage(vkk_engine_t* self,
+                            vkk_image_t** _image)
+{
+	assert(self);
+	assert(_image);
+
+	vkk_image_t* image = *_image;
+	if(image)
+	{
+		vkDestroyImageView(self->device, image->image_view,
+		                   NULL);
+		vkFreeMemory(self->device, image->memory, NULL);
+		vkDestroyImage(self->device, image->image, NULL);
+		FREE(image);
+		*_image = NULL;
 	}
 }
 

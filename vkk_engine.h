@@ -36,31 +36,41 @@
 #include "../libcc/cc_list.h"
 #include "../libcc/cc_map.h"
 
-#define VKK_PRIMITIVE_TRIANGLE_LIST  0
-#define VKK_PRIMITIVE_TRIANGLE_STRIP 1
-#define VKK_PRIMITIVE_TRIANGLE_FAN   2
-#define VKK_PRIMITIVE_TRIANGLE_COUNT 3
+#define VKK_BUFFER_USAGE_UNIFORM 0
+#define VKK_BUFFER_USAGE_VERTEX  1
+#define VKK_BUFFER_USAGE_COUNT   2
 
-#define VKK_VERTEX_FORMAT_FLOAT 0
-#define VKK_VERTEX_FORMAT_INT   1
-#define VKK_VERTEX_FORMAT_SHORT 2
-#define VKK_VERTEX_FORMAT_COUNT 3
+#define VKK_IMAGE_FORMAT_RGBA4444 0
+#define VKK_IMAGE_FORMAT_RGB565   1
+#define VKK_IMAGE_FORMAT_RGBA5551 2
+#define VKK_IMAGE_FORMAT_R8       3
+#define VKK_IMAGE_FORMAT_RG88     4
+#define VKK_IMAGE_FORMAT_RGB888   5
+#define VKK_IMAGE_FORMAT_RGBA8888 6
+#define VKK_IMAGE_FORMAT_DEPTH    7
+#define VKK_IMAGE_FORMAT_COUNT    8
 
 #define VKK_INDEX_TYPE_USHORT 0
 #define VKK_INDEX_TYPE_UINT   1
 #define VKK_INDEX_TYPE_COUNT  2
 
-#define VKK_UNIFORM_TYPE_BUFFER  0
-#define VKK_UNIFORM_TYPE_SAMPLER 1
-#define VKK_UNIFORM_TYPE_COUNT   2
-
-#define VKK_BUFFER_USAGE_UNIFORM 0
-#define VKK_BUFFER_USAGE_VERTEX  1
-#define VKK_BUFFER_USAGE_COUNT   2
+#define VKK_PRIMITIVE_TRIANGLE_LIST  0
+#define VKK_PRIMITIVE_TRIANGLE_STRIP 1
+#define VKK_PRIMITIVE_TRIANGLE_FAN   2
+#define VKK_PRIMITIVE_TRIANGLE_COUNT 3
 
 #define VKK_STAGE_VS   1
 #define VKK_STAGE_FS   2
 #define VKK_STAGE_VSFS 3
+
+#define VKK_UNIFORM_TYPE_BUFFER  0
+#define VKK_UNIFORM_TYPE_SAMPLER 1
+#define VKK_UNIFORM_TYPE_COUNT   2
+
+#define VKK_VERTEX_FORMAT_FLOAT 0
+#define VKK_VERTEX_FORMAT_INT   1
+#define VKK_VERTEX_FORMAT_SHORT 2
+#define VKK_VERTEX_FORMAT_COUNT 3
 
 typedef struct
 {
@@ -69,6 +79,17 @@ typedef struct
 	VkBuffer*       buffer;
 	VkDeviceMemory* memory;
 } vkk_buffer_t;
+
+typedef struct
+{
+	uint32_t       width;
+	uint32_t       height;
+	int            format;
+	int            transition;
+	VkImage        image;
+	VkDeviceMemory memory;
+	VkImageView    image_view;
+} vkk_image_t;
 
 typedef struct
 {
@@ -167,10 +188,7 @@ typedef struct
 	VkRenderPass render_pass;
 
 	// depth buffer
-	int            depth_transition;
-	VkImage        depth_image;
-	VkDeviceMemory depth_memory;
-	VkImageView    depth_image_view;
+	vkk_image_t* depth_image;
 
 	// framebuffer state
 	// one per swapchain image
@@ -211,6 +229,14 @@ void                     vkk_engine_deleteBuffer(vkk_engine_t* self,
 void                     vkk_engine_updateBuffer(vkk_engine_t* self,
                                                  vkk_buffer_t* buffer,
                                                  const void* buf);
+vkk_image_t*             vkk_engine_newImage(vkk_engine_t* self,
+                                             uint32_t width,
+                                             uint32_t height,
+                                             int format,
+                                             int mipmap,
+                                             const void* pixels);
+void                     vkk_engine_deleteImage(vkk_engine_t* self,
+                                                vkk_image_t** _image);
 vkk_uniformSetFactory_t* vkk_engine_newUniformSetFactory(vkk_engine_t* self,
                                                          int dynamic,
                                                          uint32_t count,

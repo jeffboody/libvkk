@@ -77,6 +77,7 @@ digraph VULKAN_KIT
 	// vkk structures
 	vkk_engine_t               [shape=box, fillcolor=green, style=filled, label="vkk_engine_t\nstruct android_app* app;\nSDL_Window* window;\nVkInstance instance;\nVkSurfaceKHR surface;\nVkPhysicalDevice physical_device;\nVkDevice device;\nuint32_t queue_family_index;\nVkQueue queue;\nVkPipelineCache pipeline_cache;\nVkCommandPool command_pool;\nuint32_t swapchain_frame;\nVkFormat swapchain_format;\nVkExtent2D swapchain_extent;\nVkColorSpaceKHR swapchain_color_space;\nuint32_t swapchain_image_count;\nVkSwapchainKHR swapchain;\nVkImage* swapchain_images;\nVkFence* swapchain_fences;\nVkRenderPass render_pass;\nint depth_transition;\nVkImage depth_image;\nVkDeviceMemory depth_memory;\nVkImageView depth_image_view;\nVkImageView* framebuffer_image_views;\nVkFramebuffer* framebuffers;\nVkCommandBuffer* command_buffers;\nuint32_t semaphore_index;\nVkSemaphore* semaphore_acquire;\nVkSemaphore* semaphore_submit;\ncc_map_t* shader_modules;"];
 	vkk_buffer_t               [shape=box, fillcolor=green, style=filled, label="vkk_buffer_t\nint dynamic;\nsize_t size;\nVkBuffer* buffer;\nVkDeviceMemory* memory;"];
+	vkk_image_t                [shape=box, fillcolor=green, style=filled, label="vkk_image_t\nuint32_t width;\nuint32_t height;\nint format;\nint transition;\nVkImage image;\nVkDeviceMemory memory;\nVkImageView image_view;"];
 	vkk_sampler_t              [shape=box, fillcolor=green, style=filled, label="vkk_sampler_t\nVkSampler sampler;"];
 	vkk_uniformSet_t           [shape=box, fillcolor=green, style=filled, label="vkk_uniformSet_t\nVkDescriptorSet* ds_array;\nvkk_uniformSetFactory_t* usf;"];
 	vkk_uniformSetFactory_t    [shape=box, fillcolor=green, style=filled, label="vkk_uniformSetFactory_t\nint dynamic;\nuint32_t ds_available;\nVkDescriptorSetLayout ds_layout;\ncc_list_t* dp_list;\ncc_list_t* us_list;\nchar type_count[VKK_UNIFORM_TYPE_COUNT];"];
@@ -90,11 +91,12 @@ digraph VULKAN_KIT
 	VKK_INDEX_TYPE             [shape=box, fillcolor=green, style=filled, label="VKK_INDEX_TYPE\nUSHORT\nUINT"];
 	VKK_STAGE                  [shape=box, fillcolor=green, style=filled, label="VKK_STAGE\nVS\nFS\nVSFS"];
 	VKK_UNIFORM_TYPE           [shape=box, fillcolor=green, style=filled, label="VKK_UNIFORM_TYPE\nBUFFER\nSAMPLER\nCOUNT"];
+	VKK_IMAGE_FORMAT           [shape=box, fillcolor=green, style=filled, label="VKK_IMAGE_FORMAT\nRGBA4444\nRGB565\nRGBA5551\nR8\nRG88\nRGB888\nRGBA8888\nDEPTH\nCOUNT"];
 	vkk_vertexBufferInfo_t     [shape=box, fillcolor=green, style=filled, label="vkk_vertexBufferInfo_t\nuint32_t location;\nuint32_t components;\nint format;"];
 	vkk_uniformBinding_t       [shape=box, fillcolor=green, style=filled, label="vkk_uniformBinding_t\nuint32_t binding;\nint type;\nint stage;\nvkk_sampler_t* sampler;"];
 
 	// my app structures
-	my_app_t [shape=box, fillcolor=cyan, style=filled, label="my_app_t\nvkk_engine_t* engine;\nvkk_buffer_t* uniform_buffer;\nvkk_buffer_t* vertex_buffer;\nvkk_uniformSetFactory_t* usf;\nvkk_uniformSet_t* us;\nvkk_pipelineLayout_t* pl;\nvkk_graphicsPipeline_t* gp;\n"];
+	my_app_t [shape=box, fillcolor=cyan, style=filled, label="my_app_t\nvkk_engine_t* engine;\nvkk_buffer_t* uniform_buffer;\nvkk_buffer_t* vertex_buffer;\nvkk_image_t* texture_image;\nvkk_uniformSetFactory_t* usf;\nvkk_uniformSet_t* us;\nvkk_pipelineLayout_t* pl;\nvkk_graphicsPipeline_t* gp;\n"];
 
 	// structures
 	VkPipelineLayoutCreateInfo             [shape=box, fillcolor=orange, style=filled, label="VkPipelineLayoutCreateInfo\nVkStructureType sType;\nconst void* pNext;\nVkPipelineLayoutCreateFlags flags;\nuint32_t setLayoutCount;\nconst VkDescriptorSetLayout* pSetLayouts;\nuint32_t pushConstantRangeCount;\nconst VkPushConstantRange* pPushConstantRanges;"];
@@ -259,6 +261,8 @@ digraph VULKAN_KIT
 	vkk_engine_deleteBuffer            [fillcolor=palegreen, style=filled, label="void vkk_engine_deleteBuffer(\nvkk_engine_t* self,\nvkk_buffer_t** _buffer);"];
 	vkk_engine_updateBuffer            [fillcolor=palegreen, style=filled, label="void vkk_engine_updateBuffer(\nvkk_engine_t* self,\nvkk_buffer_t* buffer,\nconst void* buf);"];
 	vkk_engine_attachUniformBuffer     [fillcolor=palegreen, style=filled, label="void vkk_engine_attachUniformBuffer(\nvkk_engine_t* self,\nvkk_uniformSet_t* us,\nvkk_buffer_t* buffer,\nuint32_t binding);"];
+	vkk_engine_newImage                [fillcolor=palegreen, style=filled, label="vkk_image_t* vkk_engine_newImage(\nvkk_engine_t* self,\nuint32_t width,\nuint32_t height,\nint format,\nint mipmap,\nconst void* pixels);"];
+	vkk_engine_deleteImage             [fillcolor=palegreen, style=filled, label="void vkk_engine_deleteImage(\nvkk_engine_t* self,\nvkk_image_t** _image);"];
 	vkk_engine_bindUniformSet          [fillcolor=palegreen, style=filled, label="void vkk_engine_bindUniformSet(\nvkk_engine_t* self,\nvkk_pipelineLayout_t* pl,\nvkk_uniformSet_t* us);"];
 	vkk_engine_newUniformSetFactory    [fillcolor=palegreen, style=filled, label="vkk_uniformSetFactory_t* vkk_engine_newUniformSetFactory(\nvkk_engine_t* self,\nint dynamic,\nuint32_t count,\nvkk_uniformBinding_t* ub_array);"];
 	vkk_engine_deleteUniformSetFactory [fillcolor=palegreen, style=filled, label="void vkk_engine_deleteUniformSetFactory(\nvkk_engine_t* self,\nvkk_uniformSetFactory_t** _usf);"];
@@ -272,6 +276,8 @@ digraph VULKAN_KIT
 	vkk_engine_draw                    [fillcolor=palegreen, style=filled, label="void vkk_engine_draw(\nvkk_engine_t* self,\nuint32_t vertex_count,\nuint32_t vertex_buffer_count,\nvkk_buffer_t** vertex_buffers);"];
 	vkk_engine_drawIndexed             [fillcolor=palegreen, style=filled, label="void vkk_engine_drawIndexed(\nvkk_engine_t* self,\nuint32_t vertex_count,\nuint32_t vertex_buffer_count,\nint index_type,\nvkk_buffer_t* index_buffer,\nvkk_buffer_t** vertex_buffers);"];
 	vkk_engine_newDescriptorSetPool    [fillcolor=limegreen, style=filled, label="VkDescriptorPool vkk_engine_newDescriptorSetPool(\nvkk_engine_t* self,\nvkk_uniformSetFactory_t* usf);"];
+	vkk_engine_uploadImage             [fillcolor=limegreen, style=filled, label="int vkk_engine_uploadImage(\nvkk_engine_t* self,\nvkk_image_t* image,\nconst void* pixels);"];
+	vkk_image_size                     [fillcolor=limegreen, style=filled, label="size_t vkk_image_size(\nvkk_image_t* self);"];
 	vkk_engine_newSampler              [fillcolor=palegreen, style=filled, label="vkk_sampler_t* vkk_engine_newSampler(\nvkk_engine_t* self);"];
 	vkk_engine_deleteSampler           [fillcolor=palegreen, style=filled, label="void vkk_engine_deleteSampler(\nvkk_engine_t* self,\nvkk_sampler_t** _sampler);"];
 
@@ -359,12 +365,17 @@ digraph VULKAN_KIT
 	vkk_engine_newSwapchain                     -> vkGetSwapchainImagesKHR                   [label="fifth"];
 	vkk_engine_newSwapchain                     -> vkCreateFence                             [label="sixth"];
 	vkk_engine_newRenderpass                    -> vkCreateRenderPass;
-	vkk_engine_newDepth                         -> vkCreateImage                             [label="first"];
-	vkk_engine_newDepth                         -> vkGetImageMemoryRequirements              [label="second"];
-	vkk_engine_newDepth                         -> vkk_engine_getMemoryTypeIndex             [label="third"];
-	vkk_engine_newDepth                         -> vkAllocateMemory                          [label="fourth"];
-	vkk_engine_newDepth                         -> vkBindImageMemory                         [label="fifth"];
-	vkk_engine_newDepth                         -> vkCreateImageView                         [label="sixth"];
+	vkk_engine_newDepth                         -> vkk_engine_newImage;
+	vkk_engine_newImage                         -> vkCreateImage                             [label="first"];
+	vkk_engine_newImage                         -> vkGetImageMemoryRequirements              [label="second"];
+	vkk_engine_newImage                         -> vkk_engine_getMemoryTypeIndex             [label="third"];
+	vkk_engine_newImage                         -> vkAllocateMemory                          [label="fourth"];
+	vkk_engine_newImage                         -> vkBindImageMemory                         [label="fifth"];
+	vkk_engine_newImage                         -> vkCreateImageView                         [label="sixth"];
+	vkk_engine_newImage                         -> vkk_engine_uploadImage                    [label="seventh"];
+	vkk_engine_newImage                         -> vkk_image_t;
+	vkk_engine_uploadImage                      -> vkk_image_size;
+	vkk_image_t                                 -> VKK_IMAGE_FORMAT                          [label="format"];
 	vkk_engine_newFramebuffer                   -> vkCreateImageView                         [label="first"];
 	vkk_engine_newFramebuffer                   -> vkCreateFramebuffer                       [label="second"];
 	vkk_engine_newCommandBuffers                -> vkAllocateCommandBuffers;
@@ -375,6 +386,7 @@ digraph VULKAN_KIT
 	my_app_new                                  -> vkk_engine_newGraphicsPipeline;
 	my_app_new                                  -> vkk_engine_newUniformSetFactory;
 	my_app_new                                  -> vkk_engine_newBuffer;
+	my_app_new                                  -> vkk_engine_newImage;
 	my_app_new                                  -> vkk_engine_newUniformSet;
 	my_app_new                                  -> vkk_engine_attachUniformBuffer;
 	my_app_new                                  -> vkk_engine_newSampler;
@@ -513,6 +525,8 @@ digraph VULKAN_KIT
 	my_app_delete                               -> vkk_engine_deletePipelineLayout;
 	my_app_delete                               -> vkk_engine_deleteGraphicsPipeline;
 	my_app_delete                               -> vkk_engine_deleteUniformSet;
+	my_app_delete                               -> vkk_engine_deleteImage;
+	vkk_engine_deleteBuffer                     -> vkk_engine_deleteImage;
 	VkPipelineVertexInputStateCreateInfo        -> VkVertexInputBindingDescription   [label="pVertexBindingDescriptions"];
 	VkPipelineVertexInputStateCreateInfo        -> VkVertexInputAttributeDescription [label="pVertexAttributeDescriptions"];
 	vkk_uniformBinding_t                        -> VKK_STAGE                         [label="stage"];
