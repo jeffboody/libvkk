@@ -59,6 +59,14 @@
 #define VKK_PRIMITIVE_TRIANGLE_FAN   2
 #define VKK_PRIMITIVE_TRIANGLE_COUNT 3
 
+#define VKK_SAMPLER_FILTER_NEAREST 0
+#define VKK_SAMPLER_FILTER_LINEAR  1
+#define VKK_SAMPLER_FILTER_COUNT   2
+
+#define VKK_SAMPLER_MIPMAP_MODE_NEAREST 0
+#define VKK_SAMPLER_MIPMAP_MODE_LINEAR  1
+#define VKK_SAMPLER_MIPMAP_MODE_COUNT   2
+
 #define VKK_STAGE_VS   1
 #define VKK_STAGE_FS   2
 #define VKK_STAGE_VSFS 3
@@ -237,6 +245,12 @@ vkk_image_t*             vkk_engine_newImage(vkk_engine_t* self,
                                              const void* pixels);
 void                     vkk_engine_deleteImage(vkk_engine_t* self,
                                                 vkk_image_t** _image);
+vkk_sampler_t*           vkk_engine_newSampler(vkk_engine_t* self,
+                                               int min_filter,
+                                               int mag_filter,
+                                               int mipmap_mode);
+void                     vkk_engine_deleteSampler(vkk_engine_t* self,
+                                                  vkk_sampler_t** _sampler);
 vkk_uniformSetFactory_t* vkk_engine_newUniformSetFactory(vkk_engine_t* self,
                                                          int dynamic,
                                                          uint32_t count,
@@ -251,6 +265,11 @@ void                     vkk_engine_attachUniformBuffer(vkk_engine_t* self,
                                                         vkk_uniformSet_t* us,
                                                         vkk_buffer_t* buffer,
                                                         uint32_t binding);
+void                     vkk_engine_attachUniformSampler(vkk_engine_t* self,
+                                                         vkk_uniformSet_t* us,
+                                                         vkk_sampler_t* sampler,
+                                                         vkk_image_t* image,
+                                                         uint32_t binding);
 void                     vkk_engine_bindUniformSet(vkk_engine_t* self,
                                                    vkk_pipelineLayout_t* pl,
                                                    vkk_uniformSet_t* us);

@@ -92,6 +92,8 @@ digraph VULKAN_KIT
 	VKK_STAGE                  [shape=box, fillcolor=green, style=filled, label="VKK_STAGE\nVS\nFS\nVSFS"];
 	VKK_UNIFORM_TYPE           [shape=box, fillcolor=green, style=filled, label="VKK_UNIFORM_TYPE\nBUFFER\nSAMPLER\nCOUNT"];
 	VKK_IMAGE_FORMAT           [shape=box, fillcolor=green, style=filled, label="VKK_IMAGE_FORMAT\nRGBA4444\nRGB565\nRGBA5551\nR8\nRG88\nRGB888\nRGBA8888\nDEPTH\nCOUNT"];
+	VKK_SAMPLER_FILTER         [shape=box, fillcolor=green, style=filled, label="VKK_SAMPLER_FILTER\nNEAREST\nLINEAR\nCOUNT"];
+	VKK_SAMPLER_MIPMAP_MODE    [shape=box, fillcolor=green, style=filled, label="VKK_SAMPLER_MIPMAP_MODE\nNEAREST\nLINEAR\nCOUNT"];
 	vkk_vertexBufferInfo_t     [shape=box, fillcolor=green, style=filled, label="vkk_vertexBufferInfo_t\nuint32_t location;\nuint32_t components;\nint format;"];
 	vkk_uniformBinding_t       [shape=box, fillcolor=green, style=filled, label="vkk_uniformBinding_t\nuint32_t binding;\nint type;\nint stage;\nvkk_sampler_t* sampler;"];
 
@@ -155,6 +157,7 @@ digraph VULKAN_KIT
 	VkCommandBufferInheritanceInfo         [shape=box, fillcolor=orange, style=filled, label="VkCommandBufferInheritanceInfo\nVkStructureType sType;\nconst void* pNext;\nVkRenderPass renderPass;\nuint32_t subpass;\nVkFramebuffer framebuffer;\nVkBool32 occlusionQueryEnable;\nVkQueryControlFlags queryFlags;\nVkQueryPipelineStatisticFlags pipelineStatistics;"];
 	VkDescriptorSetAllocateInfo            [shape=box, fillcolor=orange, style=filled, label="VkDescriptorSetAllocateInfo\nVkStructureType sType;\nconst void* pNext;\nVkDescriptorPool descriptorPool;\nuint32_t uniformSetCount;\nconst VkDescriptorSetLayout* pSetLayouts;"];
 	VkDescriptorBufferInfo                 [shape=box, fillcolor=orange, style=filled, label="VkDescriptorBufferInfo\nVkBuffer buffer;\nVkDeviceSize offset;\nVkDeviceSize range;"];
+	VkDescriptorImageInfo                  [shape=box, fillcolor=orange, style=filled, label="VkDescriptorImageInfo\nVkSampler sampler;\nVkImageView imageView;\nVkImageLayout imageLayout;"];
 	VkWriteDescriptorSet                   [shape=box, fillcolor=orange, style=filled, label="VkWriteDescriptorSet\nVkStructureType sType;\nconst void* pNext;\nVkDescriptorSet dstSet;\nuint32_t dstBinding;\nuint32_t dstArrayElement;\nuint32_t descriptorCount;\nVkDescriptorType descriptorType;\nconst VkDescriptorImageInfo* pImageInfo;\nconst VkDescriptorBufferInfo* pBufferInfo;\nconst VkBufferView* pTexelBufferView;"];
 	VkBufferCreateInfo                     [shape=box, fillcolor=orange, style=filled, label="VkBufferCreateInfo\nVkStructureType sType;\nconst void* pNext;\nVkBufferCreateFlags flags;\nVkDeviceSize size;\nVkBufferUsageFlags usage;\nVkSharingMode sharingMode;\nuint32_t queueFamilyIndexCount;\nconst uint32_t* pQueueFamilyIndices;"];
 	VkVertexInputBindingDescription        [shape=box, fillcolor=orange, style=filled, label="VkVertexInputBindingDescription\nuint32_t binding;\nuint32_t stride;\nVkVertexInputRate inputRate;"];
@@ -261,6 +264,7 @@ digraph VULKAN_KIT
 	vkk_engine_deleteBuffer            [fillcolor=palegreen, style=filled, label="void vkk_engine_deleteBuffer(\nvkk_engine_t* self,\nvkk_buffer_t** _buffer);"];
 	vkk_engine_updateBuffer            [fillcolor=palegreen, style=filled, label="void vkk_engine_updateBuffer(\nvkk_engine_t* self,\nvkk_buffer_t* buffer,\nconst void* buf);"];
 	vkk_engine_attachUniformBuffer     [fillcolor=palegreen, style=filled, label="void vkk_engine_attachUniformBuffer(\nvkk_engine_t* self,\nvkk_uniformSet_t* us,\nvkk_buffer_t* buffer,\nuint32_t binding);"];
+	vkk_engine_attachUniformSampler    [fillcolor=palegreen, style=filled, label="void vkk_engine_attachUniformSampler(\nvkk_engine_t* self,\nvkk_uniformSet_t* us,\nvkk_sampler_t* sampler,\nvkk_image_t* image,\nuint32_t binding);"];
 	vkk_engine_newImage                [fillcolor=palegreen, style=filled, label="vkk_image_t* vkk_engine_newImage(\nvkk_engine_t* self,\nuint32_t width,\nuint32_t height,\nint format,\nint mipmap,\nconst void* pixels);"];
 	vkk_engine_deleteImage             [fillcolor=palegreen, style=filled, label="void vkk_engine_deleteImage(\nvkk_engine_t* self,\nvkk_image_t** _image);"];
 	vkk_engine_bindUniformSet          [fillcolor=palegreen, style=filled, label="void vkk_engine_bindUniformSet(\nvkk_engine_t* self,\nvkk_pipelineLayout_t* pl,\nvkk_uniformSet_t* us);"];
@@ -278,7 +282,7 @@ digraph VULKAN_KIT
 	vkk_engine_newDescriptorSetPool    [fillcolor=limegreen, style=filled, label="VkDescriptorPool vkk_engine_newDescriptorSetPool(\nvkk_engine_t* self,\nvkk_uniformSetFactory_t* usf);"];
 	vkk_engine_uploadImage             [fillcolor=limegreen, style=filled, label="int vkk_engine_uploadImage(\nvkk_engine_t* self,\nvkk_image_t* image,\nconst void* pixels);"];
 	vkk_image_size                     [fillcolor=limegreen, style=filled, label="size_t vkk_image_size(\nvkk_image_t* self);"];
-	vkk_engine_newSampler              [fillcolor=palegreen, style=filled, label="vkk_sampler_t* vkk_engine_newSampler(\nvkk_engine_t* self);"];
+	vkk_engine_newSampler              [fillcolor=palegreen, style=filled, label="vkk_sampler_t* vkk_engine_newSampler(\nvkk_engine_t* self,\nint min_filter,\nint mag_filter,\nint mipmap_mode);"];
 	vkk_engine_deleteSampler           [fillcolor=palegreen, style=filled, label="void vkk_engine_deleteSampler(\nvkk_engine_t* self,\nvkk_sampler_t** _sampler);"];
 
 	// SDL functions
@@ -389,6 +393,7 @@ digraph VULKAN_KIT
 	my_app_new                                  -> vkk_engine_newImage;
 	my_app_new                                  -> vkk_engine_newUniformSet;
 	my_app_new                                  -> vkk_engine_attachUniformBuffer;
+	my_app_new                                  -> vkk_engine_attachUniformSampler;
 	my_app_new                                  -> vkk_engine_newSampler;
 	vkk_engine_newPipelineLayout                -> vkk_pipelineLayout_t;
 	vkk_engine_newPipelineLayout                -> vkCreatePipelineLayout;
@@ -515,7 +520,9 @@ digraph VULKAN_KIT
 	vkAllocateDescriptorSets                    -> VkDescriptorSet;
 	vkk_engine_bindUniformSet                   -> vkCmdBindDescriptorSets;
 	vkk_engine_attachUniformBuffer              -> vkUpdateDescriptorSets;
+	vkk_engine_attachUniformSampler             -> vkUpdateDescriptorSets;
 	VkWriteDescriptorSet                        -> VkDescriptorBufferInfo;
+	VkWriteDescriptorSet                        -> VkDescriptorImageInfo;
 	vkUpdateDescriptorSets                      -> VkWriteDescriptorSet;
 	vkCreateBuffer                              -> VkBuffer;
 	vkCreateBuffer                              -> VkBufferCreateInfo;
@@ -533,4 +540,6 @@ digraph VULKAN_KIT
 	vkk_uniformBinding_t                        -> VKK_UNIFORM_TYPE                  [label="type"];
 	vkk_engine_newSampler                       -> vkk_sampler_t;
 	vkk_engine_newSampler                       -> vkCreateSampler;
+	vkk_engine_newSampler                       -> VKK_SAMPLER_FILTER      [label="min_filter,\nmag_filter"];
+	vkk_engine_newSampler                       -> VKK_SAMPLER_MIPMAP_MODE [label="mipmap_mode"];
 }

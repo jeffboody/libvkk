@@ -1375,7 +1375,7 @@ vkk_engine_newDescriptorPool(vkk_engine_t* self,
 	VkDescriptorType dt_map[VKK_UNIFORM_TYPE_COUNT] =
 	{
 		VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
-		VK_DESCRIPTOR_TYPE_SAMPLER,
+		VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
 	};
 
 	// fill the descriptor pool size array and
@@ -2630,6 +2630,86 @@ void vkk_engine_deleteImage(vkk_engine_t* self,
 	}
 }
 
+vkk_sampler_t*
+vkk_engine_newSampler(vkk_engine_t* self, int min_filter,
+                      int mag_filter, int mipmap_mode)
+{
+	assert(self);
+
+	vkk_sampler_t* sampler;
+	sampler = (vkk_sampler_t*)
+	          CALLOC(1, sizeof(vkk_sampler_t));
+	if(sampler == NULL)
+	{
+		LOGE("CALLOC failed");
+		return NULL;
+	}
+
+	VkFilter filter_map[VKK_SAMPLER_FILTER_COUNT] =
+	{
+		VK_FILTER_NEAREST,
+		VK_FILTER_LINEAR
+	};
+
+	VkSamplerMipmapMode mipmap_map[VKK_SAMPLER_MIPMAP_MODE_COUNT] =
+	{
+		VK_SAMPLER_MIPMAP_MODE_NEAREST,
+		VK_SAMPLER_MIPMAP_MODE_LINEAR
+	};
+
+	VkSamplerCreateInfo si =
+	{
+		.sType                   = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO,
+		.pNext                   = NULL,
+		.flags                   = 0,
+		.magFilter               = filter_map[mag_filter],
+		.minFilter               = filter_map[min_filter],
+		.mipmapMode              = mipmap_map[mipmap_mode],
+		.addressModeU            = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE,
+		.addressModeV            = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE,
+		.addressModeW            = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE,
+		.mipLodBias              = 0.0f,
+		.anisotropyEnable        = VK_FALSE,
+		.maxAnisotropy           = 0.0f,
+		.compareEnable           = VK_FALSE,
+		.compareOp               = VK_COMPARE_OP_NEVER,
+		.minLod                  = 0.0f,
+		.maxLod                  = 0.0f,
+		.borderColor             = VK_BORDER_COLOR_FLOAT_OPAQUE_WHITE,
+		.unnormalizedCoordinates = VK_FALSE
+	};
+
+	if(vkCreateSampler(self->device, &si, NULL,
+	                   &sampler->sampler) != VK_SUCCESS)
+	{
+		LOGE("vkCreateSampler failed");
+		goto fail_create;
+	}
+
+	// success
+	return sampler;
+
+	// failure
+	fail_create:
+		FREE(sampler);
+	return NULL;
+}
+
+void vkk_engine_deleteSampler(vkk_engine_t* self,
+                              vkk_sampler_t** _sampler)
+{
+	assert(self);
+	assert(_sampler);
+
+	vkk_sampler_t* sampler = *_sampler;
+	if(sampler)
+	{
+		vkDestroySampler(self->device, sampler->sampler, NULL);
+		FREE(sampler);
+		*_sampler = NULL;
+	}
+}
+
 vkk_uniformSetFactory_t*
 vkk_engine_newUniformSetFactory(vkk_engine_t* self,
                                 int dynamic,
@@ -2642,7 +2722,7 @@ vkk_engine_newUniformSetFactory(vkk_engine_t* self,
 	VkDescriptorType dt_map[VKK_UNIFORM_TYPE_COUNT] =
 	{
 		VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
-		VK_DESCRIPTOR_TYPE_SAMPLER,
+		VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
 	};
 
 	VkShaderStageFlags stage_map[4] =
@@ -2943,6 +3023,49 @@ void vkk_engine_attachUniformBuffer(vkk_engine_t* self,
 			.descriptorType   = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
 			.pImageInfo       = NULL,
 			.pBufferInfo      = &db_info,
+			.pTexelBufferView = NULL,
+		};
+
+		vkUpdateDescriptorSets(self->device, 1, &writes,
+		                       0, NULL);
+	}
+}
+
+void vkk_engine_attachUniformSampler(vkk_engine_t* self,
+                                     vkk_uniformSet_t* us,
+                                     vkk_sampler_t* sampler,
+                                     vkk_image_t* image,
+                                     uint32_t binding)
+{
+	assert(self);
+	assert(us);
+	assert(sampler);
+	assert(image);
+
+	uint32_t count;
+	count = us->usf->dynamic ? self->swapchain_image_count : 1;
+
+	int i;
+	for(i = 0; i < count; ++i)
+	{
+		VkDescriptorImageInfo di_info =
+		{
+			.sampler     = sampler->sampler,
+			.imageView   = image->image_view,
+			.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL
+		};
+
+		VkWriteDescriptorSet writes =
+		{
+			.sType            = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
+			.pNext            = NULL,
+			.dstSet           = us->ds_array[i],
+			.dstBinding       = binding,
+			.dstArrayElement  = 0,
+			.descriptorCount  = 1,
+			.descriptorType   = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
+			.pImageInfo       = &di_info,
+			.pBufferInfo      = NULL,
 			.pTexelBufferView = NULL,
 		};
 
