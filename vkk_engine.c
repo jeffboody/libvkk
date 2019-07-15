@@ -210,7 +210,7 @@ vkk_engine_initSDL(vkk_engine_t* self, const char* app_name)
 		fclose(f);
 	}
 
-	int flags = (fullscreen ? SDL_WINDOW_FULLSCREEN : 0) |
+	int flags = (fullscreen ? SDL_WINDOW_FULLSCREEN_DESKTOP : 0) |
 		        SDL_WINDOW_RESIZABLE |
 	            SDL_WINDOW_VULKAN    |
 	            SDL_WINDOW_SHOWN;
