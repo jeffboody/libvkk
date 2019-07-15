@@ -2237,6 +2237,49 @@ void vkk_engine_endFrame(vkk_engine_t* self)
 	}
 }
 
+void vkk_engine_clearDepth(vkk_engine_t* self)
+{
+	assert(self);
+
+	VkClearRect rect =
+	{
+		.rect =
+		{
+			.offset =
+			{
+				.x = 0,
+				.y = 0
+			},
+			.extent =
+			{
+				.width  = self->swapchain_extent.width,
+				.height = self->swapchain_extent.height
+			}
+		},
+		.baseArrayLayer = 0,
+		.layerCount     = 1
+	};
+
+	VkClearAttachment ca =
+	{
+		.aspectMask = VK_IMAGE_ASPECT_DEPTH_BIT |
+		              VK_IMAGE_ASPECT_STENCIL_BIT,
+		.colorAttachment = 0,
+		.clearValue =
+		{
+			.depthStencil =
+			{
+				.depth   = 1.0f,
+				.stencil = 0
+			}
+		}
+	};
+
+	VkCommandBuffer cb;
+	cb = self->command_buffers[self->swapchain_frame];
+	vkCmdClearAttachments(cb, 1, &ca, 1, &rect);
+}
+
 vkk_buffer_t*
 vkk_engine_newBuffer(vkk_engine_t* self, int dynamic,
                      int usage, size_t size,

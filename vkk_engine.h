@@ -229,6 +229,7 @@ int                      vkk_engine_resize(vkk_engine_t* self,
 int                      vkk_engine_beginFrame(vkk_engine_t* self,
                                                float* clear_color);
 void                     vkk_engine_endFrame(vkk_engine_t* self);
+void                     vkk_engine_clearDepth(vkk_engine_t* self);
 vkk_buffer_t*            vkk_engine_newBuffer(vkk_engine_t* self,
                                               int dynamic,
                                               int usage,
