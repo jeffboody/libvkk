@@ -2280,6 +2280,52 @@ void vkk_engine_clearDepth(vkk_engine_t* self)
 	vkCmdClearAttachments(cb, 1, &ca, 1, &rect);
 }
 
+void vkk_engine_viewport(vkk_engine_t* self,
+                         float x, float y,
+                         float width, float height)
+{
+	assert(self);
+
+	VkViewport viewport =
+	{
+		.x        = x,
+		.y        = y,
+		.width    = width,
+		.height   = height,
+		.minDepth = 0.0f,
+		.maxDepth = 1.0f
+	};
+
+	VkCommandBuffer cb;
+	cb = self->command_buffers[self->swapchain_frame];
+	vkCmdSetViewport(cb, 0, 1, &viewport);
+}
+
+void vkk_engine_scissor(vkk_engine_t* self,
+                        uint32_t x, uint32_t y,
+                        uint32_t width, uint32_t height)
+{
+	assert(self);
+
+	VkRect2D scissor =
+	{
+		.offset =
+		{
+			.x = x,
+			.y = y
+		},
+		.extent =
+		{
+			.width  = width,
+			.height = height
+		}
+	};
+
+	VkCommandBuffer cb;
+	cb = self->command_buffers[self->swapchain_frame];
+	vkCmdSetScissor(cb, 0, 1, &scissor);
+}
+
 vkk_buffer_t*
 vkk_engine_newBuffer(vkk_engine_t* self, int dynamic,
                      int usage, size_t size,

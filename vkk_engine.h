@@ -230,6 +230,16 @@ int                      vkk_engine_beginFrame(vkk_engine_t* self,
                                                float* clear_color);
 void                     vkk_engine_endFrame(vkk_engine_t* self);
 void                     vkk_engine_clearDepth(vkk_engine_t* self);
+void                     vkk_engine_viewport(vkk_engine_t* self,
+                                             float x,
+                                             float y,
+                                             float width,
+                                             float height);
+void                     vkk_engine_scissor(vkk_engine_t* self,
+                                            uint32_t x,
+                                            uint32_t y,
+                                            uint32_t width,
+                                            uint32_t height);
 vkk_buffer_t*            vkk_engine_newBuffer(vkk_engine_t* self,
                                               int dynamic,
                                               int usage,
