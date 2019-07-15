@@ -2137,7 +2137,13 @@ int vkk_engine_beginFrame(vkk_engine_t* self,
 		{
 			.color =
 			{
-				.float32={ 0.0f, 0.0f, 0.0f, 1.0f }
+				.float32 =
+				{
+					clear_color[0],
+					clear_color[1],
+					clear_color[2],
+					clear_color[3]
+				}
 			},
 		},
 		{
