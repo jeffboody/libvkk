@@ -67,9 +67,11 @@
 #define VKK_SAMPLER_MIPMAP_MODE_LINEAR  1
 #define VKK_SAMPLER_MIPMAP_MODE_COUNT   2
 
-#define VKK_STAGE_VS   1
-#define VKK_STAGE_FS   2
-#define VKK_STAGE_VSFS 3
+#define VKK_STAGE_DEPTH 0
+#define VKK_STAGE_VS    1
+#define VKK_STAGE_FS    2
+#define VKK_STAGE_VSFS  3
+#define VKK_STAGE_COUNT 4
 
 #define VKK_UNIFORM_TYPE_BUFFER  0
 #define VKK_UNIFORM_TYPE_SAMPLER 1
@@ -242,6 +244,7 @@ vkk_image_t*             vkk_engine_newImage(vkk_engine_t* self,
                                              uint32_t height,
                                              int format,
                                              int mipmap,
+                                             int stage,
                                              const void* pixels);
 void                     vkk_engine_deleteImage(vkk_engine_t* self,
                                                 vkk_image_t** _image);

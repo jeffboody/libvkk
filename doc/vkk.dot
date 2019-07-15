@@ -89,7 +89,7 @@ digraph VULKAN_KIT
 	VKK_PRIMITIVE              [shape=box, fillcolor=green, style=filled, label="VKK_PRIMITIVE\nTRIANGLE_LIST\nTRIANGLE_STRIP\nTRIANGLE_FAN"];
 	VKK_VERTEX_FORMAT          [shape=box, fillcolor=green, style=filled, label="VKK_VERTEX_FORMAT\nFLOAT\nINT\nSHORT"];
 	VKK_INDEX_TYPE             [shape=box, fillcolor=green, style=filled, label="VKK_INDEX_TYPE\nUSHORT\nUINT"];
-	VKK_STAGE                  [shape=box, fillcolor=green, style=filled, label="VKK_STAGE\nVS\nFS\nVSFS"];
+	VKK_STAGE                  [shape=box, fillcolor=green, style=filled, label="VKK_STAGE\nDEPTH\nVS\nFS\nVSFS"];
 	VKK_UNIFORM_TYPE           [shape=box, fillcolor=green, style=filled, label="VKK_UNIFORM_TYPE\nBUFFER\nSAMPLER\nCOUNT"];
 	VKK_IMAGE_FORMAT           [shape=box, fillcolor=green, style=filled, label="VKK_IMAGE_FORMAT\nRGBA4444\nRGB565\nRGBA5551\nR8\nRG88\nRGB888\nRGBA8888\nDEPTH\nCOUNT"];
 	VKK_SAMPLER_FILTER         [shape=box, fillcolor=green, style=filled, label="VKK_SAMPLER_FILTER\nNEAREST\nLINEAR\nCOUNT"];
@@ -265,7 +265,7 @@ digraph VULKAN_KIT
 	vkk_engine_updateBuffer            [fillcolor=palegreen, style=filled, label="void vkk_engine_updateBuffer(\nvkk_engine_t* self,\nvkk_buffer_t* buffer,\nconst void* buf);"];
 	vkk_engine_attachUniformBuffer     [fillcolor=palegreen, style=filled, label="void vkk_engine_attachUniformBuffer(\nvkk_engine_t* self,\nvkk_uniformSet_t* us,\nvkk_buffer_t* buffer,\nuint32_t binding);"];
 	vkk_engine_attachUniformSampler    [fillcolor=palegreen, style=filled, label="void vkk_engine_attachUniformSampler(\nvkk_engine_t* self,\nvkk_uniformSet_t* us,\nvkk_sampler_t* sampler,\nvkk_image_t* image,\nuint32_t binding);"];
-	vkk_engine_newImage                [fillcolor=palegreen, style=filled, label="vkk_image_t* vkk_engine_newImage(\nvkk_engine_t* self,\nuint32_t width,\nuint32_t height,\nint format,\nint mipmap,\nconst void* pixels);"];
+	vkk_engine_newImage                [fillcolor=palegreen, style=filled, label="vkk_image_t* vkk_engine_newImage(\nvkk_engine_t* self,\nuint32_t width,\nuint32_t height,\nint format,\nint mipmap,\nint stage,\nconst void* pixels);"];
 	vkk_engine_deleteImage             [fillcolor=palegreen, style=filled, label="void vkk_engine_deleteImage(\nvkk_engine_t* self,\nvkk_image_t** _image);"];
 	vkk_engine_bindUniformSet          [fillcolor=palegreen, style=filled, label="void vkk_engine_bindUniformSet(\nvkk_engine_t* self,\nvkk_pipelineLayout_t* pl,\nvkk_uniformSet_t* us);"];
 	vkk_engine_newUniformSetFactory    [fillcolor=palegreen, style=filled, label="vkk_uniformSetFactory_t* vkk_engine_newUniformSetFactory(\nvkk_engine_t* self,\nint dynamic,\nuint32_t count,\nvkk_uniformBinding_t* ub_array);"];
@@ -280,7 +280,7 @@ digraph VULKAN_KIT
 	vkk_engine_draw                    [fillcolor=palegreen, style=filled, label="void vkk_engine_draw(\nvkk_engine_t* self,\nuint32_t vertex_count,\nuint32_t vertex_buffer_count,\nvkk_buffer_t** vertex_buffers);"];
 	vkk_engine_drawIndexed             [fillcolor=palegreen, style=filled, label="void vkk_engine_drawIndexed(\nvkk_engine_t* self,\nuint32_t vertex_count,\nuint32_t vertex_buffer_count,\nint index_type,\nvkk_buffer_t* index_buffer,\nvkk_buffer_t** vertex_buffers);"];
 	vkk_engine_newDescriptorSetPool    [fillcolor=limegreen, style=filled, label="VkDescriptorPool vkk_engine_newDescriptorSetPool(\nvkk_engine_t* self,\nvkk_uniformSetFactory_t* usf);"];
-	vkk_engine_uploadImage             [fillcolor=limegreen, style=filled, label="int vkk_engine_uploadImage(\nvkk_engine_t* self,\nvkk_image_t* image,\nconst void* pixels);"];
+	vkk_engine_uploadImage             [fillcolor=limegreen, style=filled, label="int vkk_engine_uploadImage(\nvkk_engine_t* self,\nvkk_image_t* image,\nint stage,\nconst void* pixels);"];
 	vkk_image_size                     [fillcolor=limegreen, style=filled, label="size_t vkk_image_size(\nvkk_image_t* self);"];
 	vkk_engine_newSampler              [fillcolor=palegreen, style=filled, label="vkk_sampler_t* vkk_engine_newSampler(\nvkk_engine_t* self,\nint min_filter,\nint mag_filter,\nint mipmap_mode);"];
 	vkk_engine_deleteSampler           [fillcolor=palegreen, style=filled, label="void vkk_engine_deleteSampler(\nvkk_engine_t* self,\nvkk_sampler_t** _sampler);"];

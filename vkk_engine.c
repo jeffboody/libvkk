@@ -812,7 +812,7 @@ static int vkk_engine_newDepth(vkk_engine_t* self)
 	                                        self->swapchain_extent.width,
 	                                        self->swapchain_extent.height,
 	                                        VKK_IMAGE_FORMAT_DEPTH,
-	                                        0, NULL);
+	                                        0, VKK_STAGE_DEPTH, NULL);
 	if(self->depth_image == NULL)
 	{
 		return 0;
@@ -1447,7 +1447,7 @@ vkk_engine_newDescriptorPool(vkk_engine_t* self,
 static int
 vkk_engine_uploadImage(vkk_engine_t* self,
                        vkk_image_t* image,
-                       const void* pixels)
+                       int stage, const void* pixels)
 {
 	assert(self);
 	assert(image);
@@ -1650,11 +1650,16 @@ vkk_engine_uploadImage(vkk_engine_t* self,
 		}
 	};
 
-	// NOTE: this only supports textures in fragment shaders
-	vkCmdPipelineBarrier(cb,
-	                     VK_PIPELINE_STAGE_TRANSFER_BIT,
-	                     VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
-	                     0, 0, NULL, 0 ,NULL, 1, &imb2);
+	VkPipelineStageFlagBits ps_map[VKK_STAGE_COUNT] =
+	{
+		0,
+		VK_PIPELINE_STAGE_VERTEX_SHADER_BIT,
+		VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
+		VK_PIPELINE_STAGE_VERTEX_SHADER_BIT | VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
+	};
+	vkCmdPipelineBarrier(cb, VK_PIPELINE_STAGE_TRANSFER_BIT,
+	                     ps_map[stage], 0, 0, NULL, 0, NULL,
+	                     1, &imb2);
 
 	// end the transfer commands
 	vkEndCommandBuffer(cb);
@@ -1687,6 +1692,8 @@ vkk_engine_uploadImage(vkk_engine_t* self,
 	                     1, &cb);
 	vkFreeMemory(self->device, memory, NULL);
 	vkDestroyBuffer(self->device, buffer, NULL);
+
+	image->transition = 0;
 
 	// success
 	return 1;
@@ -2441,6 +2448,7 @@ vkk_image_t* vkk_engine_newImage(vkk_engine_t* self,
                                  uint32_t height,
                                  int format,
                                  int mipmap,
+                                 int stage,
                                  const void* pixels)
 {
 	// pixels may be NULL for depth buffer
@@ -2586,7 +2594,8 @@ vkk_image_t* vkk_engine_newImage(vkk_engine_t* self,
 	// textures must upload pixel data
 	if(format != VKK_IMAGE_FORMAT_DEPTH)
 	{
-		if(vkk_engine_uploadImage(self, image, pixels) == 0)
+		if(vkk_engine_uploadImage(self, image, stage,
+		                          pixels) == 0)
 		{
 			goto fail_upload;
 		}
@@ -2725,7 +2734,7 @@ vkk_engine_newUniformSetFactory(vkk_engine_t* self,
 		VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
 	};
 
-	VkShaderStageFlags stage_map[4] =
+	VkShaderStageFlags ss_map[VKK_STAGE_COUNT] =
 	{
 		0,
 		VK_SHADER_STAGE_VERTEX_BIT,
@@ -2763,7 +2772,7 @@ vkk_engine_newUniformSetFactory(vkk_engine_t* self,
 		b->binding            = usb->binding;
 		b->descriptorType     = dt_map[usb->type];
 		b->descriptorCount    = 1;
-		b->stageFlags         = stage_map[usb->stage];
+		b->stageFlags         = ss_map[usb->stage];
 		b->pImmutableSamplers = usb->sampler ? &usb->sampler->sampler : NULL;
 	}
 
