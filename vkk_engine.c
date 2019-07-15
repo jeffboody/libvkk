@@ -1939,13 +1939,9 @@ void vkk_engine_waitForIdle(vkk_engine_t* self)
 	vkDeviceWaitIdle(self->device);
 }
 
-int vkk_engine_resize(vkk_engine_t* self,
-                      uint32_t* _width,
-                      uint32_t* _height)
+int vkk_engine_resize(vkk_engine_t* self)
 {
 	assert(self);
-	assert(_width);
-	assert(_height);
 
 	vkDeviceWaitIdle(self->device);
 
@@ -1968,9 +1964,6 @@ int vkk_engine_resize(vkk_engine_t* self,
 		goto fail_framebuffer;
 	}
 
-	*_width  = self->swapchain_extent.width;
-	*_height = self->swapchain_extent.height;
-
 	// success
 	return 1;
 
@@ -1980,6 +1973,18 @@ int vkk_engine_resize(vkk_engine_t* self,
 	fail_depth:
 		vkk_engine_deleteSwapchain(self);
 	return 0;
+}
+
+void vkk_engine_surfaceSize(vkk_engine_t* self,
+                            uint32_t* _width,
+                            uint32_t* _height)
+{
+	assert(self);
+	assert(_width);
+	assert(_height);
+
+	*_width  = self->swapchain_extent.width;
+	*_height = self->swapchain_extent.height;
 }
 
 int vkk_engine_beginFrame(vkk_engine_t* self,

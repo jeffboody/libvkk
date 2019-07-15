@@ -223,9 +223,10 @@ vkk_engine_t*            vkk_engine_new(void* app,
                                         uint32_t app_version);
 void                     vkk_engine_delete(vkk_engine_t** _self);
 void                     vkk_engine_waitForIdle(vkk_engine_t* self);
-int                      vkk_engine_resize(vkk_engine_t* self,
-                                           uint32_t* _width,
-                                           uint32_t* _height);
+int                      vkk_engine_resize(vkk_engine_t* self);
+void                     vkk_engine_surfaceSize(vkk_engine_t* self,
+                                                uint32_t* _width,
+                                                uint32_t* _height);
 int                      vkk_engine_beginFrame(vkk_engine_t* self,
                                                float* clear_color);
 void                     vkk_engine_endFrame(vkk_engine_t* self);
