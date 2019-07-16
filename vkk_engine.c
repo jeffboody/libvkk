@@ -3515,21 +3515,25 @@ vkk_engine_newGraphicsPipeline(vkk_engine_t* self,
 		.maxDepthBounds = 1.0f
 	};
 
-	// TODO - gpi->blend_mode
 	VkPipelineColorBlendAttachmentState pcbs =
 	{
 		.blendEnable         = VK_FALSE,
-		.srcColorBlendFactor = VK_BLEND_FACTOR_ZERO,
-		.dstColorBlendFactor = VK_BLEND_FACTOR_ZERO,
+		.srcColorBlendFactor = VK_BLEND_FACTOR_SRC_ALPHA,
+		.dstColorBlendFactor = VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA,
 		.colorBlendOp        = VK_BLEND_OP_ADD,
-		.srcAlphaBlendFactor = VK_BLEND_FACTOR_ZERO,
-		.dstAlphaBlendFactor = VK_BLEND_FACTOR_ZERO,
+		.srcAlphaBlendFactor = VK_BLEND_FACTOR_SRC_ALPHA,
+		.dstAlphaBlendFactor = VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA,
 		.alphaBlendOp        = VK_BLEND_OP_ADD,
 		.colorWriteMask      = VK_COLOR_COMPONENT_R_BIT |
 		                       VK_COLOR_COMPONENT_G_BIT |
 		                       VK_COLOR_COMPONENT_B_BIT |
 		                       VK_COLOR_COMPONENT_A_BIT,
 	};
+
+	if(gpi->blend_mode == VKK_BLEND_MODE_TRANSPARENCY)
+	{
+		pcbs.blendEnable = VK_TRUE;
+	}
 
 	VkPipelineColorBlendStateCreateInfo pcbs_info =
 	{

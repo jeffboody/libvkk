@@ -85,7 +85,7 @@ digraph VULKAN_KIT
 	vkk_graphicsPipeline_t     [shape=box, fillcolor=green, style=filled, label="vkk_graphicsPipeline_t\nVkPipeline pipeline;"];
 	vkk_graphicsPipelineInfo_t [shape=box, fillcolor=green, style=filled, label="vkk_graphicsPipelineInfo_t\nvkk_pipelineLayout_t* pl;\nconst char* vs;\nconst char* fs;\nuint32_t vb_count;\nvkk_vertexBufferInfo_t* vbi;\nint primitive;\nint primitive_restart;\nint cull_back;\nint depth_test;\nint depth_write;\nint blend_mode;"];
 	VKK_BUFFER_USAGE           [shape=box, fillcolor=green, style=filled, label="VKK_BUFFER_USAGE\nUNIFORM\nVERTEX\nCOUNT"];
-	VKK_BLEND_MODE             [shape=box, fillcolor=green, style=filled, label="VKK_BLEND_MODE\nDISABLED\nONE_MINUS_SRC_ALPHA"];
+	VKK_BLEND_MODE             [shape=box, fillcolor=green, style=filled, label="VKK_BLEND_MODE\nDISABLED\nTRANSPARENCY\nCOUNT"];
 	VKK_PRIMITIVE              [shape=box, fillcolor=green, style=filled, label="VKK_PRIMITIVE\nTRIANGLE_LIST\nTRIANGLE_STRIP\nTRIANGLE_FAN"];
 	VKK_VERTEX_FORMAT          [shape=box, fillcolor=green, style=filled, label="VKK_VERTEX_FORMAT\nFLOAT\nINT\nSHORT"];
 	VKK_INDEX_TYPE             [shape=box, fillcolor=green, style=filled, label="VKK_INDEX_TYPE\nUSHORT\nUINT"];

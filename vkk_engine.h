@@ -36,6 +36,10 @@
 #include "../libcc/cc_list.h"
 #include "../libcc/cc_map.h"
 
+#define VKK_BLEND_MODE_DISABLED     0
+#define VKK_BLEND_MODE_TRANSPARENCY 1
+#define VKK_BLEND_MODE_COUNT        2
+
 #define VKK_BUFFER_USAGE_UNIFORM 0
 #define VKK_BUFFER_USAGE_VERTEX  1
 #define VKK_BUFFER_USAGE_COUNT   2
