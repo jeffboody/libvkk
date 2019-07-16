@@ -60,6 +60,106 @@ vkk_image_size(vkk_image_t* self)
 * private                                                  *
 ***********************************************************/
 
+static void
+vkk_imageMemoryBarrier(VkCommandBuffer cb,
+                       VkImage image,
+                       int stage,
+                       VkImageLayout oldLayout,
+                       VkImageLayout newLayout,
+                       VkImageAspectFlags aspectMask,
+                       uint32_t baseMipLevel,
+                       uint32_t levelCount)
+{
+	assert(cb != VK_NULL_HANDLE);
+	assert(image != VK_NULL_HANDLE);
+
+	VkImageMemoryBarrier imb =
+	{
+		.sType               = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,
+		.pNext               = NULL,
+		.srcAccessMask       = 0,
+		.dstAccessMask       = 0,
+		.oldLayout           = oldLayout,
+		.newLayout           = newLayout,
+		.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
+		.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
+		.image               = image,
+		.subresourceRange    =
+		{
+			.aspectMask     = aspectMask,
+			.baseMipLevel   = baseMipLevel,
+			.levelCount     = levelCount,
+			.baseArrayLayer = 0,
+			.layerCount     = 1
+		}
+	};
+
+	// derive the access masks and stage flags from the
+	// image layouts
+	VkPipelineStageFlags srcStageMask = VK_PIPELINE_STAGE_ALL_COMMANDS_BIT;
+	VkPipelineStageFlags dstStageMask = VK_PIPELINE_STAGE_ALL_COMMANDS_BIT;
+	if(oldLayout == VK_IMAGE_LAYOUT_UNDEFINED)
+	{
+		srcStageMask      = VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT;
+		imb.srcAccessMask = 0;
+	}
+	else if(oldLayout == VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL)
+	{
+		srcStageMask      = VK_PIPELINE_STAGE_TRANSFER_BIT;
+		imb.srcAccessMask = VK_ACCESS_TRANSFER_READ_BIT;
+	}
+	else if(oldLayout == VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL)
+	{
+		srcStageMask      = VK_PIPELINE_STAGE_TRANSFER_BIT;
+		imb.srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
+	}
+	else
+	{
+		LOGW("invalid oldLayout=%u", oldLayout);
+	}
+
+	if(newLayout == VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL)
+	{
+		dstStageMask      = VK_PIPELINE_STAGE_TRANSFER_BIT;
+		imb.dstAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
+	}
+	else if(newLayout == VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL)
+	{
+		dstStageMask      = VK_PIPELINE_STAGE_TRANSFER_BIT;
+		imb.dstAccessMask = VK_ACCESS_TRANSFER_READ_BIT;
+	}
+	else if(newLayout == VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL)
+	{
+		dstStageMask      = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+		imb.dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
+	}
+	else if(newLayout == VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL)
+	{
+		dstStageMask      = VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT;
+		imb.dstAccessMask = VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
+	}
+	else if(newLayout == VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL)
+	{
+		VkPipelineStageFlagBits ps_map[VKK_STAGE_COUNT] =
+		{
+			0,
+			VK_PIPELINE_STAGE_VERTEX_SHADER_BIT,
+			VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
+			VK_PIPELINE_STAGE_VERTEX_SHADER_BIT | VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
+		};
+
+		dstStageMask      = ps_map[stage];
+		imb.dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
+	}
+	else
+	{
+		LOGW("invalid newLayout=%u", newLayout);
+	}
+
+	vkCmdPipelineBarrier(cb, srcStageMask, dstStageMask,
+	                     0, 0, NULL, 0, NULL, 1, &imb);
+}
+
 static int
 vkk_engine_hasDeviceExtensions(vkk_engine_t* self,
                                uint32_t count,
@@ -1444,10 +1544,94 @@ vkk_engine_newDescriptorPool(vkk_engine_t* self,
 	return VK_NULL_HANDLE;
 }
 
+static void
+vkk_engine_mipmapImage(vkk_engine_t* self,
+                       vkk_image_t* image,
+                       int stage,
+                       uint32_t mip_levels,
+                       VkCommandBuffer cb)
+{
+	assert(self);
+	assert(image);
+	assert(mip_levels > 1);
+	assert(cb != VK_NULL_HANDLE);
+
+	// transition the base mip level to a src for blitting
+	vkk_imageMemoryBarrier(cb, image->image, stage,
+	                       VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+	                       VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
+	                       VK_IMAGE_ASPECT_COLOR_BIT, 0, 1);
+
+	int i;
+	uint32_t w = image->width;
+	uint32_t h = image->height;
+	for(i = 1; i < mip_levels; ++i)
+	{
+		VkImageBlit ib =
+		{
+			.srcSubresource =
+			{
+				.aspectMask     = VK_IMAGE_ASPECT_COLOR_BIT,
+				.mipLevel       = i - 1,
+				.baseArrayLayer = 0,
+				.layerCount     = 1
+			},
+			.srcOffsets =
+			{
+				{
+					.x = 0,
+					.y = 0,
+					.z = 0,
+				},
+				{
+					.x = (uint32_t) (w >> (i - 1)),
+					.y = (uint32_t) (h >> (i - 1)),
+					.z = 1,
+				}
+			},
+			.dstSubresource =
+			{
+				.aspectMask     = VK_IMAGE_ASPECT_COLOR_BIT,
+				.mipLevel       = i,
+				.baseArrayLayer = 0,
+				.layerCount     = 1
+			},
+			.dstOffsets =
+			{
+				{
+					.x = 0,
+					.y = 0,
+					.z = 0,
+				},
+				{
+					.x = (uint32_t) (w >> i),
+					.y = (uint32_t) (h >> i),
+					.z = 1,
+				}
+			}
+		};
+
+		vkCmdBlitImage(cb,
+		               image->image,
+		               VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
+		               image->image,
+		               VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+		               1, &ib, VK_FILTER_LINEAR);
+
+		// transition the mip level i to a src for blitting
+		vkk_imageMemoryBarrier(cb, image->image, stage,
+		                       VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+		                       VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
+		                       VK_IMAGE_ASPECT_COLOR_BIT, i, 1);
+	}
+}
+
 static int
 vkk_engine_uploadImage(vkk_engine_t* self,
                        vkk_image_t* image,
-                       int stage, const void* pixels)
+                       int stage,
+                       uint32_t mip_levels,
+                       const void* pixels)
 {
 	assert(self);
 	assert(image);
@@ -1570,32 +1754,12 @@ vkk_engine_uploadImage(vkk_engine_t* self,
 	}
 
 	// transition the image to copy the transfer buffer to
-	// the image
-	VkImageMemoryBarrier imb1 =
-	{
-		.sType               = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,
-		.pNext               = NULL,
-		.srcAccessMask       = 0,
-		.dstAccessMask       = VK_ACCESS_TRANSFER_WRITE_BIT,
-		.oldLayout           = VK_IMAGE_LAYOUT_UNDEFINED,
-		.newLayout           = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
-		.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
-		.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
-		.image               = image->image,
-		.subresourceRange    =
-		{
-			.aspectMask     = VK_IMAGE_ASPECT_COLOR_BIT,
-			.baseMipLevel   = 0,
-			.levelCount     = 1,
-			.baseArrayLayer = 0,
-			.layerCount     = 1
-		}
-	};
-
-	vkCmdPipelineBarrier(cb,
-	                     VK_PIPELINE_STAGE_HOST_BIT,
-	                     VK_PIPELINE_STAGE_TRANSFER_BIT,
-	                     0, 0, NULL, 0 ,NULL, 1, &imb1);
+	// the image and generate mip levels if needed
+	vkk_imageMemoryBarrier(cb, image->image, stage,
+	                       VK_IMAGE_LAYOUT_UNDEFINED,
+	                       VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+	                       VK_IMAGE_ASPECT_COLOR_BIT, 0,
+	                       mip_levels);
 
 	// copy the transfer buffer to the image
 	VkBufferImageCopy bic =
@@ -1628,38 +1792,24 @@ vkk_engine_uploadImage(vkk_engine_t* self,
 	                       VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
 	                       1, &bic);
 
-	// transition the image from transfer mode to shading mode
-	VkImageMemoryBarrier imb2 =
+	// at this point we may need to generate mip_levels if
+	// mipmapping was enabled and set the old_layout
+	// accordingly
+	VkImageLayout old_layout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
+	if(mip_levels > 1)
 	{
-		.sType               = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,
-		.pNext               = NULL,
-		.srcAccessMask       = VK_ACCESS_TRANSFER_WRITE_BIT,
-		.dstAccessMask       = VK_ACCESS_SHADER_READ_BIT,
-		.oldLayout           = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
-		.newLayout           = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
-		.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
-		.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
-		.image               = image->image,
-		.subresourceRange    =
-		{
-			.aspectMask     = VK_IMAGE_ASPECT_COLOR_BIT,
-			.baseMipLevel   = 0,
-			.levelCount     = 1,
-			.baseArrayLayer = 0,
-			.layerCount     = 1
-		}
-	};
+		vkk_engine_mipmapImage(self, image, stage, mip_levels,
+		                       cb);
 
-	VkPipelineStageFlagBits ps_map[VKK_STAGE_COUNT] =
-	{
-		0,
-		VK_PIPELINE_STAGE_VERTEX_SHADER_BIT,
-		VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
-		VK_PIPELINE_STAGE_VERTEX_SHADER_BIT | VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
-	};
-	vkCmdPipelineBarrier(cb, VK_PIPELINE_STAGE_TRANSFER_BIT,
-	                     ps_map[stage], 0, 0, NULL, 0, NULL,
-	                     1, &imb2);
+		old_layout = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
+	}
+
+	// transition the image from transfer mode to shading mode
+	vkk_imageMemoryBarrier(cb, image->image, stage,
+	                       old_layout,
+	                       VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+	                       VK_IMAGE_ASPECT_COLOR_BIT, 0,
+	                       mip_levels);
 
 	// end the transfer commands
 	vkEndCommandBuffer(cb);
@@ -2050,63 +2200,22 @@ int vkk_engine_beginFrame(vkk_engine_t* self,
 		return 0;
 	}
 
+	// stage only applies to textures
 	VkImage image;
 	image = self->swapchain_images[self->swapchain_frame];
-	VkImageMemoryBarrier imb =
-	{
-		.sType               = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,
-		.pNext               = NULL,
-		.srcAccessMask       = 0,
-		.dstAccessMask       = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,
-		.oldLayout           = VK_IMAGE_LAYOUT_UNDEFINED,
-		.newLayout           = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
-		.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
-		.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
-		.image               = image,
-		.subresourceRange    =
-		{
-			.aspectMask     = VK_IMAGE_ASPECT_COLOR_BIT,
-			.baseMipLevel   = 0,
-			.levelCount     = 1,
-			.baseArrayLayer = 0,
-			.layerCount     = 1
-		}
-	};
-
-	vkCmdPipelineBarrier(cb,
-	                     VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT,
-	                     VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
-	                     0, 0, NULL, 0 ,NULL, 1, &imb);
+	vkk_imageMemoryBarrier(cb, image, 0,
+	                       VK_IMAGE_LAYOUT_UNDEFINED,
+	                       VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+	                       VK_IMAGE_ASPECT_COLOR_BIT, 0, 1);
 
 	if(self->depth_image->transition)
 	{
-
-		VkImageMemoryBarrier imb_depth =
-		{
-			.sType               = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,
-			.pNext               = NULL,
-			.srcAccessMask       = 0,
-			.dstAccessMask       = VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT,
-			.oldLayout           = VK_IMAGE_LAYOUT_UNDEFINED,
-			.newLayout           = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL,
-			.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
-			.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
-			.image               = self->depth_image->image,
-			.subresourceRange    =
-			{
-				.aspectMask     = VK_IMAGE_ASPECT_DEPTH_BIT |
-				                  VK_IMAGE_ASPECT_STENCIL_BIT,
-				.baseMipLevel   = 0,
-				.levelCount     = 1,
-				.baseArrayLayer = 0,
-				.layerCount     = 1
-			}
-		};
-
-		vkCmdPipelineBarrier(cb,
-		                     VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT,
-		                     VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT,
-		                     0, 0, NULL, 0 ,NULL, 1, &imb_depth);
+		// stage only applies to textures
+		vkk_imageMemoryBarrier(cb, self->depth_image->image, 0,
+		                       VK_IMAGE_LAYOUT_UNDEFINED,
+		                       VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL,
+		                       VK_IMAGE_ASPECT_DEPTH_BIT | VK_IMAGE_ASPECT_STENCIL_BIT,
+		                       0, 1);
 
 		self->depth_image->transition = 0;
 	}
@@ -2554,7 +2663,39 @@ vkk_image_t* vkk_engine_newImage(vkk_engine_t* self,
 	// pixels may be NULL for depth buffer
 	assert(self);
 
-	// TODO - add mipmap support
+	// check if mipmapped images are a power-of-two
+	// and compute the mip_levels
+	uint32_t mip_levels = 1;
+	if(mipmap)
+	{
+		// mipmap does not apply to the depth image
+		assert(format != VKK_IMAGE_FORMAT_DEPTH);
+
+		uint32_t w = 1;
+		uint32_t h = 1;
+		uint32_t n = 1;
+		uint32_t m = 1;
+
+		while(w < width)
+		{
+			w *= 2;
+			n += 1;
+		}
+
+		while(h < height)
+		{
+			h *= 2;
+			m += 1;
+		}
+
+		if((w != width) || (h != height))
+		{
+			LOGE("invalid width=%u, height=%u", width, height);
+			return NULL;
+		}
+
+		mip_levels = (m > n) ? m : n;
+	}
 
 	vkk_image_t* image;
 	image = (vkk_image_t*) CALLOC(1, sizeof(vkk_image_t));
@@ -2586,9 +2727,14 @@ vkk_image_t* vkk_engine_newImage(vkk_engine_t* self,
 	VkImageAspectFlags aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
 	if(format == VKK_IMAGE_FORMAT_DEPTH)
 	{
-		usage         = VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT;
-		aspectMask    = VK_IMAGE_ASPECT_DEPTH_BIT |
-		                VK_IMAGE_ASPECT_STENCIL_BIT;
+		usage      = VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT;
+		aspectMask = VK_IMAGE_ASPECT_DEPTH_BIT |
+		             VK_IMAGE_ASPECT_STENCIL_BIT;
+	}
+	else if(mip_levels > 1)
+	{
+		// mip levels are generated iteratively by blitting
+		usage = usage | VK_IMAGE_USAGE_TRANSFER_SRC_BIT;
 	}
 
 	VkImageCreateInfo i_info =
@@ -2604,7 +2750,7 @@ vkk_image_t* vkk_engine_newImage(vkk_engine_t* self,
 			height,
 			1
 		},
-		.mipLevels   = 1,
+		.mipLevels   = mip_levels,
 		.arrayLayers = 1,
 		.samples     = VK_SAMPLE_COUNT_1_BIT,
 		.tiling      = VK_IMAGE_TILING_OPTIMAL,
@@ -2678,7 +2824,7 @@ vkk_image_t* vkk_engine_newImage(vkk_engine_t* self,
 		{
 			.aspectMask     = aspectMask,
 			.baseMipLevel   = 0,
-			.levelCount     = 1,
+			.levelCount     = mip_levels,
 			.baseArrayLayer = 0,
 			.layerCount     = 1
 		}
@@ -2695,7 +2841,7 @@ vkk_image_t* vkk_engine_newImage(vkk_engine_t* self,
 	if(format != VKK_IMAGE_FORMAT_DEPTH)
 	{
 		if(vkk_engine_uploadImage(self, image, stage,
-		                          pixels) == 0)
+		                          mip_levels, pixels) == 0)
 		{
 			goto fail_upload;
 		}
@@ -2766,6 +2912,11 @@ vkk_engine_newSampler(vkk_engine_t* self, int min_filter,
 		VK_SAMPLER_MIPMAP_MODE_LINEAR
 	};
 
+	// Note: the maxLod represents the maximum number of mip
+	// levels that can be supported and is just used to clamp
+	// the computed maxLod for a particular texture.
+	// A large value for maxLod effectively allows all mip
+	// levels to be used for mipmapped textures.
 	VkSamplerCreateInfo si =
 	{
 		.sType                   = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO,
@@ -2783,7 +2934,7 @@ vkk_engine_newSampler(vkk_engine_t* self, int min_filter,
 		.compareEnable           = VK_FALSE,
 		.compareOp               = VK_COMPARE_OP_NEVER,
 		.minLod                  = 0.0f,
-		.maxLod                  = 0.0f,
+		.maxLod                  = 1024.0f,
 		.borderColor             = VK_BORDER_COLOR_FLOAT_OPAQUE_WHITE,
 		.unnormalizedCoordinates = VK_FALSE
 	};
