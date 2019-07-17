@@ -1637,6 +1637,21 @@ vkk_engine_uploadImage(vkk_engine_t* self,
 	assert(image);
 	assert(pixels);
 
+	VkFenceCreateInfo f_info =
+	{
+		.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO,
+		.pNext = NULL,
+		.flags = 0
+	};
+
+	VkFence fence;
+	if(vkCreateFence(self->device, &f_info, NULL,
+	                 &fence) != VK_SUCCESS)
+	{
+		LOGE("vkCreateFence failed");
+		return 0;
+	}
+
 	// create a transfer buffer
 	size_t size = vkk_image_size(image);
 	VkBufferCreateInfo b_info =
@@ -1656,7 +1671,7 @@ vkk_engine_uploadImage(vkk_engine_t* self,
 	                  &buffer) != VK_SUCCESS)
 	{
 		LOGE("vkCreateBuffer failed");
-		return 0;
+		goto fail_buffer;
 	}
 
 	// allocate memory for the transfer buffer
@@ -1829,12 +1844,19 @@ vkk_engine_uploadImage(vkk_engine_t* self,
 	};
 
 	if(vkQueueSubmit(self->queue, 1, &s_info,
-	                 VK_NULL_HANDLE) != VK_SUCCESS)
+	                 fence) != VK_SUCCESS)
 	{
 		LOGE("vkQueueSubmit failed");
 		goto fail_submit;
 	}
-	vkQueueWaitIdle(self->queue);
+
+	uint64_t timeout = 250000000;
+	if(vkWaitForFences(self->device, 1, &fence, VK_TRUE,
+	                   timeout) != VK_SUCCESS)
+	{
+		LOGW("timeout");
+		vkQueueWaitIdle(self->queue);
+	}
 
 	// release temporary objects
 	vkFreeCommandBuffers(self->device,
@@ -1842,6 +1864,7 @@ vkk_engine_uploadImage(vkk_engine_t* self,
 	                     1, &cb);
 	vkFreeMemory(self->device, memory, NULL);
 	vkDestroyBuffer(self->device, buffer, NULL);
+	vkDestroyFence(self->device, fence, NULL);
 
 	image->transition = 0;
 
@@ -1862,6 +1885,8 @@ vkk_engine_uploadImage(vkk_engine_t* self,
 	fail_allocate_memory:
 	fail_memory_type:
 		vkDestroyBuffer(self->device, buffer, NULL);
+	fail_buffer:
+		vkDestroyFence(self->device, fence, NULL);
 	return 0;
 }
 
