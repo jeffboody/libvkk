@@ -1803,7 +1803,13 @@ vkk_engine_uploadImage(vkk_engine_t* self,
 		goto fail_submit;
 	}
 
-	uint64_t timeout = 250000000;
+	// Android only supports infinite timeout
+	// Linux needs a timeout to avoid deadlock on resize
+	#ifdef ANDROID
+		uint64_t timeout = UINT64_MAX;
+	#else
+		uint64_t timeout = 250000000;
+	#endif
 	if(vkWaitForFences(self->device, 1, &fence, VK_TRUE,
 	                   timeout) != VK_SUCCESS)
 	{
@@ -2128,7 +2134,13 @@ int vkk_engine_beginFrame(vkk_engine_t* self,
 	                          &semaphore_acquire,
 	                          &semaphore_submit);
 
-	uint64_t timeout = 250000000;
+	// Android only supports infinite timeout
+	// Linux needs a timeout to avoid deadlock on resize
+	#ifdef ANDROID
+		uint64_t timeout = UINT64_MAX;
+	#else
+		uint64_t timeout = 250000000;
+	#endif
 	if(vkAcquireNextImageKHR(self->device,
 	                         self->swapchain,
 	                         timeout,
