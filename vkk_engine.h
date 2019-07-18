@@ -175,6 +175,8 @@ typedef struct
 		SDL_Window* window;
 	#endif
 
+	char resource[256];
+
 	VkInstance       instance;
 	VkSurfaceKHR     surface;
 	VkPhysicalDevice physical_device;
@@ -224,7 +226,8 @@ typedef struct
 
 vkk_engine_t*            vkk_engine_new(void* app,
                                         const char* app_name,
-                                        uint32_t app_version);
+                                        uint32_t app_version,
+                                        const char* resource);
 void                     vkk_engine_delete(vkk_engine_t** _self);
 void                     vkk_engine_waitForIdle(vkk_engine_t* self);
 int                      vkk_engine_resize(vkk_engine_t* self);

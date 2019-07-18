@@ -75,7 +75,7 @@ digraph VULKAN_KIT
 	SDL_WINDOW [shape=box, fillcolor=plum, style=filled, label="SDL_WINDOW_*\nFULLSCREEN\nRESIZABLE\nVULKAN\nSHOWN"];
 
 	// vkk structures
-	vkk_engine_t               [shape=box, fillcolor=green, style=filled, label="vkk_engine_t\nstruct android_app* app;\nSDL_Window* window;\nVkInstance instance;\nVkSurfaceKHR surface;\nVkPhysicalDevice physical_device;\nVkDevice device;\nuint32_t queue_family_index;\nVkQueue queue;\nVkPipelineCache pipeline_cache;\nVkCommandPool command_pool;\nuint32_t swapchain_frame;\nVkFormat swapchain_format;\nVkExtent2D swapchain_extent;\nVkColorSpaceKHR swapchain_color_space;\nuint32_t swapchain_image_count;\nVkSwapchainKHR swapchain;\nVkImage* swapchain_images;\nVkFence* swapchain_fences;\nVkRenderPass render_pass;\nint depth_transition;\nVkImage depth_image;\nVkDeviceMemory depth_memory;\nVkImageView depth_image_view;\nVkImageView* framebuffer_image_views;\nVkFramebuffer* framebuffers;\nVkCommandBuffer* command_buffers;\nuint32_t semaphore_index;\nVkSemaphore* semaphore_acquire;\nVkSemaphore* semaphore_submit;\ncc_map_t* shader_modules;"];
+	vkk_engine_t               [shape=box, fillcolor=green, style=filled, label="vkk_engine_t\nstruct android_app* app;\nSDL_Window* window;\nchar resource[256];\nVkInstance instance;\nVkSurfaceKHR surface;\nVkPhysicalDevice physical_device;\nVkDevice device;\nuint32_t queue_family_index;\nVkQueue queue;\nVkPipelineCache pipeline_cache;\nVkCommandPool command_pool;\nuint32_t swapchain_frame;\nVkFormat swapchain_format;\nVkExtent2D swapchain_extent;\nVkColorSpaceKHR swapchain_color_space;\nuint32_t swapchain_image_count;\nVkSwapchainKHR swapchain;\nVkImage* swapchain_images;\nVkFence* swapchain_fences;\nVkRenderPass render_pass;\nint depth_transition;\nVkImage depth_image;\nVkDeviceMemory depth_memory;\nVkImageView depth_image_view;\nVkImageView* framebuffer_image_views;\nVkFramebuffer* framebuffers;\nVkCommandBuffer* command_buffers;\nuint32_t semaphore_index;\nVkSemaphore* semaphore_acquire;\nVkSemaphore* semaphore_submit;\ncc_map_t* shader_modules;"];
 	vkk_buffer_t               [shape=box, fillcolor=green, style=filled, label="vkk_buffer_t\nint dynamic;\nsize_t size;\nVkBuffer* buffer;\nVkDeviceMemory* memory;"];
 	vkk_image_t                [shape=box, fillcolor=green, style=filled, label="vkk_image_t\nuint32_t width;\nuint32_t height;\nint format;\nint transition;\nVkImage image;\nVkDeviceMemory memory;\nVkImageView image_view;"];
 	vkk_sampler_t              [shape=box, fillcolor=green, style=filled, label="vkk_sampler_t\nVkSampler sampler;"];
@@ -231,7 +231,7 @@ digraph VULKAN_KIT
 	my_app_draw   [fillcolor=skyblue, style=filled, label="void my_app_draw(my_app_t* self);"];
 
 	// vkk functions
-	vkk_engine_new                     [fillcolor=palegreen, style=filled, label="vkk_engine_t* vkk_engine_new(\nvoid* app,\nconst char* app_name,\nuint32_t app_version);"];
+	vkk_engine_new                     [fillcolor=palegreen, style=filled, label="vkk_engine_t* vkk_engine_new(\nvoid* app,\nconst char* app_name,\nuint32_t app_version,\nconst char* resource);"];
 	vkk_engine_resize                  [fillcolor=palegreen, style=filled, label="int vkk_engine_resize(\nvkk_engine_t* self,\nuint32_t* _width,\nuint32_t* _height);"];
 	vkk_engine_initSDL                 [fillcolor=limegreen, style=filled, label="int vkk_engine_initSDL(\nvkk_engine_t* self,\nconst char* app_name);"];
 	vkk_engine_newInstance             [fillcolor=limegreen, style=filled, label="int vkk_engine_newInstance(\nvkk_engine_t* self);"];

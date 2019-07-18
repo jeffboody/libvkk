@@ -28,6 +28,7 @@
 #define LOG_TAG "vkk"
 #include "../libcc/cc_log.h"
 #include "../libcc/cc_memory.h"
+#include "../libpak/pak_file.h"
 #include "vkk_engine.h"
 
 #define VKK_DESCRIPTOR_POOL_SIZE 64
@@ -1282,80 +1283,36 @@ vkk_engine_importShaderModule(vkk_engine_t* self,
 	assert(fname);
 	assert(_size);
 
-	#ifdef ANDROID
-		AAssetManager* am;
-		am = self->app->activity->assetManager;
-		AAsset* f = AAssetManager_open(am, fname,
-		                               AASSET_MODE_BUFFER);
-		if(f == NULL)
-		{
-			LOGE("AAssetManager_open %s failed", fname);
-			return NULL;
-		}
+	pak_file_t* pak;
+	pak = pak_file_open(self->resource, PAK_FLAG_READ);
+	if(pak == NULL)
+	{
+		return NULL;
+	}
 
-		size_t size = (size_t) AAsset_getLength(f);
-		if((size == 0) || ((size % 4) != 0))
-		{
-			LOGE("invalid size=%u", (unsigned int) size);
-			goto fail_size;
-		}
+	size_t size = (size_t) pak_file_seek(pak, fname);
+	if((size == 0) || ((size % 4) != 0))
+	{
+		LOGE("invalid size=%u", (unsigned int) size);
+		goto fail_size;
+	}
 
-		uint32_t* code;
-		code = (uint32_t*)
-		       CALLOC(size/4, sizeof(uint32_t));
-		if(code == NULL)
-		{
-			LOGE("CALLOC failed");
-			goto fail_alloc;
-		}
+	uint32_t* code;
+	code = (uint32_t*)
+	       CALLOC(size/4, sizeof(uint32_t));
+	if(code == NULL)
+	{
+		LOGE("CALLOC failed");
+		goto fail_alloc;
+	}
 
-		if(AAsset_read(f, code, size) != size)
-		{
-			LOGE("AAsset_read failed");
-			goto fail_code;
-		}
+	if(fread((void*) code, size, 1, pak->f) != 1)
+	{
+		LOGE("fread failed");
+		goto fail_code;
+	}
 
-		AAsset_close(f);
-	#else
-		FILE* f = fopen(fname, "r");
-		if(f == NULL)
-		{
-			LOGE("fopen %s failed", fname);
-			return NULL;
-		}
-
-		fseek(f, 0, SEEK_END);
-		size_t size = (size_t) ftell(f);
-
-		if((size == 0) || ((size % 4) != 0))
-		{
-			LOGE("invalid size=%u", (unsigned int) size);
-			goto fail_size;
-		}
-
-		if(fseek(f, 0, SEEK_SET) == -1)
-		{
-			LOGE("fseek failed");
-			goto fail_size;
-		}
-
-		uint32_t* code;
-		code = (uint32_t*)
-		       CALLOC(size/4, sizeof(uint32_t));
-		if(code == NULL)
-		{
-			LOGE("CALLOC failed");
-			goto fail_alloc;
-		}
-
-		if(fread((void*) code, size, 1, f) != 1)
-		{
-			LOGE("fread failed");
-			goto fail_code;
-		}
-
-		fclose(f);
-	#endif
+	pak_file_close(&pak);
 
 	*_size = size;
 
@@ -1367,11 +1324,7 @@ vkk_engine_importShaderModule(vkk_engine_t* self,
 		FREE(code);
 	fail_alloc:
 	fail_size:
-	#ifdef ANDROID
-		AAsset_close(f);
-	#else
-		fclose(f);
-	#endif
+		pak_file_close(&pak);
 	return NULL;
 }
 
@@ -1896,7 +1849,8 @@ vkk_engine_uploadImage(vkk_engine_t* self,
 
 vkk_engine_t* vkk_engine_new(void* app,
                              const char* app_name,
-                             uint32_t app_version)
+                             uint32_t app_version,
+                             const char* resource)
 {
 	#ifdef ANDROID
 		assert(app);
@@ -1904,6 +1858,7 @@ vkk_engine_t* vkk_engine_new(void* app,
 		assert(app == NULL);
 	#endif
 	assert(app_name);
+	assert(resource);
 
 	vkk_engine_t* self;
 	self = (vkk_engine_t*)
@@ -1923,6 +1878,8 @@ vkk_engine_t* vkk_engine_new(void* app,
 			return NULL;
 		}
 	#endif
+
+	snprintf(self->resource, 256, "%s", resource);
 
 	if(vkk_engine_newInstance(self, app_name,
 	                          app_version) == 0)
