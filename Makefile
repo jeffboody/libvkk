@@ -3,7 +3,7 @@ CLASSES = \
 	vkk_engine
 SOURCE  = $(CLASSES:%=%.c)
 OBJECTS = $(SOURCE:.c=.o)
-HFILES  = $(CLASSES:%=%.h)
+HFILES  = vkk.h $(CLASSES:%=%.h)
 OPT     = -O2 -Wall
 CFLAGS   = $(OPT) -I$(VULKAN_SDK)/include `sdl2-config --cflags`
 LDFLAGS  = -L$(VULKAN_SDK)/lib -lvulkan `sdl2-config --libs` -lm
