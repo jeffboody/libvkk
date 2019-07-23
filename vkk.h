@@ -169,7 +169,8 @@ typedef struct
 vkk_engine_t*            vkk_engine_new(void* app,
                                         const char* app_name,
                                         uint32_t app_version,
-                                        const char* resource);
+                                        const char* resource,
+                                        const char* cache);
 void                     vkk_engine_delete(vkk_engine_t** _self);
 vkk_buffer_t*            vkk_engine_newBuffer(vkk_engine_t* self,
                                               int dynamic,

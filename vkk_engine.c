@@ -24,6 +24,7 @@
 #include <assert.h>
 #include <stdlib.h>
 #include <string.h>
+#include <unistd.h>
 
 #define LOG_TAG "vkk"
 #include "../libcc/cc_log.h"
@@ -594,24 +595,150 @@ static int vkk_engine_newDevice(vkk_engine_t* self)
 	return 0;
 }
 
+static void
+vkk_engine_importPipelineCache(vkk_engine_t* self,
+                               int* _size,
+                               void** _data)
+{
+	assert(self);
+
+	*_size = 0;
+	*_data = NULL;
+
+	// ignore if cache doesn't exist
+	if(access(self->cache, F_OK) != 0)
+	{
+		return;
+	}
+
+	FILE* f = fopen(self->cache, "r");
+	if(f == NULL)
+	{
+		LOGW("invalid");
+		return;
+	}
+
+	fseek(f, 0, SEEK_END);
+	int size = (int) ftell(f);
+	if(size <= 0)
+	{
+		LOGW("invalid");
+		goto fail_size;
+	}
+
+	void* data = CALLOC(size, sizeof(char));
+	if(data == NULL)
+	{
+		LOGW("invalid");
+		goto fail_calloc;
+	}
+
+	fseek(f, 0, SEEK_SET);
+	if(fread(data, size, 1, f) != 1)
+	{
+		LOGW("invalid");
+		goto fail_read;
+	}
+	fclose(f);
+
+	// success
+	*_size = size;
+	*_data = data;
+	return;
+
+	// failure
+	fail_read:
+		FREE(data);
+	fail_calloc:
+	fail_size:
+		fclose(f);
+}
+
+static void
+vkk_engine_exportPipelineCache(vkk_engine_t* self)
+{
+	assert(self);
+
+	size_t size = 0;
+	if(vkGetPipelineCacheData(self->device,
+	                          self->pipeline_cache,
+	                          &size, NULL) != VK_SUCCESS)
+	{
+		LOGE("invalid");
+		return;
+	}
+
+	if(size == 0)
+	{
+		LOGE("invalid");
+		return;
+	}
+
+	void* data = CALLOC(size, sizeof(char));
+	if(data == NULL)
+	{
+		LOGE("invalid");
+		return;
+	}
+
+	if(vkGetPipelineCacheData(self->device,
+	                          self->pipeline_cache,
+	                          &size, data) != VK_SUCCESS)
+	{
+		LOGE("invalid");
+		goto fail_data;
+	}
+
+	FILE* f = fopen(self->cache, "w");
+	if(f == NULL)
+	{
+		LOGE("invalid");
+		goto fail_open;
+	}
+
+	if(fwrite(data, size, 1, f) != 1)
+	{
+		LOGE("invalid");
+		goto fail_write;
+	}
+
+	FREE(data);
+	fclose(f);
+
+	// success
+	return;
+
+	// failure
+	fail_write:
+		fclose(f);
+	fail_open:
+	fail_data:
+		FREE(data);
+}
+
 static int vkk_engine_newCacheAndPools(vkk_engine_t* self)
 {
 	assert(self);
+
+	// import the pipeline cache
+	int   size = 0;
+	void* data = NULL;
+	vkk_engine_importPipelineCache(self, &size, &data);
 
 	VkPipelineCacheCreateInfo pc_info =
 	{
 		.sType           = VK_STRUCTURE_TYPE_PIPELINE_CACHE_CREATE_INFO,
 		.pNext           = NULL,
 		.flags           = 0,
-		.initialDataSize = 0,
-		.pInitialData    = NULL
+		.initialDataSize = (uint32_t) size,
+		.pInitialData    = data
 	};
 
 	if(vkCreatePipelineCache(self->device, &pc_info, NULL,
 	                         &self->pipeline_cache) != VK_SUCCESS)
 	{
 		LOGE("vkCreatePipelineCache failed");
-		return 0;
+		goto fail_pipeline_cache;
 	}
 
 	VkCommandPoolCreateInfo cpc_info =
@@ -636,6 +763,8 @@ static int vkk_engine_newCacheAndPools(vkk_engine_t* self)
 	fail_command_pool:
 		vkDestroyPipelineCache(self->device,
 		                       self->pipeline_cache, NULL);
+	fail_pipeline_cache:
+		FREE(data);
 	return 0;
 }
 
@@ -1945,7 +2074,8 @@ vkk_engine_attachUniformSampler(vkk_engine_t* self,
 vkk_engine_t* vkk_engine_new(void* app,
                              const char* app_name,
                              uint32_t app_version,
-                             const char* resource)
+                             const char* resource,
+                             const char* cache)
 {
 	#ifdef ANDROID
 		assert(app);
@@ -1954,6 +2084,7 @@ vkk_engine_t* vkk_engine_new(void* app,
 	#endif
 	assert(app_name);
 	assert(resource);
+	assert(cache);
 
 	vkk_engine_t* self;
 	self = (vkk_engine_t*)
@@ -1975,6 +2106,7 @@ vkk_engine_t* vkk_engine_new(void* app,
 	#endif
 
 	snprintf(self->resource, 256, "%s", resource);
+	snprintf(self->cache, 256, "%s", cache);
 
 	if(vkk_engine_newInstance(self, app_name,
 	                          app_version) == 0)
@@ -2144,6 +2276,7 @@ void vkk_engine_delete(vkk_engine_t** _self)
 
 		vkDestroyCommandPool(self->device,
 		                     self->command_pool, NULL);
+		vkk_engine_exportPipelineCache(self);
 		vkDestroyPipelineCache(self->device,
 		                       self->pipeline_cache, NULL);
 		vkDestroyDevice(self->device, NULL);

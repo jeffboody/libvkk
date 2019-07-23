@@ -108,6 +108,7 @@ typedef struct vkk_engine_s
 	#endif
 
 	char resource[256];
+	char cache[256];
 
 	VkInstance       instance;
 	VkSurfaceKHR     surface;
