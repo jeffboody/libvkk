@@ -156,8 +156,7 @@ typedef struct
  * engine new/delete API
  *
  * 1) new/delete functions are thread safe but should not
- *    be called between beginRendering/endRendering on
- *    the same thread
+ *    be called between begin/end on the same thread
  * 2) an object cannot be used once deleted
  * 3) image, sampler, uniformSetFactory, pipelineLayout and
  *    graphicsPipeline may be shared between renderers
