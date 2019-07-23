@@ -64,6 +64,8 @@ typedef struct vkk_sampler_s
 typedef struct vkk_uniformSetFactory_s
 {
 	int                   dynamic;
+	uint32_t              ub_count;
+	vkk_uniformBinding_t* ub_array;
 	uint32_t              ds_available;
 	VkDescriptorSetLayout ds_layout;
 	cc_list_t*            dp_list;
@@ -73,12 +75,16 @@ typedef struct vkk_uniformSetFactory_s
 
 typedef struct vkk_uniformSet_s
 {
+	uint32_t                 set;
+	uint32_t                 ua_count;
+	vkk_uniformAttachment_t* ua_array;
 	VkDescriptorSet*         ds_array;
 	vkk_uniformSetFactory_t* usf;
 } vkk_uniformSet_t;
 
 typedef struct vkk_pipelineLayout_s
 {
+	uint32_t usf_count;
 	VkPipelineLayout pl;
 } vkk_pipelineLayout_t;
 

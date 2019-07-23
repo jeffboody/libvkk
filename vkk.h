@@ -110,6 +110,18 @@ typedef struct vkk_uniformSetFactory_s vkk_uniformSetFactory_t;
 
 typedef struct
 {
+	uint32_t binding;
+	int      type;
+
+	union
+	{
+		vkk_buffer_t* buffer;
+		vkk_image_t*  image;
+	};
+} vkk_uniformAttachment_t;
+
+typedef struct
+{
 	uint32_t       binding;
 	int            type;
 	int            stage;
@@ -193,26 +205,21 @@ void                     vkk_engine_deleteSampler(vkk_engine_t* self,
                                                   vkk_sampler_t** _sampler);
 vkk_uniformSetFactory_t* vkk_engine_newUniformSetFactory(vkk_engine_t* self,
                                                          int dynamic,
-                                                         uint32_t count,
+                                                         uint32_t ub_count,
                                                          vkk_uniformBinding_t* ub_array);
 void                     vkk_engine_deleteUniformSetFactory(vkk_engine_t* self,
                                                             vkk_uniformSetFactory_t** _usf);
 vkk_uniformSet_t*        vkk_engine_newUniformSet(vkk_engine_t* self,
+                                                  uint32_t set,
+                                                  uint32_t ua_count,
+                                                  vkk_uniformAttachment_t* ua_array,
                                                   vkk_uniformSetFactory_t* usf);
 void                     vkk_engine_deleteUniformSet(vkk_engine_t* self,
                                                      vkk_uniformSet_t** _us);
-void                     vkk_engine_attachUniformBuffer(vkk_engine_t* self,
-                                                        vkk_uniformSet_t* us,
-                                                        vkk_buffer_t* buffer,
-                                                        uint32_t binding);
-void                     vkk_engine_attachUniformSampler(vkk_engine_t* self,
-                                                         vkk_uniformSet_t* us,
-                                                         vkk_sampler_t* sampler,
-                                                         vkk_image_t* image,
-                                                         uint32_t binding);
-void                     vkk_engine_bindUniformSet(vkk_engine_t* self,
-                                                   vkk_pipelineLayout_t* pl,
-                                                   vkk_uniformSet_t* us);
+void                     vkk_engine_bindUniformSets(vkk_engine_t* self,
+                                                    vkk_pipelineLayout_t* pl,
+                                                    uint32_t us_count,
+                                                    vkk_uniformSet_t** us_array);
 vkk_pipelineLayout_t*    vkk_engine_newPipelineLayout(vkk_engine_t* self,
                                                       uint32_t usf_count,
                                                       vkk_uniformSetFactory_t** usf_array);

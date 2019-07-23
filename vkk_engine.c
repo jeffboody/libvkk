@@ -1849,6 +1849,93 @@ vkk_engine_uploadImage(vkk_engine_t* self,
 	return 0;
 }
 
+static void
+vkk_engine_attachUniformBuffer(vkk_engine_t* self,
+                               vkk_uniformSet_t* us,
+                               vkk_buffer_t* buffer,
+                               uint32_t binding)
+{
+	assert(self);
+	assert(us);
+	assert(buffer);
+
+	uint32_t count;
+	count = us->usf->dynamic ? self->swapchain_image_count : 1;
+
+	int i;
+	for(i = 0; i < count; ++i)
+	{
+		uint32_t idx = buffer->dynamic ? i : 0;
+		VkDescriptorBufferInfo db_info =
+		{
+			.buffer  = buffer->buffer[idx],
+			.offset  = 0,
+			.range   = buffer->size
+		};
+
+		VkWriteDescriptorSet writes =
+		{
+			.sType            = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
+			.pNext            = NULL,
+			.dstSet           = us->ds_array[i],
+			.dstBinding       = binding,
+			.dstArrayElement  = 0,
+			.descriptorCount  = 1,
+			.descriptorType   = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
+			.pImageInfo       = NULL,
+			.pBufferInfo      = &db_info,
+			.pTexelBufferView = NULL,
+		};
+
+		vkUpdateDescriptorSets(self->device, 1, &writes,
+		                       0, NULL);
+	}
+}
+
+static void
+vkk_engine_attachUniformSampler(vkk_engine_t* self,
+                                vkk_uniformSet_t* us,
+                                vkk_sampler_t* sampler,
+                                vkk_image_t* image,
+                                uint32_t binding)
+{
+	assert(self);
+	assert(us);
+	assert(sampler);
+	assert(image);
+
+	uint32_t count;
+	count = us->usf->dynamic ? self->swapchain_image_count : 1;
+
+	int i;
+	for(i = 0; i < count; ++i)
+	{
+		VkDescriptorImageInfo di_info =
+		{
+			.sampler     = sampler->sampler,
+			.imageView   = image->image_view,
+			.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL
+		};
+
+		VkWriteDescriptorSet writes =
+		{
+			.sType            = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
+			.pNext            = NULL,
+			.dstSet           = us->ds_array[i],
+			.dstBinding       = binding,
+			.dstArrayElement  = 0,
+			.descriptorCount  = 1,
+			.descriptorType   = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
+			.pImageInfo       = &di_info,
+			.pBufferInfo      = NULL,
+			.pTexelBufferView = NULL,
+		};
+
+		vkUpdateDescriptorSets(self->device, 1, &writes,
+		                       0, NULL);
+	}
+}
+
 /***********************************************************
 * public                                                   *
 ***********************************************************/
@@ -2967,7 +3054,7 @@ void vkk_engine_deleteSampler(vkk_engine_t* self,
 vkk_uniformSetFactory_t*
 vkk_engine_newUniformSetFactory(vkk_engine_t* self,
                                 int dynamic,
-                                uint32_t count,
+                                uint32_t ub_count,
                                 vkk_uniformBinding_t* ub_array)
 {
 	assert(self);
@@ -2996,12 +3083,26 @@ vkk_engine_newUniformSetFactory(vkk_engine_t* self,
 		return NULL;
 	}
 
-	usf->dynamic = dynamic;
+	usf->dynamic  = dynamic;
+	usf->ub_count = ub_count;
+
+	// copy the ub_array
+	usf->ub_array = (vkk_uniformBinding_t*)
+	                CALLOC(ub_count,
+	                       sizeof(vkk_uniformBinding_t));
+	if(usf->ub_array == NULL)
+	{
+		LOGE("CALLOC failed");
+		goto fail_ub_array;
+	}
+	memcpy(usf->ub_array, ub_array,
+	       ub_count*sizeof(vkk_uniformBinding_t));
 
 	// create temportary descriptor set layout bindings
 	VkDescriptorSetLayoutBinding* bindings;
 	bindings = (VkDescriptorSetLayoutBinding*)
-	           CALLOC(count, sizeof(VkDescriptorSetLayoutBinding));
+	           CALLOC(ub_count,
+	                  sizeof(VkDescriptorSetLayoutBinding));
 	if(bindings == NULL)
 	{
 		LOGE("CALLOC failed");
@@ -3010,7 +3111,7 @@ vkk_engine_newUniformSetFactory(vkk_engine_t* self,
 
 	// fill in bindings
 	int i;
-	for(i = 0; i < count; ++i)
+	for(i = 0; i < ub_count; ++i)
 	{
 		vkk_uniformBinding_t*         usb = &(ub_array[i]);
 		VkDescriptorSetLayoutBinding* b   = &(bindings[i]);
@@ -3026,7 +3127,7 @@ vkk_engine_newUniformSetFactory(vkk_engine_t* self,
 		.sType        = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO,
 		.pNext        = NULL,
 		.flags        = 0,
-		.bindingCount = count,
+		.bindingCount = ub_count,
 		.pBindings    = bindings,
 	};
 
@@ -3051,7 +3152,7 @@ vkk_engine_newUniformSetFactory(vkk_engine_t* self,
 	}
 
 	// increment type counter
-	for(i = 0; i < count; ++i)
+	for(i = 0; i < ub_count; ++i)
 	{
 		++usf->type_count[ub_array[i].type];
 	}
@@ -3070,6 +3171,8 @@ vkk_engine_newUniformSetFactory(vkk_engine_t* self,
 	fail_create_dsl:
 		FREE(bindings);
 	fail_bindings:
+		FREE(usf->ub_array);
+	fail_ub_array:
 		FREE(usf);
 	return NULL;
 }
@@ -3108,6 +3211,7 @@ vkk_engine_deleteUniformSetFactory(vkk_engine_t* self,
 		cc_list_delete(&usf->us_list);
 		vkDestroyDescriptorSetLayout(self->device,
 		                             usf->ds_layout, NULL);
+		FREE(usf->ub_array);
 		FREE(usf);
 		*_usf = NULL;
 	}
@@ -3115,22 +3219,20 @@ vkk_engine_deleteUniformSetFactory(vkk_engine_t* self,
 
 vkk_uniformSet_t*
 vkk_engine_newUniformSet(vkk_engine_t* self,
+                         uint32_t set,
+                         uint32_t ua_count,
+                         vkk_uniformAttachment_t* ua_array,
                          vkk_uniformSetFactory_t* usf)
 {
 	assert(self);
+	assert(ua_array);
 	assert(usf);
+	assert(ua_count == usf->ub_count);
 
-	// check if a uniform set can be reused
-	vkk_uniformSet_t* us;
-	cc_listIter_t* iter = cc_list_head(usf->us_list);
-	if(iter)
-	{
-		us = (vkk_uniformSet_t*)
-		     cc_list_remove(usf->us_list, &iter);
-		return us;
-	}
+	// TODO - check if a uniform set can be reused
 
 	// create a new uniform set
+	vkk_uniformSet_t* us;
 	us = (vkk_uniformSet_t*)
 	     CALLOC(1, sizeof(vkk_uniformSet_t));
 	if(us == NULL)
@@ -3138,17 +3240,30 @@ vkk_engine_newUniformSet(vkk_engine_t* self,
 		LOGE("CALLOC failed");
 		return NULL;
 	}
+	us->set      = set;
+	us->ua_count = ua_count;
+	us->usf      = usf;
+
+	// copy the ua_array
+	us->ua_array = (vkk_uniformAttachment_t*)
+	               CALLOC(ua_count,
+	                      sizeof(vkk_uniformAttachment_t));
+	if(us->ua_array == NULL)
+	{
+		LOGE("CALLOC failed");
+		goto fail_ua_array;
+	}
+	memcpy(us->ua_array, ua_array,
+	       ua_count*sizeof(vkk_uniformAttachment_t));
 
 	uint32_t count;
 	count = usf->dynamic ? self->swapchain_image_count : 1;
-
-	us->usf      = usf;
 	us->ds_array = (VkDescriptorSet*)
 	               CALLOC(count, sizeof(VkDescriptorSet));
 	if(us->ds_array == NULL)
 	{
 		LOGE("CALLOC failed");
-		goto fail_alloc;
+		goto fail_ds_array;
 	}
 
 	// initialize the descriptor set layouts
@@ -3208,6 +3323,28 @@ vkk_engine_newUniformSet(vkk_engine_t* self,
 		break;
 	}
 
+	// attach buffers and images
+	for(i = 0; i < ua_count; ++i)
+	{
+		assert(ua_array[i].binding == usf->ub_array[i].binding);
+		assert(ua_array[i].type == usf->ub_array[i].type);
+		assert(ua_array[i].type < VKK_UNIFORM_TYPE_COUNT);
+
+		if(ua_array[i].type == VKK_UNIFORM_TYPE_BUFFER)
+		{
+			vkk_engine_attachUniformBuffer(self, us,
+			                               ua_array[i].buffer,
+			                               ua_array[i].binding);
+		}
+		else if(ua_array[i].type == VKK_UNIFORM_TYPE_SAMPLER)
+		{
+			vkk_engine_attachUniformSampler(self, us,
+			                                usf->ub_array[i].sampler,
+			                                ua_array[i].image,
+			                                ua_array[i].binding);
+		}
+	}
+
 	// success
 	return us;
 
@@ -3215,7 +3352,9 @@ vkk_engine_newUniformSet(vkk_engine_t* self,
 	fail_allocate_ds:
 	fail_dsp:
 		FREE(us->ds_array);
-	fail_alloc:
+	fail_ds_array:
+		FREE(us->ua_array);
+	fail_ua_array:
 		FREE(us);
 	return NULL;
 }
@@ -3237,115 +3376,42 @@ void vkk_engine_deleteUniformSet(vkk_engine_t* self,
 			// uniform set will still be freed when the
 			// corresponding uniform set factory is freed
 			FREE(us->ds_array);
+			FREE(us->ua_array);
 			FREE(us);
 		}
 		*_us = NULL;
 	}
 }
 
-void vkk_engine_attachUniformBuffer(vkk_engine_t* self,
-                                    vkk_uniformSet_t* us,
-                                    vkk_buffer_t* buffer,
-                                    uint32_t binding)
-{
-	assert(self);
-	assert(us);
-	assert(buffer);
-
-	uint32_t count;
-	count = us->usf->dynamic ? self->swapchain_image_count : 1;
-
-	int i;
-	for(i = 0; i < count; ++i)
-	{
-		uint32_t idx = buffer->dynamic ? i : 0;
-		VkDescriptorBufferInfo db_info =
-		{
-			.buffer  = buffer->buffer[idx],
-			.offset  = 0,
-			.range   = buffer->size
-		};
-
-		VkWriteDescriptorSet writes =
-		{
-			.sType            = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
-			.pNext            = NULL,
-			.dstSet           = us->ds_array[i],
-			.dstBinding       = binding,
-			.dstArrayElement  = 0,
-			.descriptorCount  = 1,
-			.descriptorType   = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
-			.pImageInfo       = NULL,
-			.pBufferInfo      = &db_info,
-			.pTexelBufferView = NULL,
-		};
-
-		vkUpdateDescriptorSets(self->device, 1, &writes,
-		                       0, NULL);
-	}
-}
-
-void vkk_engine_attachUniformSampler(vkk_engine_t* self,
-                                     vkk_uniformSet_t* us,
-                                     vkk_sampler_t* sampler,
-                                     vkk_image_t* image,
-                                     uint32_t binding)
-{
-	assert(self);
-	assert(us);
-	assert(sampler);
-	assert(image);
-
-	uint32_t count;
-	count = us->usf->dynamic ? self->swapchain_image_count : 1;
-
-	int i;
-	for(i = 0; i < count; ++i)
-	{
-		VkDescriptorImageInfo di_info =
-		{
-			.sampler     = sampler->sampler,
-			.imageView   = image->image_view,
-			.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL
-		};
-
-		VkWriteDescriptorSet writes =
-		{
-			.sType            = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
-			.pNext            = NULL,
-			.dstSet           = us->ds_array[i],
-			.dstBinding       = binding,
-			.dstArrayElement  = 0,
-			.descriptorCount  = 1,
-			.descriptorType   = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
-			.pImageInfo       = &di_info,
-			.pBufferInfo      = NULL,
-			.pTexelBufferView = NULL,
-		};
-
-		vkUpdateDescriptorSets(self->device, 1, &writes,
-		                       0, NULL);
-	}
-}
-
-void vkk_engine_bindUniformSet(vkk_engine_t* self,
-                               vkk_pipelineLayout_t* pl,
-                               vkk_uniformSet_t* us)
+void vkk_engine_bindUniformSets(vkk_engine_t* self,
+                                vkk_pipelineLayout_t* pl,
+                                uint32_t us_count,
+                                vkk_uniformSet_t** us_array)
 {
 	assert(self);
 	assert(pl);
-	assert(us);
+	assert(us_count > 0);
+	assert(us_count <= pl->usf_count);
+	assert(us_array);
 
-	uint32_t idx;
-	idx = us->usf->dynamic ? self->swapchain_frame : 0;
+	// allow for a constant and dynamic uniform set
+	int             i;
+	uint32_t        idx;
+	VkDescriptorSet ds[2];
+	for(i = 0; i < us_count; ++i)
+	{
+		idx   = us_array[i]->usf->dynamic ?
+		        self->swapchain_frame : 0;
+		ds[i] = us_array[i]->ds_array[idx];
+	}
 
-	VkDescriptorSet ds = us->ds_array[idx];
+	uint32_t first = us_array[0]->set;
 
 	VkCommandBuffer cb;
 	cb = self->command_buffers[self->swapchain_frame];
 	vkCmdBindDescriptorSets(cb,
 	                        VK_PIPELINE_BIND_POINT_GRAPHICS,
-	                        pl->pl, 0, 1, &ds,
+	                        pl->pl, first, us_count, ds,
 	                        0, NULL);
 }
 
@@ -3357,6 +3423,13 @@ vkk_engine_newPipelineLayout(vkk_engine_t* self,
 	assert(self);
 	assert(usf_array);
 
+	// allow for a constant and dynamic uniform set
+	if(usf_count > 2)
+	{
+		LOGE("invalid usf_count=%i", usf_count);
+		return NULL;
+	}
+
 	vkk_pipelineLayout_t* pl;
 	pl = (vkk_pipelineLayout_t*)
 	     CALLOC(1, sizeof(vkk_pipelineLayout_t));
@@ -3365,6 +3438,8 @@ vkk_engine_newPipelineLayout(vkk_engine_t* self,
 		LOGE("CALLOC failed");
 		return NULL;
 	}
+
+	pl->usf_count = usf_count;
 
 	VkDescriptorSetLayout* dsl_array;
 	dsl_array = (VkDescriptorSetLayout*)
