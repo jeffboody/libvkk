@@ -404,6 +404,8 @@ vkk_engine_newInstance(vkk_engine_t* self,
 		return 0;
 	}
 
+	self->renderer.engine = self;
+
 	return 1;
 }
 
@@ -1937,7 +1939,7 @@ vkk_engine_attachUniformSampler(vkk_engine_t* self,
 }
 
 /***********************************************************
-* public                                                   *
+* engine new/delete API                                    *
 ***********************************************************/
 
 vkk_engine_t* vkk_engine_new(void* app,
@@ -2157,370 +2159,6 @@ void vkk_engine_delete(vkk_engine_t** _self)
 	}
 }
 
-void vkk_engine_waitForIdle(vkk_engine_t* self)
-{
-	assert(self);
-
-	vkDeviceWaitIdle(self->device);
-}
-
-int vkk_engine_resize(vkk_engine_t* self)
-{
-	assert(self);
-
-	vkDeviceWaitIdle(self->device);
-
-	vkk_engine_deleteDepth(self);
-	vkk_engine_deleteFramebuffer(self);
-	vkk_engine_deleteSwapchain(self);
-
-	if(vkk_engine_newSwapchain(self) == 0)
-	{
-		return 0;
-	}
-
-	if(vkk_engine_newDepth(self) == 0)
-	{
-		goto fail_depth;
-	}
-
-	if(vkk_engine_newFramebuffer(self) == 0)
-	{
-		goto fail_framebuffer;
-	}
-
-	// success
-	return 1;
-
-	// failure
-	fail_framebuffer:
-		vkk_engine_deleteDepth(self);
-	fail_depth:
-		vkk_engine_deleteSwapchain(self);
-	return 0;
-}
-
-void vkk_engine_surfaceSize(vkk_engine_t* self,
-                            uint32_t* _width,
-                            uint32_t* _height)
-{
-	assert(self);
-	assert(_width);
-	assert(_height);
-
-	*_width  = self->swapchain_extent.width;
-	*_height = self->swapchain_extent.height;
-}
-
-int vkk_engine_beginFrame(vkk_engine_t* self,
-                          float* clear_color)
-{
-	VkSemaphore semaphore_acquire;
-	VkSemaphore semaphore_submit;
-	vkk_engine_beginSemaphore(self,
-	                          &semaphore_acquire,
-	                          &semaphore_submit);
-
-	// Android only supports infinite timeout
-	// Linux needs a timeout to avoid deadlock on resize
-	#ifdef ANDROID
-		uint64_t timeout = UINT64_MAX;
-	#else
-		uint64_t timeout = 250000000;
-	#endif
-	if(vkAcquireNextImageKHR(self->device,
-	                         self->swapchain,
-	                         timeout,
-	                         semaphore_acquire,
-	                         VK_NULL_HANDLE,
-	                         &self->swapchain_frame) != VK_SUCCESS)
-	{
-		// failure typically caused by resizes
-		return 0;
-	}
-
-	VkFence sc_fence;
-	sc_fence = self->swapchain_fences[self->swapchain_frame];
-	vkWaitForFences(self->device, 1,
-	                &sc_fence, VK_TRUE, UINT64_MAX);
-	vkResetFences(self->device, 1, &sc_fence);
-
-	VkCommandBuffer cb;
-	cb = self->command_buffers[self->swapchain_frame];
-	if(vkResetCommandBuffer(cb, 0) != VK_SUCCESS)
-	{
-		LOGE("vkResetCommandBuffer failed");
-		return 0;
-	}
-
-	VkFramebuffer framebuffer;
-	framebuffer = self->framebuffers[self->swapchain_frame];
-	VkCommandBufferInheritanceInfo cbi_info =
-	{
-		.sType                = VK_STRUCTURE_TYPE_COMMAND_BUFFER_INHERITANCE_INFO,
-		.pNext                = NULL,
-		.renderPass           = self->render_pass,
-		.subpass              = 0,
-		.framebuffer          = framebuffer,
-		.occlusionQueryEnable = VK_FALSE,
-		.queryFlags           = 0,
-		.pipelineStatistics   = 0
-	};
-
-	VkCommandBufferBeginInfo cb_info =
-	{
-		.sType            = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,
-		.pNext            = NULL,
-		.flags            = 0,
-		.pInheritanceInfo = &cbi_info
-	};
-
-	if(vkBeginCommandBuffer(cb, &cb_info) != VK_SUCCESS)
-	{
-		LOGE("vkBeginCommandBuffer failed");
-		return 0;
-	}
-
-	// stage only applies to textures
-	VkImage image;
-	image = self->swapchain_images[self->swapchain_frame];
-	vkk_imageMemoryBarrier(cb, image, 0,
-	                       VK_IMAGE_LAYOUT_UNDEFINED,
-	                       VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
-	                       VK_IMAGE_ASPECT_COLOR_BIT, 0, 1);
-
-	if(self->depth_image->transition)
-	{
-		// stage only applies to textures
-		vkk_imageMemoryBarrier(cb, self->depth_image->image, 0,
-		                       VK_IMAGE_LAYOUT_UNDEFINED,
-		                       VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL,
-		                       VK_IMAGE_ASPECT_DEPTH_BIT | VK_IMAGE_ASPECT_STENCIL_BIT,
-		                       0, 1);
-
-		self->depth_image->transition = 0;
-	}
-
-	VkViewport viewport =
-	{
-		.x        = 0.0f,
-		.y        = 0.0f,
-		.width    = (float) self->swapchain_extent.width,
-		.height   = (float) self->swapchain_extent.height,
-		.minDepth = 0.0f,
-		.maxDepth = 1.0f
-	};
-	vkCmdSetViewport(cb, 0, 1, &viewport);
-
-	VkRect2D scissor =
-	{
-		.offset =
-		{
-			.x = 0,
-			.y = 0
-		},
-		.extent =
-		{
-			.width  = (uint32_t) self->swapchain_extent.width,
-			.height = (uint32_t) self->swapchain_extent.height,
-		}
-	};
-	vkCmdSetScissor(cb, 0, 1, &scissor);
-
-	VkClearValue cv[2] =
-	{
-		{
-			.color =
-			{
-				.float32 =
-				{
-					clear_color[0],
-					clear_color[1],
-					clear_color[2],
-					clear_color[3]
-				}
-			},
-		},
-		{
-			.depthStencil =
-			{
-				.depth   = 1.0f,
-				.stencil = 0
-			}
-		}
-	};
-
-	uint32_t width  = self->swapchain_extent.width;
-	uint32_t height = self->swapchain_extent.height;
-	VkRenderPassBeginInfo rp_info =
-	{
-		.sType           = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO,
-		.pNext           = NULL,
-		.renderPass      = self->render_pass,
-		.framebuffer     = framebuffer,
-		.renderArea      = { { .x=0, .y=0 },
-		                     { .width=width,
-		                       .height=height } },
-		.clearValueCount = 2,
-		.pClearValues    = cv
-	};
-
-	vkCmdBeginRenderPass(cb,
-	                     &rp_info,
-	                     VK_SUBPASS_CONTENTS_INLINE);
-
-	return 1;
-}
-
-void vkk_engine_endFrame(vkk_engine_t* self)
-{
-	assert(self);
-
-	VkSemaphore semaphore_acquire;
-	VkSemaphore semaphore_submit;
-	vkk_engine_endSemaphore(self,
-	                        &semaphore_acquire,
-	                        &semaphore_submit);
-
-	VkCommandBuffer cb;
-	cb = self->command_buffers[self->swapchain_frame];
-	vkCmdEndRenderPass(cb);
-	vkEndCommandBuffer(cb);
-
-	VkPipelineStageFlags wait_dst_stage_mask;
-	wait_dst_stage_mask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
-
-	VkSubmitInfo s_info =
-	{
-		.sType                = VK_STRUCTURE_TYPE_SUBMIT_INFO,
-		.pNext                = NULL,
-		.waitSemaphoreCount   = 1,
-		.pWaitSemaphores      = &semaphore_acquire,
-		.pWaitDstStageMask    = &wait_dst_stage_mask,
-		.commandBufferCount   = 1,
-		.pCommandBuffers      = &cb,
-		.signalSemaphoreCount = 1,
-		.pSignalSemaphores    = &semaphore_submit
-	};
-
-	VkFence sc_fence;
-	sc_fence = self->swapchain_fences[self->swapchain_frame];
-	if(vkQueueSubmit(self->queue, 1, &s_info,
-	                 sc_fence) != VK_SUCCESS)
-	{
-		LOGE("vkQueueSubmit failed");
-		return;
-	}
-
-	VkPresentInfoKHR p_info =
-	{
-		.sType              = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR,
-		.pNext              = NULL,
-		.waitSemaphoreCount = 1,
-		.pWaitSemaphores    = &semaphore_submit,
-		.swapchainCount     = 1,
-		.pSwapchains        = &self->swapchain,
-		.pImageIndices      = &self->swapchain_frame,
-		.pResults           = NULL
-	};
-
-	if(vkQueuePresentKHR(self->queue,
-	                     &p_info) != VK_SUCCESS)
-	{
-		// failure typically caused by resizes
-		return;
-	}
-}
-
-void vkk_engine_clearDepth(vkk_engine_t* self)
-{
-	assert(self);
-
-	VkClearRect rect =
-	{
-		.rect =
-		{
-			.offset =
-			{
-				.x = 0,
-				.y = 0
-			},
-			.extent =
-			{
-				.width  = self->swapchain_extent.width,
-				.height = self->swapchain_extent.height
-			}
-		},
-		.baseArrayLayer = 0,
-		.layerCount     = 1
-	};
-
-	VkClearAttachment ca =
-	{
-		.aspectMask = VK_IMAGE_ASPECT_DEPTH_BIT |
-		              VK_IMAGE_ASPECT_STENCIL_BIT,
-		.colorAttachment = 0,
-		.clearValue =
-		{
-			.depthStencil =
-			{
-				.depth   = 1.0f,
-				.stencil = 0
-			}
-		}
-	};
-
-	VkCommandBuffer cb;
-	cb = self->command_buffers[self->swapchain_frame];
-	vkCmdClearAttachments(cb, 1, &ca, 1, &rect);
-}
-
-void vkk_engine_viewport(vkk_engine_t* self,
-                         float x, float y,
-                         float width, float height)
-{
-	assert(self);
-
-	VkViewport viewport =
-	{
-		.x        = x,
-		.y        = y,
-		.width    = width,
-		.height   = height,
-		.minDepth = 0.0f,
-		.maxDepth = 1.0f
-	};
-
-	VkCommandBuffer cb;
-	cb = self->command_buffers[self->swapchain_frame];
-	vkCmdSetViewport(cb, 0, 1, &viewport);
-}
-
-void vkk_engine_scissor(vkk_engine_t* self,
-                        uint32_t x, uint32_t y,
-                        uint32_t width, uint32_t height)
-{
-	assert(self);
-
-	VkRect2D scissor =
-	{
-		.offset =
-		{
-			.x = x,
-			.y = y
-		},
-		.extent =
-		{
-			.width  = width,
-			.height = height
-		}
-	};
-
-	VkCommandBuffer cb;
-	cb = self->command_buffers[self->swapchain_frame];
-	vkCmdSetScissor(cb, 0, 1, &scissor);
-}
-
 vkk_buffer_t*
 vkk_engine_newBuffer(vkk_engine_t* self, int dynamic,
                      int usage, size_t size,
@@ -2703,33 +2341,6 @@ void vkk_engine_deleteBuffer(vkk_engine_t* self,
 		FREE(buffer->buffer);
 		FREE(buffer);
 		*_buffer = NULL;
-	}
-}
-
-void vkk_engine_updateBuffer(vkk_engine_t* self,
-                             vkk_buffer_t* buffer,
-                             const void* buf)
-{
-	assert(self);
-	assert(buffer);
-	assert(buf);
-
-	uint32_t idx;
-	idx = buffer->dynamic ? self->swapchain_frame : 0;
-
-	void* data;
-	if(vkMapMemory(self->device,
-	               buffer->memory[idx],
-	               0, buffer->size, 0,
-	               &data) == VK_SUCCESS)
-	{
-		memcpy(data, buf, buffer->size);
-		vkUnmapMemory(self->device,
-		              buffer->memory[idx]);
-	}
-	else
-	{
-		LOGW("vkMapMemory failed");
 	}
 }
 
@@ -3383,38 +2994,6 @@ void vkk_engine_deleteUniformSet(vkk_engine_t* self,
 	}
 }
 
-void vkk_engine_bindUniformSets(vkk_engine_t* self,
-                                vkk_pipelineLayout_t* pl,
-                                uint32_t us_count,
-                                vkk_uniformSet_t** us_array)
-{
-	assert(self);
-	assert(pl);
-	assert(us_count > 0);
-	assert(us_count <= pl->usf_count);
-	assert(us_array);
-
-	// allow for a constant and dynamic uniform set
-	int             i;
-	uint32_t        idx;
-	VkDescriptorSet ds[2];
-	for(i = 0; i < us_count; ++i)
-	{
-		idx   = us_array[i]->usf->dynamic ?
-		        self->swapchain_frame : 0;
-		ds[i] = us_array[i]->ds_array[idx];
-	}
-
-	uint32_t first = us_array[0]->set;
-
-	VkCommandBuffer cb;
-	cb = self->command_buffers[self->swapchain_frame];
-	vkCmdBindDescriptorSets(cb,
-	                        VK_PIPELINE_BIND_POINT_GRAPHICS,
-	                        pl->pl, first, us_count, ds,
-	                        0, NULL);
-}
-
 vkk_pipelineLayout_t*
 vkk_engine_newPipelineLayout(vkk_engine_t* self,
                              uint32_t usf_count,
@@ -3842,27 +3421,489 @@ void vkk_engine_deleteGraphicsPipeline(vkk_engine_t* self,
 	}
 }
 
-void vkk_engine_bindGraphicsPipeline(vkk_engine_t* self,
-                                     vkk_graphicsPipeline_t* gp)
+/***********************************************************
+* default renderer API                                     *
+***********************************************************/
+
+int vkk_engine_resize(vkk_engine_t* self)
+{
+	assert(self);
+
+	vkDeviceWaitIdle(self->device);
+
+	vkk_engine_deleteDepth(self);
+	vkk_engine_deleteFramebuffer(self);
+	vkk_engine_deleteSwapchain(self);
+
+	if(vkk_engine_newSwapchain(self) == 0)
+	{
+		return 0;
+	}
+
+	if(vkk_engine_newDepth(self) == 0)
+	{
+		goto fail_depth;
+	}
+
+	if(vkk_engine_newFramebuffer(self) == 0)
+	{
+		goto fail_framebuffer;
+	}
+
+	// success
+	return 1;
+
+	// failure
+	fail_framebuffer:
+		vkk_engine_deleteDepth(self);
+	fail_depth:
+		vkk_engine_deleteSwapchain(self);
+	return 0;
+}
+
+vkk_renderer_t* vkk_engine_renderer(vkk_engine_t* self)
+{
+	assert(self);
+
+	return &self->renderer;
+}
+
+void vkk_engine_waitForIdle(vkk_engine_t* self)
+{
+	assert(self);
+
+	vkDeviceWaitIdle(self->device);
+}
+
+/***********************************************************
+* rendering API                                            *
+***********************************************************/
+
+int vkk_renderer_begin(vkk_renderer_t* self,
+                       float* clear_color)
+{
+	assert(self);
+	assert(clear_color);
+
+	vkk_engine_t* engine = self->engine;
+
+	VkSemaphore semaphore_acquire;
+	VkSemaphore semaphore_submit;
+	vkk_engine_beginSemaphore(engine,
+	                          &semaphore_acquire,
+	                          &semaphore_submit);
+
+	// Android only supports infinite timeout
+	// Linux needs a timeout to avoid deadlock on resize
+	#ifdef ANDROID
+		uint64_t timeout = UINT64_MAX;
+	#else
+		uint64_t timeout = 250000000;
+	#endif
+	if(vkAcquireNextImageKHR(engine->device,
+	                         engine->swapchain,
+	                         timeout,
+	                         semaphore_acquire,
+	                         VK_NULL_HANDLE,
+	                         &engine->swapchain_frame) != VK_SUCCESS)
+	{
+		// failure typically caused by resizes
+		return 0;
+	}
+
+	VkFence sc_fence;
+	sc_fence = engine->swapchain_fences[engine->swapchain_frame];
+	vkWaitForFences(engine->device, 1,
+	                &sc_fence, VK_TRUE, UINT64_MAX);
+	vkResetFences(engine->device, 1, &sc_fence);
+
+	VkCommandBuffer cb;
+	cb = engine->command_buffers[engine->swapchain_frame];
+	if(vkResetCommandBuffer(cb, 0) != VK_SUCCESS)
+	{
+		LOGE("vkResetCommandBuffer failed");
+		return 0;
+	}
+
+	VkFramebuffer framebuffer;
+	framebuffer = engine->framebuffers[engine->swapchain_frame];
+	VkCommandBufferInheritanceInfo cbi_info =
+	{
+		.sType                = VK_STRUCTURE_TYPE_COMMAND_BUFFER_INHERITANCE_INFO,
+		.pNext                = NULL,
+		.renderPass           = engine->render_pass,
+		.subpass              = 0,
+		.framebuffer          = framebuffer,
+		.occlusionQueryEnable = VK_FALSE,
+		.queryFlags           = 0,
+		.pipelineStatistics   = 0
+	};
+
+	VkCommandBufferBeginInfo cb_info =
+	{
+		.sType            = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,
+		.pNext            = NULL,
+		.flags            = 0,
+		.pInheritanceInfo = &cbi_info
+	};
+
+	if(vkBeginCommandBuffer(cb, &cb_info) != VK_SUCCESS)
+	{
+		LOGE("vkBeginCommandBuffer failed");
+		return 0;
+	}
+
+	// stage only applies to textures
+	VkImage image;
+	image = engine->swapchain_images[engine->swapchain_frame];
+	vkk_imageMemoryBarrier(cb, image, 0,
+	                       VK_IMAGE_LAYOUT_UNDEFINED,
+	                       VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+	                       VK_IMAGE_ASPECT_COLOR_BIT, 0, 1);
+
+	if(engine->depth_image->transition)
+	{
+		// stage only applies to textures
+		vkk_imageMemoryBarrier(cb, engine->depth_image->image, 0,
+		                       VK_IMAGE_LAYOUT_UNDEFINED,
+		                       VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL,
+		                       VK_IMAGE_ASPECT_DEPTH_BIT | VK_IMAGE_ASPECT_STENCIL_BIT,
+		                       0, 1);
+
+		engine->depth_image->transition = 0;
+	}
+
+	VkViewport viewport =
+	{
+		.x        = 0.0f,
+		.y        = 0.0f,
+		.width    = (float) engine->swapchain_extent.width,
+		.height   = (float) engine->swapchain_extent.height,
+		.minDepth = 0.0f,
+		.maxDepth = 1.0f
+	};
+	vkCmdSetViewport(cb, 0, 1, &viewport);
+
+	VkRect2D scissor =
+	{
+		.offset =
+		{
+			.x = 0,
+			.y = 0
+		},
+		.extent =
+		{
+			.width  = (uint32_t) engine->swapchain_extent.width,
+			.height = (uint32_t) engine->swapchain_extent.height,
+		}
+	};
+	vkCmdSetScissor(cb, 0, 1, &scissor);
+
+	VkClearValue cv[2] =
+	{
+		{
+			.color =
+			{
+				.float32 =
+				{
+					clear_color[0],
+					clear_color[1],
+					clear_color[2],
+					clear_color[3]
+				}
+			},
+		},
+		{
+			.depthStencil =
+			{
+				.depth   = 1.0f,
+				.stencil = 0
+			}
+		}
+	};
+
+	uint32_t width  = engine->swapchain_extent.width;
+	uint32_t height = engine->swapchain_extent.height;
+	VkRenderPassBeginInfo rp_info =
+	{
+		.sType           = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO,
+		.pNext           = NULL,
+		.renderPass      = engine->render_pass,
+		.framebuffer     = framebuffer,
+		.renderArea      = { { .x=0, .y=0 },
+		                     { .width=width,
+		                       .height=height } },
+		.clearValueCount = 2,
+		.pClearValues    = cv
+	};
+
+	vkCmdBeginRenderPass(cb,
+	                     &rp_info,
+	                     VK_SUBPASS_CONTENTS_INLINE);
+
+	return 1;
+}
+
+void vkk_renderer_end(vkk_renderer_t* self)
+{
+	assert(self);
+
+	vkk_engine_t* engine = self->engine;
+
+	VkSemaphore semaphore_acquire;
+	VkSemaphore semaphore_submit;
+	vkk_engine_endSemaphore(engine,
+	                        &semaphore_acquire,
+	                        &semaphore_submit);
+
+	VkCommandBuffer cb;
+	cb = engine->command_buffers[engine->swapchain_frame];
+	vkCmdEndRenderPass(cb);
+	vkEndCommandBuffer(cb);
+
+	VkPipelineStageFlags wait_dst_stage_mask;
+	wait_dst_stage_mask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+
+	VkSubmitInfo s_info =
+	{
+		.sType                = VK_STRUCTURE_TYPE_SUBMIT_INFO,
+		.pNext                = NULL,
+		.waitSemaphoreCount   = 1,
+		.pWaitSemaphores      = &semaphore_acquire,
+		.pWaitDstStageMask    = &wait_dst_stage_mask,
+		.commandBufferCount   = 1,
+		.pCommandBuffers      = &cb,
+		.signalSemaphoreCount = 1,
+		.pSignalSemaphores    = &semaphore_submit
+	};
+
+	VkFence sc_fence;
+	sc_fence = engine->swapchain_fences[engine->swapchain_frame];
+	if(vkQueueSubmit(engine->queue, 1, &s_info,
+	                 sc_fence) != VK_SUCCESS)
+	{
+		LOGE("vkQueueSubmit failed");
+		return;
+	}
+
+	VkPresentInfoKHR p_info =
+	{
+		.sType              = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR,
+		.pNext              = NULL,
+		.waitSemaphoreCount = 1,
+		.pWaitSemaphores    = &semaphore_submit,
+		.swapchainCount     = 1,
+		.pSwapchains        = &engine->swapchain,
+		.pImageIndices      = &engine->swapchain_frame,
+		.pResults           = NULL
+	};
+
+	if(vkQueuePresentKHR(engine->queue,
+	                     &p_info) != VK_SUCCESS)
+	{
+		// failure typically caused by resizes
+		return;
+	}
+}
+
+void vkk_renderer_surfaceSize(vkk_renderer_t* self,
+                              uint32_t* _width,
+                              uint32_t* _height)
+{
+	assert(self);
+	assert(_width);
+	assert(_height);
+
+	vkk_engine_t* engine = self->engine;
+
+	*_width  = engine->swapchain_extent.width;
+	*_height = engine->swapchain_extent.height;
+}
+
+void vkk_renderer_updateBuffer(vkk_renderer_t* self,
+                               vkk_buffer_t* buffer,
+                               const void* buf)
+{
+	assert(self);
+	assert(buffer);
+	assert(buf);
+
+	vkk_engine_t* engine = self->engine;
+
+	uint32_t idx;
+	idx = buffer->dynamic ? engine->swapchain_frame : 0;
+
+	void* data;
+	if(vkMapMemory(engine->device,
+	               buffer->memory[idx],
+	               0, buffer->size, 0,
+	               &data) == VK_SUCCESS)
+	{
+		memcpy(data, buf, buffer->size);
+		vkUnmapMemory(engine->device,
+		              buffer->memory[idx]);
+	}
+	else
+	{
+		LOGW("vkMapMemory failed");
+	}
+}
+
+void vkk_renderer_bindGraphicsPipeline(vkk_renderer_t* self,
+                                       vkk_graphicsPipeline_t* gp)
 {
 	assert(self);
 	assert(gp);
 
+	vkk_engine_t* engine = self->engine;
+
 	VkCommandBuffer cb;
-	cb = self->command_buffers[self->swapchain_frame];
+	cb = engine->command_buffers[engine->swapchain_frame];
 	vkCmdBindPipeline(cb,
 	                  VK_PIPELINE_BIND_POINT_GRAPHICS,
 	                  gp->pipeline);
 }
 
-void vkk_engine_draw(vkk_engine_t* self,
-                     uint32_t vertex_count,
-                     uint32_t vertex_buffer_count,
-                     vkk_buffer_t** vertex_buffers)
+void vkk_renderer_bindUniformSets(vkk_renderer_t* self,
+                                  vkk_pipelineLayout_t* pl,
+                                  uint32_t us_count,
+                                  vkk_uniformSet_t** us_array)
+{
+	assert(self);
+	assert(pl);
+	assert(us_count > 0);
+	assert(us_count <= pl->usf_count);
+	assert(us_array);
+
+	vkk_engine_t* engine = self->engine;
+
+	// allow for a constant and dynamic uniform set
+	int             i;
+	uint32_t        idx;
+	VkDescriptorSet ds[2];
+	for(i = 0; i < us_count; ++i)
+	{
+		idx   = us_array[i]->usf->dynamic ?
+		        engine->swapchain_frame : 0;
+		ds[i] = us_array[i]->ds_array[idx];
+	}
+
+	uint32_t first = us_array[0]->set;
+
+	VkCommandBuffer cb;
+	cb = engine->command_buffers[engine->swapchain_frame];
+	vkCmdBindDescriptorSets(cb,
+	                        VK_PIPELINE_BIND_POINT_GRAPHICS,
+	                        pl->pl, first, us_count, ds,
+	                        0, NULL);
+}
+
+void vkk_renderer_clearDepth(vkk_renderer_t* self)
+{
+	assert(self);
+
+	vkk_engine_t* engine = self->engine;
+
+	VkClearRect rect =
+	{
+		.rect =
+		{
+			.offset =
+			{
+				.x = 0,
+				.y = 0
+			},
+			.extent =
+			{
+				.width  = engine->swapchain_extent.width,
+				.height = engine->swapchain_extent.height
+			}
+		},
+		.baseArrayLayer = 0,
+		.layerCount     = 1
+	};
+
+	VkClearAttachment ca =
+	{
+		.aspectMask = VK_IMAGE_ASPECT_DEPTH_BIT |
+		              VK_IMAGE_ASPECT_STENCIL_BIT,
+		.colorAttachment = 0,
+		.clearValue =
+		{
+			.depthStencil =
+			{
+				.depth   = 1.0f,
+				.stencil = 0
+			}
+		}
+	};
+
+	VkCommandBuffer cb;
+	cb = engine->command_buffers[engine->swapchain_frame];
+	vkCmdClearAttachments(cb, 1, &ca, 1, &rect);
+}
+
+void vkk_renderer_viewport(vkk_renderer_t* self,
+                           float x, float y,
+                           float width, float height)
+{
+	assert(self);
+
+	vkk_engine_t* engine = self->engine;
+
+	VkViewport viewport =
+	{
+		.x        = x,
+		.y        = y,
+		.width    = width,
+		.height   = height,
+		.minDepth = 0.0f,
+		.maxDepth = 1.0f
+	};
+
+	VkCommandBuffer cb;
+	cb = engine->command_buffers[engine->swapchain_frame];
+	vkCmdSetViewport(cb, 0, 1, &viewport);
+}
+
+void vkk_renderer_scissor(vkk_renderer_t* self,
+                          uint32_t x, uint32_t y,
+                          uint32_t width, uint32_t height)
+{
+	assert(self);
+
+	vkk_engine_t* engine = self->engine;
+
+	VkRect2D scissor =
+	{
+		.offset =
+		{
+			.x = x,
+			.y = y
+		},
+		.extent =
+		{
+			.width  = width,
+			.height = height
+		}
+	};
+
+	VkCommandBuffer cb;
+	cb = engine->command_buffers[engine->swapchain_frame];
+	vkCmdSetScissor(cb, 0, 1, &scissor);
+}
+
+
+void vkk_renderer_draw(vkk_renderer_t* self,
+                       uint32_t vertex_count,
+                       uint32_t vertex_buffer_count,
+                       vkk_buffer_t** vertex_buffers)
 {
 	assert(self);
 	assert(vertex_buffers);
 	assert(vertex_buffer_count < 16);
+
+	vkk_engine_t* engine = self->engine;
 
 	VkDeviceSize vb_offsets[16] =
 	{
@@ -3879,29 +3920,31 @@ void vkk_engine_draw(vkk_engine_t* self,
 	for(i = 0; i < vertex_buffer_count; ++i)
 	{
 		idx = vertex_buffers[i]->dynamic ?
-		      self->swapchain_frame : 0;
+		      engine->swapchain_frame : 0;
 		vb_buffers[i] = vertex_buffers[i]->buffer[idx];
 	}
 
 	VkCommandBuffer cb;
-	cb = self->command_buffers[self->swapchain_frame];
+	cb = engine->command_buffers[engine->swapchain_frame];
 
 	vkCmdBindVertexBuffers(cb, 0, vertex_buffer_count,
 	                       vb_buffers, vb_offsets);
 	vkCmdDraw(cb, vertex_count, 1, 0, 0);
 }
 
-void vkk_engine_drawIndexed(vkk_engine_t* self,
-                            uint32_t vertex_count,
-                            uint32_t vertex_buffer_count,
-                            int index_type,
-                            vkk_buffer_t* index_buffer,
-                            vkk_buffer_t** vertex_buffers)
+void vkk_renderer_drawIndexed(vkk_renderer_t* self,
+                              uint32_t vertex_count,
+                              uint32_t vertex_buffer_count,
+                              int index_type,
+                              vkk_buffer_t* index_buffer,
+                              vkk_buffer_t** vertex_buffers)
 {
 	assert(self);
 	assert(index_buffer);
 	assert(vertex_buffers);
 	assert(vertex_buffer_count < 16);
+
+	vkk_engine_t* engine = self->engine;
 
 	VkDeviceSize vb_offsets[16] =
 	{
@@ -3918,12 +3961,12 @@ void vkk_engine_drawIndexed(vkk_engine_t* self,
 	for(i = 0; i < vertex_buffer_count; ++i)
 	{
 		idx = vertex_buffers[i]->dynamic ?
-		      self->swapchain_frame : 0;
+		      engine->swapchain_frame : 0;
 		vb_buffers[i] = vertex_buffers[i]->buffer[idx];
 	}
 
 	VkCommandBuffer cb;
-	cb = self->command_buffers[self->swapchain_frame];
+	cb = engine->command_buffers[engine->swapchain_frame];
 
 	VkIndexType it_map[VKK_INDEX_TYPE_COUNT] =
 	{
@@ -3931,7 +3974,7 @@ void vkk_engine_drawIndexed(vkk_engine_t* self,
 		VK_INDEX_TYPE_UINT32
 	};
 
-	idx = index_buffer->dynamic ? self->swapchain_frame : 0;
+	idx = index_buffer->dynamic ? engine->swapchain_frame : 0;
 	VkBuffer ib_buffer = index_buffer->buffer[idx];
 
 	vkCmdBindIndexBuffer(cb, ib_buffer, 0,

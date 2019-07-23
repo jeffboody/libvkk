@@ -56,6 +56,11 @@ typedef struct vkk_image_s
 	VkImageView    image_view;
 } vkk_image_t;
 
+typedef struct vkk_renderer_s
+{
+	struct vkk_engine_s* engine;
+} vkk_renderer_t;
+
 typedef struct vkk_sampler_s
 {
 	VkSampler sampler;
@@ -148,7 +153,11 @@ typedef struct vkk_engine_s
 	VkSemaphore* semaphore_acquire;
 	VkSemaphore* semaphore_submit;
 
+	// shaders
 	cc_map_t* shader_modules;
+
+	// default renderer
+	vkk_renderer_t renderer;
 } vkk_engine_t;
 
 #endif

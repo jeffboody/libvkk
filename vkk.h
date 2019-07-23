@@ -88,11 +88,12 @@ struct vkk_graphicsPipeline_s;
 struct vkk_image_s;
 struct vkk_pipelineLayout_s;
 struct vkk_sampler_s;
+struct vkk_renderer_s;
 struct vkk_uniformSet_s;
 struct vkk_uniformSetFactory_s;
 
 /*
- * opaque handles
+ * opaque objects
  */
 
 typedef struct vkk_buffer_s            vkk_buffer_t;
@@ -101,6 +102,7 @@ typedef struct vkk_graphicsPipeline_s  vkk_graphicsPipeline_t;
 typedef struct vkk_image_s             vkk_image_t;
 typedef struct vkk_pipelineLayout_s    vkk_pipelineLayout_t;
 typedef struct vkk_sampler_s           vkk_sampler_t;
+typedef struct vkk_renderer_s          vkk_renderer_t;
 typedef struct vkk_uniformSet_s        vkk_uniformSet_t;
 typedef struct vkk_uniformSetFactory_s vkk_uniformSetFactory_t;
 
@@ -151,7 +153,18 @@ typedef struct
 } vkk_graphicsPipelineInfo_t;
 
 /*
- * engine API
+ * engine new/delete API
+ *
+ * 1) new/delete functions are thread safe but should not
+ *    be called between beginRendering/endRendering on
+ *    the same thread
+ * 2) an object cannot be used once deleted
+ * 3) image, sampler, uniformSetFactory, pipelineLayout and
+ *    graphicsPipeline may be shared between renderers
+ * 4) buffers and uniformSets may only be shared between
+ *    renderers when dynamic flag is not set
+ * 5) CPU and GPU synchronization is handled automatically
+ *    by the engine
  */
 
 vkk_engine_t*            vkk_engine_new(void* app,
@@ -159,25 +172,6 @@ vkk_engine_t*            vkk_engine_new(void* app,
                                         uint32_t app_version,
                                         const char* resource);
 void                     vkk_engine_delete(vkk_engine_t** _self);
-void                     vkk_engine_waitForIdle(vkk_engine_t* self);
-int                      vkk_engine_resize(vkk_engine_t* self);
-void                     vkk_engine_surfaceSize(vkk_engine_t* self,
-                                                uint32_t* _width,
-                                                uint32_t* _height);
-int                      vkk_engine_beginFrame(vkk_engine_t* self,
-                                               float* clear_color);
-void                     vkk_engine_endFrame(vkk_engine_t* self);
-void                     vkk_engine_clearDepth(vkk_engine_t* self);
-void                     vkk_engine_viewport(vkk_engine_t* self,
-                                             float x,
-                                             float y,
-                                             float width,
-                                             float height);
-void                     vkk_engine_scissor(vkk_engine_t* self,
-                                            uint32_t x,
-                                            uint32_t y,
-                                            uint32_t width,
-                                            uint32_t height);
 vkk_buffer_t*            vkk_engine_newBuffer(vkk_engine_t* self,
                                               int dynamic,
                                               int usage,
@@ -185,9 +179,6 @@ vkk_buffer_t*            vkk_engine_newBuffer(vkk_engine_t* self,
                                               const void* buf);
 void                     vkk_engine_deleteBuffer(vkk_engine_t* self,
                                                  vkk_buffer_t** _buffer);
-void                     vkk_engine_updateBuffer(vkk_engine_t* self,
-                                                 vkk_buffer_t* buffer,
-                                                 const void* buf);
 vkk_image_t*             vkk_engine_newImage(vkk_engine_t* self,
                                              uint32_t width,
                                              uint32_t height,
@@ -216,10 +207,6 @@ vkk_uniformSet_t*        vkk_engine_newUniformSet(vkk_engine_t* self,
                                                   vkk_uniformSetFactory_t* usf);
 void                     vkk_engine_deleteUniformSet(vkk_engine_t* self,
                                                      vkk_uniformSet_t** _us);
-void                     vkk_engine_bindUniformSets(vkk_engine_t* self,
-                                                    vkk_pipelineLayout_t* pl,
-                                                    uint32_t us_count,
-                                                    vkk_uniformSet_t** us_array);
 vkk_pipelineLayout_t*    vkk_engine_newPipelineLayout(vkk_engine_t* self,
                                                       uint32_t usf_count,
                                                       vkk_uniformSetFactory_t** usf_array);
@@ -229,17 +216,72 @@ vkk_graphicsPipeline_t*  vkk_engine_newGraphicsPipeline(vkk_engine_t* self,
                                                         vkk_graphicsPipelineInfo_t* gpi);
 void                     vkk_engine_deleteGraphicsPipeline(vkk_engine_t* self,
                                                            vkk_graphicsPipeline_t** _gp);
-void                     vkk_engine_bindGraphicsPipeline(vkk_engine_t* self,
-                                                         vkk_graphicsPipeline_t* gp);
-void                     vkk_engine_draw(vkk_engine_t* self,
-                                         uint32_t vertex_count,
-                                         uint32_t vertex_buffer_count,
-                                         vkk_buffer_t** vertex_buffers);
-void                     vkk_engine_drawIndexed(vkk_engine_t* self,
-                                                uint32_t vertex_count,
-                                                uint32_t vertex_buffer_count,
-                                                int index_type,
-                                                vkk_buffer_t* index_buffer,
-                                                vkk_buffer_t** vertex_buffers);
+
+/*
+ * default renderer API
+ *
+ * 1) call the default renderer from the main thread
+ * 2) the default renderer is created and destroyed
+ *    automatically by the engine
+ * 3) the resize event triggered by native window system
+ *    causes the default renderer surfaceSize to be updated
+ * 4) waitForIdle is a temporary workaround to ensure
+ *    resources are not in use before deletion
+ */
+
+int             vkk_engine_resize(vkk_engine_t* self);
+vkk_renderer_t* vkk_engine_renderer(vkk_engine_t* self);
+void            vkk_engine_waitForIdle(vkk_engine_t* self);
+
+/*
+ * rendering API
+ *
+ * 1) call vkk_renderer commands between
+ *    begin/end on a single thread
+ * 2) the default renderer completes asynchronously
+ *    (e.g. endRendering is non-blocking) and should be
+ *    called from the main thread
+ * 3) dynamic buffers should be updated once and only once
+ *    per frame
+ * 4) the depth buffer, viewport and scissor are
+ *    initialized automatically by begin
+ */
+
+int  vkk_renderer_begin(vkk_renderer_t* self,
+                        float* clear_color);
+void vkk_renderer_end(vkk_renderer_t* self);
+void vkk_renderer_surfaceSize(vkk_renderer_t* self,
+                              uint32_t* _width,
+                              uint32_t* _height);
+void vkk_renderer_updateBuffer(vkk_renderer_t* self,
+                               vkk_buffer_t* buffer,
+                               const void* buf);
+void vkk_renderer_bindGraphicsPipeline(vkk_renderer_t* self,
+                                       vkk_graphicsPipeline_t* gp);
+void vkk_renderer_bindUniformSets(vkk_renderer_t* self,
+                                  vkk_pipelineLayout_t* pl,
+                                  uint32_t us_count,
+                                  vkk_uniformSet_t** us_array);
+void vkk_renderer_clearDepth(vkk_renderer_t* self);
+void vkk_renderer_viewport(vkk_renderer_t* self,
+                           float x,
+                           float y,
+                           float width,
+                           float height);
+void vkk_renderer_scissor(vkk_renderer_t* self,
+                          uint32_t x,
+                          uint32_t y,
+                          uint32_t width,
+                          uint32_t height);
+void vkk_renderer_draw(vkk_renderer_t* self,
+                       uint32_t vertex_count,
+                       uint32_t vertex_buffer_count,
+                       vkk_buffer_t** vertex_buffers);
+void vkk_renderer_drawIndexed(vkk_renderer_t* self,
+                              uint32_t vertex_count,
+                              uint32_t vertex_buffer_count,
+                              int index_type,
+                              vkk_buffer_t* index_buffer,
+                              vkk_buffer_t** vertex_buffers);
 
 #endif
