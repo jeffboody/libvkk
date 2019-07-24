@@ -24,6 +24,7 @@
 #ifndef vkk_engine_H
 #define vkk_engine_H
 
+#include <pthread.h>
 #ifdef ANDROID
 	#include <vulkan_wrapper.h>
 	#include <android_native_app_glue.h>
@@ -106,6 +107,23 @@ typedef struct vkk_engine_s
 	char resource[256];
 	char cache[256];
 
+	// 1) Vulkan synchronization - 2.6. Threading Behavior
+	// * The queue parameter in vkQueueSubmit
+	// * The queue parameter in vkQueueWaitIdle
+	// * The descriptorPool the pAllocateInfo parameter in
+	//   vkAllocateDescriptorSets (protected by usf_mutex)
+	// * The commandPool the pAllocateInfo parameter in
+	//   vkAllocateCommandBuffers
+	// * The commandPool parameter in vkFreeCommandBuffers
+	// 2) usf synchronization
+	// * ds_available, dp_list and us_list
+	// 3) shader module synchronization
+	// * shader_modules
+	pthread_mutex_t queue_mutex;
+	pthread_mutex_t cp_mutex;
+	pthread_mutex_t usf_mutex;
+	pthread_mutex_t sm_mutex;
+
 	VkInstance       instance;
 	VkSurfaceKHR     surface;
 	VkPhysicalDevice physical_device;
@@ -125,5 +143,24 @@ typedef struct vkk_engine_s
 	// default renderer
 	vkk_renderer_t* renderer;
 } vkk_engine_t;
+
+int  vkk_engine_queueSubmit(vkk_engine_t* self,
+                            VkCommandBuffer* cb,
+                            VkSemaphore* semaphore_acquire,
+                            VkSemaphore* semaphore_submit,
+                            VkPipelineStageFlags* wait_dst_stage_mask,
+                            VkFence fence);
+void vkk_engine_queueWaitIdle(vkk_engine_t* self);
+int  vkk_engine_allocateDescriptorSetsLocked(vkk_engine_t* self,
+                                             VkDescriptorPool dp,
+                                             const VkDescriptorSetLayout* dsl_array,
+                                             uint32_t ds_count,
+                                             VkDescriptorSet* ds_array);
+int  vkk_engine_allocateCommandBuffers(vkk_engine_t* self,
+                                       int cb_count,
+                                       VkCommandBuffer* cb_array);
+void vkk_engine_freeCommandBuffers(vkk_engine_t* self,
+                                   uint32_t cb_count,
+                                   const VkCommandBuffer* cb_array);
 
 #endif

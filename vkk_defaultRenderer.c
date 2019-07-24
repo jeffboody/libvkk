@@ -640,28 +640,19 @@ vkk_defaultRenderer_newCommandBuffers(vkk_renderer_t* base)
 
 	vkk_engine_t* engine = base->engine;
 
-	self->command_buffers = (VkCommandBuffer*)
-	                        CALLOC(self->swapchain_image_count,
-	                               sizeof(VkCommandBuffer));
-	if(self->command_buffers == NULL)
+	self->cb_array = (VkCommandBuffer*)
+	                 CALLOC(self->swapchain_image_count,
+	                        sizeof(VkCommandBuffer));
+	if(self->cb_array == NULL)
 	{
 		LOGE("CALLOC failed");
 		return 0;
 	}
 
-	VkCommandBufferAllocateInfo cba_info =
+	if(vkk_engine_allocateCommandBuffers(engine,
+	                                     self->swapchain_image_count,
+	                                     self->cb_array) == 0)
 	{
-		.sType              = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO,
-		.pNext              = NULL,
-		.commandPool        = engine->command_pool,
-		.level              = VK_COMMAND_BUFFER_LEVEL_PRIMARY,
-		.commandBufferCount = self->swapchain_image_count
-	};
-
-	if(vkAllocateCommandBuffers(engine->device, &cba_info,
-	                            self->command_buffers) != VK_SUCCESS)
-	{
-		LOGE("vkAllocateCommandBuffers failed");
 		goto fail_allocate;
 	}
 
@@ -670,7 +661,7 @@ vkk_defaultRenderer_newCommandBuffers(vkk_renderer_t* base)
 
 	// failure
 	fail_allocate:
-		FREE(self->command_buffers);
+		FREE(self->cb_array);
 	return 0;
 }
 
@@ -818,7 +809,7 @@ vkk_defaultRenderer_new(vkk_engine_t* engine)
 
 	if(vkk_defaultRenderer_newCommandBuffers(base) == 0)
 	{
-		goto fail_command_buffers;
+		goto fail_cb_array;
 	}
 
 	if(vkk_defaultRenderer_newSemaphores(base) == 0)
@@ -831,12 +822,11 @@ vkk_defaultRenderer_new(vkk_engine_t* engine)
 
 	// failure
 	fail_semaphores:
-		vkFreeCommandBuffers(engine->device,
-		                     engine->command_pool,
-		                     self->swapchain_image_count,
-		                     self->command_buffers);
-		FREE(self->command_buffers);
-	fail_command_buffers:
+		vkk_engine_freeCommandBuffers(engine,
+		                              self->swapchain_image_count,
+		                              self->cb_array);
+		FREE(self->cb_array);
+	fail_cb_array:
 		vkk_defaultRenderer_deleteFramebuffer(base);
 	fail_framebuffer:
 		vkk_defaultRenderer_deleteDepth(base);
@@ -875,11 +865,10 @@ void vkk_defaultRenderer_delete(vkk_renderer_t** _base)
 		FREE(self->semaphore_submit);
 		FREE(self->semaphore_acquire);
 
-		vkFreeCommandBuffers(engine->device,
-		                     engine->command_pool,
-		                     self->swapchain_image_count,
-		                     self->command_buffers);
-		FREE(self->command_buffers);
+		vkk_engine_freeCommandBuffers(engine,
+		                              self->swapchain_image_count,
+		                              self->cb_array);
+		FREE(self->cb_array);
 		vkk_defaultRenderer_deleteFramebuffer(base);
 		vkk_defaultRenderer_deleteDepth(base);
 		vkDestroyRenderPass(engine->device,
@@ -971,7 +960,7 @@ vkk_defaultRenderer_begin(vkk_renderer_t* base,
 	vkResetFences(engine->device, 1, &sc_fence);
 
 	VkCommandBuffer cb;
-	cb = self->command_buffers[self->swapchain_frame];
+	cb = self->cb_array[self->swapchain_frame];
 	if(vkResetCommandBuffer(cb, 0) != VK_SUCCESS)
 	{
 		LOGE("vkResetCommandBuffer failed");
@@ -1113,32 +1102,22 @@ void vkk_defaultRenderer_end(vkk_renderer_t* base)
 	                                 &semaphore_submit);
 
 	VkCommandBuffer cb;
-	cb = self->command_buffers[self->swapchain_frame];
+	cb = self->cb_array[self->swapchain_frame];
 	vkCmdEndRenderPass(cb);
 	vkEndCommandBuffer(cb);
 
 	VkPipelineStageFlags wait_dst_stage_mask;
 	wait_dst_stage_mask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
 
-	VkSubmitInfo s_info =
-	{
-		.sType                = VK_STRUCTURE_TYPE_SUBMIT_INFO,
-		.pNext                = NULL,
-		.waitSemaphoreCount   = 1,
-		.pWaitSemaphores      = &semaphore_acquire,
-		.pWaitDstStageMask    = &wait_dst_stage_mask,
-		.commandBufferCount   = 1,
-		.pCommandBuffers      = &cb,
-		.signalSemaphoreCount = 1,
-		.pSignalSemaphores    = &semaphore_submit
-	};
-
 	VkFence sc_fence;
 	sc_fence = self->swapchain_fences[self->swapchain_frame];
-	if(vkQueueSubmit(engine->queue, 1, &s_info,
-	                 sc_fence) != VK_SUCCESS)
+
+	if(vkk_engine_queueSubmit(engine, &cb,
+	                          &semaphore_acquire,
+	                          &semaphore_submit,
+	                          &wait_dst_stage_mask,
+	                          sc_fence) == 0)
 	{
-		LOGE("vkQueueSubmit failed");
 		return;
 	}
 
@@ -1222,7 +1201,7 @@ vkk_defaultRenderer_bindGraphicsPipeline(vkk_renderer_t* base,
 	self = (vkk_defaultRenderer_t*) base;
 
 	VkCommandBuffer cb;
-	cb = self->command_buffers[self->swapchain_frame];
+	cb = self->cb_array[self->swapchain_frame];
 	vkCmdBindPipeline(cb,
 	                  VK_PIPELINE_BIND_POINT_GRAPHICS,
 	                  gp->pipeline);
@@ -1257,7 +1236,7 @@ vkk_defaultRenderer_bindUniformSets(vkk_renderer_t* base,
 	uint32_t first = us_array[0]->set;
 
 	VkCommandBuffer cb;
-	cb = self->command_buffers[self->swapchain_frame];
+	cb = self->cb_array[self->swapchain_frame];
 	vkCmdBindDescriptorSets(cb,
 	                        VK_PIPELINE_BIND_POINT_GRAPHICS,
 	                        pl->pl, first, us_count, ds,
@@ -1306,7 +1285,7 @@ void vkk_defaultRenderer_clearDepth(vkk_renderer_t* base)
 	};
 
 	VkCommandBuffer cb;
-	cb = self->command_buffers[self->swapchain_frame];
+	cb = self->cb_array[self->swapchain_frame];
 	vkCmdClearAttachments(cb, 1, &ca, 1, &rect);
 }
 
@@ -1331,7 +1310,7 @@ vkk_defaultRenderer_viewport(vkk_renderer_t* base,
 	};
 
 	VkCommandBuffer cb;
-	cb = self->command_buffers[self->swapchain_frame];
+	cb = self->cb_array[self->swapchain_frame];
 	vkCmdSetViewport(cb, 0, 1, &viewport);
 }
 
@@ -1360,7 +1339,7 @@ vkk_defaultRenderer_scissor(vkk_renderer_t* base,
 	};
 
 	VkCommandBuffer cb;
-	cb = self->command_buffers[self->swapchain_frame];
+	cb = self->cb_array[self->swapchain_frame];
 	vkCmdSetScissor(cb, 0, 1, &scissor);
 }
 
@@ -1398,7 +1377,7 @@ vkk_defaultRenderer_draw(vkk_renderer_t* base,
 	}
 
 	VkCommandBuffer cb;
-	cb = self->command_buffers[self->swapchain_frame];
+	cb = self->cb_array[self->swapchain_frame];
 
 	vkCmdBindVertexBuffers(cb, 0, vertex_buffer_count,
 	                       vb_buffers, vb_offsets);
@@ -1441,7 +1420,7 @@ vkk_defaultRenderer_drawIndexed(vkk_renderer_t* base,
 	}
 
 	VkCommandBuffer cb;
-	cb = self->command_buffers[self->swapchain_frame];
+	cb = self->cb_array[self->swapchain_frame];
 
 	VkIndexType it_map[VKK_INDEX_TYPE_COUNT] =
 	{

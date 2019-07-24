@@ -728,12 +728,17 @@ vkk_engine_getShaderModule(vkk_engine_t* self,
 	assert(self);
 	assert(fname);
 
+	TRACE_BEGIN();
+	pthread_mutex_lock(&self->sm_mutex);
+
 	cc_mapIter_t miter;
 	VkShaderModule sm;
 	sm = (VkShaderModule)
 	     cc_map_find(self->shader_modules, &miter, fname);
 	if(sm != VK_NULL_HANDLE)
 	{
+		TRACE_END();
+		pthread_mutex_unlock(&self->sm_mutex);
 		return sm;
 	}
 
@@ -742,6 +747,8 @@ vkk_engine_getShaderModule(vkk_engine_t* self,
 	code = vkk_engine_importShaderModule(self, fname, &size);
 	if(code == NULL)
 	{
+		TRACE_END();
+		pthread_mutex_unlock(&self->sm_mutex);
 		return VK_NULL_HANDLE;
 	}
 
@@ -757,6 +764,8 @@ vkk_engine_getShaderModule(vkk_engine_t* self,
 	if(vkCreateShaderModule(self->device, &sm_info, NULL,
 	                        &sm) != VK_SUCCESS)
 	{
+		TRACE_END();
+		pthread_mutex_unlock(&self->sm_mutex);
 		LOGE("vkCreateShaderModule failed");
 		goto fail_create;
 	}
@@ -764,10 +773,15 @@ vkk_engine_getShaderModule(vkk_engine_t* self,
 	if(cc_map_add(self->shader_modules, (const void*) sm,
 	              fname) == 0)
 	{
+		TRACE_END();
+		pthread_mutex_unlock(&self->sm_mutex);
 		goto fail_add;
 	}
 
 	FREE(code);
+
+	TRACE_END();
+	pthread_mutex_unlock(&self->sm_mutex);
 
 	// success
 	return sm;
@@ -781,8 +795,8 @@ vkk_engine_getShaderModule(vkk_engine_t* self,
 }
 
 static VkDescriptorPool
-vkk_engine_newDescriptorPool(vkk_engine_t* self,
-                             vkk_uniformSetFactory_t* usf)
+vkk_engine_newDescriptorPoolLocked(vkk_engine_t* self,
+                                   vkk_uniformSetFactory_t* usf)
 {
 	assert(self);
 	assert(usf);
@@ -1039,20 +1053,9 @@ vkk_engine_uploadImage(vkk_engine_t* self,
 	}
 
 	// allocate a transfer command buffer
-	VkCommandBufferAllocateInfo cba_info =
-	{
-		.sType              = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO,
-		.pNext              = NULL,
-		.commandPool        = self->command_pool,
-		.level              = VK_COMMAND_BUFFER_LEVEL_PRIMARY,
-		.commandBufferCount = 1
-	};
-
 	VkCommandBuffer cb;
-	if(vkAllocateCommandBuffers(self->device, &cba_info,
-	                            &cb) != VK_SUCCESS)
+	if(vkk_engine_allocateCommandBuffers(self, 1, &cb) == 0)
 	{
-		LOGE("vkAllocateCommandBuffers failed");
 		goto fail_allocate_cb;
 	}
 
@@ -1145,23 +1148,10 @@ vkk_engine_uploadImage(vkk_engine_t* self,
 	vkEndCommandBuffer(cb);
 
 	// submit the commands
-	VkSubmitInfo s_info =
+	if(vkk_engine_queueSubmit(self, &cb,
+	                          NULL, NULL, NULL,
+	                          fence) == 0)
 	{
-		.sType                = VK_STRUCTURE_TYPE_SUBMIT_INFO,
-		.pNext                = NULL,
-		.waitSemaphoreCount   = 0,
-		.pWaitSemaphores      = NULL,
-		.pWaitDstStageMask    = NULL,
-		.commandBufferCount   = 1,
-		.pCommandBuffers      = &cb,
-		.signalSemaphoreCount = 0,
-		.pSignalSemaphores    = NULL
-	};
-
-	if(vkQueueSubmit(self->queue, 1, &s_info,
-	                 fence) != VK_SUCCESS)
-	{
-		LOGE("vkQueueSubmit failed");
 		goto fail_submit;
 	}
 
@@ -1176,13 +1166,11 @@ vkk_engine_uploadImage(vkk_engine_t* self,
 	                   timeout) != VK_SUCCESS)
 	{
 		LOGW("timeout");
-		vkQueueWaitIdle(self->queue);
+		vkk_engine_queueWaitIdle(self);
 	}
 
 	// release temporary objects
-	vkFreeCommandBuffers(self->device,
-	                     self->command_pool,
-	                     1, &cb);
+	vkk_engine_freeCommandBuffers(self, 1, &cb);
 	vkFreeMemory(self->device, memory, NULL);
 	vkDestroyBuffer(self->device, buffer, NULL);
 	vkDestroyFence(self->device, fence, NULL);
@@ -1196,9 +1184,7 @@ vkk_engine_uploadImage(vkk_engine_t* self,
 	fail_submit:
 		vkEndCommandBuffer(cb);
 	fail_begin_cb:
-		vkFreeCommandBuffers(self->device,
-		                     self->command_pool,
-		                     1, &cb);
+		vkk_engine_freeCommandBuffers(self, 1, &cb);
 	fail_allocate_cb:
 	fail_bind:
 	fail_map:
@@ -1341,6 +1327,31 @@ vkk_engine_t* vkk_engine_new(void* app,
 	snprintf(self->resource, 256, "%s", resource);
 	snprintf(self->cache, 256, "%s", cache);
 
+	// PTHREAD_MUTEX_DEFAULT is not re-entrant
+	if(pthread_mutex_init(&self->queue_mutex, NULL) != 0)
+	{
+		LOGE("pthread_mutex_init failed");
+		goto fail_queue_mutex;
+	}
+
+	if(pthread_mutex_init(&self->cp_mutex, NULL) != 0)
+	{
+		LOGE("pthread_mutex_init failed");
+		goto fail_cp_mutex;
+	}
+
+	if(pthread_mutex_init(&self->usf_mutex, NULL) != 0)
+	{
+		LOGE("pthread_mutex_init failed");
+		goto fail_usf_mutex;
+	}
+
+	if(pthread_mutex_init(&self->sm_mutex, NULL) != 0)
+	{
+		LOGE("pthread_mutex_init failed");
+		goto fail_sm_mutex;
+	}
+
 	if(vkk_engine_newInstance(self, app_name,
 	                          app_version) == 0)
 	{
@@ -1399,6 +1410,14 @@ vkk_engine_t* vkk_engine_new(void* app,
 	fail_surface:
 		vkDestroyInstance(self->instance, NULL);
 	fail_instance:
+		pthread_mutex_destroy(&self->sm_mutex);
+	fail_sm_mutex:
+		pthread_mutex_destroy(&self->usf_mutex);
+	fail_usf_mutex:
+		pthread_mutex_destroy(&self->cp_mutex);
+	fail_cp_mutex:
+		pthread_mutex_destroy(&self->queue_mutex);
+	fail_queue_mutex:
 		#ifndef ANDROID
 			SDL_DestroyWindow(self->window);
 			SDL_Quit();
@@ -1437,6 +1456,10 @@ void vkk_engine_delete(vkk_engine_t** _self)
 		vkDestroySurfaceKHR(self->instance,
 		                    self->surface, NULL);
 		vkDestroyInstance(self->instance, NULL);
+		pthread_mutex_destroy(&self->sm_mutex);
+		pthread_mutex_destroy(&self->usf_mutex);
+		pthread_mutex_destroy(&self->cp_mutex);
+		pthread_mutex_destroy(&self->queue_mutex);
 		#ifndef ANDROID
 			SDL_DestroyWindow(self->window);
 			SDL_Quit();
@@ -2156,11 +2179,11 @@ vkk_engine_newUniformSet(vkk_engine_t* self,
 	memcpy(us->ua_array, ua_array,
 	       ua_count*sizeof(vkk_uniformAttachment_t));
 
-	uint32_t count;
-	count = usf->dynamic ?
-	        vkk_renderer_swapchainImageCount(self->renderer) : 1;
+	uint32_t ds_count;
+	ds_count = usf->dynamic ?
+	           vkk_renderer_swapchainImageCount(self->renderer) : 1;
 	us->ds_array = (VkDescriptorSet*)
-	               CALLOC(count, sizeof(VkDescriptorSet));
+	               CALLOC(ds_count, sizeof(VkDescriptorSet));
 	if(us->ds_array == NULL)
 	{
 		LOGE("CALLOC failed");
@@ -2170,59 +2193,44 @@ vkk_engine_newUniformSet(vkk_engine_t* self,
 	// initialize the descriptor set layouts
 	VkDescriptorSetLayout dsl_array[VKK_DESCRIPTOR_POOL_SIZE];
 	int i;
-	for(i = 0; i < count; ++i)
+	for(i = 0; i < ds_count; ++i)
 	{
 		dsl_array[i] = usf->ds_layout;
 	}
 
 	// allocate the descriptor set from the pool
-	int retry = 1;
+	TRACE_BEGIN();
+	pthread_mutex_lock(&self->usf_mutex);
 	VkDescriptorPool dp;
 	dp = (VkDescriptorPool)
 	     cc_list_peekTail(usf->dp_list);
-	while(retry)
+
+	// create a new pool on demand
+	if((ds_count > usf->ds_available) || (dp == VK_NULL_HANDLE))
 	{
-		// create a new pool on demand
-		if((count > usf->ds_available) || (dp == VK_NULL_HANDLE))
+		// create a new pool
+		dp = vkk_engine_newDescriptorPoolLocked(self, usf);
+		if(dp == VK_NULL_HANDLE)
 		{
-			// create a new pool
-			dp = vkk_engine_newDescriptorPool(self, usf);
-			if(dp == VK_NULL_HANDLE)
-			{
-				goto fail_dsp;
-			}
-
-			retry = 0;
+			TRACE_END();
+			pthread_mutex_unlock(&self->usf_mutex);
+			goto fail_dp;
 		}
-
-		VkDescriptorSetAllocateInfo ds_info =
-		{
-			.sType              = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO,
-			.pNext              = NULL,
-			.descriptorPool     = dp,
-			.descriptorSetCount = count,
-			.pSetLayouts        = dsl_array
-		};
-
-		if(vkAllocateDescriptorSets(self->device, &ds_info,
-		                            us->ds_array) != VK_SUCCESS)
-		{
-			// retry with a new pool
-			if(retry)
-			{
-				dp = VK_NULL_HANDLE;
-				continue;
-			}
-			else
-			{
-				LOGE("vkAllocateDescriptorSets failed");
-				goto fail_allocate_ds;
-			}
-		}
-
-		usf->ds_available -= count;
-		break;
 	}
+
+	if(vkk_engine_allocateDescriptorSetsLocked(self, dp,
+	                                           dsl_array,
+	                                           ds_count,
+	                                           us->ds_array) == 0)
+	{
+		TRACE_END();
+		pthread_mutex_unlock(&self->usf_mutex);
+		goto fail_allocate_ds;
+	}
+
+	usf->ds_available -= ds_count;
+	TRACE_END();
+	pthread_mutex_unlock(&self->usf_mutex);
 
 	// attach buffers and images
 	for(i = 0; i < ua_count; ++i)
@@ -2251,7 +2259,7 @@ vkk_engine_newUniformSet(vkk_engine_t* self,
 
 	// failure
 	fail_allocate_ds:
-	fail_dsp:
+	fail_dp:
 		FREE(us->ds_array);
 	fail_ds_array:
 		FREE(us->ua_array);
@@ -2269,6 +2277,8 @@ void vkk_engine_deleteUniformSet(vkk_engine_t* self,
 	vkk_uniformSet_t* us = *_us;
 	if(us)
 	{
+		TRACE_BEGIN();
+		pthread_mutex_lock(&self->usf_mutex);
 		if(cc_list_append(us->usf->us_list, NULL,
 		                  (const void*) us) == NULL)
 		{
@@ -2280,6 +2290,8 @@ void vkk_engine_deleteUniformSet(vkk_engine_t* self,
 			FREE(us->ua_array);
 			FREE(us);
 		}
+		TRACE_END();
+		pthread_mutex_unlock(&self->usf_mutex);
 		*_us = NULL;
 	}
 }
@@ -2735,4 +2747,142 @@ void vkk_engine_waitForIdle(vkk_engine_t* self)
 	assert(self);
 
 	vkDeviceWaitIdle(self->device);
+}
+
+/***********************************************************
+* public                                                   *
+***********************************************************/
+
+int vkk_engine_queueSubmit(vkk_engine_t* self,
+                           VkCommandBuffer* cb,
+                           VkSemaphore* semaphore_acquire,
+                           VkSemaphore* semaphore_submit,
+                           VkPipelineStageFlags* wait_dst_stage_mask,
+                           VkFence fence)
+{
+	// semaphore_acquire, semaphore_submit and
+	// wait_dst_stage_mask may be NULL
+	assert(self);
+	assert(cb);
+
+	VkSubmitInfo s_info =
+	{
+		.sType                = VK_STRUCTURE_TYPE_SUBMIT_INFO,
+		.pNext                = NULL,
+		.waitSemaphoreCount   = semaphore_acquire ? 1 : 0,
+		.pWaitSemaphores      = semaphore_acquire,
+		.pWaitDstStageMask    = wait_dst_stage_mask,
+		.commandBufferCount   = 1,
+		.pCommandBuffers      = cb,
+		.signalSemaphoreCount = semaphore_submit ? 1 : 0,
+		.pSignalSemaphores    = semaphore_submit
+	};
+
+	TRACE_BEGIN();
+	pthread_mutex_lock(&self->queue_mutex);
+	if(vkQueueSubmit(self->queue, 1, &s_info,
+	                 fence) != VK_SUCCESS)
+	{
+		LOGE("vkQueueSubmit failed");
+		TRACE_END();
+		pthread_mutex_unlock(&self->queue_mutex);
+		return 0;
+	}
+	TRACE_END();
+	pthread_mutex_unlock(&self->queue_mutex);
+
+	return 1;
+}
+
+void vkk_engine_queueWaitIdle(vkk_engine_t* self)
+{
+	assert(self);
+
+	TRACE_BEGIN();
+	pthread_mutex_lock(&self->queue_mutex);
+	vkQueueWaitIdle(self->queue);
+	TRACE_END();
+	pthread_mutex_unlock(&self->queue_mutex);
+}
+
+int
+vkk_engine_allocateDescriptorSetsLocked(vkk_engine_t* self,
+                                        VkDescriptorPool dp,
+                                        const VkDescriptorSetLayout* dsl_array,
+                                        uint32_t ds_count,
+                                        VkDescriptorSet* ds_array)
+{
+	assert(self);
+	assert(dp != VK_NULL_HANDLE);
+	assert(dsl_array);
+	assert(ds_count > 0);
+	assert(ds_array);
+
+	VkDescriptorSetAllocateInfo ds_info =
+	{
+		.sType              = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO,
+		.pNext              = NULL,
+		.descriptorPool     = dp,
+		.descriptorSetCount = ds_count,
+		.pSetLayouts        = dsl_array
+	};
+
+	if(vkAllocateDescriptorSets(self->device, &ds_info,
+	                            ds_array) != VK_SUCCESS)
+	{
+		LOGE("vkAllocateDescriptorSets failed");
+		return 0;
+	}
+
+	return 1;
+}
+
+int vkk_engine_allocateCommandBuffers(vkk_engine_t* self,
+                                      int cb_count,
+                                      VkCommandBuffer* cb_array)
+{
+	assert(self);
+	assert(cb_count > 0);
+	assert(cb_array);
+
+	VkCommandBufferAllocateInfo cba_info =
+	{
+		.sType              = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO,
+		.pNext              = NULL,
+		.commandPool        = self->command_pool,
+		.level              = VK_COMMAND_BUFFER_LEVEL_PRIMARY,
+		.commandBufferCount = cb_count
+	};
+
+	TRACE_BEGIN();
+	pthread_mutex_lock(&self->cp_mutex);
+	if(vkAllocateCommandBuffers(self->device, &cba_info,
+	                            cb_array) != VK_SUCCESS)
+	{
+		LOGE("vkAllocateCommandBuffers failed");
+		TRACE_END();
+		pthread_mutex_unlock(&self->cp_mutex);
+		return 0;
+	}
+	TRACE_END();
+	pthread_mutex_unlock(&self->cp_mutex);
+
+	return 1;
+}
+
+void vkk_engine_freeCommandBuffers(vkk_engine_t* self,
+                                   uint32_t cb_count,
+                                   const VkCommandBuffer* cb_array)
+{
+	assert(self);
+	assert(cb_array);
+
+	TRACE_BEGIN();
+	pthread_mutex_lock(&self->cp_mutex);
+	vkFreeCommandBuffers(self->device,
+	                     self->command_pool,
+	                     cb_count,
+	                     cb_array);
+	TRACE_END();
+	pthread_mutex_unlock(&self->cp_mutex);
 }

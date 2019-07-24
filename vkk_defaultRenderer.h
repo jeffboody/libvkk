@@ -54,7 +54,7 @@ typedef struct
 
 	// command buffers
 	// one per swapchain image
-	VkCommandBuffer* command_buffers;
+	VkCommandBuffer* cb_array;
 
 	// synchronization
 	// one per swapchain image
