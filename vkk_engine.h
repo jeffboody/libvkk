@@ -36,6 +36,7 @@
 #include "../libcc/cc_list.h"
 #include "../libcc/cc_map.h"
 #include "vkk.h"
+#include "vkk_defaultRenderer.h"
 
 typedef struct vkk_buffer_s
 {
@@ -55,11 +56,6 @@ typedef struct vkk_image_s
 	VkDeviceMemory memory;
 	VkImageView    image_view;
 } vkk_image_t;
-
-typedef struct vkk_renderer_s
-{
-	struct vkk_engine_s* engine;
-} vkk_renderer_t;
 
 typedef struct vkk_sampler_s
 {
@@ -123,42 +119,11 @@ typedef struct vkk_engine_s
 	VkPipelineCache pipeline_cache;
 	VkCommandPool   command_pool;
 
-	// swapchain state
-	uint32_t        swapchain_frame;
-	VkFormat        swapchain_format;
-	VkExtent2D      swapchain_extent;
-	VkColorSpaceKHR swapchain_color_space;
-	uint32_t        swapchain_image_count;
-	VkSwapchainKHR  swapchain;
-	VkImage*        swapchain_images;
-	VkFence*        swapchain_fences;
-
-	// render pass state
-	VkRenderPass render_pass;
-
-	// depth buffer
-	vkk_image_t* depth_image;
-
-	// framebuffer state
-	// one per swapchain image
-	VkImageView*   framebuffer_image_views;
-	VkFramebuffer* framebuffers;
-
-	// command buffers
-	// one per swapchain image
-	VkCommandBuffer* command_buffers;
-
-	// synchronization
-	// one per swapchain image
-	uint32_t     semaphore_index;
-	VkSemaphore* semaphore_acquire;
-	VkSemaphore* semaphore_submit;
-
 	// shaders
 	cc_map_t* shader_modules;
 
 	// default renderer
-	vkk_renderer_t renderer;
+	vkk_renderer_t* renderer;
 } vkk_engine_t;
 
 #endif

@@ -1,6 +1,9 @@
 TARGET  = libvkk.a
 CLASSES = \
-	vkk_engine
+	vkk_defaultRenderer \
+	vkk_engine          \
+	vkk_renderer        \
+	vkk_util
 SOURCE  = $(CLASSES:%=%.c)
 OBJECTS = $(SOURCE:.c=.o)
 HFILES  = vkk.h $(CLASSES:%=%.h)

@@ -31,6 +31,7 @@
 #include "../libcc/cc_memory.h"
 #include "../libpak/pak_file.h"
 #include "vkk_engine.h"
+#include "vkk_util.h"
 
 #define VKK_DESCRIPTOR_POOL_SIZE 64
 
@@ -61,106 +62,6 @@ vkk_image_size(vkk_image_t* self)
 /***********************************************************
 * private                                                  *
 ***********************************************************/
-
-static void
-vkk_imageMemoryBarrier(VkCommandBuffer cb,
-                       VkImage image,
-                       int stage,
-                       VkImageLayout oldLayout,
-                       VkImageLayout newLayout,
-                       VkImageAspectFlags aspectMask,
-                       uint32_t baseMipLevel,
-                       uint32_t levelCount)
-{
-	assert(cb != VK_NULL_HANDLE);
-	assert(image != VK_NULL_HANDLE);
-
-	VkImageMemoryBarrier imb =
-	{
-		.sType               = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,
-		.pNext               = NULL,
-		.srcAccessMask       = 0,
-		.dstAccessMask       = 0,
-		.oldLayout           = oldLayout,
-		.newLayout           = newLayout,
-		.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
-		.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
-		.image               = image,
-		.subresourceRange    =
-		{
-			.aspectMask     = aspectMask,
-			.baseMipLevel   = baseMipLevel,
-			.levelCount     = levelCount,
-			.baseArrayLayer = 0,
-			.layerCount     = 1
-		}
-	};
-
-	// derive the access masks and stage flags from the
-	// image layouts
-	VkPipelineStageFlags srcStageMask = VK_PIPELINE_STAGE_ALL_COMMANDS_BIT;
-	VkPipelineStageFlags dstStageMask = VK_PIPELINE_STAGE_ALL_COMMANDS_BIT;
-	if(oldLayout == VK_IMAGE_LAYOUT_UNDEFINED)
-	{
-		srcStageMask      = VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT;
-		imb.srcAccessMask = 0;
-	}
-	else if(oldLayout == VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL)
-	{
-		srcStageMask      = VK_PIPELINE_STAGE_TRANSFER_BIT;
-		imb.srcAccessMask = VK_ACCESS_TRANSFER_READ_BIT;
-	}
-	else if(oldLayout == VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL)
-	{
-		srcStageMask      = VK_PIPELINE_STAGE_TRANSFER_BIT;
-		imb.srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
-	}
-	else
-	{
-		LOGW("invalid oldLayout=%u", oldLayout);
-	}
-
-	if(newLayout == VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL)
-	{
-		dstStageMask      = VK_PIPELINE_STAGE_TRANSFER_BIT;
-		imb.dstAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
-	}
-	else if(newLayout == VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL)
-	{
-		dstStageMask      = VK_PIPELINE_STAGE_TRANSFER_BIT;
-		imb.dstAccessMask = VK_ACCESS_TRANSFER_READ_BIT;
-	}
-	else if(newLayout == VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL)
-	{
-		dstStageMask      = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
-		imb.dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
-	}
-	else if(newLayout == VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL)
-	{
-		dstStageMask      = VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT;
-		imb.dstAccessMask = VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
-	}
-	else if(newLayout == VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL)
-	{
-		VkPipelineStageFlagBits ps_map[VKK_STAGE_COUNT] =
-		{
-			0,
-			VK_PIPELINE_STAGE_VERTEX_SHADER_BIT,
-			VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
-			VK_PIPELINE_STAGE_VERTEX_SHADER_BIT | VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
-		};
-
-		dstStageMask      = ps_map[stage];
-		imb.dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
-	}
-	else
-	{
-		LOGW("invalid newLayout=%u", newLayout);
-	}
-
-	vkCmdPipelineBarrier(cb, srcStageMask, dstStageMask,
-	                     0, 0, NULL, 0, NULL, 1, &imb);
-}
 
 static int
 vkk_engine_hasDeviceExtensions(vkk_engine_t* self,
@@ -404,8 +305,6 @@ vkk_engine_newInstance(vkk_engine_t* self,
 		LOGE("vkCreateInstance failed");
 		return 0;
 	}
-
-	self->renderer.engine = self;
 
 	return 1;
 }
@@ -768,643 +667,6 @@ static int vkk_engine_newCacheAndPools(vkk_engine_t* self)
 	return 0;
 }
 
-static int vkk_engine_newSwapchain(vkk_engine_t* self)
-{
-	assert(self);
-
-	VkSurfaceCapabilitiesKHR caps;
-	if(vkGetPhysicalDeviceSurfaceCapabilitiesKHR(self->physical_device,
-	                                             self->surface,
-	                                             &caps) != VK_SUCCESS)
-	{
-		LOGE("vkGetPhysicalDeviceSurfaceCapabilitiesKHR failed");
-		return 0;
-	}
-
-	// check the minImageCount
-	uint32_t minImageCount = 3;
-	if((caps.maxImageCount > 0) &&
-	   (minImageCount > caps.maxImageCount))
-	{
-		minImageCount = caps.maxImageCount;
-	}
-	else if(minImageCount < caps.minImageCount)
-	{
-		minImageCount = caps.minImageCount;
-	}
-
-	uint32_t sf_count;
-	if(vkGetPhysicalDeviceSurfaceFormatsKHR(self->physical_device,
-	                                        self->surface,
-	                                        &sf_count,
-	                                        NULL) != VK_SUCCESS)
-	{
-		LOGE("vkGetPhysicalDeviceSurfaceFormatsKHR failed");
-		return 0;
-	}
-
-	VkSurfaceFormatKHR* sf;
-	sf = (VkSurfaceFormatKHR*)
-	     CALLOC(sf_count, sizeof(VkSurfaceFormatKHR));
-	if(sf == NULL)
-	{
-		LOGE("CALLOC failed");
-		return 0;
-	}
-
-	if(vkGetPhysicalDeviceSurfaceFormatsKHR(self->physical_device,
-	                                        self->surface,
-	                                        &sf_count,
-	                                        sf) != VK_SUCCESS)
-	{
-		LOGE("vkGetPhysicalDeviceSurfaceFormatsKHR failed");
-		goto fail_surface_formats3;
-	}
-
-	self->swapchain_frame       = 0;
-	self->swapchain_format      = sf[0].format;
-	self->swapchain_color_space = sf[0].colorSpace;
-	int i;
-	for(i = 0; i < sf_count; ++i)
-	{
-		if((sf[i].colorSpace == VK_COLOR_SPACE_SRGB_NONLINEAR_KHR) &&
-		   ((sf[i].format == VK_FORMAT_R8G8B8A8_UNORM) ||
-		    (sf[i].format == VK_FORMAT_B8G8R8A8_UNORM)))
-		{
-			self->swapchain_format      = sf[i].format;
-			self->swapchain_color_space = sf[i].colorSpace;
-			break;
-		}
-	}
-
-	uint32_t pm_count;
-	if(vkGetPhysicalDeviceSurfacePresentModesKHR(self->physical_device,
-	                                             self->surface,
-	                                             &pm_count,
-	                                             NULL) != VK_SUCCESS)
-	{
-		goto fail_present_modes1;
-	}
-
-	VkPresentModeKHR* pm;
-	pm = (VkPresentModeKHR*)
-	     CALLOC(pm_count, sizeof(VkPresentModeKHR));
-	if(pm == NULL)
-	{
-		goto fail_present_modes2;
-	}
-
-	if(vkGetPhysicalDeviceSurfacePresentModesKHR(self->physical_device,
-	                                             self->surface,
-	                                             &pm_count,
-	                                             pm) != VK_SUCCESS)
-	{
-		goto fail_present_modes3;
-	}
-
-	VkPresentModeKHR present_mode = pm[0];
-	for(i = 0; i < pm_count; ++i)
-	{
-		if(pm[i] == VK_PRESENT_MODE_FIFO_KHR)
-		{
-			present_mode = pm[i];
-			break;
-		}
-	}
-
-	VkSurfaceTransformFlagBitsKHR preTransform;
-	if(caps.supportedTransforms & VK_SURFACE_TRANSFORM_IDENTITY_BIT_KHR)
-	{
-		preTransform = VK_SURFACE_TRANSFORM_IDENTITY_BIT_KHR;
-	}
-	else
-	{
-		preTransform = caps.currentTransform;
-	}
-
-	VkSwapchainCreateInfoKHR sc_info =
-	{
-		.sType                 = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR,
-		.pNext                 = NULL,
-		.flags                 = 0,
-		.surface               = self->surface,
-		.minImageCount         = minImageCount,
-		.imageFormat           = self->swapchain_format,
-		.imageColorSpace       = self->swapchain_color_space,
-		.imageExtent           = caps.currentExtent,
-		.imageArrayLayers      = 1,
-		.imageUsage            = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT,
-		.imageSharingMode      = VK_SHARING_MODE_EXCLUSIVE,
-		.queueFamilyIndexCount = 1,
-		.pQueueFamilyIndices   = &self->queue_family_index,
-		.preTransform          = preTransform,
-		.compositeAlpha        = VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR,
-		.presentMode           = present_mode,
-		.clipped               = VK_TRUE,
-		.oldSwapchain          = VK_NULL_HANDLE
-	};
-
-	self->swapchain_extent = caps.currentExtent;
-
-	if(vkCreateSwapchainKHR(self->device, &sc_info, NULL,
-	                        &self->swapchain) != VK_SUCCESS)
-	{
-		LOGE("vkCreateSwapchainKHR failed");
-		goto fail_swapchain;
-	}
-
-	uint32_t count = 0;
-	if(vkGetSwapchainImagesKHR(self->device,
-	                           self->swapchain,
-	                           &count,
-	                           NULL) != VK_SUCCESS)
-	{
-		LOGE("vkGetSwapchainImagesKHR failed");
-		goto fail_get1;
-	}
-
-	// validate swapchain_image_count across resizes
-	if(self->swapchain_image_count &&
-	   (self->swapchain_image_count != count))
-	{
-		LOGE("invalid %u, %u",
-		     self->swapchain_image_count, count);
-		goto fail_count;
-	}
-	self->swapchain_image_count = count;
-
-	self->swapchain_images = (VkImage*)
-	                         CALLOC(self->swapchain_image_count,
-	                                sizeof(VkImage));
-	if(self->swapchain_images == NULL)
-	{
-		LOGE("CALLOC failed");
-		goto fail_images;
-	}
-
-	self->swapchain_fences = (VkFence*)
-	                         CALLOC(self->swapchain_image_count,
-	                                sizeof(VkFence));
-	if(self->swapchain_fences == NULL)
-	{
-		LOGE("CALLOC failed");
-		goto fail_fences;
-	}
-
-	uint32_t image_count = self->swapchain_image_count;
-	if(vkGetSwapchainImagesKHR(self->device,
-	                           self->swapchain,
-	                           &image_count,
-	                           self->swapchain_images) != VK_SUCCESS)
-	{
-		LOGE("vkGetSwapchainImagesKHR failed");
-		goto fail_get2;
-	}
-
-	for(i = 0; i < image_count; ++i)
-	{
-		VkFenceCreateInfo f_info =
-		{
-			.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO,
-			.pNext = NULL,
-			.flags = VK_FENCE_CREATE_SIGNALED_BIT
-		};
-
-		if(vkCreateFence(self->device, &f_info, NULL,
-		                 &self->swapchain_fences[i]) != VK_SUCCESS)
-		{
-			goto fail_create_fence;
-		}
-	}
-
-	FREE(pm);
-	FREE(sf);
-
-	// success
-	return 1;
-
-	// failure
-	fail_create_fence:
-	{
-		int j;
-		for(j = 0; j < i; ++j)
-		{
-			vkDestroyFence(self->device,
-			               self->swapchain_fences[j], NULL);
-		}
-	}
-	fail_get2:
-		FREE(self->swapchain_fences);
-	fail_fences:
-		FREE(self->swapchain_images);
-	fail_images:
-	fail_count:
-	fail_get1:
-		vkDestroySwapchainKHR(self->device,
-		                      self->swapchain, NULL);
-	fail_swapchain:
-	fail_present_modes3:
-		FREE(pm);
-	fail_present_modes2:
-	fail_present_modes1:
-	fail_surface_formats3:
-		FREE(sf);
-	return 0;
-}
-
-static void vkk_engine_deleteSwapchain(vkk_engine_t* self)
-{
-	assert(self);
-
-	if(self->swapchain == VK_NULL_HANDLE)
-	{
-		return;
-	}
-
-	int i;
-	for(i = 0; i < self->swapchain_image_count; ++i)
-	{
-		vkDestroyFence(self->device,
-		               self->swapchain_fences[i], NULL);
-	}
-	FREE(self->swapchain_fences);
-	FREE(self->swapchain_images);
-	vkDestroySwapchainKHR(self->device,
-	                      self->swapchain, NULL);
-	self->swapchain_fences = NULL;
-	self->swapchain_images = NULL;
-	self->swapchain        = VK_NULL_HANDLE;
-}
-
-static int vkk_engine_newDepth(vkk_engine_t* self)
-{
-	assert(self);
-
-	self->depth_image = vkk_engine_newImage(self,
-	                                        self->swapchain_extent.width,
-	                                        self->swapchain_extent.height,
-	                                        VKK_IMAGE_FORMAT_DEPTH,
-	                                        0, VKK_STAGE_DEPTH, NULL);
-	if(self->depth_image == NULL)
-	{
-		return 0;
-	}
-
-	return 1;
-}
-
-static void
-vkk_engine_deleteDepth(vkk_engine_t* self)
-{
-	assert(self);
-
-	vkk_engine_deleteImage(self, &self->depth_image);
-}
-
-static int vkk_engine_newFramebuffer(vkk_engine_t* self)
-{
-	assert(self);
-
-	self->framebuffer_image_views = (VkImageView*)
-	                                CALLOC(self->swapchain_image_count,
-	                                       sizeof(VkImageView));
-	if(self->framebuffer_image_views == NULL)
-	{
-		LOGE("CALLOC failed");
-		return 0;
-	}
-
-	self->framebuffers = (VkFramebuffer*)
-	                     CALLOC(self->swapchain_image_count,
-	                            sizeof(VkFramebuffer));
-	if(self->framebuffers == NULL)
-	{
-		LOGE("CALLOC failed");
-		goto fail_alloc_framebuffers;
-	}
-
-	int i;
-	for(i = 0; i < self->swapchain_image_count; ++i)
-	{
-		VkImageViewCreateInfo iv_info =
-		{
-			.sType      = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO,
-			.pNext      = NULL,
-			.flags      = 0,
-			.image      = self->swapchain_images[i],
-			.viewType   = VK_IMAGE_VIEW_TYPE_2D,
-			.format     = self->swapchain_format,
-			.components =
-			{
-				.r = VK_COMPONENT_SWIZZLE_IDENTITY,
-				.g = VK_COMPONENT_SWIZZLE_IDENTITY,
-				.b = VK_COMPONENT_SWIZZLE_IDENTITY,
-				.a = VK_COMPONENT_SWIZZLE_IDENTITY
-			},
-			.subresourceRange =
-			{
-				.aspectMask     = VK_IMAGE_ASPECT_COLOR_BIT,
-				.baseMipLevel   = 0,
-				.levelCount     = 1,
-				.baseArrayLayer = 0,
-				.layerCount     = 1
-			}
-		};
-
-		if(vkCreateImageView(self->device, &iv_info, NULL,
-		                     &self->framebuffer_image_views[i]) != VK_SUCCESS)
-		{
-			LOGE("vkCreateImageView failed");
-			goto fail_image_view;
-		}
-
-		VkImageView attachments[2] =
-		{
-			self->framebuffer_image_views[i],
-			self->depth_image->image_view,
-		};
-
-		VkFramebufferCreateInfo f_info =
-		{
-			.sType           = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO,
-			.pNext           = NULL,
-			.flags           = 0,
-			.renderPass      = self->render_pass,
-			.attachmentCount = 2,
-			.pAttachments    = attachments,
-			.width           = self->swapchain_extent.width,
-			.height          = self->swapchain_extent.height,
-			.layers          = 1,
-		};
-
-		if(vkCreateFramebuffer(self->device, &f_info, NULL,
-		                       &self->framebuffers[i]) != VK_SUCCESS)
-		{
-			vkDestroyImageView(self->device,
-			                   self->framebuffer_image_views[i],
-			                   NULL);
-			self->framebuffer_image_views[i] = VK_NULL_HANDLE;
-
-			LOGE("vkCreateFramebuffer failed");
-			goto fail_framebuffer;
-		}
-	}
-
-	// success
-	return 1;
-
-	// failure
-	fail_framebuffer:
-	fail_image_view:
-	{
-		int j;
-		for(j = 0; j < i; ++j)
-		{
-			vkDestroyFramebuffer(self->device,
-			                     self->framebuffers[j],
-			                     NULL);
-			vkDestroyImageView(self->device,
-			                   self->framebuffer_image_views[j],
-			                   NULL);
-			self->framebuffers[j]            = VK_NULL_HANDLE;
-			self->framebuffer_image_views[j] = VK_NULL_HANDLE;
-		}
-		FREE(self->framebuffers);
-		self->framebuffers = NULL;
-	}
-	fail_alloc_framebuffers:
-		FREE(self->framebuffer_image_views);
-		self->framebuffer_image_views = NULL;
-	return 0;
-}
-
-static void
-vkk_engine_deleteFramebuffer(vkk_engine_t* self)
-{
-	assert(self);
-
-	if(self->framebuffers == NULL)
-	{
-		return;
-	}
-
-	int i;
-	for(i = 0; i < self->swapchain_image_count; ++i)
-	{
-		vkDestroyFramebuffer(self->device,
-		                     self->framebuffers[i],
-		                     NULL);
-		vkDestroyImageView(self->device,
-		                   self->framebuffer_image_views[i],
-		                   NULL);
-		self->framebuffers[i]            = VK_NULL_HANDLE;
-		self->framebuffer_image_views[i] = VK_NULL_HANDLE;
-	}
-	FREE(self->framebuffers);
-	FREE(self->framebuffer_image_views);
-	self->framebuffers            = NULL;
-	self->framebuffer_image_views = NULL;
-}
-
-static int vkk_engine_newRenderpass(vkk_engine_t* self)
-{
-	assert(self);
-
-	VkAttachmentDescription attachments[2] =
-	{
-		{
-			.flags          = 0,
-			.format         = self->swapchain_format,
-			.samples        = VK_SAMPLE_COUNT_1_BIT,
-			.loadOp         = VK_ATTACHMENT_LOAD_OP_CLEAR,
-			.storeOp        = VK_ATTACHMENT_STORE_OP_STORE,
-			.stencilLoadOp  = VK_ATTACHMENT_LOAD_OP_DONT_CARE,
-			.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE,
-			.initialLayout  = VK_IMAGE_LAYOUT_UNDEFINED,
-			.finalLayout    = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR
-		},
-		{
-			.flags          = 0,
-			.format         = VK_FORMAT_D24_UNORM_S8_UINT,
-			.samples        = VK_SAMPLE_COUNT_1_BIT,
-			.loadOp         = VK_ATTACHMENT_LOAD_OP_CLEAR,
-			.storeOp        = VK_ATTACHMENT_STORE_OP_DONT_CARE,
-			.stencilLoadOp  = VK_ATTACHMENT_LOAD_OP_DONT_CARE,
-			.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE,
-			.initialLayout  = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL,
-			.finalLayout    = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL
-		}
-	};
-
-	VkAttachmentReference color_attachment =
-	{
-		.attachment = 0,
-		.layout     = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL
-	};
-
-	VkAttachmentReference depth_attachment =
-	{
-		.attachment = 1,
-		.layout     = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL
-	};
-
-	VkSubpassDescription subpass =
-	{
-		.flags = 0,
-		.pipelineBindPoint       = VK_PIPELINE_BIND_POINT_GRAPHICS,
-		.inputAttachmentCount    = 0,
-		.pInputAttachments       = NULL,
-		.colorAttachmentCount    = 1,
-		.pColorAttachments       = &color_attachment,
-		.pResolveAttachments     = NULL,
-		.pDepthStencilAttachment = &depth_attachment,
-		.preserveAttachmentCount = 0,
-		.pPreserveAttachments    = NULL,
-	};
-
-	VkRenderPassCreateInfo rp_info =
-	{
-		.sType           = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO,
-		.pNext           = NULL,
-		.flags           = 0,
-		.attachmentCount = 2,
-		.pAttachments    = attachments,
-		.subpassCount    = 1,
-		.pSubpasses      = &subpass,
-		.dependencyCount = 0,
-		.pDependencies   = NULL
-	};
-
-	if(vkCreateRenderPass(self->device, &rp_info, NULL,
-	                      &self->render_pass) != VK_SUCCESS)
-	{
-		LOGE("vkCreateRenderPass failed");
-		return 0;
-	}
-
-	return 1;
-}
-
-static int vkk_engine_newCommandBuffers(vkk_engine_t* self)
-{
-	assert(self);
-
-	self->command_buffers = (VkCommandBuffer*)
-	                        CALLOC(self->swapchain_image_count,
-	                               sizeof(VkCommandBuffer));
-	if(self->command_buffers == NULL)
-	{
-		LOGE("CALLOC failed");
-		return 0;
-	}
-
-	VkCommandBufferAllocateInfo cba_info =
-	{
-		.sType              = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO,
-		.pNext              = NULL,
-		.commandPool        = self->command_pool,
-		.level              = VK_COMMAND_BUFFER_LEVEL_PRIMARY,
-		.commandBufferCount = self->swapchain_image_count
-	};
-
-	if(vkAllocateCommandBuffers(self->device, &cba_info,
-	                            self->command_buffers) != VK_SUCCESS)
-	{
-		LOGE("vkAllocateCommandBuffers failed");
-		goto fail_allocate;
-	}
-
-	// success
-	return 1;
-
-	// failure
-	fail_allocate:
-		FREE(self->command_buffers);
-	return 0;
-}
-
-static int vkk_engine_newSemaphores(vkk_engine_t* self)
-{
-	assert(self);
-
-	self->semaphore_index   = 0;
-	self->semaphore_acquire = (VkSemaphore*)
-	                          CALLOC(self->swapchain_image_count,
-	                                 sizeof(VkSemaphore));
-	if(self->semaphore_acquire == NULL)
-	{
-		LOGE("CALLOC failed");
-		return 0;
-	}
-
-	self->semaphore_submit = (VkSemaphore*)
-	                         CALLOC(self->swapchain_image_count,
-	                                sizeof(VkSemaphore));
-	if(self->semaphore_submit == NULL)
-	{
-		LOGE("CALLOC failed");
-		goto fail_alloc_ss;
-	}
-
-	int i;
-	for(i = 0; i < self->swapchain_image_count; ++i)
-	{
-		VkSemaphoreCreateInfo sa_info =
-		{
-			.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO,
-			.pNext = NULL,
-			.flags = 0
-		};
-
-		if(vkCreateSemaphore(self->device, &sa_info, NULL,
-		                     &self->semaphore_acquire[i]) != VK_SUCCESS)
-		{
-			LOGE("vkCreateSemaphore failed");
-			goto fail_create;
-		}
-
-		VkSemaphoreCreateInfo ss_info =
-		{
-			.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO,
-			.pNext = NULL,
-			.flags = 0
-		};
-
-		if(vkCreateSemaphore(self->device, &ss_info, NULL,
-		                     &self->semaphore_submit[i]) != VK_SUCCESS)
-		{
-			vkDestroySemaphore(self->device,
-			                   self->semaphore_acquire[i],
-			                   NULL);
-
-			LOGE("vkCreateSemaphore failed");
-			goto fail_create;
-		}
-	}
-
-	// success
-	return 1;
-
-	// failure
-	fail_create:
-	{
-		int j;
-		for(j = 0; j < i; ++j)
-		{
-			vkDestroySemaphore(self->device,
-			                   self->semaphore_submit[j],
-			                   NULL);
-			vkDestroySemaphore(self->device,
-			                   self->semaphore_acquire[j],
-			                   NULL);
-		}
-		FREE(self->semaphore_submit);
-	}
-	fail_alloc_ss:
-		FREE(self->semaphore_acquire);
-	return 0;
-}
-
 static uint32_t*
 vkk_engine_importShaderModule(vkk_engine_t* self,
                               const char* fname,
@@ -1516,37 +778,6 @@ vkk_engine_getShaderModule(vkk_engine_t* self,
 	fail_create:
 		FREE(code);
 	return VK_NULL_HANDLE;
-}
-
-static void
-vkk_engine_beginSemaphore(vkk_engine_t* self,
-                          VkSemaphore* semaphore_acquire,
-                          VkSemaphore* semaphore_submit)
-{
-	assert(self);
-	assert(semaphore_acquire);
-	assert(semaphore_submit);
-
-	uint32_t idx       = self->semaphore_index;
-	*semaphore_acquire = self->semaphore_acquire[idx];
-	*semaphore_submit  = self->semaphore_submit[idx];
-}
-
-static void
-vkk_engine_endSemaphore(vkk_engine_t* self,
-                        VkSemaphore* semaphore_acquire,
-                        VkSemaphore* semaphore_submit)
-{
-	assert(self);
-	assert(semaphore_acquire);
-	assert(semaphore_submit);
-
-	uint32_t idx       = self->semaphore_index;
-	*semaphore_acquire = self->semaphore_acquire[idx];
-	*semaphore_submit  = self->semaphore_submit[idx];
-
-	++idx;
-	self->semaphore_index = idx%self->swapchain_image_count;
 }
 
 static VkDescriptorPool
@@ -1991,7 +1222,8 @@ vkk_engine_attachUniformBuffer(vkk_engine_t* self,
 	assert(buffer);
 
 	uint32_t count;
-	count = us->usf->dynamic ? self->swapchain_image_count : 1;
+	count = us->usf->dynamic ?
+	        vkk_renderer_swapchainImageCount(self->renderer) : 1;
 
 	int i;
 	for(i = 0; i < count; ++i)
@@ -2036,7 +1268,8 @@ vkk_engine_attachUniformSampler(vkk_engine_t* self,
 	assert(image);
 
 	uint32_t count;
-	count = us->usf->dynamic ? self->swapchain_image_count : 1;
+	count = us->usf->dynamic ?
+	        vkk_renderer_swapchainImageCount(self->renderer) : 1;
 
 	int i;
 	for(i = 0; i < count; ++i)
@@ -2134,77 +1367,25 @@ vkk_engine_t* vkk_engine_new(void* app,
 		goto fail_cacheAndPools;
 	}
 
-	if(vkk_engine_newSwapchain(self) == 0)
-	{
-		goto fail_swapchain;
-	}
-
-	if(vkk_engine_newRenderpass(self) == 0)
-	{
-		goto fail_renderpass;
-	}
-
-	if(vkk_engine_newDepth(self) == 0)
-	{
-		goto fail_depth;
-	}
-
-	if(vkk_engine_newFramebuffer(self) == 0)
-	{
-		goto fail_framebuffer;
-	}
-
-	if(vkk_engine_newCommandBuffers(self) == 0)
-	{
-		goto fail_command_buffers;
-	}
-
-	if(vkk_engine_newSemaphores(self) == 0)
-	{
-		goto fail_semaphores;
-	}
-
 	self->shader_modules = cc_map_new();
 	if(self->shader_modules == NULL)
 	{
 		goto fail_shader_modules;
 	}
 
+	self->renderer = vkk_defaultRenderer_new(self);
+	if(self->renderer == NULL)
+	{
+		goto fail_renderer;
+	}
+
 	// success
 	return self;
 
 	// failure
+	fail_renderer:
+		cc_map_delete(&self->shader_modules);
 	fail_shader_modules:
-	{
-		int i;
-		for(i = 0; i < self->swapchain_image_count; ++i)
-		{
-			vkDestroySemaphore(self->device,
-			                   self->semaphore_submit[i],
-			                   NULL);
-			vkDestroySemaphore(self->device,
-			                   self->semaphore_acquire[i],
-			                   NULL);
-		}
-		FREE(self->semaphore_submit);
-		FREE(self->semaphore_acquire);
-	}
-	fail_semaphores:
-		vkFreeCommandBuffers(self->device,
-		                     self->command_pool,
-		                     self->swapchain_image_count,
-		                     self->command_buffers);
-		FREE(self->command_buffers);
-	fail_command_buffers:
-		vkk_engine_deleteFramebuffer(self);
-	fail_framebuffer:
-		vkk_engine_deleteDepth(self);
-	fail_depth:
-		vkDestroyRenderPass(self->device,
-		                    self->render_pass, NULL);
-	fail_renderpass:
-		vkk_engine_deleteSwapchain(self);
-	fail_swapchain:
 		vkDestroyCommandPool(self->device,
 		                     self->command_pool, NULL);
 		vkDestroyPipelineCache(self->device,
@@ -2234,6 +1415,8 @@ void vkk_engine_delete(vkk_engine_t** _self)
 	vkk_engine_t* self = *_self;
 	if(self)
 	{
+		vkk_defaultRenderer_delete(&self->renderer);
+
 		cc_mapIter_t  miterator;
 		cc_mapIter_t* miter;
 		miter = cc_map_head(self->shader_modules, &miterator);
@@ -2245,35 +1428,6 @@ void vkk_engine_delete(vkk_engine_t** _self)
 			vkDestroyShaderModule(self->device, sm, NULL);
 		}
 		cc_map_delete(&self->shader_modules);
-
-		int i;
-		for(i = 0; i < self->swapchain_image_count; ++i)
-		{
-			vkDestroySemaphore(self->device,
-			                   self->semaphore_submit[i],
-			                   NULL);
-			vkDestroySemaphore(self->device,
-			                   self->semaphore_acquire[i],
-			                   NULL);
-		}
-		FREE(self->semaphore_submit);
-		FREE(self->semaphore_acquire);
-
-		vkFreeCommandBuffers(self->device,
-		                     self->command_pool,
-		                     self->swapchain_image_count,
-		                     self->command_buffers);
-		FREE(self->command_buffers);
-
-		vkk_engine_deleteFramebuffer(self);
-
-		vkk_engine_deleteDepth(self);
-
-		vkDestroyRenderPass(self->device,
-		                    self->render_pass, NULL);
-
-		vkk_engine_deleteSwapchain(self);
-
 		vkDestroyCommandPool(self->device,
 		                     self->command_pool, NULL);
 		vkk_engine_exportPipelineCache(self);
@@ -2301,7 +1455,8 @@ vkk_engine_newBuffer(vkk_engine_t* self, int dynamic,
 	assert(self);
 
 	uint32_t count;
-	count = dynamic ? self->swapchain_image_count : 1;
+	count = dynamic ?
+	        vkk_renderer_swapchainImageCount(self->renderer) : 1;
 
 	VkBufferUsageFlags usage_flags;
 	if(usage == VKK_BUFFER_USAGE_UNIFORM)
@@ -2459,7 +1614,8 @@ void vkk_engine_deleteBuffer(vkk_engine_t* self,
 	if(buffer)
 	{
 		uint32_t count;
-		count = buffer->dynamic ? self->swapchain_image_count : 1;
+		count = buffer->dynamic ?
+		        vkk_renderer_swapchainImageCount(self->renderer) : 1;
 		int i;
 		for(i = 0; i < count; ++i)
 		{
@@ -3001,7 +2157,8 @@ vkk_engine_newUniformSet(vkk_engine_t* self,
 	       ua_count*sizeof(vkk_uniformAttachment_t));
 
 	uint32_t count;
-	count = usf->dynamic ? self->swapchain_image_count : 1;
+	count = usf->dynamic ?
+	        vkk_renderer_swapchainImageCount(self->renderer) : 1;
 	us->ds_array = (VkDescriptorSet*)
 	               CALLOC(count, sizeof(VkDescriptorSet));
 	if(us->ds_array == NULL)
@@ -3216,6 +2373,7 @@ void vkk_engine_deletePipelineLayout(vkk_engine_t* self,
 
 vkk_graphicsPipeline_t*
 vkk_engine_newGraphicsPipeline(vkk_engine_t* self,
+                               vkk_renderer_t* renderer,
                                vkk_graphicsPipelineInfo_t* gpi)
 {
 	assert(self);
@@ -3349,8 +2507,8 @@ vkk_engine_newGraphicsPipeline(vkk_engine_t* self,
 	{
 		.x        = 0.0f,
 		.y        = 0.0f,
-		.width    = (float) self->swapchain_extent.width,
-		.height   = (float) self->swapchain_extent.height,
+		.width    = (float) 0.0,
+		.height   = (float) 0.0,
 		.minDepth = 0.0f,
 		.maxDepth = 1.0f
 	};
@@ -3364,8 +2522,8 @@ vkk_engine_newGraphicsPipeline(vkk_engine_t* self,
 		},
 		.extent =
 		{
-			.width  = (uint32_t) self->swapchain_extent.width,
-			.height = (uint32_t) self->swapchain_extent.height,
+			.width  = (uint32_t) 0,
+			.height = (uint32_t) 0,
 		}
 	};
 
@@ -3510,7 +2668,7 @@ vkk_engine_newGraphicsPipeline(vkk_engine_t* self,
 		.pColorBlendState    = &pcbs_info,
 		.pDynamicState       = &pds_info,
 		.layout              = gpi->pl->pl,
-		.renderPass          = self->render_pass,
+		.renderPass          = vkk_renderer_renderPass(renderer),
 		.subpass             = 0,
 		.basePipelineHandle  = VK_NULL_HANDLE,
 		.basePipelineIndex   = -1
@@ -3562,43 +2720,14 @@ int vkk_engine_resize(vkk_engine_t* self)
 {
 	assert(self);
 
-	vkDeviceWaitIdle(self->device);
-
-	vkk_engine_deleteDepth(self);
-	vkk_engine_deleteFramebuffer(self);
-	vkk_engine_deleteSwapchain(self);
-
-	if(vkk_engine_newSwapchain(self) == 0)
-	{
-		return 0;
-	}
-
-	if(vkk_engine_newDepth(self) == 0)
-	{
-		goto fail_depth;
-	}
-
-	if(vkk_engine_newFramebuffer(self) == 0)
-	{
-		goto fail_framebuffer;
-	}
-
-	// success
-	return 1;
-
-	// failure
-	fail_framebuffer:
-		vkk_engine_deleteDepth(self);
-	fail_depth:
-		vkk_engine_deleteSwapchain(self);
-	return 0;
+	return vkk_defaultRenderer_resize(self->renderer);
 }
 
 vkk_renderer_t* vkk_engine_renderer(vkk_engine_t* self)
 {
 	assert(self);
 
-	return &self->renderer;
+	return self->renderer;
 }
 
 void vkk_engine_waitForIdle(vkk_engine_t* self)
@@ -3606,513 +2735,4 @@ void vkk_engine_waitForIdle(vkk_engine_t* self)
 	assert(self);
 
 	vkDeviceWaitIdle(self->device);
-}
-
-/***********************************************************
-* rendering API                                            *
-***********************************************************/
-
-int vkk_renderer_begin(vkk_renderer_t* self,
-                       float* clear_color)
-{
-	assert(self);
-	assert(clear_color);
-
-	vkk_engine_t* engine = self->engine;
-
-	VkSemaphore semaphore_acquire;
-	VkSemaphore semaphore_submit;
-	vkk_engine_beginSemaphore(engine,
-	                          &semaphore_acquire,
-	                          &semaphore_submit);
-
-	// Android only supports infinite timeout
-	// Linux needs a timeout to avoid deadlock on resize
-	#ifdef ANDROID
-		uint64_t timeout = UINT64_MAX;
-	#else
-		uint64_t timeout = 250000000;
-	#endif
-	if(vkAcquireNextImageKHR(engine->device,
-	                         engine->swapchain,
-	                         timeout,
-	                         semaphore_acquire,
-	                         VK_NULL_HANDLE,
-	                         &engine->swapchain_frame) != VK_SUCCESS)
-	{
-		// failure typically caused by resizes
-		return 0;
-	}
-
-	VkFence sc_fence;
-	sc_fence = engine->swapchain_fences[engine->swapchain_frame];
-	vkWaitForFences(engine->device, 1,
-	                &sc_fence, VK_TRUE, UINT64_MAX);
-	vkResetFences(engine->device, 1, &sc_fence);
-
-	VkCommandBuffer cb;
-	cb = engine->command_buffers[engine->swapchain_frame];
-	if(vkResetCommandBuffer(cb, 0) != VK_SUCCESS)
-	{
-		LOGE("vkResetCommandBuffer failed");
-		return 0;
-	}
-
-	VkFramebuffer framebuffer;
-	framebuffer = engine->framebuffers[engine->swapchain_frame];
-	VkCommandBufferInheritanceInfo cbi_info =
-	{
-		.sType                = VK_STRUCTURE_TYPE_COMMAND_BUFFER_INHERITANCE_INFO,
-		.pNext                = NULL,
-		.renderPass           = engine->render_pass,
-		.subpass              = 0,
-		.framebuffer          = framebuffer,
-		.occlusionQueryEnable = VK_FALSE,
-		.queryFlags           = 0,
-		.pipelineStatistics   = 0
-	};
-
-	VkCommandBufferBeginInfo cb_info =
-	{
-		.sType            = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,
-		.pNext            = NULL,
-		.flags            = 0,
-		.pInheritanceInfo = &cbi_info
-	};
-
-	if(vkBeginCommandBuffer(cb, &cb_info) != VK_SUCCESS)
-	{
-		LOGE("vkBeginCommandBuffer failed");
-		return 0;
-	}
-
-	// stage only applies to textures
-	VkImage image;
-	image = engine->swapchain_images[engine->swapchain_frame];
-	vkk_imageMemoryBarrier(cb, image, 0,
-	                       VK_IMAGE_LAYOUT_UNDEFINED,
-	                       VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
-	                       VK_IMAGE_ASPECT_COLOR_BIT, 0, 1);
-
-	if(engine->depth_image->transition)
-	{
-		// stage only applies to textures
-		vkk_imageMemoryBarrier(cb, engine->depth_image->image, 0,
-		                       VK_IMAGE_LAYOUT_UNDEFINED,
-		                       VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL,
-		                       VK_IMAGE_ASPECT_DEPTH_BIT | VK_IMAGE_ASPECT_STENCIL_BIT,
-		                       0, 1);
-
-		engine->depth_image->transition = 0;
-	}
-
-	VkViewport viewport =
-	{
-		.x        = 0.0f,
-		.y        = 0.0f,
-		.width    = (float) engine->swapchain_extent.width,
-		.height   = (float) engine->swapchain_extent.height,
-		.minDepth = 0.0f,
-		.maxDepth = 1.0f
-	};
-	vkCmdSetViewport(cb, 0, 1, &viewport);
-
-	VkRect2D scissor =
-	{
-		.offset =
-		{
-			.x = 0,
-			.y = 0
-		},
-		.extent =
-		{
-			.width  = (uint32_t) engine->swapchain_extent.width,
-			.height = (uint32_t) engine->swapchain_extent.height,
-		}
-	};
-	vkCmdSetScissor(cb, 0, 1, &scissor);
-
-	VkClearValue cv[2] =
-	{
-		{
-			.color =
-			{
-				.float32 =
-				{
-					clear_color[0],
-					clear_color[1],
-					clear_color[2],
-					clear_color[3]
-				}
-			},
-		},
-		{
-			.depthStencil =
-			{
-				.depth   = 1.0f,
-				.stencil = 0
-			}
-		}
-	};
-
-	uint32_t width  = engine->swapchain_extent.width;
-	uint32_t height = engine->swapchain_extent.height;
-	VkRenderPassBeginInfo rp_info =
-	{
-		.sType           = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO,
-		.pNext           = NULL,
-		.renderPass      = engine->render_pass,
-		.framebuffer     = framebuffer,
-		.renderArea      = { { .x=0, .y=0 },
-		                     { .width=width,
-		                       .height=height } },
-		.clearValueCount = 2,
-		.pClearValues    = cv
-	};
-
-	vkCmdBeginRenderPass(cb,
-	                     &rp_info,
-	                     VK_SUBPASS_CONTENTS_INLINE);
-
-	return 1;
-}
-
-void vkk_renderer_end(vkk_renderer_t* self)
-{
-	assert(self);
-
-	vkk_engine_t* engine = self->engine;
-
-	VkSemaphore semaphore_acquire;
-	VkSemaphore semaphore_submit;
-	vkk_engine_endSemaphore(engine,
-	                        &semaphore_acquire,
-	                        &semaphore_submit);
-
-	VkCommandBuffer cb;
-	cb = engine->command_buffers[engine->swapchain_frame];
-	vkCmdEndRenderPass(cb);
-	vkEndCommandBuffer(cb);
-
-	VkPipelineStageFlags wait_dst_stage_mask;
-	wait_dst_stage_mask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
-
-	VkSubmitInfo s_info =
-	{
-		.sType                = VK_STRUCTURE_TYPE_SUBMIT_INFO,
-		.pNext                = NULL,
-		.waitSemaphoreCount   = 1,
-		.pWaitSemaphores      = &semaphore_acquire,
-		.pWaitDstStageMask    = &wait_dst_stage_mask,
-		.commandBufferCount   = 1,
-		.pCommandBuffers      = &cb,
-		.signalSemaphoreCount = 1,
-		.pSignalSemaphores    = &semaphore_submit
-	};
-
-	VkFence sc_fence;
-	sc_fence = engine->swapchain_fences[engine->swapchain_frame];
-	if(vkQueueSubmit(engine->queue, 1, &s_info,
-	                 sc_fence) != VK_SUCCESS)
-	{
-		LOGE("vkQueueSubmit failed");
-		return;
-	}
-
-	VkPresentInfoKHR p_info =
-	{
-		.sType              = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR,
-		.pNext              = NULL,
-		.waitSemaphoreCount = 1,
-		.pWaitSemaphores    = &semaphore_submit,
-		.swapchainCount     = 1,
-		.pSwapchains        = &engine->swapchain,
-		.pImageIndices      = &engine->swapchain_frame,
-		.pResults           = NULL
-	};
-
-	if(vkQueuePresentKHR(engine->queue,
-	                     &p_info) != VK_SUCCESS)
-	{
-		// failure typically caused by resizes
-		return;
-	}
-}
-
-void vkk_renderer_surfaceSize(vkk_renderer_t* self,
-                              uint32_t* _width,
-                              uint32_t* _height)
-{
-	assert(self);
-	assert(_width);
-	assert(_height);
-
-	vkk_engine_t* engine = self->engine;
-
-	*_width  = engine->swapchain_extent.width;
-	*_height = engine->swapchain_extent.height;
-}
-
-void vkk_renderer_updateBuffer(vkk_renderer_t* self,
-                               vkk_buffer_t* buffer,
-                               const void* buf)
-{
-	assert(self);
-	assert(buffer);
-	assert(buf);
-
-	vkk_engine_t* engine = self->engine;
-
-	uint32_t idx;
-	idx = buffer->dynamic ? engine->swapchain_frame : 0;
-
-	void* data;
-	if(vkMapMemory(engine->device,
-	               buffer->memory[idx],
-	               0, buffer->size, 0,
-	               &data) == VK_SUCCESS)
-	{
-		memcpy(data, buf, buffer->size);
-		vkUnmapMemory(engine->device,
-		              buffer->memory[idx]);
-	}
-	else
-	{
-		LOGW("vkMapMemory failed");
-	}
-}
-
-void vkk_renderer_bindGraphicsPipeline(vkk_renderer_t* self,
-                                       vkk_graphicsPipeline_t* gp)
-{
-	assert(self);
-	assert(gp);
-
-	vkk_engine_t* engine = self->engine;
-
-	VkCommandBuffer cb;
-	cb = engine->command_buffers[engine->swapchain_frame];
-	vkCmdBindPipeline(cb,
-	                  VK_PIPELINE_BIND_POINT_GRAPHICS,
-	                  gp->pipeline);
-}
-
-void vkk_renderer_bindUniformSets(vkk_renderer_t* self,
-                                  vkk_pipelineLayout_t* pl,
-                                  uint32_t us_count,
-                                  vkk_uniformSet_t** us_array)
-{
-	assert(self);
-	assert(pl);
-	assert(us_count > 0);
-	assert(us_count <= pl->usf_count);
-	assert(us_array);
-
-	vkk_engine_t* engine = self->engine;
-
-	// allow for a constant and dynamic uniform set
-	int             i;
-	uint32_t        idx;
-	VkDescriptorSet ds[2];
-	for(i = 0; i < us_count; ++i)
-	{
-		idx   = us_array[i]->usf->dynamic ?
-		        engine->swapchain_frame : 0;
-		ds[i] = us_array[i]->ds_array[idx];
-	}
-
-	uint32_t first = us_array[0]->set;
-
-	VkCommandBuffer cb;
-	cb = engine->command_buffers[engine->swapchain_frame];
-	vkCmdBindDescriptorSets(cb,
-	                        VK_PIPELINE_BIND_POINT_GRAPHICS,
-	                        pl->pl, first, us_count, ds,
-	                        0, NULL);
-}
-
-void vkk_renderer_clearDepth(vkk_renderer_t* self)
-{
-	assert(self);
-
-	vkk_engine_t* engine = self->engine;
-
-	VkClearRect rect =
-	{
-		.rect =
-		{
-			.offset =
-			{
-				.x = 0,
-				.y = 0
-			},
-			.extent =
-			{
-				.width  = engine->swapchain_extent.width,
-				.height = engine->swapchain_extent.height
-			}
-		},
-		.baseArrayLayer = 0,
-		.layerCount     = 1
-	};
-
-	VkClearAttachment ca =
-	{
-		.aspectMask = VK_IMAGE_ASPECT_DEPTH_BIT |
-		              VK_IMAGE_ASPECT_STENCIL_BIT,
-		.colorAttachment = 0,
-		.clearValue =
-		{
-			.depthStencil =
-			{
-				.depth   = 1.0f,
-				.stencil = 0
-			}
-		}
-	};
-
-	VkCommandBuffer cb;
-	cb = engine->command_buffers[engine->swapchain_frame];
-	vkCmdClearAttachments(cb, 1, &ca, 1, &rect);
-}
-
-void vkk_renderer_viewport(vkk_renderer_t* self,
-                           float x, float y,
-                           float width, float height)
-{
-	assert(self);
-
-	vkk_engine_t* engine = self->engine;
-
-	VkViewport viewport =
-	{
-		.x        = x,
-		.y        = y,
-		.width    = width,
-		.height   = height,
-		.minDepth = 0.0f,
-		.maxDepth = 1.0f
-	};
-
-	VkCommandBuffer cb;
-	cb = engine->command_buffers[engine->swapchain_frame];
-	vkCmdSetViewport(cb, 0, 1, &viewport);
-}
-
-void vkk_renderer_scissor(vkk_renderer_t* self,
-                          uint32_t x, uint32_t y,
-                          uint32_t width, uint32_t height)
-{
-	assert(self);
-
-	vkk_engine_t* engine = self->engine;
-
-	VkRect2D scissor =
-	{
-		.offset =
-		{
-			.x = x,
-			.y = y
-		},
-		.extent =
-		{
-			.width  = width,
-			.height = height
-		}
-	};
-
-	VkCommandBuffer cb;
-	cb = engine->command_buffers[engine->swapchain_frame];
-	vkCmdSetScissor(cb, 0, 1, &scissor);
-}
-
-
-void vkk_renderer_draw(vkk_renderer_t* self,
-                       uint32_t vertex_count,
-                       uint32_t vertex_buffer_count,
-                       vkk_buffer_t** vertex_buffers)
-{
-	assert(self);
-	assert(vertex_buffers);
-	assert(vertex_buffer_count < 16);
-
-	vkk_engine_t* engine = self->engine;
-
-	VkDeviceSize vb_offsets[16] =
-	{
-		0, 0, 0, 0,
-		0, 0, 0, 0,
-		0, 0, 0, 0,
-		0, 0, 0, 0
-	};
-	VkBuffer vb_buffers[16];
-
-	// fill in the vertex buffers
-	int i = 0;
-	int idx;
-	for(i = 0; i < vertex_buffer_count; ++i)
-	{
-		idx = vertex_buffers[i]->dynamic ?
-		      engine->swapchain_frame : 0;
-		vb_buffers[i] = vertex_buffers[i]->buffer[idx];
-	}
-
-	VkCommandBuffer cb;
-	cb = engine->command_buffers[engine->swapchain_frame];
-
-	vkCmdBindVertexBuffers(cb, 0, vertex_buffer_count,
-	                       vb_buffers, vb_offsets);
-	vkCmdDraw(cb, vertex_count, 1, 0, 0);
-}
-
-void vkk_renderer_drawIndexed(vkk_renderer_t* self,
-                              uint32_t vertex_count,
-                              uint32_t vertex_buffer_count,
-                              int index_type,
-                              vkk_buffer_t* index_buffer,
-                              vkk_buffer_t** vertex_buffers)
-{
-	assert(self);
-	assert(index_buffer);
-	assert(vertex_buffers);
-	assert(vertex_buffer_count < 16);
-
-	vkk_engine_t* engine = self->engine;
-
-	VkDeviceSize vb_offsets[16] =
-	{
-		0, 0, 0, 0,
-		0, 0, 0, 0,
-		0, 0, 0, 0,
-		0, 0, 0, 0
-	};
-	VkBuffer vb_buffers[16];
-
-	// fill in the vertex buffers
-	int i = 0;
-	int idx;
-	for(i = 0; i < vertex_buffer_count; ++i)
-	{
-		idx = vertex_buffers[i]->dynamic ?
-		      engine->swapchain_frame : 0;
-		vb_buffers[i] = vertex_buffers[i]->buffer[idx];
-	}
-
-	VkCommandBuffer cb;
-	cb = engine->command_buffers[engine->swapchain_frame];
-
-	VkIndexType it_map[VKK_INDEX_TYPE_COUNT] =
-	{
-		VK_INDEX_TYPE_UINT16,
-		VK_INDEX_TYPE_UINT32
-	};
-
-	idx = index_buffer->dynamic ? engine->swapchain_frame : 0;
-	VkBuffer ib_buffer = index_buffer->buffer[idx];
-
-	vkCmdBindIndexBuffer(cb, ib_buffer, 0,
-	                     it_map[index_type]);
-	vkCmdBindVertexBuffers(cb, 0, vertex_buffer_count,
-	                       vb_buffers, vb_offsets);
-	vkCmdDrawIndexed(cb, vertex_count, 1, 0, 0, 0);
 }

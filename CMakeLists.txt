@@ -8,7 +8,10 @@ add_library(vkk
             STATIC
 
             # Source
-            vkk_engine.c)
+            vkk_defaultRenderer.c
+            vkk_engine.c
+            vkk_renderer.c
+            vkk_util.c)
 
 # Includes
 target_include_directories(vkk
