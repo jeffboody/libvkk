@@ -158,15 +158,23 @@ typedef struct
 /*
  * engine new/delete API
  *
- * 1) new/delete functions are thread safe but should not
- *    be called between begin/end on the same thread
- * 2) an object cannot be used once deleted
- * 3) image, sampler, uniformSetFactory, pipelineLayout and
+ * 1) objects may be created from any thread using the
+ *    engine handle
+ * 2) objects must be deleted from a worker thread if the
+ *    engine has not been shutdown yet otherwise a deadlock
+ *    may occur
+ * 3) an object cannot be used by any thread once deleted
+ * 4) image, sampler, uniformSetFactory, pipelineLayout and
  *    graphicsPipeline may be shared between renderers
- * 4) buffers and uniformSets may only be shared between
- *    renderers when dynamic flag is not set
- * 5) CPU and GPU synchronization is handled automatically
- *    by the engine
+ * 5) buffers and uniformSets may only be shared between
+ *    renderers when dynamic flag is NOT set
+ * 6) CPU and GPU synchronization is handled automatically
+ *    by the engine with the exception of the shutdown
+ *    function
+ * 7) call shutdown from the main thread prior to deleting
+ *    the engine thus ensuring GPU rendering completes and
+ *    worker threads are no longer blocked waiting for GPU
+ *    events
  */
 
 vkk_engine_t*            vkk_engine_new(void* app,
@@ -175,6 +183,7 @@ vkk_engine_t*            vkk_engine_new(void* app,
                                         const char* resource,
                                         const char* cache);
 void                     vkk_engine_delete(vkk_engine_t** _self);
+void                     vkk_engine_shutdown(vkk_engine_t* self);
 vkk_buffer_t*            vkk_engine_newBuffer(vkk_engine_t* self,
                                               int dynamic,
                                               int usage,
@@ -228,13 +237,10 @@ void                     vkk_engine_deleteGraphicsPipeline(vkk_engine_t* self,
  *    automatically by the engine
  * 3) the resize event triggered by native window system
  *    causes the default renderer surfaceSize to be updated
- * 4) waitForIdle is a temporary workaround to ensure
- *    resources are not in use before deletion
  */
 
 int             vkk_engine_resize(vkk_engine_t* self);
 vkk_renderer_t* vkk_engine_renderer(vkk_engine_t* self);
-void            vkk_engine_waitForIdle(vkk_engine_t* self);
 
 /*
  * rendering API

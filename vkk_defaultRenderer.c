@@ -28,6 +28,7 @@
 #define LOG_TAG "vkk"
 #include "../libcc/cc_log.h"
 #include "../libcc/cc_memory.h"
+#include "../libcc/cc_timestamp.h"
 #include "vkk_defaultRenderer.h"
 #include "vkk_engine.h"
 #include "vkk_util.h"
@@ -785,7 +786,9 @@ vkk_defaultRenderer_new(vkk_engine_t* engine)
 	                  vkk_defaultRenderer_draw,
 	                  vkk_defaultRenderer_drawIndexed,
 	                  vkk_defaultRenderer_renderPass,
-	                  vkk_defaultRenderer_swapchainImageCount);
+	                  vkk_defaultRenderer_swapchainImageCount,
+	                  vkk_defaultRenderer_currentTimestamp,
+	                  vkk_defaultRenderer_expiredTimestampLocked);
 
 	if(vkk_defaultRenderer_newSwapchain(base) == 0)
 	{
@@ -812,6 +815,14 @@ vkk_defaultRenderer_new(vkk_engine_t* engine)
 		goto fail_cb_array;
 	}
 
+	self->ts_array = (double*)
+	                 CALLOC(self->swapchain_image_count,
+	                        sizeof(double));
+	if(self->ts_array == NULL)
+	{
+		goto fail_timestamps;
+	}
+
 	if(vkk_defaultRenderer_newSemaphores(base) == 0)
 	{
 		goto fail_semaphores;
@@ -822,6 +833,8 @@ vkk_defaultRenderer_new(vkk_engine_t* engine)
 
 	// failure
 	fail_semaphores:
+		FREE(self->ts_array);
+	fail_timestamps:
 		vkk_engine_freeCommandBuffers(engine,
 		                              self->swapchain_image_count,
 		                              self->cb_array);
@@ -864,6 +877,8 @@ void vkk_defaultRenderer_delete(vkk_renderer_t** _base)
 		}
 		FREE(self->semaphore_submit);
 		FREE(self->semaphore_acquire);
+
+		FREE(self->ts_array);
 
 		vkk_engine_freeCommandBuffers(engine,
 		                              self->swapchain_image_count,
@@ -953,11 +968,22 @@ vkk_defaultRenderer_begin(vkk_renderer_t* base,
 		return 0;
 	}
 
+	// wait for a frame to complete
 	VkFence sc_fence;
 	sc_fence = self->swapchain_fences[self->swapchain_frame];
 	vkWaitForFences(engine->device, 1,
 	                &sc_fence, VK_TRUE, UINT64_MAX);
 	vkResetFences(engine->device, 1, &sc_fence);
+
+	// expire the completed frame
+	vkk_engine_rendererLock(engine);
+	if(self->ts_array[self->swapchain_frame] > self->ts_expired)
+	{
+		self->ts_expired = self->ts_array[self->swapchain_frame];
+		vkk_engine_rendererSignal(base->engine);
+	}
+	self->ts_array[self->swapchain_frame] = cc_timestamp();
+	vkk_engine_rendererUnlock(engine);
 
 	VkCommandBuffer cb;
 	cb = self->cb_array[self->swapchain_frame];
@@ -1205,6 +1231,9 @@ vkk_defaultRenderer_bindGraphicsPipeline(vkk_renderer_t* base,
 	vkCmdBindPipeline(cb,
 	                  VK_PIPELINE_BIND_POINT_GRAPHICS,
 	                  gp->pipeline);
+
+	// update timestamp
+	gp->ts = vkk_renderer_currentTimestamp(base);
 }
 
 void
@@ -1226,11 +1255,32 @@ vkk_defaultRenderer_bindUniformSets(vkk_renderer_t* base,
 	int             i;
 	uint32_t        idx;
 	VkDescriptorSet ds[2];
+	double          ts = vkk_renderer_currentTimestamp(base);
 	for(i = 0; i < us_count; ++i)
 	{
 		idx   = us_array[i]->usf->dynamic ?
 		        self->swapchain_frame : 0;
 		ds[i] = us_array[i]->ds_array[idx];
+
+		// update timestamps
+		int j;
+		for(j = 0; j < us_array[i]->ua_count; ++j)
+		{
+			vkk_uniformAttachment_t* ua;
+			vkk_uniformBinding_t*    ub;
+			ua = &(us_array[i]->ua_array[j]);
+			ub = &(us_array[i]->usf->ub_array[j]);
+			if(ua->type == VKK_UNIFORM_TYPE_BUFFER)
+			{
+				ua->buffer->ts = ts;
+			}
+			else if(ua->type == VKK_UNIFORM_TYPE_SAMPLER)
+			{
+				ua->image->ts   = ts;
+				ub->sampler->ts = ts;
+			}
+		}
+		us_array[i]->ts = ts;
 	}
 
 	uint32_t first = us_array[0]->set;
@@ -1382,6 +1432,13 @@ vkk_defaultRenderer_draw(vkk_renderer_t* base,
 	vkCmdBindVertexBuffers(cb, 0, vertex_buffer_count,
 	                       vb_buffers, vb_offsets);
 	vkCmdDraw(cb, vertex_count, 1, 0, 0);
+
+	// update timestamps
+	double ts = vkk_renderer_currentTimestamp(base);
+	for(i = 0; i < vertex_buffer_count; ++i)
+	{
+		vertex_buffers[i]->ts = ts;
+	}
 }
 
 void
@@ -1436,6 +1493,14 @@ vkk_defaultRenderer_drawIndexed(vkk_renderer_t* base,
 	vkCmdBindVertexBuffers(cb, 0, vertex_buffer_count,
 	                       vb_buffers, vb_offsets);
 	vkCmdDrawIndexed(cb, vertex_count, 1, 0, 0, 0);
+
+	// update timestamps
+	double ts = vkk_renderer_currentTimestamp(base);
+	for(i = 0; i < vertex_buffer_count; ++i)
+	{
+		vertex_buffers[i]->ts = ts;
+	}
+	index_buffer->ts = ts;
 }
 
 VkRenderPass
@@ -1458,4 +1523,26 @@ vkk_defaultRenderer_swapchainImageCount(vkk_renderer_t* base)
 	self = (vkk_defaultRenderer_t*) base;
 
 	return self->swapchain_image_count;
+}
+
+double
+vkk_defaultRenderer_currentTimestamp(vkk_renderer_t* base)
+{
+	assert(base);
+
+	vkk_defaultRenderer_t* self;
+	self = (vkk_defaultRenderer_t*) base;
+
+	return self->ts_array[self->swapchain_frame];
+}
+
+double
+vkk_defaultRenderer_expiredTimestampLocked(vkk_renderer_t* base)
+{
+	assert(base);
+
+	vkk_defaultRenderer_t* self;
+	self = (vkk_defaultRenderer_t*) base;
+
+	return self->ts_expired;
 }

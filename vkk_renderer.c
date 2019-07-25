@@ -158,7 +158,9 @@ void vkk_renderer_init(vkk_renderer_t* self,
                        vkk_renderer_drawFn drawFn,
                        vkk_renderer_drawIndexedFn drawIndexedFn,
                        vkk_renderer_renderPassFn renderPassFn,
-                       vkk_renderer_swapchainImageCountFn swapchainImageCountFn)
+                       vkk_renderer_swapchainImageCountFn swapchainImageCountFn,
+                       vkk_renderer_currentTimestampFn currentTimestampFn,
+                       vkk_renderer_expiredTimestampLockedFn expiredTimestampLockedFn)
 {
 	assert(self);
 	assert(engine);
@@ -175,21 +177,25 @@ void vkk_renderer_init(vkk_renderer_t* self,
 	assert(drawIndexedFn);
 	assert(renderPassFn);
 	assert(swapchainImageCountFn);
+	assert(currentTimestampFn);
+	assert(expiredTimestampLockedFn);
 
-	self->engine                 = engine;
-	self->beginFn                = beginFn;
-	self->endFn                  = endFn;
-	self->surfaceSizeFn          = surfaceSizeFn;
-	self->updateBufferFn         = updateBufferFn;
-	self->bindGraphicsPipelineFn = bindGraphicsPipelineFn;
-	self->bindUniformSetsFn      = bindUniformSetsFn;
-	self->clearDepthFn           = clearDepthFn;
-	self->viewportFn             = viewportFn;
-	self->scissorFn              = scissorFn;
-	self->drawFn                 = drawFn;
-	self->drawIndexedFn          = drawIndexedFn;
-	self->renderPassFn           = renderPassFn;
-	self->swapchainImageCountFn  = swapchainImageCountFn;
+	self->engine                   = engine;
+	self->beginFn                  = beginFn;
+	self->endFn                    = endFn;
+	self->surfaceSizeFn            = surfaceSizeFn;
+	self->updateBufferFn           = updateBufferFn;
+	self->bindGraphicsPipelineFn   = bindGraphicsPipelineFn;
+	self->bindUniformSetsFn        = bindUniformSetsFn;
+	self->clearDepthFn             = clearDepthFn;
+	self->viewportFn               = viewportFn;
+	self->scissorFn                = scissorFn;
+	self->drawFn                   = drawFn;
+	self->drawIndexedFn            = drawIndexedFn;
+	self->renderPassFn             = renderPassFn;
+	self->swapchainImageCountFn    = swapchainImageCountFn;
+	self->currentTimestampFn       = currentTimestampFn;
+	self->expiredTimestampLockedFn = expiredTimestampLockedFn;
 }
 
 VkRenderPass vkk_renderer_renderPass(vkk_renderer_t* self)
@@ -207,4 +213,20 @@ vkk_renderer_swapchainImageCount(vkk_renderer_t* self)
 	assert(self->swapchainImageCountFn);
 
 	return (*self->swapchainImageCountFn)(self);
+}
+
+double
+vkk_renderer_currentTimestamp(vkk_renderer_t* self)
+{
+	assert(self);
+
+	return (*self->currentTimestampFn)(self);
+}
+
+double
+vkk_renderer_expiredTimestampLocked(vkk_renderer_t* self)
+{
+	assert(self);
+
+	return (*self->expiredTimestampLockedFn)(self);
 }

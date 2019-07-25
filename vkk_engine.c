@@ -1352,6 +1352,18 @@ vkk_engine_t* vkk_engine_new(void* app,
 		goto fail_sm_mutex;
 	}
 
+	if(pthread_mutex_init(&self->renderer_mutex, NULL) != 0)
+	{
+		LOGE("pthread_mutex_init failed");
+		goto fail_renderer_mutex;
+	}
+
+	if(pthread_cond_init(&self->renderer_cond, NULL) != 0)
+	{
+		LOGE("pthread_cond_init failed");
+		goto fail_renderer_cond;
+	}
+
 	if(vkk_engine_newInstance(self, app_name,
 	                          app_version) == 0)
 	{
@@ -1410,6 +1422,10 @@ vkk_engine_t* vkk_engine_new(void* app,
 	fail_surface:
 		vkDestroyInstance(self->instance, NULL);
 	fail_instance:
+		pthread_cond_destroy(&self->renderer_cond);
+	fail_renderer_cond:
+		pthread_mutex_destroy(&self->renderer_mutex);
+	fail_renderer_mutex:
 		pthread_mutex_destroy(&self->sm_mutex);
 	fail_sm_mutex:
 		pthread_mutex_destroy(&self->usf_mutex);
@@ -1434,6 +1450,8 @@ void vkk_engine_delete(vkk_engine_t** _self)
 	vkk_engine_t* self = *_self;
 	if(self)
 	{
+		assert(self->shutdown);
+
 		vkk_defaultRenderer_delete(&self->renderer);
 
 		cc_mapIter_t  miterator;
@@ -1467,6 +1485,18 @@ void vkk_engine_delete(vkk_engine_t** _self)
 		FREE(self);
 		*_self = NULL;
 	}
+}
+
+void vkk_engine_shutdown(vkk_engine_t* self)
+{
+	assert(self);
+
+	vkDeviceWaitIdle(self->device);
+
+	vkk_engine_rendererLock(self);
+	self->shutdown = 1;
+	vkk_engine_rendererSignal(self);
+	vkk_engine_rendererUnlock(self);
 }
 
 vkk_buffer_t*
@@ -1636,6 +1666,8 @@ void vkk_engine_deleteBuffer(vkk_engine_t* self,
 	vkk_buffer_t* buffer = *_buffer;
 	if(buffer)
 	{
+		vkk_engine_rendererExpire(self, buffer->ts);
+
 		uint32_t count;
 		count = buffer->dynamic ?
 		        vkk_renderer_swapchainImageCount(self->renderer) : 1;
@@ -1880,6 +1912,8 @@ void vkk_engine_deleteImage(vkk_engine_t* self,
 	vkk_image_t* image = *_image;
 	if(image)
 	{
+		vkk_engine_rendererExpire(self, image->ts);
+
 		vkDestroyImageView(self->device, image->image_view,
 		                   NULL);
 		vkFreeMemory(self->device, image->memory, NULL);
@@ -1968,6 +2002,8 @@ void vkk_engine_deleteSampler(vkk_engine_t* self,
 	vkk_sampler_t* sampler = *_sampler;
 	if(sampler)
 	{
+		vkk_engine_rendererExpire(self, sampler->ts);
+
 		vkDestroySampler(self->device, sampler->sampler, NULL);
 		FREE(sampler);
 		*_sampler = NULL;
@@ -2163,6 +2199,7 @@ vkk_engine_newUniformSet(vkk_engine_t* self,
 		LOGE("CALLOC failed");
 		return NULL;
 	}
+
 	us->set      = set;
 	us->ua_count = ua_count;
 	us->usf      = usf;
@@ -2277,6 +2314,8 @@ void vkk_engine_deleteUniformSet(vkk_engine_t* self,
 	vkk_uniformSet_t* us = *_us;
 	if(us)
 	{
+		vkk_engine_rendererExpire(self, us->ts);
+
 		TRACE_BEGIN();
 		pthread_mutex_lock(&self->usf_mutex);
 		if(cc_list_append(us->usf->us_list, NULL,
@@ -2716,6 +2755,8 @@ void vkk_engine_deleteGraphicsPipeline(vkk_engine_t* self,
 	vkk_graphicsPipeline_t* gp = *_gp;
 	if(gp)
 	{
+		vkk_engine_rendererExpire(self, gp->ts);
+
 		vkDestroyPipeline(self->device,
 		                  gp->pipeline, NULL);
 		FREE(gp);
@@ -2739,13 +2780,6 @@ vkk_renderer_t* vkk_engine_renderer(vkk_engine_t* self)
 	assert(self);
 
 	return self->renderer;
-}
-
-void vkk_engine_waitForIdle(vkk_engine_t* self)
-{
-	assert(self);
-
-	vkDeviceWaitIdle(self->device);
 }
 
 /***********************************************************
@@ -2884,4 +2918,58 @@ void vkk_engine_freeCommandBuffers(vkk_engine_t* self,
 	                     cb_array);
 	TRACE_END();
 	pthread_mutex_unlock(&self->cp_mutex);
+}
+
+void vkk_engine_rendererLock(vkk_engine_t* self)
+{
+	assert(self);
+
+	TRACE_BEGIN();
+	pthread_mutex_lock(&self->renderer_mutex);
+}
+
+void vkk_engine_rendererUnlock(vkk_engine_t* self)
+{
+	assert(self);
+
+	TRACE_END();
+	pthread_mutex_unlock(&self->renderer_mutex);
+}
+
+void vkk_engine_rendererSignal(vkk_engine_t* self)
+{
+	assert(self);
+
+	pthread_cond_broadcast(&self->renderer_cond);
+}
+
+void vkk_engine_rendererWait(vkk_engine_t* self)
+{
+	assert(self);
+
+	TRACE_END();
+	pthread_cond_wait(&self->renderer_cond,
+	                  &self->renderer_mutex);
+	TRACE_BEGIN();
+}
+
+void vkk_engine_rendererExpire(vkk_engine_t* self,
+                               double ts)
+{
+	assert(self);
+
+	vkk_renderer_t* renderer = self->renderer;
+
+	// block until the renderer expires the timestamp
+	vkk_engine_rendererLock(self);
+	while(vkk_renderer_expiredTimestampLocked(renderer) < ts)
+	{
+		if(self->shutdown)
+		{
+			break;
+		}
+
+		vkk_engine_rendererWait(self);
+	}
+	vkk_engine_rendererUnlock(self);
 }

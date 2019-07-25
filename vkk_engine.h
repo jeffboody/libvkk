@@ -41,6 +41,7 @@
 
 typedef struct vkk_buffer_s
 {
+	double          ts;
 	int             dynamic;
 	size_t          size;
 	VkBuffer*       buffer;
@@ -49,6 +50,7 @@ typedef struct vkk_buffer_s
 
 typedef struct vkk_image_s
 {
+	double         ts;
 	uint32_t       width;
 	uint32_t       height;
 	int            format;
@@ -60,6 +62,7 @@ typedef struct vkk_image_s
 
 typedef struct vkk_sampler_s
 {
+	double    ts;
 	VkSampler sampler;
 } vkk_sampler_t;
 
@@ -77,6 +80,7 @@ typedef struct vkk_uniformSetFactory_s
 
 typedef struct vkk_uniformSet_s
 {
+	double                   ts;
 	uint32_t                 set;
 	uint32_t                 ua_count;
 	vkk_uniformAttachment_t* ua_array;
@@ -92,6 +96,7 @@ typedef struct vkk_pipelineLayout_s
 
 typedef struct vkk_graphicsPipeline_s
 {
+	double     ts;
 	VkPipeline pipeline;
 } vkk_graphicsPipeline_t;
 
@@ -119,10 +124,14 @@ typedef struct vkk_engine_s
 	// * ds_available, dp_list and us_list
 	// 3) shader module synchronization
 	// * shader_modules
+	// 4) renderer/ts synchronization
+	// * shutdown and ts_expired
 	pthread_mutex_t queue_mutex;
 	pthread_mutex_t cp_mutex;
 	pthread_mutex_t usf_mutex;
 	pthread_mutex_t sm_mutex;
+	pthread_mutex_t renderer_mutex;
+	pthread_cond_t  renderer_cond;
 
 	VkInstance       instance;
 	VkSurfaceKHR     surface;
@@ -141,8 +150,13 @@ typedef struct vkk_engine_s
 	cc_map_t* shader_modules;
 
 	// default renderer
+	int             shutdown;
 	vkk_renderer_t* renderer;
 } vkk_engine_t;
+
+/*
+ * engine synchronization
+ */
 
 int  vkk_engine_queueSubmit(vkk_engine_t* self,
                             VkCommandBuffer* cb,
@@ -162,5 +176,16 @@ int  vkk_engine_allocateCommandBuffers(vkk_engine_t* self,
 void vkk_engine_freeCommandBuffers(vkk_engine_t* self,
                                    uint32_t cb_count,
                                    const VkCommandBuffer* cb_array);
+
+/*
+ * renderer synchronization
+ */
+
+void vkk_engine_rendererLock(vkk_engine_t* self);
+void vkk_engine_rendererUnlock(vkk_engine_t* self);
+void vkk_engine_rendererSignal(vkk_engine_t* self);
+void vkk_engine_rendererWait(vkk_engine_t* self);
+void vkk_engine_rendererExpire(vkk_engine_t* self,
+                               double ts);
 
 #endif

@@ -56,6 +56,11 @@ typedef struct
 	// one per swapchain image
 	VkCommandBuffer* cb_array;
 
+	// GPU timestamps
+	// ts_expired protected by renderer_mutex
+	double* ts_array;
+	double  ts_expired;
+
 	// synchronization
 	// one per swapchain image
 	uint32_t     semaphore_index;
@@ -100,5 +105,7 @@ void            vkk_defaultRenderer_drawIndexed(vkk_renderer_t* base,
                                                 vkk_buffer_t** vertex_buffers);
 VkRenderPass    vkk_defaultRenderer_renderPass(vkk_renderer_t* base);
 uint32_t        vkk_defaultRenderer_swapchainImageCount(vkk_renderer_t* base);
+double          vkk_defaultRenderer_currentTimestamp(vkk_renderer_t* base);
+double          vkk_defaultRenderer_expiredTimestampLocked(vkk_renderer_t* base);
 
 #endif
