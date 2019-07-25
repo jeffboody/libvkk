@@ -141,6 +141,7 @@ typedef struct
 
 typedef struct
 {
+	vkk_renderer_t*         renderer;
 	vkk_pipelineLayout_t*   pl;
 	const char*             vs;
 	const char*             fs;
@@ -215,7 +216,6 @@ vkk_pipelineLayout_t*    vkk_engine_newPipelineLayout(vkk_engine_t* self,
 void                     vkk_engine_deletePipelineLayout(vkk_engine_t* self,
                                                          vkk_pipelineLayout_t** _pl);
 vkk_graphicsPipeline_t*  vkk_engine_newGraphicsPipeline(vkk_engine_t* self,
-                                                        vkk_renderer_t* renderer,
                                                         vkk_graphicsPipelineInfo_t* gpi);
 void                     vkk_engine_deleteGraphicsPipeline(vkk_engine_t* self,
                                                            vkk_graphicsPipeline_t** _gp);

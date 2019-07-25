@@ -2385,7 +2385,6 @@ void vkk_engine_deletePipelineLayout(vkk_engine_t* self,
 
 vkk_graphicsPipeline_t*
 vkk_engine_newGraphicsPipeline(vkk_engine_t* self,
-                               vkk_renderer_t* renderer,
                                vkk_graphicsPipelineInfo_t* gpi)
 {
 	assert(self);
@@ -2680,7 +2679,7 @@ vkk_engine_newGraphicsPipeline(vkk_engine_t* self,
 		.pColorBlendState    = &pcbs_info,
 		.pDynamicState       = &pds_info,
 		.layout              = gpi->pl->pl,
-		.renderPass          = vkk_renderer_renderPass(renderer),
+		.renderPass          = vkk_renderer_renderPass(gpi->renderer),
 		.subpass             = 0,
 		.basePipelineHandle  = VK_NULL_HANDLE,
 		.basePipelineIndex   = -1
