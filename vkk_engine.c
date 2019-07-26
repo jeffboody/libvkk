@@ -728,8 +728,7 @@ vkk_engine_getShaderModule(vkk_engine_t* self,
 	assert(self);
 	assert(fname);
 
-	TRACE_BEGIN();
-	pthread_mutex_lock(&self->sm_mutex);
+	vkk_engine_smLock(self);
 
 	cc_mapIter_t miter;
 	VkShaderModule sm;
@@ -737,8 +736,7 @@ vkk_engine_getShaderModule(vkk_engine_t* self,
 	     cc_map_find(self->shader_modules, &miter, fname);
 	if(sm != VK_NULL_HANDLE)
 	{
-		TRACE_END();
-		pthread_mutex_unlock(&self->sm_mutex);
+		vkk_engine_smUnlock(self);
 		return sm;
 	}
 
@@ -747,8 +745,7 @@ vkk_engine_getShaderModule(vkk_engine_t* self,
 	code = vkk_engine_importShaderModule(self, fname, &size);
 	if(code == NULL)
 	{
-		TRACE_END();
-		pthread_mutex_unlock(&self->sm_mutex);
+		vkk_engine_smUnlock(self);
 		return VK_NULL_HANDLE;
 	}
 
@@ -764,8 +761,7 @@ vkk_engine_getShaderModule(vkk_engine_t* self,
 	if(vkCreateShaderModule(self->device, &sm_info, NULL,
 	                        &sm) != VK_SUCCESS)
 	{
-		TRACE_END();
-		pthread_mutex_unlock(&self->sm_mutex);
+		vkk_engine_smUnlock(self);
 		LOGE("vkCreateShaderModule failed");
 		goto fail_create;
 	}
@@ -773,15 +769,13 @@ vkk_engine_getShaderModule(vkk_engine_t* self,
 	if(cc_map_add(self->shader_modules, (const void*) sm,
 	              fname) == 0)
 	{
-		TRACE_END();
-		pthread_mutex_unlock(&self->sm_mutex);
+		vkk_engine_smUnlock(self);
 		goto fail_add;
 	}
 
 	FREE(code);
 
-	TRACE_END();
-	pthread_mutex_unlock(&self->sm_mutex);
+	vkk_engine_smUnlock(self);
 
 	// success
 	return sm;
@@ -1080,9 +1074,11 @@ vkk_engine_uploadImage(vkk_engine_t* self,
 		.pInheritanceInfo = &cbi_info
 	};
 
+	vkk_engine_cmdLock(self);
 	if(vkBeginCommandBuffer(cb, &cb_info) != VK_SUCCESS)
 	{
 		LOGE("vkBeginCommandBuffer failed");
+		vkk_engine_cmdUnlock(self);
 		goto fail_begin_cb;
 	}
 
@@ -1146,6 +1142,7 @@ vkk_engine_uploadImage(vkk_engine_t* self,
 
 	// end the transfer commands
 	vkEndCommandBuffer(cb);
+	vkk_engine_cmdUnlock(self);
 
 	// submit the commands
 	if(vkk_engine_queueSubmit(self, &cb,
@@ -1182,7 +1179,6 @@ vkk_engine_uploadImage(vkk_engine_t* self,
 
 	// failure
 	fail_submit:
-		vkEndCommandBuffer(cb);
 	fail_begin_cb:
 		vkk_engine_freeCommandBuffers(self, 1, &cb);
 	fail_allocate_cb:
@@ -1327,17 +1323,10 @@ vkk_engine_t* vkk_engine_new(void* app,
 	snprintf(self->resource, 256, "%s", resource);
 	snprintf(self->cache, 256, "%s", cache);
 
-	// PTHREAD_MUTEX_DEFAULT is not re-entrant
-	if(pthread_mutex_init(&self->queue_mutex, NULL) != 0)
+	if(pthread_mutex_init(&self->cmd_mutex, NULL) != 0)
 	{
 		LOGE("pthread_mutex_init failed");
-		goto fail_queue_mutex;
-	}
-
-	if(pthread_mutex_init(&self->cp_mutex, NULL) != 0)
-	{
-		LOGE("pthread_mutex_init failed");
-		goto fail_cp_mutex;
+		goto fail_cmd_mutex;
 	}
 
 	if(pthread_mutex_init(&self->usf_mutex, NULL) != 0)
@@ -1430,10 +1419,8 @@ vkk_engine_t* vkk_engine_new(void* app,
 	fail_sm_mutex:
 		pthread_mutex_destroy(&self->usf_mutex);
 	fail_usf_mutex:
-		pthread_mutex_destroy(&self->cp_mutex);
-	fail_cp_mutex:
-		pthread_mutex_destroy(&self->queue_mutex);
-	fail_queue_mutex:
+		pthread_mutex_destroy(&self->cmd_mutex);
+	fail_cmd_mutex:
 		#ifndef ANDROID
 			SDL_DestroyWindow(self->window);
 			SDL_Quit();
@@ -1476,8 +1463,7 @@ void vkk_engine_delete(vkk_engine_t** _self)
 		vkDestroyInstance(self->instance, NULL);
 		pthread_mutex_destroy(&self->sm_mutex);
 		pthread_mutex_destroy(&self->usf_mutex);
-		pthread_mutex_destroy(&self->cp_mutex);
-		pthread_mutex_destroy(&self->queue_mutex);
+		pthread_mutex_destroy(&self->cmd_mutex);
 		#ifndef ANDROID
 			SDL_DestroyWindow(self->window);
 			SDL_Quit();
@@ -1491,9 +1477,8 @@ void vkk_engine_shutdown(vkk_engine_t* self)
 {
 	assert(self);
 
-	vkDeviceWaitIdle(self->device);
-
 	vkk_engine_rendererLock(self);
+	vkDeviceWaitIdle(self->device);
 	self->shutdown = 1;
 	vkk_engine_rendererSignal(self);
 	vkk_engine_rendererUnlock(self);
@@ -2236,8 +2221,7 @@ vkk_engine_newUniformSet(vkk_engine_t* self,
 	}
 
 	// allocate the descriptor set from the pool
-	TRACE_BEGIN();
-	pthread_mutex_lock(&self->usf_mutex);
+	vkk_engine_usfLock(self);
 	VkDescriptorPool dp;
 	dp = (VkDescriptorPool)
 	     cc_list_peekTail(usf->dp_list);
@@ -2249,8 +2233,7 @@ vkk_engine_newUniformSet(vkk_engine_t* self,
 		dp = vkk_engine_newDescriptorPoolLocked(self, usf);
 		if(dp == VK_NULL_HANDLE)
 		{
-			TRACE_END();
-			pthread_mutex_unlock(&self->usf_mutex);
+			vkk_engine_usfUnlock(self);
 			goto fail_dp;
 		}
 	}
@@ -2260,14 +2243,12 @@ vkk_engine_newUniformSet(vkk_engine_t* self,
 	                                           ds_count,
 	                                           us->ds_array) == 0)
 	{
-		TRACE_END();
-		pthread_mutex_unlock(&self->usf_mutex);
+		vkk_engine_usfUnlock(self);
 		goto fail_allocate_ds;
 	}
 
 	usf->ds_available -= ds_count;
-	TRACE_END();
-	pthread_mutex_unlock(&self->usf_mutex);
+	vkk_engine_usfUnlock(self);
 
 	// attach buffers and images
 	for(i = 0; i < ua_count; ++i)
@@ -2316,8 +2297,7 @@ void vkk_engine_deleteUniformSet(vkk_engine_t* self,
 	{
 		vkk_engine_rendererExpire(self, us->ts);
 
-		TRACE_BEGIN();
-		pthread_mutex_lock(&self->usf_mutex);
+		vkk_engine_usfLock(self);
 		if(cc_list_append(us->usf->us_list, NULL,
 		                  (const void*) us) == NULL)
 		{
@@ -2329,8 +2309,7 @@ void vkk_engine_deleteUniformSet(vkk_engine_t* self,
 			FREE(us->ua_array);
 			FREE(us);
 		}
-		TRACE_END();
-		pthread_mutex_unlock(&self->usf_mutex);
+		vkk_engine_usfUnlock(self);
 		*_us = NULL;
 	}
 }
@@ -2811,18 +2790,21 @@ int vkk_engine_queueSubmit(vkk_engine_t* self,
 		.pSignalSemaphores    = semaphore_submit
 	};
 
-	TRACE_BEGIN();
-	pthread_mutex_lock(&self->queue_mutex);
+	vkk_engine_rendererLock(self);
+	if(self->shutdown)
+	{
+		vkk_engine_rendererUnlock(self);
+		return 0;
+	}
+
 	if(vkQueueSubmit(self->queue, 1, &s_info,
 	                 fence) != VK_SUCCESS)
 	{
 		LOGE("vkQueueSubmit failed");
-		TRACE_END();
-		pthread_mutex_unlock(&self->queue_mutex);
+		vkk_engine_rendererUnlock(self);
 		return 0;
 	}
-	TRACE_END();
-	pthread_mutex_unlock(&self->queue_mutex);
+	vkk_engine_rendererUnlock(self);
 
 	return 1;
 }
@@ -2831,11 +2813,12 @@ void vkk_engine_queueWaitIdle(vkk_engine_t* self)
 {
 	assert(self);
 
-	TRACE_BEGIN();
-	pthread_mutex_lock(&self->queue_mutex);
-	vkQueueWaitIdle(self->queue);
-	TRACE_END();
-	pthread_mutex_unlock(&self->queue_mutex);
+	vkk_engine_rendererLock(self);
+	if(self->shutdown == 0)
+	{
+		vkQueueWaitIdle(self->queue);
+	}
+	vkk_engine_rendererUnlock(self);
 }
 
 int
@@ -2887,18 +2870,15 @@ int vkk_engine_allocateCommandBuffers(vkk_engine_t* self,
 		.commandBufferCount = cb_count
 	};
 
-	TRACE_BEGIN();
-	pthread_mutex_lock(&self->cp_mutex);
+	vkk_engine_cmdLock(self);
 	if(vkAllocateCommandBuffers(self->device, &cba_info,
 	                            cb_array) != VK_SUCCESS)
 	{
 		LOGE("vkAllocateCommandBuffers failed");
-		TRACE_END();
-		pthread_mutex_unlock(&self->cp_mutex);
+		vkk_engine_cmdUnlock(self);
 		return 0;
 	}
-	TRACE_END();
-	pthread_mutex_unlock(&self->cp_mutex);
+	vkk_engine_cmdUnlock(self);
 
 	return 1;
 }
@@ -2910,22 +2890,68 @@ void vkk_engine_freeCommandBuffers(vkk_engine_t* self,
 	assert(self);
 	assert(cb_array);
 
-	TRACE_BEGIN();
-	pthread_mutex_lock(&self->cp_mutex);
+	vkk_engine_cmdLock(self);
 	vkFreeCommandBuffers(self->device,
 	                     self->command_pool,
 	                     cb_count,
 	                     cb_array);
+	vkk_engine_cmdUnlock(self);
+}
+
+void vkk_engine_cmdLock(vkk_engine_t* self)
+{
+	assert(self);
+
+	pthread_mutex_lock(&self->cmd_mutex);
+	TRACE_BEGIN();
+}
+
+void vkk_engine_cmdUnlock(vkk_engine_t* self)
+{
+	assert(self);
+
 	TRACE_END();
-	pthread_mutex_unlock(&self->cp_mutex);
+	pthread_mutex_unlock(&self->cmd_mutex);
+}
+
+void vkk_engine_usfLock(vkk_engine_t* self)
+{
+	assert(self);
+
+	pthread_mutex_lock(&self->usf_mutex);
+	TRACE_BEGIN();
+}
+
+void vkk_engine_usfUnlock(vkk_engine_t* self)
+{
+	assert(self);
+
+	TRACE_END();
+	pthread_mutex_unlock(&self->usf_mutex);
+}
+
+void vkk_engine_smLock(vkk_engine_t* self)
+{
+	assert(self);
+
+	pthread_mutex_lock(&self->sm_mutex);
+	TRACE_BEGIN();
+}
+
+void vkk_engine_smUnlock(vkk_engine_t* self)
+{
+	assert(self);
+
+	TRACE_END();
+	pthread_mutex_unlock(&self->sm_mutex);
 }
 
 void vkk_engine_rendererLock(vkk_engine_t* self)
 {
 	assert(self);
 
-	TRACE_BEGIN();
 	pthread_mutex_lock(&self->renderer_mutex);
+	TRACE_BEGIN();
 }
 
 void vkk_engine_rendererUnlock(vkk_engine_t* self)

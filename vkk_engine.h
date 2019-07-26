@@ -114,20 +114,28 @@ typedef struct vkk_engine_s
 
 	// 1) Vulkan synchronization - 2.6. Threading Behavior
 	// * The queue parameter in vkQueueSubmit
+	//   (renderer_mutex)
 	// * The queue parameter in vkQueueWaitIdle
+	//   (renderer_mutex)
 	// * The descriptorPool the pAllocateInfo parameter in
-	//   vkAllocateDescriptorSets (protected by usf_mutex)
+	//   vkAllocateDescriptorSets (usf_mutex)
 	// * The commandPool the pAllocateInfo parameter in
-	//   vkAllocateCommandBuffers
+	//   vkAllocateCommandBuffers (cmd_mutex)
 	// * The commandPool parameter in vkFreeCommandBuffers
-	// 2) usf synchronization
+	//   (cmd_mutex)
+	// 2) Implicit Externally Synchronized Parameters
+	// * All VkQueue objects created from device in
+	//   vkDeviceWaitIdle (renderer_mutex)
+	// * The VkCommandPool that commandBuffer was allocated
+	//   from in vkBeginCommandBuffer, vkEndCommandBuffer,
+	//   vkResetCommandBuffer and vkCmdFunctions (cmd_mutex)
+	// 3) usf synchronization
 	// * ds_available, dp_list and us_list
-	// 3) shader module synchronization
+	// 4) shader module synchronization
 	// * shader_modules
-	// 4) renderer/ts synchronization
+	// 5) renderer/ts synchronization
 	// * shutdown and ts_expired
-	pthread_mutex_t queue_mutex;
-	pthread_mutex_t cp_mutex;
+	pthread_mutex_t cmd_mutex;
 	pthread_mutex_t usf_mutex;
 	pthread_mutex_t sm_mutex;
 	pthread_mutex_t renderer_mutex;
@@ -176,11 +184,12 @@ int  vkk_engine_allocateCommandBuffers(vkk_engine_t* self,
 void vkk_engine_freeCommandBuffers(vkk_engine_t* self,
                                    uint32_t cb_count,
                                    const VkCommandBuffer* cb_array);
-
-/*
- * renderer synchronization
- */
-
+void vkk_engine_cmdLock(vkk_engine_t* self);
+void vkk_engine_cmdUnlock(vkk_engine_t* self);
+void vkk_engine_usfLock(vkk_engine_t* self);
+void vkk_engine_usfUnlock(vkk_engine_t* self);
+void vkk_engine_smLock(vkk_engine_t* self);
+void vkk_engine_smUnlock(vkk_engine_t* self);
 void vkk_engine_rendererLock(vkk_engine_t* self);
 void vkk_engine_rendererUnlock(vkk_engine_t* self);
 void vkk_engine_rendererSignal(vkk_engine_t* self);

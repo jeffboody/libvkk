@@ -24,6 +24,7 @@
 #include <assert.h>
 #include <stdlib.h>
 
+#include "vkk_engine.h"
 #include "vkk_renderer.h"
 
 /***********************************************************
@@ -35,6 +36,16 @@ int vkk_renderer_begin(vkk_renderer_t* self,
 {
 	assert(self);
 	assert(self->beginFn);
+
+	vkk_engine_t* engine = self->engine;
+
+	vkk_engine_rendererLock(engine);
+	if(engine->shutdown)
+	{
+		vkk_engine_rendererUnlock(engine);
+		return 0;
+	}
+	vkk_engine_rendererUnlock(engine);
 
 	return (*self->beginFn)(self, clear_color);
 }

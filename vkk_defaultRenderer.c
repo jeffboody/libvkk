@@ -987,9 +987,11 @@ vkk_defaultRenderer_begin(vkk_renderer_t* base,
 
 	VkCommandBuffer cb;
 	cb = self->cb_array[self->swapchain_frame];
+	vkk_engine_cmdLock(engine);
 	if(vkResetCommandBuffer(cb, 0) != VK_SUCCESS)
 	{
 		LOGE("vkResetCommandBuffer failed");
+		vkk_engine_cmdUnlock(engine);
 		return 0;
 	}
 
@@ -1018,6 +1020,7 @@ vkk_defaultRenderer_begin(vkk_renderer_t* base,
 	if(vkBeginCommandBuffer(cb, &cb_info) != VK_SUCCESS)
 	{
 		LOGE("vkBeginCommandBuffer failed");
+		vkk_engine_cmdUnlock(engine);
 		return 0;
 	}
 
@@ -1131,6 +1134,7 @@ void vkk_defaultRenderer_end(vkk_renderer_t* base)
 	cb = self->cb_array[self->swapchain_frame];
 	vkCmdEndRenderPass(cb);
 	vkEndCommandBuffer(cb);
+	vkk_engine_cmdUnlock(engine);
 
 	VkPipelineStageFlags wait_dst_stage_mask;
 	wait_dst_stage_mask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
