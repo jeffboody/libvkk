@@ -185,6 +185,12 @@ vkk_engine_t*            vkk_engine_new(void* app,
                                         const char* cache);
 void                     vkk_engine_delete(vkk_engine_t** _self);
 void                     vkk_engine_shutdown(vkk_engine_t* self);
+vkk_renderer_t*          vkk_engine_newRenderer(vkk_engine_t* self,
+                                                uint32_t width,
+                                                uint32_t height,
+                                                int format);
+void                     vkk_engine_deleteRenderer(vkk_engine_t* self,
+                                                   vkk_renderer_t** _renderer);
 vkk_buffer_t*            vkk_engine_newBuffer(vkk_engine_t* self,
                                               int dynamic,
                                               int usage,
@@ -248,17 +254,25 @@ vkk_renderer_t* vkk_engine_renderer(vkk_engine_t* self);
  *
  * 1) call vkk_renderer commands between
  *    begin/end on a single thread
- * 2) the default renderer completes asynchronously
- *    (e.g. endRendering is non-blocking) and should be
- *    called from the main thread
- * 3) dynamic buffers should be updated once and only once
- *    per frame
- * 4) the depth buffer, viewport and scissor are
- *    initialized automatically by begin
+ * 2) if begin succeeds then you must also call end
+ * 3) the default renderer completes asynchronously
+ *    (e.g. end is non-blocking) and should be called from
+ *    the main thread
+ * 4) the offscreen renderer completes synchronously
+ *    (e.g. end is blocking) and should be called from a
+ *    worker thread
+ * 5) the dynamic flag is ONLY compatible with the default
+ *    renderer and should be set when the app needs to call
+ *    updateBuffer for a uniform buffer
+ * 6) the depth buffer, viewport and scissor are initialized
+ *    automatically by begin
  */
 
-int  vkk_renderer_begin(vkk_renderer_t* self,
-                        float* clear_color);
+int  vkk_renderer_beginDefault(vkk_renderer_t* self,
+                               float* clear_color);
+int  vkk_renderer_beginOffscreen(vkk_renderer_t* self,
+                                 vkk_image_t* image,
+                                 float* clear_color);
 void vkk_renderer_end(vkk_renderer_t* self);
 void vkk_renderer_surfaceSize(vkk_renderer_t* self,
                               uint32_t* _width,

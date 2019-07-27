@@ -30,7 +30,9 @@
 #include "../libcc/cc_log.h"
 #include "../libcc/cc_memory.h"
 #include "../libpak/pak_file.h"
+#include "vkk_defaultRenderer.h"
 #include "vkk_engine.h"
+#include "vkk_offscreenRenderer.h"
 #include "vkk_util.h"
 
 #define VKK_DESCRIPTOR_POOL_SIZE 64
@@ -62,6 +64,14 @@ vkk_image_size(vkk_image_t* self)
 /***********************************************************
 * private                                                  *
 ***********************************************************/
+
+static uint32_t
+vkk_engine_swapchainImageCount(vkk_engine_t* self)
+{
+	assert(self);
+
+	return vkk_defaultRenderer_swapchainImageCount(self->renderer);
+}
 
 static int
 vkk_engine_hasDeviceExtensions(vkk_engine_t* self,
@@ -1152,17 +1162,11 @@ vkk_engine_uploadImage(vkk_engine_t* self,
 		goto fail_submit;
 	}
 
-	// Android only supports infinite timeout
-	// Linux needs a timeout to avoid deadlock on resize
-	#ifdef ANDROID
-		uint64_t timeout = UINT64_MAX;
-	#else
-		uint64_t timeout = 250000000;
-	#endif
+	uint64_t timeout = UINT64_MAX;
 	if(vkWaitForFences(self->device, 1, &fence, VK_TRUE,
 	                   timeout) != VK_SUCCESS)
 	{
-		LOGW("timeout");
+		LOGW("vkWaitForFences failed");
 		vkk_engine_queueWaitIdle(self);
 	}
 
@@ -1205,7 +1209,7 @@ vkk_engine_attachUniformBuffer(vkk_engine_t* self,
 
 	uint32_t count;
 	count = us->usf->dynamic ?
-	        vkk_renderer_swapchainImageCount(self->renderer) : 1;
+	        vkk_engine_swapchainImageCount(self) : 1;
 
 	int i;
 	for(i = 0; i < count; ++i)
@@ -1251,7 +1255,7 @@ vkk_engine_attachUniformSampler(vkk_engine_t* self,
 
 	uint32_t count;
 	count = us->usf->dynamic ?
-	        vkk_renderer_swapchainImageCount(self->renderer) : 1;
+	        vkk_engine_swapchainImageCount(self) : 1;
 
 	int i;
 	for(i = 0; i < count; ++i)
@@ -1484,6 +1488,33 @@ void vkk_engine_shutdown(vkk_engine_t* self)
 	vkk_engine_rendererUnlock(self);
 }
 
+vkk_renderer_t*
+vkk_engine_newRenderer(vkk_engine_t* self,
+                       uint32_t width, uint32_t height,
+                       int format)
+{
+	assert(self);
+
+	return vkk_offscreenRenderer_new(self, width, height,
+	                                 format);
+}
+
+void vkk_engine_deleteRenderer(vkk_engine_t* self,
+                               vkk_renderer_t** _renderer)
+{
+	assert(self);
+	assert(_renderer);
+
+	// do not delete default renderer
+	vkk_renderer_t* renderer = *_renderer;
+	if(self->renderer == renderer)
+	{
+		return;
+	}
+
+	vkk_offscreenRenderer_delete(_renderer);
+}
+
 vkk_buffer_t*
 vkk_engine_newBuffer(vkk_engine_t* self, int dynamic,
                      int usage, size_t size,
@@ -1494,7 +1525,7 @@ vkk_engine_newBuffer(vkk_engine_t* self, int dynamic,
 
 	uint32_t count;
 	count = dynamic ?
-	        vkk_renderer_swapchainImageCount(self->renderer) : 1;
+	        vkk_engine_swapchainImageCount(self) : 1;
 
 	VkBufferUsageFlags usage_flags;
 	if(usage == VKK_BUFFER_USAGE_UNIFORM)
@@ -1655,7 +1686,7 @@ void vkk_engine_deleteBuffer(vkk_engine_t* self,
 
 		uint32_t count;
 		count = buffer->dynamic ?
-		        vkk_renderer_swapchainImageCount(self->renderer) : 1;
+		        vkk_engine_swapchainImageCount(self) : 1;
 		int i;
 		for(i = 0; i < count; ++i)
 		{
@@ -1729,6 +1760,8 @@ vkk_image_t* vkk_engine_newImage(vkk_engine_t* self,
 	image->width      = width;
 	image->height     = height;
 	image->format     = format;
+	image->mipmap     = mipmap;
+	image->stage      = stage;
 	image->transition = 1;
 
 	VkFormat format_map[VKK_IMAGE_FORMAT_COUNT] =
@@ -2203,7 +2236,7 @@ vkk_engine_newUniformSet(vkk_engine_t* self,
 
 	uint32_t ds_count;
 	ds_count = usf->dynamic ?
-	           vkk_renderer_swapchainImageCount(self->renderer) : 1;
+	           vkk_engine_swapchainImageCount(self) : 1;
 	us->ds_array = (VkDescriptorSet*)
 	               CALLOC(ds_count, sizeof(VkDescriptorSet));
 	if(us->ds_array == NULL)
@@ -2994,7 +3027,7 @@ void vkk_engine_rendererWaitForTimestamp(vkk_engine_t* self,
 
 	// block until the renderer expires the timestamp
 	vkk_engine_rendererLock(self);
-	while(vkk_defaultRenderer_timestampLocked(renderer) < ts)
+	while(vkk_defaultRenderer_tsExpiredLocked(renderer) < ts)
 	{
 		if(self->shutdown)
 		{

@@ -37,7 +37,6 @@
 #include "../libcc/cc_list.h"
 #include "../libcc/cc_map.h"
 #include "vkk.h"
-#include "vkk_defaultRenderer.h"
 
 typedef struct vkk_buffer_s
 {
@@ -54,6 +53,8 @@ typedef struct vkk_image_s
 	uint32_t       width;
 	uint32_t       height;
 	int            format;
+	int            mipmap;
+	int            stage;
 	int            transition;
 	VkImage        image;
 	VkDeviceMemory memory;

@@ -68,43 +68,30 @@ typedef struct
 	VkSemaphore* semaphore_submit;
 } vkk_defaultRenderer_t;
 
+
+/*
+ * default renderer API
+ */
+
 vkk_renderer_t* vkk_defaultRenderer_new(vkk_engine_t* engine);
 void            vkk_defaultRenderer_delete(vkk_renderer_t** _base);
 int             vkk_defaultRenderer_resize(vkk_renderer_t* base);
+uint32_t        vkk_defaultRenderer_swapchainImageCount(vkk_renderer_t* base);
+double          vkk_defaultRenderer_tsCurrent(vkk_renderer_t* base);
+double          vkk_defaultRenderer_tsExpiredLocked(vkk_renderer_t* base);
+
+/*
+ * renderer callback API
+ */
+
 int             vkk_defaultRenderer_begin(vkk_renderer_t* base,
                                           float* clear_color);
 void            vkk_defaultRenderer_end(vkk_renderer_t* base);
 void            vkk_defaultRenderer_surfaceSize(vkk_renderer_t* base,
                                                 uint32_t* _width,
                                                 uint32_t* _height);
-void            vkk_defaultRenderer_updateBuffer(vkk_renderer_t* base,
-                                                 vkk_buffer_t* buffer,
-                                                 const void* buf);
-void            vkk_defaultRenderer_bindGraphicsPipeline(vkk_renderer_t* base,
-                                                         vkk_graphicsPipeline_t* gp);
-void            vkk_defaultRenderer_bindUniformSets(vkk_renderer_t* base,
-                                                    vkk_pipelineLayout_t* pl,
-                                                    uint32_t us_count,
-                                                    vkk_uniformSet_t** us_array);
-void            vkk_defaultRenderer_clearDepth(vkk_renderer_t* base);
-void            vkk_defaultRenderer_viewport(vkk_renderer_t* base,
-                                             float x, float y,
-                                             float width, float height);
-void            vkk_defaultRenderer_scissor(vkk_renderer_t* base,
-                                            uint32_t x, uint32_t y,
-                                            uint32_t width, uint32_t height);
-void            vkk_defaultRenderer_draw(vkk_renderer_t* base,
-                                         uint32_t vertex_count,
-                                         uint32_t vertex_buffer_count,
-                                         vkk_buffer_t** vertex_buffers);
-void            vkk_defaultRenderer_drawIndexed(vkk_renderer_t* base,
-                                                uint32_t vertex_count,
-                                                uint32_t vertex_buffer_count,
-                                                int index_type,
-                                                vkk_buffer_t* index_buffer,
-                                                vkk_buffer_t** vertex_buffers);
 VkRenderPass    vkk_defaultRenderer_renderPass(vkk_renderer_t* base);
-uint32_t        vkk_defaultRenderer_swapchainImageCount(vkk_renderer_t* base);
-double          vkk_defaultRenderer_timestampLocked(vkk_renderer_t* base);
+VkCommandBuffer vkk_defaultRenderer_commandBuffer(vkk_renderer_t* base);
+uint32_t        vkk_defaultRenderer_swapchainFrame(vkk_renderer_t* base);
 
 #endif

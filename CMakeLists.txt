@@ -10,6 +10,7 @@ add_library(vkk
             # Source
             vkk_defaultRenderer.c
             vkk_engine.c
+            vkk_offscreenRenderer.c
             vkk_renderer.c
             vkk_util.c)
 

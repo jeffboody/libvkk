@@ -85,6 +85,14 @@ void vkk_imageMemoryBarrier(VkCommandBuffer cb,
 		srcStageMask      = VK_PIPELINE_STAGE_TRANSFER_BIT;
 		imb.srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
 	}
+	else if(oldLayout == VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL)
+	{
+		// TODO - VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL
+	}
+	else if(oldLayout == VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL)
+	{
+		// TODO - VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL
+	}
 	else
 	{
 		LOGW("invalid oldLayout=%u", oldLayout);

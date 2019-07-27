@@ -1,8 +1,9 @@
 TARGET  = libvkk.a
 CLASSES = \
-	vkk_defaultRenderer \
-	vkk_engine          \
-	vkk_renderer        \
+	vkk_defaultRenderer   \
+	vkk_engine            \
+	vkk_offscreenRenderer \
+	vkk_renderer          \
 	vkk_util
 SOURCE  = $(CLASSES:%=%.c)
 OBJECTS = $(SOURCE:.c=.o)

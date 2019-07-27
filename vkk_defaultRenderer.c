@@ -775,18 +775,12 @@ vkk_defaultRenderer_new(vkk_engine_t* engine)
 	vkk_renderer_t* base = &(self->base);
 	vkk_renderer_init(base, engine,
 	                  vkk_defaultRenderer_begin,
+	                  NULL,
 	                  vkk_defaultRenderer_end,
 	                  vkk_defaultRenderer_surfaceSize,
-	                  vkk_defaultRenderer_updateBuffer,
-	                  vkk_defaultRenderer_bindGraphicsPipeline,
-	                  vkk_defaultRenderer_bindUniformSets,
-	                  vkk_defaultRenderer_clearDepth,
-	                  vkk_defaultRenderer_viewport,
-	                  vkk_defaultRenderer_scissor,
-	                  vkk_defaultRenderer_draw,
-	                  vkk_defaultRenderer_drawIndexed,
 	                  vkk_defaultRenderer_renderPass,
-	                  vkk_defaultRenderer_swapchainImageCount);
+	                  vkk_defaultRenderer_commandBuffer,
+	                  vkk_defaultRenderer_swapchainFrame);
 
 	if(vkk_defaultRenderer_newSwapchain(base) == 0)
 	{
@@ -928,6 +922,38 @@ int vkk_defaultRenderer_resize(vkk_renderer_t* base)
 	fail_depth:
 		vkk_defaultRenderer_deleteSwapchain(base);
 	return 0;
+}
+
+uint32_t
+vkk_defaultRenderer_swapchainImageCount(vkk_renderer_t* base)
+{
+	assert(base);
+
+	vkk_defaultRenderer_t* self;
+	self = (vkk_defaultRenderer_t*) base;
+
+	return self->swapchain_image_count;
+}
+
+double vkk_defaultRenderer_tsCurrent(vkk_renderer_t* base)
+{
+	assert(base);
+
+	vkk_defaultRenderer_t* self;
+	self = (vkk_defaultRenderer_t*) base;
+
+	return self->ts_array[self->swapchain_frame];
+}
+
+double
+vkk_defaultRenderer_tsExpiredLocked(vkk_renderer_t* base)
+{
+	assert(base);
+
+	vkk_defaultRenderer_t* self;
+	self = (vkk_defaultRenderer_t*) base;
+
+	return self->ts_expired;
 }
 
 int
@@ -1185,326 +1211,6 @@ vkk_defaultRenderer_surfaceSize(vkk_renderer_t* base,
 	*_height = self->swapchain_extent.height;
 }
 
-void
-vkk_defaultRenderer_updateBuffer(vkk_renderer_t* base,
-                                 vkk_buffer_t* buffer,
-                                 const void* buf)
-{
-	assert(base);
-	assert(buffer);
-	assert(buf);
-
-	vkk_defaultRenderer_t* self;
-	self = (vkk_defaultRenderer_t*) base;
-
-	vkk_engine_t* engine = base->engine;
-
-	uint32_t idx;
-	idx = buffer->dynamic ? self->swapchain_frame : 0;
-
-	void* data;
-	if(vkMapMemory(engine->device,
-	               buffer->memory[idx],
-	               0, buffer->size, 0,
-	               &data) == VK_SUCCESS)
-	{
-		memcpy(data, buf, buffer->size);
-		vkUnmapMemory(engine->device,
-		              buffer->memory[idx]);
-	}
-	else
-	{
-		LOGW("vkMapMemory failed");
-	}
-}
-
-void
-vkk_defaultRenderer_bindGraphicsPipeline(vkk_renderer_t* base,
-                                         vkk_graphicsPipeline_t* gp)
-{
-	assert(base);
-	assert(gp);
-
-	vkk_defaultRenderer_t* self;
-	self = (vkk_defaultRenderer_t*) base;
-
-	VkCommandBuffer cb;
-	cb = self->cb_array[self->swapchain_frame];
-	vkCmdBindPipeline(cb,
-	                  VK_PIPELINE_BIND_POINT_GRAPHICS,
-	                  gp->pipeline);
-
-	// update timestamp
-	gp->ts = self->ts_array[self->swapchain_frame];
-}
-
-void
-vkk_defaultRenderer_bindUniformSets(vkk_renderer_t* base,
-                                    vkk_pipelineLayout_t* pl,
-                                    uint32_t us_count,
-                                    vkk_uniformSet_t** us_array)
-{
-	assert(base);
-	assert(pl);
-	assert(us_count > 0);
-	assert(us_count <= pl->usf_count);
-	assert(us_array);
-
-	vkk_defaultRenderer_t* self;
-	self = (vkk_defaultRenderer_t*) base;
-
-	// allow for a constant and dynamic uniform set
-	int             i;
-	uint32_t        idx;
-	VkDescriptorSet ds[2];
-	double          ts = self->ts_array[self->swapchain_frame];
-	for(i = 0; i < us_count; ++i)
-	{
-		idx   = us_array[i]->usf->dynamic ?
-		        self->swapchain_frame : 0;
-		ds[i] = us_array[i]->ds_array[idx];
-
-		// update timestamps
-		int j;
-		for(j = 0; j < us_array[i]->ua_count; ++j)
-		{
-			vkk_uniformAttachment_t* ua;
-			vkk_uniformBinding_t*    ub;
-			ua = &(us_array[i]->ua_array[j]);
-			ub = &(us_array[i]->usf->ub_array[j]);
-			if(ua->type == VKK_UNIFORM_TYPE_BUFFER)
-			{
-				ua->buffer->ts = ts;
-			}
-			else if(ua->type == VKK_UNIFORM_TYPE_SAMPLER)
-			{
-				ua->image->ts   = ts;
-				ub->sampler->ts = ts;
-			}
-		}
-		us_array[i]->ts = ts;
-	}
-
-	uint32_t first = us_array[0]->set;
-
-	VkCommandBuffer cb;
-	cb = self->cb_array[self->swapchain_frame];
-	vkCmdBindDescriptorSets(cb,
-	                        VK_PIPELINE_BIND_POINT_GRAPHICS,
-	                        pl->pl, first, us_count, ds,
-	                        0, NULL);
-}
-
-void vkk_defaultRenderer_clearDepth(vkk_renderer_t* base)
-{
-	assert(base);
-
-	vkk_defaultRenderer_t* self;
-	self = (vkk_defaultRenderer_t*) base;
-
-	VkClearRect rect =
-	{
-		.rect =
-		{
-			.offset =
-			{
-				.x = 0,
-				.y = 0
-			},
-			.extent =
-			{
-				.width  = self->swapchain_extent.width,
-				.height = self->swapchain_extent.height
-			}
-		},
-		.baseArrayLayer = 0,
-		.layerCount     = 1
-	};
-
-	VkClearAttachment ca =
-	{
-		.aspectMask = VK_IMAGE_ASPECT_DEPTH_BIT |
-		              VK_IMAGE_ASPECT_STENCIL_BIT,
-		.colorAttachment = 0,
-		.clearValue =
-		{
-			.depthStencil =
-			{
-				.depth   = 1.0f,
-				.stencil = 0
-			}
-		}
-	};
-
-	VkCommandBuffer cb;
-	cb = self->cb_array[self->swapchain_frame];
-	vkCmdClearAttachments(cb, 1, &ca, 1, &rect);
-}
-
-void
-vkk_defaultRenderer_viewport(vkk_renderer_t* base,
-                             float x, float y,
-                             float width, float height)
-{
-	assert(base);
-
-	vkk_defaultRenderer_t* self;
-	self = (vkk_defaultRenderer_t*) base;
-
-	VkViewport viewport =
-	{
-		.x        = x,
-		.y        = y,
-		.width    = width,
-		.height   = height,
-		.minDepth = 0.0f,
-		.maxDepth = 1.0f
-	};
-
-	VkCommandBuffer cb;
-	cb = self->cb_array[self->swapchain_frame];
-	vkCmdSetViewport(cb, 0, 1, &viewport);
-}
-
-void
-vkk_defaultRenderer_scissor(vkk_renderer_t* base,
-                            uint32_t x, uint32_t y,
-                            uint32_t width, uint32_t height)
-{
-	assert(base);
-
-	vkk_defaultRenderer_t* self;
-	self = (vkk_defaultRenderer_t*) base;
-
-	VkRect2D scissor =
-	{
-		.offset =
-		{
-			.x = x,
-			.y = y
-		},
-		.extent =
-		{
-			.width  = width,
-			.height = height
-		}
-	};
-
-	VkCommandBuffer cb;
-	cb = self->cb_array[self->swapchain_frame];
-	vkCmdSetScissor(cb, 0, 1, &scissor);
-}
-
-
-void
-vkk_defaultRenderer_draw(vkk_renderer_t* base,
-                         uint32_t vertex_count,
-                         uint32_t vertex_buffer_count,
-                         vkk_buffer_t** vertex_buffers)
-{
-	assert(base);
-	assert(vertex_buffers);
-	assert(vertex_buffer_count < 16);
-
-	vkk_defaultRenderer_t* self;
-	self = (vkk_defaultRenderer_t*) base;
-
-	VkDeviceSize vb_offsets[16] =
-	{
-		0, 0, 0, 0,
-		0, 0, 0, 0,
-		0, 0, 0, 0,
-		0, 0, 0, 0
-	};
-	VkBuffer vb_buffers[16];
-
-	// fill in the vertex buffers
-	int i = 0;
-	int idx;
-	for(i = 0; i < vertex_buffer_count; ++i)
-	{
-		idx = vertex_buffers[i]->dynamic ?
-		      self->swapchain_frame : 0;
-		vb_buffers[i] = vertex_buffers[i]->buffer[idx];
-	}
-
-	VkCommandBuffer cb;
-	cb = self->cb_array[self->swapchain_frame];
-
-	vkCmdBindVertexBuffers(cb, 0, vertex_buffer_count,
-	                       vb_buffers, vb_offsets);
-	vkCmdDraw(cb, vertex_count, 1, 0, 0);
-
-	// update timestamps
-	double ts = self->ts_array[self->swapchain_frame];
-	for(i = 0; i < vertex_buffer_count; ++i)
-	{
-		vertex_buffers[i]->ts = ts;
-	}
-}
-
-void
-vkk_defaultRenderer_drawIndexed(vkk_renderer_t* base,
-                                uint32_t vertex_count,
-                                uint32_t vertex_buffer_count,
-                                int index_type,
-                                vkk_buffer_t* index_buffer,
-                                vkk_buffer_t** vertex_buffers)
-{
-	assert(base);
-	assert(index_buffer);
-	assert(vertex_buffers);
-	assert(vertex_buffer_count < 16);
-
-	vkk_defaultRenderer_t* self;
-	self = (vkk_defaultRenderer_t*) base;
-
-	VkDeviceSize vb_offsets[16] =
-	{
-		0, 0, 0, 0,
-		0, 0, 0, 0,
-		0, 0, 0, 0,
-		0, 0, 0, 0
-	};
-	VkBuffer vb_buffers[16];
-
-	// fill in the vertex buffers
-	int i = 0;
-	int idx;
-	for(i = 0; i < vertex_buffer_count; ++i)
-	{
-		idx = vertex_buffers[i]->dynamic ?
-		      self->swapchain_frame : 0;
-		vb_buffers[i] = vertex_buffers[i]->buffer[idx];
-	}
-
-	VkCommandBuffer cb;
-	cb = self->cb_array[self->swapchain_frame];
-
-	VkIndexType it_map[VKK_INDEX_TYPE_COUNT] =
-	{
-		VK_INDEX_TYPE_UINT16,
-		VK_INDEX_TYPE_UINT32
-	};
-
-	idx = index_buffer->dynamic ? self->swapchain_frame : 0;
-	VkBuffer ib_buffer = index_buffer->buffer[idx];
-
-	vkCmdBindIndexBuffer(cb, ib_buffer, 0,
-	                     it_map[index_type]);
-	vkCmdBindVertexBuffers(cb, 0, vertex_buffer_count,
-	                       vb_buffers, vb_offsets);
-	vkCmdDrawIndexed(cb, vertex_count, 1, 0, 0, 0);
-
-	// update timestamps
-	double ts = self->ts_array[self->swapchain_frame];
-	for(i = 0; i < vertex_buffer_count; ++i)
-	{
-		vertex_buffers[i]->ts = ts;
-	}
-	index_buffer->ts = ts;
-}
-
 VkRenderPass
 vkk_defaultRenderer_renderPass(vkk_renderer_t* base)
 {
@@ -1516,24 +1222,24 @@ vkk_defaultRenderer_renderPass(vkk_renderer_t* base)
 	return self->render_pass;
 }
 
-uint32_t
-vkk_defaultRenderer_swapchainImageCount(vkk_renderer_t* base)
+VkCommandBuffer
+vkk_defaultRenderer_commandBuffer(vkk_renderer_t* base)
 {
 	assert(base);
 
 	vkk_defaultRenderer_t* self;
 	self = (vkk_defaultRenderer_t*) base;
 
-	return self->swapchain_image_count;
+	return self->cb_array[self->swapchain_frame];
 }
 
-double
-vkk_defaultRenderer_timestampLocked(vkk_renderer_t* base)
+uint32_t
+vkk_defaultRenderer_swapchainFrame(vkk_renderer_t* base)
 {
 	assert(base);
 
 	vkk_defaultRenderer_t* self;
 	self = (vkk_defaultRenderer_t*) base;
 
-	return self->ts_expired;
+	return self->swapchain_frame;
 }
