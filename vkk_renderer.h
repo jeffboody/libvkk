@@ -80,10 +80,6 @@ typedef VkRenderPass
 (*vkk_renderer_renderPassFn)(vkk_renderer_t* self);
 typedef uint32_t
 (*vkk_renderer_swapchainImageCountFn)(vkk_renderer_t* self);
-typedef double
-(*vkk_renderer_currentTimestampFn)(vkk_renderer_t* self);
-typedef double
-(*vkk_renderer_expiredTimestampLockedFn)(vkk_renderer_t* self);
 
 typedef struct vkk_renderer_s
 {
@@ -103,8 +99,6 @@ typedef struct vkk_renderer_s
 	vkk_renderer_drawIndexedFn            drawIndexedFn;
 	vkk_renderer_renderPassFn             renderPassFn;
 	vkk_renderer_swapchainImageCountFn    swapchainImageCountFn;
-	vkk_renderer_currentTimestampFn       currentTimestampFn;
-	vkk_renderer_expiredTimestampLockedFn expiredTimestampLockedFn;
 } vkk_renderer_t;
 
 void         vkk_renderer_init(vkk_renderer_t* self,
@@ -121,12 +115,8 @@ void         vkk_renderer_init(vkk_renderer_t* self,
                                vkk_renderer_drawFn drawFn,
                                vkk_renderer_drawIndexedFn drawIndexedFn,
                                vkk_renderer_renderPassFn renderPassFn,
-                               vkk_renderer_swapchainImageCountFn swapchainImageCountFn,
-                               vkk_renderer_currentTimestampFn currentTimestampFn,
-                               vkk_renderer_expiredTimestampLockedFn expiredTimestampLockedFn);
+                               vkk_renderer_swapchainImageCountFn swapchainImageCountFn);
 VkRenderPass vkk_renderer_renderPass(vkk_renderer_t* self);
 uint32_t     vkk_renderer_swapchainImageCount(vkk_renderer_t* self);
-double       vkk_renderer_currentTimestamp(vkk_renderer_t* self);
-double       vkk_renderer_expiredTimestampLocked(vkk_renderer_t* self);
 
 #endif

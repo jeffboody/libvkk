@@ -105,7 +105,6 @@ void            vkk_defaultRenderer_drawIndexed(vkk_renderer_t* base,
                                                 vkk_buffer_t** vertex_buffers);
 VkRenderPass    vkk_defaultRenderer_renderPass(vkk_renderer_t* base);
 uint32_t        vkk_defaultRenderer_swapchainImageCount(vkk_renderer_t* base);
-double          vkk_defaultRenderer_currentTimestamp(vkk_renderer_t* base);
-double          vkk_defaultRenderer_expiredTimestampLocked(vkk_renderer_t* base);
+double          vkk_defaultRenderer_timestampLocked(vkk_renderer_t* base);
 
 #endif

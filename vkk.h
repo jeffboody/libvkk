@@ -164,14 +164,15 @@ typedef struct
  *    engine has not been shutdown yet otherwise a deadlock
  *    may occur
  * 3) an object cannot be used by any thread once deleted
- * 4) image, sampler, uniformSetFactory, pipelineLayout and
- *    graphicsPipeline may be shared between renderers
+ * 4) image, sampler, uniformSetFactory and pipelineLayout
+ *    may be shared between renderers
  * 5) buffers and uniformSets may only be shared between
  *    renderers when dynamic flag is NOT set
- * 6) CPU and GPU synchronization is handled automatically
+ * 6) graphics pipelines are NOT shared between renderers
+ * 7) CPU and GPU synchronization is handled automatically
  *    by the engine with the exception of the shutdown
  *    function
- * 7) call shutdown from the main thread prior to deleting
+ * 8) call shutdown from the main thread prior to deleting
  *    the engine thus ensuring GPU rendering completes and
  *    worker threads are no longer blocked waiting for GPU
  *    events

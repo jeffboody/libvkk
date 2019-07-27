@@ -786,9 +786,7 @@ vkk_defaultRenderer_new(vkk_engine_t* engine)
 	                  vkk_defaultRenderer_draw,
 	                  vkk_defaultRenderer_drawIndexed,
 	                  vkk_defaultRenderer_renderPass,
-	                  vkk_defaultRenderer_swapchainImageCount,
-	                  vkk_defaultRenderer_currentTimestamp,
-	                  vkk_defaultRenderer_expiredTimestampLocked);
+	                  vkk_defaultRenderer_swapchainImageCount);
 
 	if(vkk_defaultRenderer_newSwapchain(base) == 0)
 	{
@@ -1237,7 +1235,7 @@ vkk_defaultRenderer_bindGraphicsPipeline(vkk_renderer_t* base,
 	                  gp->pipeline);
 
 	// update timestamp
-	gp->ts = vkk_renderer_currentTimestamp(base);
+	gp->ts = self->ts_array[self->swapchain_frame];
 }
 
 void
@@ -1259,7 +1257,7 @@ vkk_defaultRenderer_bindUniformSets(vkk_renderer_t* base,
 	int             i;
 	uint32_t        idx;
 	VkDescriptorSet ds[2];
-	double          ts = vkk_renderer_currentTimestamp(base);
+	double          ts = self->ts_array[self->swapchain_frame];
 	for(i = 0; i < us_count; ++i)
 	{
 		idx   = us_array[i]->usf->dynamic ?
@@ -1438,7 +1436,7 @@ vkk_defaultRenderer_draw(vkk_renderer_t* base,
 	vkCmdDraw(cb, vertex_count, 1, 0, 0);
 
 	// update timestamps
-	double ts = vkk_renderer_currentTimestamp(base);
+	double ts = self->ts_array[self->swapchain_frame];
 	for(i = 0; i < vertex_buffer_count; ++i)
 	{
 		vertex_buffers[i]->ts = ts;
@@ -1499,7 +1497,7 @@ vkk_defaultRenderer_drawIndexed(vkk_renderer_t* base,
 	vkCmdDrawIndexed(cb, vertex_count, 1, 0, 0, 0);
 
 	// update timestamps
-	double ts = vkk_renderer_currentTimestamp(base);
+	double ts = self->ts_array[self->swapchain_frame];
 	for(i = 0; i < vertex_buffer_count; ++i)
 	{
 		vertex_buffers[i]->ts = ts;
@@ -1530,18 +1528,7 @@ vkk_defaultRenderer_swapchainImageCount(vkk_renderer_t* base)
 }
 
 double
-vkk_defaultRenderer_currentTimestamp(vkk_renderer_t* base)
-{
-	assert(base);
-
-	vkk_defaultRenderer_t* self;
-	self = (vkk_defaultRenderer_t*) base;
-
-	return self->ts_array[self->swapchain_frame];
-}
-
-double
-vkk_defaultRenderer_expiredTimestampLocked(vkk_renderer_t* base)
+vkk_defaultRenderer_timestampLocked(vkk_renderer_t* base)
 {
 	assert(base);
 

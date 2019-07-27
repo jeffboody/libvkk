@@ -169,9 +169,7 @@ void vkk_renderer_init(vkk_renderer_t* self,
                        vkk_renderer_drawFn drawFn,
                        vkk_renderer_drawIndexedFn drawIndexedFn,
                        vkk_renderer_renderPassFn renderPassFn,
-                       vkk_renderer_swapchainImageCountFn swapchainImageCountFn,
-                       vkk_renderer_currentTimestampFn currentTimestampFn,
-                       vkk_renderer_expiredTimestampLockedFn expiredTimestampLockedFn)
+                       vkk_renderer_swapchainImageCountFn swapchainImageCountFn)
 {
 	assert(self);
 	assert(engine);
@@ -188,8 +186,6 @@ void vkk_renderer_init(vkk_renderer_t* self,
 	assert(drawIndexedFn);
 	assert(renderPassFn);
 	assert(swapchainImageCountFn);
-	assert(currentTimestampFn);
-	assert(expiredTimestampLockedFn);
 
 	self->engine                   = engine;
 	self->beginFn                  = beginFn;
@@ -205,8 +201,6 @@ void vkk_renderer_init(vkk_renderer_t* self,
 	self->drawIndexedFn            = drawIndexedFn;
 	self->renderPassFn             = renderPassFn;
 	self->swapchainImageCountFn    = swapchainImageCountFn;
-	self->currentTimestampFn       = currentTimestampFn;
-	self->expiredTimestampLockedFn = expiredTimestampLockedFn;
 }
 
 VkRenderPass vkk_renderer_renderPass(vkk_renderer_t* self)
@@ -224,20 +218,4 @@ vkk_renderer_swapchainImageCount(vkk_renderer_t* self)
 	assert(self->swapchainImageCountFn);
 
 	return (*self->swapchainImageCountFn)(self);
-}
-
-double
-vkk_renderer_currentTimestamp(vkk_renderer_t* self)
-{
-	assert(self);
-
-	return (*self->currentTimestampFn)(self);
-}
-
-double
-vkk_renderer_expiredTimestampLocked(vkk_renderer_t* self)
-{
-	assert(self);
-
-	return (*self->expiredTimestampLockedFn)(self);
 }

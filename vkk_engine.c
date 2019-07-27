@@ -1651,7 +1651,7 @@ void vkk_engine_deleteBuffer(vkk_engine_t* self,
 	vkk_buffer_t* buffer = *_buffer;
 	if(buffer)
 	{
-		vkk_engine_rendererExpire(self, buffer->ts);
+		vkk_engine_rendererWaitForTimestamp(self, buffer->ts);
 
 		uint32_t count;
 		count = buffer->dynamic ?
@@ -1897,7 +1897,7 @@ void vkk_engine_deleteImage(vkk_engine_t* self,
 	vkk_image_t* image = *_image;
 	if(image)
 	{
-		vkk_engine_rendererExpire(self, image->ts);
+		vkk_engine_rendererWaitForTimestamp(self, image->ts);
 
 		vkDestroyImageView(self->device, image->image_view,
 		                   NULL);
@@ -1987,7 +1987,7 @@ void vkk_engine_deleteSampler(vkk_engine_t* self,
 	vkk_sampler_t* sampler = *_sampler;
 	if(sampler)
 	{
-		vkk_engine_rendererExpire(self, sampler->ts);
+		vkk_engine_rendererWaitForTimestamp(self, sampler->ts);
 
 		vkDestroySampler(self->device, sampler->sampler, NULL);
 		FREE(sampler);
@@ -2295,7 +2295,7 @@ void vkk_engine_deleteUniformSet(vkk_engine_t* self,
 	vkk_uniformSet_t* us = *_us;
 	if(us)
 	{
-		vkk_engine_rendererExpire(self, us->ts);
+		vkk_engine_rendererWaitForTimestamp(self, us->ts);
 
 		vkk_engine_usfLock(self);
 		if(cc_list_append(us->usf->us_list, NULL,
@@ -2734,7 +2734,7 @@ void vkk_engine_deleteGraphicsPipeline(vkk_engine_t* self,
 	vkk_graphicsPipeline_t* gp = *_gp;
 	if(gp)
 	{
-		vkk_engine_rendererExpire(self, gp->ts);
+		vkk_engine_rendererWaitForTimestamp(self, gp->ts);
 
 		vkDestroyPipeline(self->device,
 		                  gp->pipeline, NULL);
@@ -2979,16 +2979,22 @@ void vkk_engine_rendererWait(vkk_engine_t* self)
 	TRACE_BEGIN();
 }
 
-void vkk_engine_rendererExpire(vkk_engine_t* self,
-                               double ts)
+void vkk_engine_rendererWaitForTimestamp(vkk_engine_t* self,
+                                         double ts)
 {
 	assert(self);
 
 	vkk_renderer_t* renderer = self->renderer;
 
+	// ignore zero
+	if(ts == 0.0)
+	{
+		return;
+	}
+
 	// block until the renderer expires the timestamp
 	vkk_engine_rendererLock(self);
-	while(vkk_renderer_expiredTimestampLocked(renderer) < ts)
+	while(vkk_defaultRenderer_timestampLocked(renderer) < ts)
 	{
 		if(self->shutdown)
 		{

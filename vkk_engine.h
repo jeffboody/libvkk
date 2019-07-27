@@ -194,7 +194,7 @@ void vkk_engine_rendererLock(vkk_engine_t* self);
 void vkk_engine_rendererUnlock(vkk_engine_t* self);
 void vkk_engine_rendererSignal(vkk_engine_t* self);
 void vkk_engine_rendererWait(vkk_engine_t* self);
-void vkk_engine_rendererExpire(vkk_engine_t* self,
-                               double ts);
+void vkk_engine_rendererWaitForTimestamp(vkk_engine_t* self,
+                                         double ts);
 
 #endif
