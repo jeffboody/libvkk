@@ -69,7 +69,7 @@ vkk_offscreenRenderer_newRenderpass(vkk_renderer_t* base)
 			.stencilLoadOp  = VK_ATTACHMENT_LOAD_OP_DONT_CARE,
 			.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE,
 			.initialLayout  = VK_IMAGE_LAYOUT_UNDEFINED,
-			.finalLayout    = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR
+			.finalLayout    = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL
 		},
 		{
 			.flags          = 0,
@@ -426,11 +426,9 @@ vkk_offscreenRenderer_begin(vkk_renderer_t* base,
 	vkk_engine_t* engine = base->engine;
 
 	// check if renderer and image are compatible
-	// TODO - add mipmap support
 	if((self->width  != image->width)  ||
 	   (self->height != image->height) ||
-	   (self->format != image->format) ||
-	   (image->mipmap != 0))
+	   (self->format != image->format))
 	{
 		LOGE("invalid width=%u:%u, height=%u:%u, format=%i:%i",
 		     self->width, image->width,
@@ -438,6 +436,9 @@ vkk_offscreenRenderer_begin(vkk_renderer_t* base,
 		     self->format, image->format);
 		return 0;
 	}
+
+	// check if image is in use
+	vkk_engine_rendererWaitForTimestamp(engine, image->ts);
 
 	if(vkk_offscreenRenderer_newFramebuffer(base, image) == 0)
 	{
@@ -480,23 +481,13 @@ vkk_offscreenRenderer_begin(vkk_renderer_t* base,
 		goto fail_begin_command_buffer;
 	}
 
-	vkk_imageMemoryBarrier(self->cb, image->image,
-	                       image->stage,
-	                       VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
-	                       VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
-	                       VK_IMAGE_ASPECT_COLOR_BIT, 0, 1);
+	vkk_util_imageMemoryBarrier(image, self->cb,
+	                            VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+	                            0, 1);
+	vkk_util_imageMemoryBarrier(self->depth_image, self->cb,
+	                            VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL,
+	                            0, 1);
 
-	if(self->depth_image->transition)
-	{
-		// stage only applies to textures
-		vkk_imageMemoryBarrier(self->cb, self->depth_image->image,
-		                       0, VK_IMAGE_LAYOUT_UNDEFINED,
-		                       VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL,
-		                       VK_IMAGE_ASPECT_DEPTH_BIT | VK_IMAGE_ASPECT_STENCIL_BIT,
-		                       0, 1);
-
-		self->depth_image->transition = 0;
-	}
 
 	VkViewport viewport =
 	{
@@ -582,18 +573,26 @@ void vkk_offscreenRenderer_end(vkk_renderer_t* base)
 	self = (vkk_offscreenRenderer_t*) base;
 
 	vkk_engine_t* engine = base->engine;
+	vkk_image_t*  image  = self->image;
 
 	vkCmdEndRenderPass(self->cb);
 
-	// transition the image from color mode to shading mode
-	uint32_t mip_levels = 1;
-	vkk_image_t* image = self->image;
-	vkk_imageMemoryBarrier(self->cb, image->image,
-	                       image->stage,
-	                       VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
-	                       VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
-	                       VK_IMAGE_ASPECT_COLOR_BIT, 0,
-	                       mip_levels);
+	// at this point we may need to generate mip_levels if
+	// mipmapping was enabled
+	if(image->mip_levels > 1)
+	{
+		vkk_engine_mipmapImage(engine, image, self->cb);
+	}
+
+	// transition the image to shading mode
+	// note: we do not use the render pass to transition to the
+	// finalLayout since the image might be mipmapped which
+	// requires further processing after the render pass
+	// completes and would cause the image->layout_array to
+	// become inconsistent
+	vkk_util_imageMemoryBarrier(image, self->cb,
+	                            VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+	                            0, image->mip_levels);
 
 	vkEndCommandBuffer(self->cb);
 	vkk_engine_cmdUnlock(engine);
@@ -601,11 +600,13 @@ void vkk_offscreenRenderer_end(vkk_renderer_t* base)
 	VkPipelineStageFlags wait_dst_stage_mask;
 	wait_dst_stage_mask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
 
+	vkResetFences(engine->device, 1, &self->fence);
 	if(vkk_engine_queueSubmit(engine, &self->cb,
 	                          NULL, NULL,
 	                          &wait_dst_stage_mask,
 	                          self->fence) == 0)
 	{
+		vkk_offscreenRenderer_deleteFramebuffer(base);
 		return;
 	}
 
@@ -616,6 +617,8 @@ void vkk_offscreenRenderer_end(vkk_renderer_t* base)
 		LOGW("vkWaitForFences failed");
 		vkk_engine_queueWaitIdle(engine);
 	}
+
+	vkk_offscreenRenderer_deleteFramebuffer(base);
 }
 
 void

@@ -696,7 +696,7 @@ vkk_engine_importShaderModule(vkk_engine_t* self,
 	size_t size = (size_t) pak_file_seek(pak, fname);
 	if((size == 0) || ((size % 4) != 0))
 	{
-		LOGE("invalid size=%u", (unsigned int) size);
+		LOGE("invalid fname=%s, size=%u", fname, (unsigned int) size);
 		goto fail_size;
 	}
 
@@ -877,93 +877,9 @@ vkk_engine_newDescriptorPoolLocked(vkk_engine_t* self,
 	return VK_NULL_HANDLE;
 }
 
-static void
-vkk_engine_mipmapImage(vkk_engine_t* self,
-                       vkk_image_t* image,
-                       int stage,
-                       uint32_t mip_levels,
-                       VkCommandBuffer cb)
-{
-	assert(self);
-	assert(image);
-	assert(mip_levels > 1);
-	assert(cb != VK_NULL_HANDLE);
-
-	// transition the base mip level to a src for blitting
-	vkk_imageMemoryBarrier(cb, image->image, stage,
-	                       VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
-	                       VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
-	                       VK_IMAGE_ASPECT_COLOR_BIT, 0, 1);
-
-	int i;
-	uint32_t w = image->width;
-	uint32_t h = image->height;
-	for(i = 1; i < mip_levels; ++i)
-	{
-		VkImageBlit ib =
-		{
-			.srcSubresource =
-			{
-				.aspectMask     = VK_IMAGE_ASPECT_COLOR_BIT,
-				.mipLevel       = i - 1,
-				.baseArrayLayer = 0,
-				.layerCount     = 1
-			},
-			.srcOffsets =
-			{
-				{
-					.x = 0,
-					.y = 0,
-					.z = 0,
-				},
-				{
-					.x = (uint32_t) (w >> (i - 1)),
-					.y = (uint32_t) (h >> (i - 1)),
-					.z = 1,
-				}
-			},
-			.dstSubresource =
-			{
-				.aspectMask     = VK_IMAGE_ASPECT_COLOR_BIT,
-				.mipLevel       = i,
-				.baseArrayLayer = 0,
-				.layerCount     = 1
-			},
-			.dstOffsets =
-			{
-				{
-					.x = 0,
-					.y = 0,
-					.z = 0,
-				},
-				{
-					.x = (uint32_t) (w >> i),
-					.y = (uint32_t) (h >> i),
-					.z = 1,
-				}
-			}
-		};
-
-		vkCmdBlitImage(cb,
-		               image->image,
-		               VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
-		               image->image,
-		               VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
-		               1, &ib, VK_FILTER_LINEAR);
-
-		// transition the mip level i to a src for blitting
-		vkk_imageMemoryBarrier(cb, image->image, stage,
-		                       VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
-		                       VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
-		                       VK_IMAGE_ASPECT_COLOR_BIT, i, 1);
-	}
-}
-
 static int
 vkk_engine_uploadImage(vkk_engine_t* self,
                        vkk_image_t* image,
-                       int stage,
-                       uint32_t mip_levels,
                        const void* pixels)
 {
 	assert(self);
@@ -1094,11 +1010,9 @@ vkk_engine_uploadImage(vkk_engine_t* self,
 
 	// transition the image to copy the transfer buffer to
 	// the image and generate mip levels if needed
-	vkk_imageMemoryBarrier(cb, image->image, stage,
-	                       VK_IMAGE_LAYOUT_UNDEFINED,
-	                       VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
-	                       VK_IMAGE_ASPECT_COLOR_BIT, 0,
-	                       mip_levels);
+	vkk_util_imageMemoryBarrier(image, cb,
+	                            VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+	                            0, image->mip_levels);
 
 	// copy the transfer buffer to the image
 	VkBufferImageCopy bic =
@@ -1132,23 +1046,16 @@ vkk_engine_uploadImage(vkk_engine_t* self,
 	                       1, &bic);
 
 	// at this point we may need to generate mip_levels if
-	// mipmapping was enabled and set the old_layout
-	// accordingly
-	VkImageLayout old_layout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
-	if(mip_levels > 1)
+	// mipmapping was enabled
+	if(image->mip_levels > 1)
 	{
-		vkk_engine_mipmapImage(self, image, stage, mip_levels,
-		                       cb);
-
-		old_layout = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
+		vkk_engine_mipmapImage(self, image, cb);
 	}
 
 	// transition the image from transfer mode to shading mode
-	vkk_imageMemoryBarrier(cb, image->image, stage,
-	                       old_layout,
-	                       VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
-	                       VK_IMAGE_ASPECT_COLOR_BIT, 0,
-	                       mip_levels);
+	vkk_util_imageMemoryBarrier(image, cb,
+	                            VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+	                            0, image->mip_levels);
 
 	// end the transfer commands
 	vkEndCommandBuffer(cb);
@@ -1175,8 +1082,6 @@ vkk_engine_uploadImage(vkk_engine_t* self,
 	vkFreeMemory(self->device, memory, NULL);
 	vkDestroyBuffer(self->device, buffer, NULL);
 	vkDestroyFence(self->device, fence, NULL);
-
-	image->transition = 0;
 
 	// success
 	return 1;
@@ -1712,7 +1617,8 @@ vkk_image_t* vkk_engine_newImage(vkk_engine_t* self,
                                  int stage,
                                  const void* pixels)
 {
-	// pixels may be NULL for depth buffer
+	// pixels may be NULL for depth image or
+	// offscreen rendering
 	assert(self);
 
 	// check if mipmapped images are a power-of-two
@@ -1757,12 +1663,26 @@ vkk_image_t* vkk_engine_newImage(vkk_engine_t* self,
 		return NULL;
 	}
 
+	image->layout_array = (VkImageLayout*)
+	                      CALLOC(mip_levels, sizeof(VkImageLayout));
+	if(image->layout_array == NULL)
+	{
+		LOGE("CALLOC failed");
+		goto fail_layout_array;
+	}
+
 	image->width      = width;
 	image->height     = height;
 	image->format     = format;
-	image->mipmap     = mipmap;
 	image->stage      = stage;
-	image->transition = 1;
+	image->mip_levels = mip_levels;
+
+	// initialize the image layout
+	int i;
+	for(i = 0; i < mip_levels; ++i)
+	{
+		image->layout_array[i] = VK_IMAGE_LAYOUT_UNDEFINED;
+	}
 
 	VkFormat format_map[VKK_IMAGE_FORMAT_COUNT] =
 	{
@@ -1785,10 +1705,19 @@ vkk_image_t* vkk_engine_newImage(vkk_engine_t* self,
 		aspectMask = VK_IMAGE_ASPECT_DEPTH_BIT |
 		             VK_IMAGE_ASPECT_STENCIL_BIT;
 	}
-	else if(mip_levels > 1)
+	else
 	{
-		// mip levels are generated iteratively by blitting
-		usage = usage | VK_IMAGE_USAGE_TRANSFER_SRC_BIT;
+		if(mip_levels > 1)
+		{
+			// mip levels are generated iteratively by blitting
+			usage |= VK_IMAGE_USAGE_TRANSFER_SRC_BIT;
+		}
+
+		if(pixels == NULL)
+		{
+			// enable render-to-texture
+			usage |= VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
+		}
 	}
 
 	VkImageCreateInfo i_info =
@@ -1891,11 +1820,10 @@ vkk_image_t* vkk_engine_newImage(vkk_engine_t* self,
 		goto fail_image_view;
 	}
 
-	// textures must upload pixel data
-	if(format != VKK_IMAGE_FORMAT_DEPTH)
+	// upload pixel data
+	if(pixels && (format != VKK_IMAGE_FORMAT_DEPTH))
 	{
-		if(vkk_engine_uploadImage(self, image, stage,
-		                          mip_levels, pixels) == 0)
+		if(vkk_engine_uploadImage(self, image, pixels) == 0)
 		{
 			goto fail_upload;
 		}
@@ -1917,6 +1845,8 @@ vkk_image_t* vkk_engine_newImage(vkk_engine_t* self,
 		vkDestroyImage(self->device,
 		               image->image, NULL);
 	fail_create_image:
+		FREE(image->layout_array);
+	fail_layout_array:
 		FREE(image);
 	return NULL;
 }
@@ -1936,6 +1866,7 @@ void vkk_engine_deleteImage(vkk_engine_t* self,
 		                   NULL);
 		vkFreeMemory(self->device, image->memory, NULL);
 		vkDestroyImage(self->device, image->image, NULL);
+		FREE(image->layout_array);
 		FREE(image);
 		*_image = NULL;
 	}
@@ -2544,9 +2475,9 @@ vkk_engine_newGraphicsPipeline(vkk_engine_t* self,
 		.sType                           = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO,
 		.pNext                           = NULL,
 		.flags                           = 0,
-		.vertexBindingDescriptionCount   = 2,
+		.vertexBindingDescriptionCount   = gpi->vb_count,
 		.pVertexBindingDescriptions      = vib,
-		.vertexAttributeDescriptionCount = 2,
+		.vertexAttributeDescriptionCount = gpi->vb_count,
 		.pVertexAttributeDescriptions    = via
 	};
 
@@ -2797,6 +2728,87 @@ vkk_renderer_t* vkk_engine_renderer(vkk_engine_t* self)
 /***********************************************************
 * public                                                   *
 ***********************************************************/
+
+void vkk_engine_mipmapImage(vkk_engine_t* self,
+                            vkk_image_t* image,
+                            VkCommandBuffer cb)
+{
+	assert(self);
+	assert(image);
+	assert(cb != VK_NULL_HANDLE);
+
+	// transition the base mip level to a src for blitting
+	vkk_util_imageMemoryBarrier(image, cb,
+	                            VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
+	                            0, 1);
+
+	// transition the sub mip levels to dst for blitting
+	vkk_util_imageMemoryBarrier(image, cb,
+	                            VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+	                            1, image->mip_levels - 1);
+
+	int i;
+	uint32_t w = image->width;
+	uint32_t h = image->height;
+	for(i = 1; i < image->mip_levels; ++i)
+	{
+		VkImageBlit ib =
+		{
+			.srcSubresource =
+			{
+				.aspectMask     = VK_IMAGE_ASPECT_COLOR_BIT,
+				.mipLevel       = i - 1,
+				.baseArrayLayer = 0,
+				.layerCount     = 1
+			},
+			.srcOffsets =
+			{
+				{
+					.x = 0,
+					.y = 0,
+					.z = 0,
+				},
+				{
+					.x = (uint32_t) (w >> (i - 1)),
+					.y = (uint32_t) (h >> (i - 1)),
+					.z = 1,
+				}
+			},
+			.dstSubresource =
+			{
+				.aspectMask     = VK_IMAGE_ASPECT_COLOR_BIT,
+				.mipLevel       = i,
+				.baseArrayLayer = 0,
+				.layerCount     = 1
+			},
+			.dstOffsets =
+			{
+				{
+					.x = 0,
+					.y = 0,
+					.z = 0,
+				},
+				{
+					.x = (uint32_t) (w >> i),
+					.y = (uint32_t) (h >> i),
+					.z = 1,
+				}
+			}
+		};
+
+		vkCmdBlitImage(cb,
+		               image->image,
+		               VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
+		               image->image,
+		               VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+		               1, &ib, VK_FILTER_LINEAR);
+
+		// transition the mip level i to a src for blitting
+		vkk_util_imageMemoryBarrier(image, cb,
+		                            VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
+		                            i, 1);
+	}
+}
 
 int vkk_engine_queueSubmit(vkk_engine_t* self,
                            VkCommandBuffer* cb,

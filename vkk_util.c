@@ -27,23 +27,65 @@
 #define LOG_TAG "vkk"
 #include "../libcc/cc_log.h"
 #include "vkk.h"
+#include "vkk_engine.h"
 #include "vkk_util.h"
 
 /***********************************************************
 * public                                                   *
 ***********************************************************/
 
-void vkk_imageMemoryBarrier(VkCommandBuffer cb,
-                            VkImage image,
-                            int stage,
-                            VkImageLayout oldLayout,
-                            VkImageLayout newLayout,
-                            VkImageAspectFlags aspectMask,
-                            uint32_t baseMipLevel,
-                            uint32_t levelCount)
+void vkk_util_imageMemoryBarrier(vkk_image_t* image,
+                                 VkCommandBuffer cb,
+                                 VkImageLayout newLayout,
+                                 uint32_t baseMipLevel,
+                                 uint32_t levelCount)
 {
+	assert(image);
 	assert(cb != VK_NULL_HANDLE);
+
+	// add the memory barrier
+	VkImageLayout oldLayout;
+	oldLayout = image->layout_array[baseMipLevel];
+	vkk_util_imageMemoryBarrierRaw(image->image,
+	                               cb,
+	                               image->stage,
+	                               oldLayout,
+	                               newLayout,
+	                               baseMipLevel,
+	                               levelCount);
+
+	// save the new layout
+	int i;
+	for(i = baseMipLevel; i < levelCount; ++i)
+	{
+		image->layout_array[i] = newLayout;
+	}
+}
+
+void vkk_util_imageMemoryBarrierRaw(VkImage image,
+                                    VkCommandBuffer cb,
+                                    int stage,
+                                    VkImageLayout oldLayout,
+                                    VkImageLayout newLayout,
+                                    uint32_t baseMipLevel,
+                                    uint32_t levelCount)
+{
 	assert(image != VK_NULL_HANDLE);
+	assert(cb != VK_NULL_HANDLE);
+
+	// check for desired layout
+	if(newLayout == oldLayout)
+	{
+		return;
+	}
+
+	// derive the aspect mask from the layout
+	VkImageAspectFlags aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+	if(newLayout == VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL)
+	{
+		aspectMask = VK_IMAGE_ASPECT_DEPTH_BIT |
+		             VK_IMAGE_ASPECT_STENCIL_BIT;
+	}
 
 	VkImageMemoryBarrier imb =
 	{
@@ -66,6 +108,15 @@ void vkk_imageMemoryBarrier(VkCommandBuffer cb,
 		}
 	};
 
+	VkPipelineStageFlagBits ps_map[VKK_STAGE_COUNT] =
+	{
+		0,
+		VK_PIPELINE_STAGE_VERTEX_SHADER_BIT,
+		VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
+		VK_PIPELINE_STAGE_VERTEX_SHADER_BIT | VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
+	};
+
+
 	// derive the access masks and stage flags from the
 	// image layouts
 	VkPipelineStageFlags srcStageMask = VK_PIPELINE_STAGE_ALL_COMMANDS_BIT;
@@ -87,15 +138,18 @@ void vkk_imageMemoryBarrier(VkCommandBuffer cb,
 	}
 	else if(oldLayout == VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL)
 	{
-		// TODO - VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL
+		srcStageMask      = ps_map[stage];
+		imb.srcAccessMask = VK_ACCESS_SHADER_READ_BIT;
 	}
 	else if(oldLayout == VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL)
 	{
-		// TODO - VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL
+		srcStageMask      = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+		imb.srcAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
 	}
 	else
 	{
 		LOGW("invalid oldLayout=%u", oldLayout);
+		return;
 	}
 
 	if(newLayout == VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL)
@@ -120,20 +174,13 @@ void vkk_imageMemoryBarrier(VkCommandBuffer cb,
 	}
 	else if(newLayout == VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL)
 	{
-		VkPipelineStageFlagBits ps_map[VKK_STAGE_COUNT] =
-		{
-			0,
-			VK_PIPELINE_STAGE_VERTEX_SHADER_BIT,
-			VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
-			VK_PIPELINE_STAGE_VERTEX_SHADER_BIT | VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
-		};
-
 		dstStageMask      = ps_map[stage];
 		imb.dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
 	}
 	else
 	{
 		LOGW("invalid newLayout=%u", newLayout);
+		return;
 	}
 
 	vkCmdPipelineBarrier(cb, srcStageMask, dstStageMask,

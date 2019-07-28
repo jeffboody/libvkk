@@ -1051,22 +1051,14 @@ vkk_defaultRenderer_begin(vkk_renderer_t* base,
 	// stage only applies to textures
 	VkImage image;
 	image = self->swapchain_images[self->swapchain_frame];
-	vkk_imageMemoryBarrier(cb, image, 0,
-	                       VK_IMAGE_LAYOUT_UNDEFINED,
-	                       VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
-	                       VK_IMAGE_ASPECT_COLOR_BIT, 0, 1);
+	vkk_util_imageMemoryBarrierRaw(image, cb, 0,
+	                               VK_IMAGE_LAYOUT_UNDEFINED,
+	                               VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+	                               0, 1);
+	vkk_util_imageMemoryBarrier(self->depth_image, cb,
+	                            VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL,
+	                            0, 1);
 
-	if(self->depth_image->transition)
-	{
-		// stage only applies to textures
-		vkk_imageMemoryBarrier(cb, self->depth_image->image, 0,
-		                       VK_IMAGE_LAYOUT_UNDEFINED,
-		                       VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL,
-		                       VK_IMAGE_ASPECT_DEPTH_BIT | VK_IMAGE_ASPECT_STENCIL_BIT,
-		                       0, 1);
-
-		self->depth_image->transition = 0;
-	}
 
 	VkViewport viewport =
 	{

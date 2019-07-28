@@ -30,13 +30,17 @@
 	#include <vulkan/vulkan.h>
 #endif
 
-void vkk_imageMemoryBarrier(VkCommandBuffer cb,
-                            VkImage image,
-                            int stage,
-                            VkImageLayout oldLayout,
-                            VkImageLayout newLayout,
-                            VkImageAspectFlags aspectMask,
-                            uint32_t baseMipLevel,
-                            uint32_t levelCount);
+void vkk_util_imageMemoryBarrier(vkk_image_t* image,
+                                 VkCommandBuffer cb,
+                                 VkImageLayout newLayout,
+                                 uint32_t baseMipLevel,
+                                 uint32_t levelCount);
+void vkk_util_imageMemoryBarrierRaw(VkImage image,
+                                    VkCommandBuffer cb,
+                                    int stage,
+                                    VkImageLayout oldLayout,
+                                    VkImageLayout newLayout,
+                                    uint32_t baseMipLevel,
+                                    uint32_t levelCount);
 
 #endif

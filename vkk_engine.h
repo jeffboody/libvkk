@@ -53,9 +53,9 @@ typedef struct vkk_image_s
 	uint32_t       width;
 	uint32_t       height;
 	int            format;
-	int            mipmap;
 	int            stage;
-	int            transition;
+	uint32_t       mip_levels;
+	VkImageLayout* layout_array;
 	VkImage        image;
 	VkDeviceMemory memory;
 	VkImageView    image_view;
@@ -162,6 +162,14 @@ typedef struct vkk_engine_s
 	int             shutdown;
 	vkk_renderer_t* renderer;
 } vkk_engine_t;
+
+/*
+ * engine util function
+ */
+
+void vkk_engine_mipmapImage(vkk_engine_t* self,
+                            vkk_image_t* image,
+                            VkCommandBuffer cb);
 
 /*
  * engine synchronization

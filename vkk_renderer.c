@@ -172,11 +172,16 @@ void vkk_renderer_bindUniformSets(vkk_renderer_t* self,
 
 	vkk_engine_t* engine = self->engine;
 
+	double ts = 0.0;
+	if(self == engine->renderer)
+	{
+		ts = vkk_defaultRenderer_tsCurrent(self);
+	}
+
 	// allow for a constant and dynamic uniform set
 	int             i;
 	uint32_t        idx;
 	VkDescriptorSet ds[2];
-	double          ts = vkk_defaultRenderer_tsCurrent(self);
 	uint32_t        swapchain_frame;
 	swapchain_frame = (*self->swapchainFrameFn)(self);
 	for(i = 0; i < us_count; ++i)
