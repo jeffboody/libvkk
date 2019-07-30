@@ -2137,82 +2137,121 @@ vkk_engine_newUniformSet(vkk_engine_t* self,
 	assert(usf);
 	assert(ua_count == usf->ub_count);
 
-	// TODO - check if a uniform set can be reused
+	vkk_renderer_t* renderer = self->renderer;
 
-	// create a new uniform set
-	vkk_uniformSet_t* us;
-	us = (vkk_uniformSet_t*)
-	     CALLOC(1, sizeof(vkk_uniformSet_t));
+	// get the last expired timestamp
+	vkk_engine_rendererLock(self);
+	double ets = vkk_defaultRenderer_tsExpiredLocked(renderer);
+	vkk_engine_rendererUnlock(self);
+
+	// check if a uniform set can be reused
+	vkk_engine_usfLock(self);
+	vkk_uniformSet_t* us   = NULL;
+	cc_listIter_t*    iter = cc_list_head(usf->us_list);
+	while(iter)
+	{
+		vkk_uniformSet_t* tmp;
+		tmp = (vkk_uniformSet_t*)
+		      cc_list_peekIter(iter);
+
+		if(ets >= tmp->ts)
+		{
+			us = tmp;
+			cc_list_remove(usf->us_list, &iter);
+			break;
+		}
+
+		iter = cc_list_next(iter);
+	}
+	vkk_engine_usfUnlock(self);
+
+	int i;
 	if(us == NULL)
 	{
-		LOGE("CALLOC failed");
-		return NULL;
-	}
+		// create a new uniform set
+		us = (vkk_uniformSet_t*)
+		     CALLOC(1, sizeof(vkk_uniformSet_t));
+		if(us == NULL)
+		{
+			LOGE("CALLOC failed");
+			return NULL;
+		}
 
-	us->set      = set;
-	us->ua_count = ua_count;
-	us->usf      = usf;
+		us->set      = set;
+		us->ua_count = ua_count;
+		us->usf      = usf;
 
-	// copy the ua_array
-	us->ua_array = (vkk_uniformAttachment_t*)
-	               CALLOC(ua_count,
-	                      sizeof(vkk_uniformAttachment_t));
-	if(us->ua_array == NULL)
-	{
-		LOGE("CALLOC failed");
-		goto fail_ua_array;
-	}
-	memcpy(us->ua_array, ua_array,
-	       ua_count*sizeof(vkk_uniformAttachment_t));
+		// copy the ua_array
+		us->ua_array = (vkk_uniformAttachment_t*)
+		               CALLOC(ua_count,
+		                      sizeof(vkk_uniformAttachment_t));
+		if(us->ua_array == NULL)
+		{
+			LOGE("CALLOC failed");
+			goto fail_ua_array;
+		}
+		memcpy(us->ua_array, ua_array,
+		       ua_count*sizeof(vkk_uniformAttachment_t));
 
-	uint32_t ds_count;
-	ds_count = usf->dynamic ?
-	           vkk_engine_swapchainImageCount(self) : 1;
-	us->ds_array = (VkDescriptorSet*)
-	               CALLOC(ds_count, sizeof(VkDescriptorSet));
-	if(us->ds_array == NULL)
-	{
-		LOGE("CALLOC failed");
-		goto fail_ds_array;
-	}
+		uint32_t ds_count;
+		ds_count = usf->dynamic ?
+		           vkk_engine_swapchainImageCount(self) : 1;
+		us->ds_array = (VkDescriptorSet*)
+		               CALLOC(ds_count, sizeof(VkDescriptorSet));
+		if(us->ds_array == NULL)
+		{
+			LOGE("CALLOC failed");
+			goto fail_ds_array;
+		}
 
-	// initialize the descriptor set layouts
-	VkDescriptorSetLayout dsl_array[VKK_DESCRIPTOR_POOL_SIZE];
-	int i;
-	for(i = 0; i < ds_count; ++i)
-	{
-		dsl_array[i] = usf->ds_layout;
-	}
+		// initialize the descriptor set layouts
+		VkDescriptorSetLayout dsl_array[VKK_DESCRIPTOR_POOL_SIZE];
+		for(i = 0; i < ds_count; ++i)
+		{
+			dsl_array[i] = usf->ds_layout;
+		}
 
-	// allocate the descriptor set from the pool
-	vkk_engine_usfLock(self);
-	VkDescriptorPool dp;
-	dp = (VkDescriptorPool)
-	     cc_list_peekTail(usf->dp_list);
+		// allocate the descriptor set from the pool
+		vkk_engine_usfLock(self);
+		VkDescriptorPool dp;
+		dp = (VkDescriptorPool)
+		     cc_list_peekTail(usf->dp_list);
 
-	// create a new pool on demand
-	if((ds_count > usf->ds_available) || (dp == VK_NULL_HANDLE))
-	{
-		// create a new pool
-		dp = vkk_engine_newDescriptorPoolLocked(self, usf);
-		if(dp == VK_NULL_HANDLE)
+		// create a new pool on demand
+		if((ds_count > usf->ds_available) || (dp == VK_NULL_HANDLE))
+		{
+			// create a new pool
+			dp = vkk_engine_newDescriptorPoolLocked(self, usf);
+			if(dp == VK_NULL_HANDLE)
+			{
+				vkk_engine_usfUnlock(self);
+				goto fail_dp;
+			}
+		}
+
+		if(vkk_engine_allocateDescriptorSetsLocked(self, dp,
+		                                           dsl_array,
+		                                           ds_count,
+		                                           us->ds_array) == 0)
 		{
 			vkk_engine_usfUnlock(self);
-			goto fail_dp;
+			goto fail_allocate_ds;
 		}
-	}
 
-	if(vkk_engine_allocateDescriptorSetsLocked(self, dp,
-	                                           dsl_array,
-	                                           ds_count,
-	                                           us->ds_array) == 0)
-	{
+		usf->ds_available -= ds_count;
 		vkk_engine_usfUnlock(self);
-		goto fail_allocate_ds;
 	}
+	else
+	{
+		// reuse the uniform set
+		us->ts  = 0.0;
+		us->set = set;
+		us->usf = usf;
 
-	usf->ds_available -= ds_count;
-	vkk_engine_usfUnlock(self);
+		// copy the ua_array
+		memcpy(us->ua_array, ua_array,
+		       ua_count*sizeof(vkk_uniformAttachment_t));
+	}
 
 	// attach buffers and images
 	for(i = 0; i < ua_count; ++i)
