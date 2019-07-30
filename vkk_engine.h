@@ -41,7 +41,7 @@
 typedef struct vkk_buffer_s
 {
 	double          ts;
-	int             dynamic;
+	int             update;
 	size_t          size;
 	VkBuffer*       buffer;
 	VkDeviceMemory* memory;
@@ -69,7 +69,7 @@ typedef struct vkk_sampler_s
 
 typedef struct vkk_uniformSetFactory_s
 {
-	int                   dynamic;
+	int                   update;
 	uint32_t              ub_count;
 	vkk_uniformBinding_t* ub_array;
 	uint32_t              ds_available;

@@ -80,6 +80,11 @@
 #define VKK_UNIFORM_TYPE_SAMPLER 1
 #define VKK_UNIFORM_TYPE_COUNT   2
 
+#define VKK_UPDATE_MODE_STATIC    0
+#define VKK_UPDATE_MODE_DEFAULT   1
+#define VKK_UPDATE_MODE_OFFSCREEN 2
+#define VKK_UPDATE_MODE_COUNT     3
+
 #define VKK_VERTEX_FORMAT_FLOAT 0
 #define VKK_VERTEX_FORMAT_INT   1
 #define VKK_VERTEX_FORMAT_SHORT 2
@@ -163,24 +168,33 @@ typedef struct
 /*
  * engine new/delete API
  *
- * 1) objects may be created from any thread using the
- *    engine handle
- * 2) objects must be deleted from a worker thread if the
- *    engine has not been shutdown yet otherwise a deadlock
- *    may occur
- * 3) an object cannot be used by any thread once deleted
- * 4) image, sampler, uniformSetFactory and pipelineLayout
- *    may be shared between renderers
- * 5) buffers and uniformSets may only be shared between
- *    renderers when dynamic flag is NOT set
- * 6) graphics pipelines are NOT shared between renderers
- * 7) CPU and GPU synchronization is handled automatically
- *    by the engine with the exception of the shutdown
- *    function
- * 8) call shutdown from the main thread prior to deleting
- *    the engine thus ensuring GPU rendering completes and
- *    worker threads are no longer blocked waiting for GPU
- *    events
+ *  1) objects may be created from any thread using the
+ *     engine handle
+ *  2) objects must be deleted from a worker thread if the
+ *     engine has not been shutdown yet otherwise a deadlock
+ *     may occur
+ *  3) an object cannot be used by any thread once deleted
+ *  4) image, sampler, uniformSetFactory and pipelineLayout
+ *     may be shared between renderers
+ *  5) images may only be bound to a single offscreen
+ *     renderer at once
+ *  6) images should not be bound to an offscreen renderer
+ *     between begin/end commands
+ *  7) regarding buffers and uniform sets
+ *     a) sharing between renderers is only allowed when
+ *        update is set to STATIC
+ *     b) may only be updated by default renderer when
+ *        update is set to DEFAULT
+ *     c) may only be updated by offscreen renderer when
+ *        update is set to OFFSCREEN
+ *  8) graphics pipelines are NOT shared between renderers
+ *  9) CPU and GPU synchronization is handled automatically
+ *     by the engine with the exception of the shutdown
+ *     function
+ * 10) call shutdown from the main thread prior to deleting
+ *     the engine thus ensuring GPU rendering completes and
+ *     worker threads are no longer blocked waiting for GPU
+ *     events
  */
 
 vkk_engine_t*            vkk_engine_new(void* app,
@@ -197,7 +211,7 @@ vkk_renderer_t*          vkk_engine_newRenderer(vkk_engine_t* self,
 void                     vkk_engine_deleteRenderer(vkk_engine_t* self,
                                                    vkk_renderer_t** _renderer);
 vkk_buffer_t*            vkk_engine_newBuffer(vkk_engine_t* self,
-                                              int dynamic,
+                                              int update,
                                               int usage,
                                               size_t size,
                                               const void* buf);
@@ -221,7 +235,7 @@ vkk_sampler_t*           vkk_engine_newSampler(vkk_engine_t* self,
 void                     vkk_engine_deleteSampler(vkk_engine_t* self,
                                                   vkk_sampler_t** _sampler);
 vkk_uniformSetFactory_t* vkk_engine_newUniformSetFactory(vkk_engine_t* self,
-                                                         int dynamic,
+                                                         int update,
                                                          uint32_t ub_count,
                                                          vkk_uniformBinding_t* ub_array);
 void                     vkk_engine_deleteUniformSetFactory(vkk_engine_t* self,
@@ -268,10 +282,7 @@ vkk_renderer_t* vkk_engine_renderer(vkk_engine_t* self);
  * 4) the offscreen renderer completes synchronously
  *    (e.g. end is blocking) and should be called from a
  *    worker thread
- * 5) the dynamic flag is ONLY compatible with the default
- *    renderer and should be set when the app needs to call
- *    updateBuffer for a uniform buffer
- * 6) the depth buffer, viewport and scissor are initialized
+ * 5) the depth buffer, viewport and scissor are initialized
  *    automatically by begin
  */
 

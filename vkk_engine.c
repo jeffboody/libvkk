@@ -1093,13 +1093,14 @@ vkk_engine_attachUniformBuffer(vkk_engine_t* self,
 	assert(buffer);
 
 	uint32_t count;
-	count = us->usf->dynamic ?
+	count = (us->usf->update == VKK_UPDATE_MODE_DEFAULT) ?
 	        vkk_engine_swapchainImageCount(self) : 1;
 
 	int i;
 	for(i = 0; i < count; ++i)
 	{
-		uint32_t idx = buffer->dynamic ? i : 0;
+		uint32_t idx;
+		idx = (buffer->update == VKK_UPDATE_MODE_DEFAULT) ? i : 0;
 		VkDescriptorBufferInfo db_info =
 		{
 			.buffer  = buffer->buffer[idx],
@@ -1139,7 +1140,7 @@ vkk_engine_attachUniformSampler(vkk_engine_t* self,
 	assert(image);
 
 	uint32_t count;
-	count = us->usf->dynamic ?
+	count = (us->usf->update == VKK_UPDATE_MODE_DEFAULT) ?
 	        vkk_engine_swapchainImageCount(self) : 1;
 
 	int i;
@@ -1451,7 +1452,7 @@ void vkk_engine_deleteRenderer(vkk_engine_t* self,
 }
 
 vkk_buffer_t*
-vkk_engine_newBuffer(vkk_engine_t* self, int dynamic,
+vkk_engine_newBuffer(vkk_engine_t* self, int update,
                      int usage, size_t size,
                      const void* buf)
 {
@@ -1459,7 +1460,7 @@ vkk_engine_newBuffer(vkk_engine_t* self, int dynamic,
 	assert(self);
 
 	uint32_t count;
-	count = dynamic ?
+	count = (update == VKK_UPDATE_MODE_DEFAULT) ?
 	        vkk_engine_swapchainImageCount(self) : 1;
 
 	VkBufferUsageFlags usage_flags;
@@ -1485,8 +1486,8 @@ vkk_engine_newBuffer(vkk_engine_t* self, int dynamic,
 		return NULL;
 	}
 
-	buffer->dynamic = dynamic;
-	buffer->size    = size;
+	buffer->update = update;
+	buffer->size   = size;
 
 	buffer->buffer = (VkBuffer*)
 	                 CALLOC(count, sizeof(VkBuffer));
@@ -1620,7 +1621,7 @@ void vkk_engine_deleteBuffer(vkk_engine_t* self,
 		vkk_engine_rendererWaitForTimestamp(self, buffer->ts);
 
 		uint32_t count;
-		count = buffer->dynamic ?
+		count = (buffer->update == VKK_UPDATE_MODE_DEFAULT) ?
 		        vkk_engine_swapchainImageCount(self) : 1;
 		int i;
 		for(i = 0; i < count; ++i)
@@ -1986,7 +1987,7 @@ void vkk_engine_deleteSampler(vkk_engine_t* self,
 
 vkk_uniformSetFactory_t*
 vkk_engine_newUniformSetFactory(vkk_engine_t* self,
-                                int dynamic,
+                                int update,
                                 uint32_t ub_count,
                                 vkk_uniformBinding_t* ub_array)
 {
@@ -2016,7 +2017,7 @@ vkk_engine_newUniformSetFactory(vkk_engine_t* self,
 		return NULL;
 	}
 
-	usf->dynamic  = dynamic;
+	usf->update   = update;
 	usf->ub_count = ub_count;
 
 	// copy the ub_array
@@ -2219,7 +2220,7 @@ vkk_engine_newUniformSet(vkk_engine_t* self,
 		       ua_count*sizeof(vkk_uniformAttachment_t));
 
 		uint32_t ds_count;
-		ds_count = usf->dynamic ?
+		ds_count = (usf->update == VKK_UPDATE_MODE_DEFAULT) ?
 		           vkk_engine_swapchainImageCount(self) : 1;
 		us->ds_array = (VkDescriptorSet*)
 		               CALLOC(ds_count, sizeof(VkDescriptorSet));

@@ -120,11 +120,30 @@ void vkk_renderer_updateBuffer(vkk_renderer_t* self,
 
 	vkk_engine_t* engine = self->engine;
 
+	if(buffer->update == VKK_UPDATE_MODE_STATIC)
+	{
+		LOGW("invalid static update mode");
+		return;
+	}
+	else if((buffer->update == VKK_UPDATE_MODE_DEFAULT) &&
+	        (self != engine->renderer))
+	{
+		LOGW("invalid offscreen renderer");
+		return;
+	}
+	else if((buffer->update == VKK_UPDATE_MODE_OFFSCREEN) &&
+	        (self == engine->renderer))
+	{
+		LOGW("invalid default renderer");
+		return;
+	}
+
 	uint32_t swapchain_frame;
 	swapchain_frame = (*self->swapchainFrameFn)(self);
 
 	uint32_t idx;
-	idx = buffer->dynamic ? swapchain_frame : 0;
+	idx = (buffer->update == VKK_UPDATE_MODE_DEFAULT) ?
+	      swapchain_frame : 0;
 
 	void* data;
 	if(vkMapMemory(engine->device,
@@ -187,7 +206,7 @@ void vkk_renderer_bindUniformSets(vkk_renderer_t* self,
 	swapchain_frame = (*self->swapchainFrameFn)(self);
 	for(i = 0; i < us_count; ++i)
 	{
-		idx   = us_array[i]->usf->dynamic ?
+		idx   = (us_array[i]->usf->update == VKK_UPDATE_MODE_DEFAULT) ?
 		        swapchain_frame : 0;
 		ds[i] = us_array[i]->ds_array[idx];
 
@@ -339,7 +358,7 @@ void vkk_renderer_draw(vkk_renderer_t* self,
 	int idx;
 	for(i = 0; i < vertex_buffer_count; ++i)
 	{
-		idx = vertex_buffers[i]->dynamic ?
+		idx = (vertex_buffers[i]->update == VKK_UPDATE_MODE_DEFAULT) ?
 		      swapchain_frame : 0;
 		vb_buffers[i] = vertex_buffers[i]->buffer[idx];
 	}
@@ -387,7 +406,7 @@ void vkk_renderer_drawIndexed(vkk_renderer_t* self,
 	int idx;
 	for(i = 0; i < vertex_buffer_count; ++i)
 	{
-		idx = vertex_buffers[i]->dynamic ?
+		idx = (vertex_buffers[i]->update == VKK_UPDATE_MODE_DEFAULT) ?
 		      swapchain_frame : 0;
 		vb_buffers[i] = vertex_buffers[i]->buffer[idx];
 	}
@@ -399,7 +418,8 @@ void vkk_renderer_drawIndexed(vkk_renderer_t* self,
 		VK_INDEX_TYPE_UINT32
 	};
 
-	idx = index_buffer->dynamic ? swapchain_frame : 0;
+	idx = (index_buffer->update == VKK_UPDATE_MODE_DEFAULT) ?
+	      swapchain_frame : 0;
 	VkBuffer ib_buffer = index_buffer->buffer[idx];
 
 	vkCmdBindIndexBuffer(cb, ib_buffer, 0,
