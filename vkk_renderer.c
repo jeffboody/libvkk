@@ -23,6 +23,7 @@
 
 #include <assert.h>
 #include <stdlib.h>
+#include <string.h>
 
 #define LOG_TAG "vkk"
 #include "../libcc/cc_log.h"
