@@ -46,23 +46,11 @@ vkk_offscreenRenderer_newRenderpass(vkk_renderer_t* base)
 
 	vkk_engine_t* engine = base->engine;
 
-	VkFormat format_map[VKK_IMAGE_FORMAT_COUNT] =
-	{
-		VK_FORMAT_R4G4B4A4_UNORM_PACK16,
-		VK_FORMAT_R5G6B5_UNORM_PACK16,
-		VK_FORMAT_R5G5B5A1_UNORM_PACK16,
-		VK_FORMAT_R8_UNORM,
-		VK_FORMAT_R8G8_UNORM,
-		VK_FORMAT_R8G8B8_UNORM,
-		VK_FORMAT_R8G8B8A8_UNORM,
-		VK_FORMAT_D24_UNORM_S8_UINT,
-	};
-
 	VkAttachmentDescription attachments[2] =
 	{
 		{
 			.flags          = 0,
-			.format         = format_map[self->format],
+			.format         = vkk_util_imageFormat(self->format),
 			.samples        = VK_SAMPLE_COUNT_1_BIT,
 			.loadOp         = VK_ATTACHMENT_LOAD_OP_CLEAR,
 			.storeOp        = VK_ATTACHMENT_STORE_OP_STORE,
@@ -181,18 +169,6 @@ vkk_offscreenRenderer_newFramebuffer(vkk_renderer_t* base,
 
 	vkk_engine_t* engine = base->engine;
 
-	VkFormat format_map[VKK_IMAGE_FORMAT_COUNT] =
-	{
-		VK_FORMAT_R4G4B4A4_UNORM_PACK16,
-		VK_FORMAT_R5G6B5_UNORM_PACK16,
-		VK_FORMAT_R5G5B5A1_UNORM_PACK16,
-		VK_FORMAT_R8_UNORM,
-		VK_FORMAT_R8G8_UNORM,
-		VK_FORMAT_R8G8B8_UNORM,
-		VK_FORMAT_R8G8B8A8_UNORM,
-		VK_FORMAT_D24_UNORM_S8_UINT,
-	};
-
 	VkImageViewCreateInfo iv_info =
 	{
 		.sType      = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO,
@@ -200,7 +176,7 @@ vkk_offscreenRenderer_newFramebuffer(vkk_renderer_t* base,
 		.flags      = 0,
 		.image      = image->image,
 		.viewType   = VK_IMAGE_VIEW_TYPE_2D,
-		.format     = format_map[self->format],
+		.format     = vkk_util_imageFormat(self->format),
 		.components =
 		{
 			.r = VK_COMPONENT_SWIZZLE_IDENTITY,

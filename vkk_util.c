@@ -186,3 +186,37 @@ void vkk_util_imageMemoryBarrierRaw(VkImage image,
 	vkCmdPipelineBarrier(cb, srcStageMask, dstStageMask,
 	                     0, 0, NULL, 0, NULL, 1, &imb);
 }
+
+size_t vkk_util_imageSize(vkk_image_t* self)
+{
+	assert(self);
+
+	size_t bpp[VKK_IMAGE_FORMAT_COUNT] =
+	{
+		4, // VKK_IMAGE_FORMAT_RGBA8888
+		2, // VKK_IMAGE_FORMAT_RGBA4444
+		3, // VKK_IMAGE_FORMAT_RGB888
+		2, // VKK_IMAGE_FORMAT_RGB565
+		2, // VKK_IMAGE_FORMAT_RG88
+		1, // VKK_IMAGE_FORMAT_R8
+		4, // VKK_IMAGE_FORMAT_DEPTH
+	};
+
+	return self->width*self->height*bpp[self->format];
+}
+
+VkFormat vkk_util_imageFormat(int format)
+{
+	VkFormat format_map[VKK_IMAGE_FORMAT_COUNT] =
+	{
+		VK_FORMAT_R8G8B8A8_UNORM,
+		VK_FORMAT_R4G4B4A4_UNORM_PACK16,
+		VK_FORMAT_R8G8B8_UNORM,
+		VK_FORMAT_R5G6B5_UNORM_PACK16,
+		VK_FORMAT_R8G8_UNORM,
+		VK_FORMAT_R8_UNORM,
+		VK_FORMAT_D24_UNORM_S8_UINT,
+	};
+
+	return format_map[format];
+}

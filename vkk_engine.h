@@ -158,6 +158,9 @@ typedef struct vkk_engine_s
 	// shaders
 	cc_map_t* shader_modules;
 
+	// image capabilities
+	int image_caps_array[VKK_IMAGE_FORMAT_COUNT];
+
 	// default renderer
 	int             shutdown;
 	vkk_renderer_t* renderer;

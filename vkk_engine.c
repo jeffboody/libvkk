@@ -41,26 +41,6 @@
 * private - vkk_image_t                                    *
 ***********************************************************/
 
-static size_t
-vkk_image_size(vkk_image_t* self)
-{
-	assert(self);
-
-	size_t bpp[VKK_IMAGE_FORMAT_COUNT] =
-	{
-		2, // VKK_IMAGE_FORMAT_RGBA4444
-		2, // VKK_IMAGE_FORMAT_RGB565
-		2, // VKK_IMAGE_FORMAT_RGBA5551
-		1, // VKK_IMAGE_FORMAT_R8
-		2, // VKK_IMAGE_FORMAT_RG88
-		3, // VKK_IMAGE_FORMAT_RGB888
-		4, // VKK_IMAGE_FORMAT_RGBA8888
-		4, // VKK_IMAGE_FORMAT_DEPTH
-	};
-
-	return self->width*self->height*bpp[self->format];
-}
-
 /***********************************************************
 * private                                                  *
 ***********************************************************/
@@ -902,7 +882,7 @@ vkk_engine_uploadImage(vkk_engine_t* self,
 	}
 
 	// create a transfer buffer
-	size_t size = vkk_image_size(image);
+	size_t size = vkk_util_imageSize(image);
 	VkBufferCreateInfo b_info =
 	{
 		.sType                 = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,
@@ -1191,6 +1171,54 @@ vkk_engine_attachUniformSampler(vkk_engine_t* self,
 	}
 }
 
+static void vkk_engine_initImageUsage(vkk_engine_t* self)
+{
+	assert(self);
+
+	int i;
+	VkFormatProperties fp;
+	for(i = 0; i < VKK_IMAGE_FORMAT_COUNT; ++i)
+	{
+		VkFormat format = vkk_util_imageFormat(i);
+		vkGetPhysicalDeviceFormatProperties(self->physical_device,
+		                                    format, &fp);
+
+		// check for texture caps
+		VkFormatFeatureFlags flags = fp.optimalTilingFeatures;
+		if((flags & VK_FORMAT_FEATURE_SAMPLED_IMAGE_BIT) &&
+		   (flags & VK_FORMAT_FEATURE_TRANSFER_DST_BIT))
+		{
+			self->image_caps_array[i] |= VKK_IMAGE_CAPS_TEXTURE;
+		}
+
+		// check for mipmap caps
+		if((flags & VK_FORMAT_FEATURE_SAMPLED_IMAGE_BIT) &&
+		   (flags & VK_FORMAT_FEATURE_BLIT_SRC_BIT)      &&
+		   (flags & VK_FORMAT_FEATURE_BLIT_DST_BIT)      &&
+		   (flags & VK_FORMAT_FEATURE_TRANSFER_SRC_BIT)  &&
+		   (flags & VK_FORMAT_FEATURE_TRANSFER_DST_BIT))
+		{
+			self->image_caps_array[i] |= VKK_IMAGE_CAPS_MIPMAP;
+		}
+
+		// check for linear filtering
+		if(flags & VK_FORMAT_FEATURE_SAMPLED_IMAGE_FILTER_LINEAR_BIT)
+		{
+			self->image_caps_array[i] |= VKK_IMAGE_CAPS_FILTER_LINEAR;
+		}
+
+		// check for offscreen caps
+		if(flags & VK_FORMAT_FEATURE_COLOR_ATTACHMENT_BIT)
+		{
+			self->image_caps_array[i] |= VKK_IMAGE_CAPS_OFFSCREEN;
+			if(flags & VK_FORMAT_FEATURE_COLOR_ATTACHMENT_BLEND_BIT)
+			{
+				self->image_caps_array[i] |= VKK_IMAGE_CAPS_OFFSCREEN_BLEND;
+			}
+		}
+	}
+}
+
 /***********************************************************
 * engine new/delete API                                    *
 ***********************************************************/
@@ -1293,6 +1321,8 @@ vkk_engine_t* vkk_engine_new(void* app,
 	{
 		goto fail_shader_modules;
 	}
+
+	vkk_engine_initImageUsage(self);
 
 	self->renderer = vkk_defaultRenderer_new(self);
 	if(self->renderer == NULL)
@@ -1684,18 +1714,6 @@ vkk_image_t* vkk_engine_newImage(vkk_engine_t* self,
 		image->layout_array[i] = VK_IMAGE_LAYOUT_UNDEFINED;
 	}
 
-	VkFormat format_map[VKK_IMAGE_FORMAT_COUNT] =
-	{
-		VK_FORMAT_R4G4B4A4_UNORM_PACK16,
-		VK_FORMAT_R5G6B5_UNORM_PACK16,
-		VK_FORMAT_R5G5B5A1_UNORM_PACK16,
-		VK_FORMAT_R8_UNORM,
-		VK_FORMAT_R8G8_UNORM,
-		VK_FORMAT_R8G8B8_UNORM,
-		VK_FORMAT_R8G8B8A8_UNORM,
-		VK_FORMAT_D24_UNORM_S8_UINT,
-	};
-
 	VkImageUsageFlags  usage      = VK_IMAGE_USAGE_TRANSFER_DST_BIT |
 	                                VK_IMAGE_USAGE_SAMPLED_BIT;
 	VkImageAspectFlags aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
@@ -1726,7 +1744,7 @@ vkk_image_t* vkk_engine_newImage(vkk_engine_t* self,
 		.pNext       = NULL,
 		.flags       = 0,
 		.imageType   = VK_IMAGE_TYPE_2D,
-		.format      = format_map[format],
+		.format      = vkk_util_imageFormat(format),
 		.extent      =
 		{
 			width,
@@ -1795,7 +1813,7 @@ vkk_image_t* vkk_engine_newImage(vkk_engine_t* self,
 		.flags      = 0,
 		.image      = image->image,
 		.viewType   = VK_IMAGE_VIEW_TYPE_2D,
-		.format     = format_map[format],
+		.format     = vkk_util_imageFormat(format),
 		.components =
 		{
 			.r = VK_COMPONENT_SWIZZLE_IDENTITY,
@@ -1870,6 +1888,13 @@ void vkk_engine_deleteImage(vkk_engine_t* self,
 		FREE(image);
 		*_image = NULL;
 	}
+}
+
+int vkk_engine_imageCaps(vkk_engine_t* self, int format)
+{
+	assert(self);
+
+	return self->image_caps_array[format];
 }
 
 vkk_sampler_t*
@@ -2835,12 +2860,25 @@ void vkk_engine_mipmapImage(vkk_engine_t* self,
 			}
 		};
 
+		VkFormat format = vkk_util_imageFormat(image->format);
+
+		VkFormatProperties fp;
+		vkGetPhysicalDeviceFormatProperties(self->physical_device,
+		                                    format, &fp);
+
+		VkFilter filter = VK_FILTER_NEAREST;
+		if(fp.optimalTilingFeatures &
+		   VK_FORMAT_FEATURE_SAMPLED_IMAGE_FILTER_LINEAR_BIT)
+		{
+			filter = VK_FILTER_LINEAR;
+		}
+
 		vkCmdBlitImage(cb,
 		               image->image,
 		               VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
 		               image->image,
 		               VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
-		               1, &ib, VK_FILTER_LINEAR);
+		               1, &ib, filter);
 
 		// transition the mip level i to a src for blitting
 		vkk_util_imageMemoryBarrier(image, cb,
