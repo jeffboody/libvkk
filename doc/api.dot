@@ -1,0 +1,160 @@
+// Copyright (c) 2019 Jeff Boody
+//
+// Permission is hereby granted, free of charge, to any person obtaining a
+// copy of this software and associated documentation files (the "Software"),
+// to deal in the Software without restriction, including without limitation
+// the rights to use, copy, modify, merge, publish, distribute, sublicense,
+// and/or sell copies of the Software, and to permit persons to whom the
+// Software is furnished to do so, subject to the following conditions:
+//
+// The above copyright notice and this permission notice shall be included
+// in all copies or substantial portions of the Software.
+//
+// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+// IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+// FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+// AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+// LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+// OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+// THE SOFTWARE.
+
+// sudo apt-get install graphviz
+// xdot api.dot
+digraph VULKAN_KIT
+{
+	label="Vulkan Kit API";
+	fontsize=20;
+	size="3,1";
+	ratio=fill;
+
+	// handles
+	vkk_buffer_t            [shape=box, fillcolor=yellow, style=filled];
+	vkk_engine_t            [shape=box, fillcolor=yellow, style=filled];
+	vkk_graphicsPipeline_t  [shape=box, fillcolor=yellow, style=filled];
+	vkk_image_t             [shape=box, fillcolor=yellow, style=filled];
+	vkk_pipelineLayout_t    [shape=box, fillcolor=yellow, style=filled];
+	vkk_sampler_t           [shape=box, fillcolor=yellow, style=filled];
+	vkk_renderer_t          [shape=box, fillcolor=green, style=filled];
+	vkk_uniformSet_t        [shape=box, fillcolor=yellow, style=filled];
+	vkk_uniformSetFactory_t [shape=box, fillcolor=yellow, style=filled];
+
+	// enums
+	VKK_BLEND_MODE          [shape=box, fillcolor=salmon, style=filled, label="VKK_BLEND_MODE\nDISABLED\nTRANSPARENCY\nCOUNT"];
+	VKK_BUFFER_USAGE        [shape=box, fillcolor=salmon, style=filled, label="VKK_BUFFER_USAGE\nUNIFORM\nVERTEX\nCOUNT"];
+	VKK_IMAGE_FORMAT        [shape=box, fillcolor=salmon, style=filled, label="VKK_IMAGE_FORMAT\nRGBA8888\nRGBA4444\nRGB888\nRGB565\nRG88\nR8\nDEPTH\nCOUNT"];
+	VKK_IMAGE_CAPS          [shape=box, fillcolor=salmon, style=filled, label="VKK_IMAGE_CAPS\nTEXTURE\nMIPMAP\nFILTER_LINEAR\nOFFSCREEN\nOFFSCREEN_BLEND"];
+	VKK_INDEX_TYPE          [shape=box, fillcolor=salmon, style=filled, label="VKK_INDEX_TYPE\nUSHORT\nUINT\nCOUNT"];
+	VKK_PRIMITIVE_TRIANGLE  [shape=box, fillcolor=salmon, style=filled, label="VKK_PRIMITIVE_TRIANGLE\nLIST\nSTRIP\nFAN\nCOUNT"];
+	VKK_SAMPLER_FILTER      [shape=box, fillcolor=salmon, style=filled, label="VKK_SAMPLER_FILTER\nNEAREST\nLINEAR\nCOUNT"];
+	VKK_SAMPLER_MIPMAP_MODE [shape=box, fillcolor=salmon, style=filled, label="VKK_SAMPLER_MIPMAP_MODE\nNEAREST\nLINEAR\nCOUNT"];
+	VKK_STAGE               [shape=box, fillcolor=salmon, style=filled, label="VKK_STAGE\nDEPTH\nVS\nFS\nVSFS\nCOUNT"];
+	VKK_UNIFORM_TYPE        [shape=box, fillcolor=salmon, style=filled, label="VKK_UNIFORM_TYPE\nBUFFER\nSAMPLER\nCOUNT"];
+	VKK_UPDATE_MODE         [shape=box, fillcolor=salmon, style=filled, label="VKK_UPDATE_MODE\nSTATIC\nDEFAULT\nOFFSCREEN\nCOUNT"];
+	VKK_VERTEX_FORMAT       [shape=box, fillcolor=salmon, style=filled, label="VKK_VERTEX_FORMAT\nFLOAT\nINT\nSHORT\nCOUNT"];
+
+	// structures
+	vkk_uniformAttachment_t    [shape=box, fillcolor=orange, style=filled, label="vkk_uniformAttachment_t\nuint32_t binding;\nint type;\nvkk_buffer_t* buffer;\nvkk_image_t*  image;"];
+	vkk_uniformBinding_t       [shape=box, fillcolor=orange, style=filled, label="vkk_uniformBinding_t\nuint32_t binding;\nint type;\nint stage;\nvkk_sampler_t* sampler;"];
+	vkk_vertexBufferInfo_t     [shape=box, fillcolor=orange, style=filled, label="vkk_vertexBufferInfo_t\nuint32_t location;\nuint32_t components;\nint format;"];
+	vkk_graphicsPipelineInfo_t [shape=box, fillcolor=orange, style=filled, label="vkk_graphicsPipelineInfo_t\nvkk_renderer_t* renderer;\nvkk_pipelineLayout_t* pl;\nconst char* vs;\nconst char* fs;\nuint32_t vb_count;\nvkk_vertexBufferInfo_t* vbi;\nint primitive;\nint primitive_restart;\nint cull_back;\nint depth_test;\nint depth_write;\nint blend_mode;"];
+
+	// functions
+	vkk_engine_new                     [fillcolor=gold, style=filled, label="vkk_engine_t* vkk_engine_new(\nvoid* app,\nconst char* app_name,\nuint32_t app_version,\nconst char* resource,\nconst char* cache);"];
+	vkk_engine_delete                  [fillcolor=gold, style=filled, label="void vkk_engine_delete(\nvkk_engine_t** _self);"];
+	vkk_engine_shutdown                [fillcolor=gold, style=filled, label="void vkk_engine_shutdown(\nvkk_engine_t* self);"];
+	vkk_engine_newRenderer             [fillcolor=gold, style=filled, label="vkk_renderer_t* vkk_engine_newRenderer(\nvkk_engine_t* self,\nuint32_t width,\nuint32_t height,\nint format);"];
+	vkk_engine_deleteRenderer          [fillcolor=gold, style=filled, label="void vkk_engine_deleteRenderer(\nvkk_engine_t* self,\nvkk_renderer_t** _renderer);"];
+	vkk_engine_newBuffer               [fillcolor=gold, style=filled, label="vkk_buffer_t* vkk_engine_newBuffer(\nvkk_engine_t* self,\nint update,\nint usage,\nsize_t size,\nconst void* buf);"];
+	vkk_engine_deleteBuffer            [fillcolor=gold, style=filled, label="void vkk_engine_deleteBuffer(\nvkk_engine_t* self,\nvkk_buffer_t** _buffer);"];
+	vkk_engine_newImage                [fillcolor=gold, style=filled, label="vkk_image_t* vkk_engine_newImage(\nvkk_engine_t* self,\nuint32_t width,\nuint32_t height,\nint format,\nint mipmap,\nint stage,\nconst void* pixels);"];
+	vkk_engine_deleteImage             [fillcolor=gold, style=filled, label="void vkk_engine_deleteImage(\nvkk_engine_t* self,\nvkk_image_t** _image);"];
+	vkk_engine_imageCaps               [fillcolor=gold, style=filled, label="int vkk_engine_imageCaps(\nvkk_engine_t* self,\nint format);"];
+	vkk_engine_newSampler              [fillcolor=gold, style=filled, label="vkk_sampler_t* vkk_engine_newSampler(\nvkk_engine_t* self,\nint min_filter,\nint mag_filter,\nint mipmap_mode);"];
+	vkk_engine_deleteSampler           [fillcolor=gold, style=filled, label="void vkk_engine_deleteSampler(\nvkk_engine_t* self,\nvkk_sampler_t** _sampler);"];
+	vkk_engine_newUniformSetFactory    [fillcolor=gold, style=filled, label="vkk_uniformSetFactory_t* vkk_engine_newUniformSetFactory(\nvkk_engine_t* self,\nint update,\nuint32_t ub_count,\nvkk_uniformBinding_t* ub_array);"];
+	vkk_engine_deleteUniformSetFactory [fillcolor=gold, style=filled, label="void vkk_engine_deleteUniformSetFactory(\nvkk_engine_t* self,\nvkk_uniformSetFactory_t** _usf);"];
+	vkk_engine_newUniformSet           [fillcolor=gold, style=filled, label="vkk_uniformSet_t* vkk_engine_newUniformSet(\nvkk_engine_t* self,\nuint32_t set,\nuint32_t ua_count,\nvkk_uniformAttachment_t* ua_array,\nvkk_uniformSetFactory_t* usf);"];
+	vkk_engine_deleteUniformSet        [fillcolor=gold, style=filled, label="void vkk_engine_deleteUniformSet(\nvkk_engine_t* self,\nvkk_uniformSet_t** _us);"];
+	vkk_engine_newPipelineLayout       [fillcolor=gold, style=filled, label="vkk_pipelineLayout_t* vkk_engine_newPipelineLayout(\nvkk_engine_t* self,\nuint32_t usf_count,\nvkk_uniformSetFactory_t** usf_array);"];
+	vkk_engine_deletePipelineLayout    [fillcolor=gold, style=filled, label="void vkk_engine_deletePipelineLayout(\nvkk_engine_t* self,\nvkk_pipelineLayout_t** _pl);"];
+	vkk_engine_newGraphicsPipeline     [fillcolor=gold, style=filled, label="vkk_graphicsPipeline_t* vkk_engine_newGraphicsPipeline(\nvkk_engine_t* self,\nvkk_graphicsPipelineInfo_t* gpi);"];
+	vkk_engine_deleteGraphicsPipeline  [fillcolor=gold, style=filled, label="void vkk_engine_deleteGraphicsPipeline(\nvkk_engine_t* self,\nvkk_graphicsPipeline_t** _gp);"];
+	vkk_engine_resize                  [fillcolor=gold, style=filled, label="int vkk_engine_resize(\nvkk_engine_t* self);"];
+	vkk_engine_renderer                [fillcolor=gold, style=filled, label="vkk_renderer_t* vkk_engine_renderer(\nvkk_engine_t* self);"];
+	vkk_renderer_beginDefault          [fillcolor=palegreen, style=filled, label="int vkk_renderer_beginDefault(\nvkk_renderer_t* self,\nfloat* clear_color);"];
+	vkk_renderer_beginOffscreen        [fillcolor=palegreen, style=filled, label="int vkk_renderer_beginOffscreen(\nvkk_renderer_t* self,\nvkk_image_t* image,\nfloat* clear_color);"];
+	vkk_renderer_end                   [fillcolor=palegreen, style=filled, label="void vkk_renderer_end(\nvkk_renderer_t* self);"];
+	vkk_renderer_surfaceSize           [fillcolor=palegreen, style=filled, label="void vkk_renderer_surfaceSize(\nvkk_renderer_t* self,\nuint32_t* _width,\nuint32_t* _height);"];
+	vkk_renderer_updateBuffer          [fillcolor=palegreen, style=filled, label="void vkk_renderer_updateBuffer(\nvkk_renderer_t* self,\nvkk_buffer_t* buffer,\nconst void* buf);"];
+	vkk_renderer_bindGraphicsPipeline  [fillcolor=palegreen, style=filled, label="void vkk_renderer_bindGraphicsPipeline(\nvkk_renderer_t* self,\nvkk_graphicsPipeline_t* gp);"];
+	vkk_renderer_bindUniformSets       [fillcolor=palegreen, style=filled, label="void vkk_renderer_bindUniformSets(\nvkk_renderer_t* self,\nvkk_pipelineLayout_t* pl,\nuint32_t us_count,\nvkk_uniformSet_t** us_array);"];
+	vkk_renderer_clearDepth            [fillcolor=palegreen, style=filled, label="void vkk_renderer_clearDepth(\nvkk_renderer_t* self);"];
+	vkk_renderer_viewport              [fillcolor=palegreen, style=filled, label="void vkk_renderer_viewport(\nvkk_renderer_t* self,\nfloat x,\nfloat y,\nfloat width,\nfloat height);"];
+	vkk_renderer_scissor               [fillcolor=palegreen, style=filled, label="void vkk_renderer_scissor(\nvkk_renderer_t* self,\nuint32_t x,\nuint32_t y,\nuint32_t width,\nuint32_t height);"];
+	vkk_renderer_draw                  [fillcolor=palegreen, style=filled, label="void vkk_renderer_draw(\nvkk_renderer_t* self,\nuint32_t vertex_count,\nuint32_t vertex_buffer_count,\nvkk_buffer_t** vertex_buffers);"];
+	vkk_renderer_drawIndexed           [fillcolor=palegreen, style=filled, label="void vkk_renderer_drawIndexed(\nvkk_renderer_t* self,\nuint32_t vertex_count,\nuint32_t vertex_buffer_count,\nint index_type,\nvkk_buffer_t* index_buffer,\nvkk_buffer_t** vertex_buffers);"];
+
+	// parameters
+	vkk_engine_new                     -> vkk_engine_t;
+	vkk_engine_delete                  -> vkk_engine_t;
+	vkk_engine_shutdown                -> vkk_engine_t;
+	vkk_engine_newRenderer             -> vkk_renderer_t;
+	vkk_engine_newRenderer             -> VKK_IMAGE_FORMAT;
+	vkk_engine_deleteRenderer          -> vkk_renderer_t;
+	vkk_engine_newBuffer               -> vkk_buffer_t;
+	vkk_engine_newBuffer               -> VKK_UPDATE_MODE  [label="update"];
+	vkk_engine_newBuffer               -> VKK_BUFFER_USAGE [label="usage"];
+	vkk_engine_deleteBuffer            -> vkk_buffer_t;
+	vkk_engine_newImage                -> vkk_image_t;
+	vkk_engine_newImage                -> VKK_IMAGE_FORMAT [label="format"];
+	vkk_engine_newImage                -> VKK_STAGE        [label="stage"];
+	vkk_engine_deleteImage             -> vkk_image_t;
+	vkk_engine_newSampler              -> vkk_sampler_t;
+	vkk_engine_newSampler              -> VKK_SAMPLER_FILTER      [label="min_filter\nmag_filter"];
+	vkk_engine_newSampler              -> VKK_SAMPLER_MIPMAP_MODE [label="mipmap_mode"];
+	vkk_engine_deleteSampler           -> vkk_sampler_t;
+	vkk_engine_newUniformSetFactory    -> vkk_uniformSetFactory_t;
+	vkk_engine_newUniformSetFactory    -> vkk_uniformBinding_t [label="ub_array"];
+	vkk_engine_newUniformSetFactory    -> VKK_UPDATE_MODE      [label="update"];
+	vkk_engine_deleteUniformSetFactory -> vkk_uniformSetFactory_t;
+	vkk_uniformBinding_t               -> vkk_sampler_t    [label="sampler"];
+	vkk_uniformBinding_t               -> VKK_STAGE        [label="stage"];
+	vkk_uniformBinding_t               -> VKK_UNIFORM_TYPE [label="type"];
+	vkk_engine_imageCaps               -> VKK_IMAGE_FORMAT [label="format"];
+	vkk_engine_imageCaps               -> VKK_IMAGE_CAPS;
+	vkk_engine_newUniformSet           -> vkk_uniformSet_t;
+	vkk_engine_newUniformSet           -> vkk_uniformSetFactory_t;
+	vkk_engine_newUniformSet           -> vkk_uniformAttachment_t;
+	vkk_uniformAttachment_t            -> VKK_UNIFORM_TYPE [label="type"];
+	vkk_uniformAttachment_t            -> vkk_buffer_t [label="buffer"];
+	vkk_uniformAttachment_t            -> vkk_image_t  [label="image"];
+	vkk_engine_deleteUniformSet        -> vkk_uniformSet_t;
+	vkk_engine_newPipelineLayout       -> vkk_pipelineLayout_t;
+	vkk_engine_newPipelineLayout       -> vkk_uniformSetFactory_t;
+	vkk_engine_deletePipelineLayout    -> vkk_pipelineLayout_t;
+	vkk_engine_newGraphicsPipeline     -> vkk_graphicsPipeline_t;
+	vkk_engine_newGraphicsPipeline     -> vkk_graphicsPipelineInfo_t [label="gpi"];
+	vkk_graphicsPipelineInfo_t         -> vkk_renderer_t         [label="renderer"];
+	vkk_graphicsPipelineInfo_t         -> vkk_pipelineLayout_t   [label="pl"];
+	vkk_graphicsPipelineInfo_t         -> vkk_vertexBufferInfo_t [label="vbi"];
+	vkk_graphicsPipelineInfo_t         -> VKK_PRIMITIVE_TRIANGLE [label="primitive"];
+	vkk_graphicsPipelineInfo_t         -> VKK_BLEND_MODE         [label="blend_mode"];
+	vkk_vertexBufferInfo_t             -> VKK_VERTEX_FORMAT      [label="format"];
+	vkk_engine_deleteGraphicsPipeline  -> vkk_graphicsPipeline_t;
+	vkk_engine_resize                  -> vkk_engine_t;
+	vkk_engine_renderer                -> vkk_renderer_t;
+	vkk_image_t                        -> vkk_renderer_beginOffscreen [label="image"];
+	vkk_buffer_t                       -> vkk_renderer_updateBuffer   [label="buffer"];
+	vkk_graphicsPipelineInfo_t         -> vkk_renderer_bindGraphicsPipeline [label="gp"];
+	vkk_pipelineLayout_t               -> vkk_renderer_bindUniformSets      [label="pl"];
+	vkk_uniformSet_t                   -> vkk_renderer_bindUniformSets      [label="us_array"];
+	vkk_buffer_t                       -> vkk_renderer_draw                 [label="vertex_buffers"];
+	vkk_buffer_t                       -> vkk_renderer_drawIndexed          [label="index_buffer\nvertex_buffers"];
+	vkk_renderer_drawIndexed           -> VKK_INDEX_TYPE                    [label="index_type"];
+	vkk_renderer_t                     -> vkk_renderer_beginDefault;
+	vkk_renderer_t                     -> vkk_renderer_end;
+	vkk_renderer_t                     -> vkk_renderer_surfaceSize;
+	vkk_renderer_t                     -> vkk_renderer_clearDepth;
+	vkk_renderer_t                     -> vkk_renderer_viewport;
+	vkk_renderer_t                     -> vkk_renderer_scissor;
+}
