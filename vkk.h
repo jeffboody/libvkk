@@ -226,8 +226,6 @@ vkk_image_t*             vkk_engine_newImage(vkk_engine_t* self,
                                              const void* pixels);
 void                     vkk_engine_deleteImage(vkk_engine_t* self,
                                                 vkk_image_t** _image);
-int                      vkk_engine_imageCaps(vkk_engine_t* self,
-                                              int format);
 vkk_sampler_t*           vkk_engine_newSampler(vkk_engine_t* self,
                                                int min_filter,
                                                int mag_filter,
@@ -256,6 +254,20 @@ vkk_graphicsPipeline_t*  vkk_engine_newGraphicsPipeline(vkk_engine_t* self,
                                                         vkk_graphicsPipelineInfo_t* gpi);
 void                     vkk_engine_deleteGraphicsPipeline(vkk_engine_t* self,
                                                            vkk_graphicsPipeline_t** _gp);
+
+/*
+ * query API
+ */
+
+
+uint32_t VKK_MAKE_VERSION(uint32_t major, uint32_t minor,
+                          uint32_t patch);
+size_t   vkk_buffer_size(vkk_buffer_t* self);
+int      vkk_engine_imageCaps(vkk_engine_t* self,
+                              int format);
+int      vkk_image_format(vkk_image_t* self);
+size_t   vkk_image_size(vkk_image_t* self,
+                        uint32_t* _width, uint32_t* height);
 
 /*
  * default renderer API

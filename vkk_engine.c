@@ -882,7 +882,9 @@ vkk_engine_uploadImage(vkk_engine_t* self,
 	}
 
 	// create a transfer buffer
-	size_t size = vkk_util_imageSize(image);
+	uint32_t width;
+	uint32_t height;
+	size_t size = vkk_image_size(image, &width, &height);
 	VkBufferCreateInfo b_info =
 	{
 		.sType                 = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,
@@ -1891,13 +1893,6 @@ void vkk_engine_deleteImage(vkk_engine_t* self,
 	}
 }
 
-int vkk_engine_imageCaps(vkk_engine_t* self, int format)
-{
-	assert(self);
-
-	return self->image_caps_array[format];
-}
-
 vkk_sampler_t*
 vkk_engine_newSampler(vkk_engine_t* self, int min_filter,
                       int mag_filter, int mipmap_mode)
@@ -2770,6 +2765,60 @@ void vkk_engine_deleteGraphicsPipeline(vkk_engine_t* self,
 		FREE(gp);
 		*_gp = NULL;
 	}
+}
+
+/***********************************************************
+* query API                                                *
+***********************************************************/
+
+uint32_t VKK_MAKE_VERSION(uint32_t major, uint32_t minor,
+                          uint32_t patch)
+{
+	return VK_MAKE_VERSION(major, minor, patch);
+}
+
+size_t vkk_buffer_size(vkk_buffer_t* self)
+{
+	assert(self);
+
+	return self->size;
+}
+
+int vkk_engine_imageCaps(vkk_engine_t* self, int format)
+{
+	assert(self);
+
+	return self->image_caps_array[format];
+}
+
+int vkk_image_format(vkk_image_t* self)
+{
+	assert(self);
+
+	return self->format;
+}
+
+size_t vkk_image_size(vkk_image_t* self,
+                      uint32_t* _width, uint32_t* _height)
+{
+	assert(self);
+	assert(_width);
+	assert(_height);
+
+	size_t bpp[VKK_IMAGE_FORMAT_COUNT] =
+	{
+		4, // VKK_IMAGE_FORMAT_RGBA8888
+		2, // VKK_IMAGE_FORMAT_RGBA4444
+		3, // VKK_IMAGE_FORMAT_RGB888
+		2, // VKK_IMAGE_FORMAT_RGB565
+		2, // VKK_IMAGE_FORMAT_RG88
+		1, // VKK_IMAGE_FORMAT_R8
+		4, // VKK_IMAGE_FORMAT_DEPTH
+	};
+
+	*_width  = self->width;
+	*_height = self->height;
+	return self->width*self->height*bpp[self->format];
 }
 
 /***********************************************************

@@ -42,7 +42,6 @@ void     vkk_util_imageMemoryBarrierRaw(VkImage image,
                                         VkImageLayout newLayout,
                                         uint32_t baseMipLevel,
                                         uint32_t levelCount);
-size_t   vkk_util_imageSize(vkk_image_t* self);
 VkFormat vkk_util_imageFormat(int format);
 
 #endif
