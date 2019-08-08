@@ -91,20 +91,6 @@
 #define VKK_VERTEX_FORMAT_COUNT 3
 
 /*
- * opaque structures
- */
-
-struct vkk_buffer_s;
-struct vkk_engine_s;
-struct vkk_graphicsPipeline_s;
-struct vkk_image_s;
-struct vkk_pipelineLayout_s;
-struct vkk_sampler_s;
-struct vkk_renderer_s;
-struct vkk_uniformSet_s;
-struct vkk_uniformSetFactory_s;
-
-/*
  * opaque objects
  */
 
