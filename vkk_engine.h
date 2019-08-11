@@ -38,6 +38,8 @@
 #include "../libcc/cc_map.h"
 #include "vkk.h"
 
+#define VKK_ENGINE_MAX_USF_COUNT 16
+
 typedef struct vkk_buffer_s
 {
 	double          ts;

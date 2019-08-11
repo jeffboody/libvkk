@@ -187,7 +187,6 @@ void vkk_renderer_bindUniformSets(vkk_renderer_t* self,
 {
 	assert(self);
 	assert(pl);
-	assert(us_count > 0);
 	assert(us_array);
 
 	vkk_engine_t* engine = self->engine;
@@ -198,10 +197,16 @@ void vkk_renderer_bindUniformSets(vkk_renderer_t* self,
 		ts = vkk_defaultRenderer_tsCurrent(self);
 	}
 
-	// allow for a constant and dynamic uniform set
+	if(us_count > VKK_ENGINE_MAX_USF_COUNT)
+	{
+		LOGE("invalid us_count=%u", us_count);
+		return;
+	}
+
+	// fill descriptor set array
 	int             i;
 	uint32_t        idx;
-	VkDescriptorSet ds[2];
+	VkDescriptorSet ds[VKK_ENGINE_MAX_USF_COUNT];
 	uint32_t        swapchain_frame;
 	swapchain_frame = (*self->swapchainFrameFn)(self);
 	for(i = 0; i < us_count; ++i)

@@ -2346,8 +2346,7 @@ vkk_engine_newPipelineLayout(vkk_engine_t* self,
 	assert(self);
 	assert(usf_array);
 
-	// allow for a constant and dynamic uniform set
-	if(usf_count > 2)
+	if(usf_count > VKK_ENGINE_MAX_USF_COUNT)
 	{
 		LOGE("invalid usf_count=%i", usf_count);
 		return NULL;
