@@ -254,7 +254,7 @@ vkk_engine_newInstance(vkk_engine_t* self,
 		.applicationVersion = app_version,
 		.pEngineName        = app_name,
 		.engineVersion      = app_version,
-		.apiVersion         = VK_MAKE_VERSION(1,0,0),
+		.apiVersion         = VK_MAKE_VERSION(1,0,1),
 	};
 
 	#ifndef ANDROID
