@@ -366,6 +366,44 @@ static int vkk_engine_getPhysicalDevice(vkk_engine_t* self)
 		return 0;
 	}
 
+	VkFormat format[4*VKK_VERTEX_FORMAT_COUNT] =
+	{
+		VK_FORMAT_R32_SFLOAT,
+		VK_FORMAT_R32G32_SFLOAT,
+		VK_FORMAT_R32G32B32_SFLOAT,
+		VK_FORMAT_R32G32B32A32_SFLOAT,
+		VK_FORMAT_R32_SINT,
+		VK_FORMAT_R32G32_SINT,
+		VK_FORMAT_R32G32B32_SINT,
+		VK_FORMAT_R32G32B32A32_SINT,
+		VK_FORMAT_R16_SINT,
+		VK_FORMAT_R16G16_SINT,
+		VK_FORMAT_R16G16B16_SINT,
+		VK_FORMAT_R16G16B16A16_SINT,
+		VK_FORMAT_R32_UINT,
+		VK_FORMAT_R32G32_UINT,
+		VK_FORMAT_R32G32B32_UINT,
+		VK_FORMAT_R32G32B32A32_UINT,
+		VK_FORMAT_R16_UINT,
+		VK_FORMAT_R16G16_UINT,
+		VK_FORMAT_R16G16B16_UINT,
+		VK_FORMAT_R16G16B16A16_UINT,
+	};
+
+	// warn if vertex formats are unsupported
+	int i;
+	VkFormatProperties fp;
+	for(i = 0; i < 4*VKK_VERTEX_FORMAT_COUNT; ++i)
+	{
+		vkGetPhysicalDeviceFormatProperties(self->physical_device,
+			                                format[i], &fp);
+		if((fp.bufferFeatures &
+		    VK_FORMAT_FEATURE_VERTEX_BUFFER_BIT) == 0)
+		{
+			LOGW("unsupported format=%u", (uint32_t) format[i]);
+		}
+	}
+
 	return 1;
 }
 
@@ -2495,8 +2533,10 @@ vkk_engine_newGraphicsPipeline(vkk_engine_t* self,
 	uint32_t stride[VKK_VERTEX_FORMAT_COUNT] =
 	{
 		sizeof(float),
-		sizeof(int),
-		sizeof(short)
+		sizeof(int32_t),
+		sizeof(int16_t),
+		sizeof(uint32_t),
+		sizeof(uint16_t)
 	};
 
 	VkFormat format[4*VKK_VERTEX_FORMAT_COUNT] =
@@ -2513,6 +2553,14 @@ vkk_engine_newGraphicsPipeline(vkk_engine_t* self,
 		VK_FORMAT_R16G16_SINT,
 		VK_FORMAT_R16G16B16_SINT,
 		VK_FORMAT_R16G16B16A16_SINT,
+		VK_FORMAT_R32_UINT,
+		VK_FORMAT_R32G32_UINT,
+		VK_FORMAT_R32G32B32_UINT,
+		VK_FORMAT_R32G32B32A32_UINT,
+		VK_FORMAT_R16_UINT,
+		VK_FORMAT_R16G16_UINT,
+		VK_FORMAT_R16G16B16_UINT,
+		VK_FORMAT_R16G16B16A16_UINT,
 	};
 
 	int i;
