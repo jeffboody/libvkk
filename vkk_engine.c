@@ -1503,20 +1503,12 @@ vkk_engine_newBuffer(vkk_engine_t* self, int update,
 	count = (update == VKK_UPDATE_MODE_DEFAULT) ?
 	        vkk_engine_swapchainImageCount(self) : 1;
 
-	VkBufferUsageFlags usage_flags;
-	if(usage == VKK_BUFFER_USAGE_UNIFORM)
+	VkBufferUsageFlags usage_map[VKK_BUFFER_USAGE_COUNT] =
 	{
-		usage_flags = VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT;
-	}
-	else if(usage == VKK_BUFFER_USAGE_VERTEX)
-	{
-		usage_flags = VK_BUFFER_USAGE_VERTEX_BUFFER_BIT;
-	}
-	else
-	{
-		LOGE("invalid usage=%i", usage);
-		return NULL;
-	}
+		VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
+		VK_BUFFER_USAGE_VERTEX_BUFFER_BIT,
+		VK_BUFFER_USAGE_INDEX_BUFFER_BIT
+	};
 
 	vkk_buffer_t* buffer;
 	buffer = (vkk_buffer_t*) CALLOC(1, sizeof(vkk_buffer_t));
@@ -1551,7 +1543,7 @@ vkk_engine_newBuffer(vkk_engine_t* self, int update,
 		.pNext                 = NULL,
 		.flags                 = 0,
 		.size                  = size,
-		.usage                 = usage_flags,
+		.usage                 = usage_map[usage],
 		.sharingMode           = VK_SHARING_MODE_EXCLUSIVE,
 		.queueFamilyIndexCount = 1,
 		.pQueueFamilyIndices   = &self->queue_family_index
