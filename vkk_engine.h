@@ -112,6 +112,8 @@ typedef struct vkk_engine_s
 		SDL_Window* window;
 	#endif
 
+	uint32_t version;
+
 	char resource[256];
 	char cache[256];
 

@@ -254,7 +254,7 @@ vkk_engine_newInstance(vkk_engine_t* self,
 		.applicationVersion = app_version,
 		.pEngineName        = app_name,
 		.engineVersion      = app_version,
-		.apiVersion         = VK_MAKE_VERSION(1,0,1),
+		.apiVersion         = self->version
 	};
 
 	#ifndef ANDROID
@@ -1297,6 +1297,8 @@ vkk_engine_t* vkk_engine_new(void* app,
 			return NULL;
 		}
 	#endif
+
+	self->version = VK_MAKE_VERSION(1,0,2);
 
 	snprintf(self->resource, 256, "%s", resource);
 	snprintf(self->cache, 256, "%s", cache);
@@ -2828,6 +2830,13 @@ int vkk_engine_imageCaps(vkk_engine_t* self, int format)
 	assert(self);
 
 	return self->image_caps_array[format];
+}
+
+uint32_t vkk_engine_version(vkk_engine_t* self)
+{
+	assert(self);
+
+	return self->version;
 }
 
 int vkk_image_format(vkk_image_t* self)

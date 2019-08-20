@@ -254,6 +254,7 @@ uint32_t VKK_MAKE_VERSION(uint32_t major, uint32_t minor,
 size_t   vkk_buffer_size(vkk_buffer_t* self);
 int      vkk_engine_imageCaps(vkk_engine_t* self,
                               int format);
+uint32_t vkk_engine_version(vkk_engine_t* self);
 int      vkk_image_format(vkk_image_t* self);
 size_t   vkk_image_size(vkk_image_t* self,
                         uint32_t* _width, uint32_t* height);
