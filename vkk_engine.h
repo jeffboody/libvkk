@@ -44,6 +44,8 @@ typedef struct vkk_buffer_s
 {
 	double          ts;
 	int             update;
+	int             usage;
+	uint32_t        vbib_index;
 	size_t          size;
 	VkBuffer*       buffer;
 	VkDeviceMemory* memory;
@@ -174,9 +176,10 @@ typedef struct vkk_engine_s
  * engine util function
  */
 
-void vkk_engine_mipmapImage(vkk_engine_t* self,
-                            vkk_image_t* image,
-                            VkCommandBuffer cb);
+void     vkk_engine_mipmapImage(vkk_engine_t* self,
+                                vkk_image_t* image,
+                                VkCommandBuffer cb);
+uint32_t vkk_engine_swapchainImageCount(vkk_engine_t* self);
 
 /*
  * engine synchronization

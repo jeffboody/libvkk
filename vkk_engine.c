@@ -45,14 +45,6 @@
 * private                                                  *
 ***********************************************************/
 
-static uint32_t
-vkk_engine_swapchainImageCount(vkk_engine_t* self)
-{
-	assert(self);
-
-	return vkk_defaultRenderer_swapchainImageCount(self->renderer);
-}
-
 static int
 vkk_engine_hasDeviceExtensions(vkk_engine_t* self,
                                uint32_t count,
@@ -1298,7 +1290,7 @@ vkk_engine_t* vkk_engine_new(void* app,
 		}
 	#endif
 
-	self->version = VK_MAKE_VERSION(1,0,2);
+	self->version = VK_MAKE_VERSION(1,0,3);
 
 	snprintf(self->resource, 256, "%s", resource);
 	snprintf(self->cache, 256, "%s", cache);
@@ -1521,6 +1513,7 @@ vkk_engine_newBuffer(vkk_engine_t* self, int update,
 	}
 
 	buffer->update = update;
+	buffer->usage  = usage;
 	buffer->size   = size;
 
 	buffer->buffer = (VkBuffer*)
@@ -2984,6 +2977,14 @@ void vkk_engine_mipmapImage(vkk_engine_t* self,
 		                            i, 1);
 	}
 }
+
+uint32_t vkk_engine_swapchainImageCount(vkk_engine_t* self)
+{
+	assert(self);
+
+	return vkk_defaultRenderer_swapchainImageCount(self->renderer);
+}
+
 
 int vkk_engine_queueSubmit(vkk_engine_t* self,
                            VkCommandBuffer* cb,

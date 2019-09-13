@@ -176,11 +176,18 @@ typedef struct
  *        update is set to DEFAULT
  *     c) may only be updated by offscreen renderer when
  *        update is set to OFFSCREEN
- *  8) graphics pipelines are NOT shared between renderers
- *  9) CPU and GPU synchronization is handled automatically
+ *     d) when update is set to DEFAULT and the buffer
+ *        usage is uniform then then the buffer must be
+ *        updated once and only once per frame (to keep all
+ *        bindings in a uniform set consistent)
+ *     e) when update is set to DEFAULT and the buffer
+ *        usage is vertex or index then the buffer may be
+ *        updated zero or one times
+ *  9) graphics pipelines are NOT shared between renderers
+ * 10) CPU and GPU synchronization is handled automatically
  *     by the engine with the exception of the shutdown
  *     function
- * 10) call shutdown from the main thread prior to deleting
+ * 11) call shutdown from the main thread prior to deleting
  *     the engine thus ensuring GPU rendering completes and
  *     worker threads are no longer blocked waiting for GPU
  *     events

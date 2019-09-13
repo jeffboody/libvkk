@@ -138,12 +138,23 @@ void vkk_renderer_updateBuffer(vkk_renderer_t* self,
 		return;
 	}
 
-	uint32_t swapchain_frame;
-	swapchain_frame = (*self->swapchainFrameFn)(self);
-
-	uint32_t idx;
-	idx = (buffer->update == VKK_UPDATE_MODE_DEFAULT) ?
-	      swapchain_frame : 0;
+	uint32_t idx = 0;
+	if(buffer->update == VKK_UPDATE_MODE_DEFAULT)
+	{
+		if((buffer->usage == VKK_BUFFER_USAGE_VERTEX) ||
+		   (buffer->usage == VKK_BUFFER_USAGE_INDEX))
+		{
+			uint32_t count;
+			count = (buffer->update == VKK_UPDATE_MODE_DEFAULT) ?
+			        vkk_engine_swapchainImageCount(engine) : 1;
+			buffer->vbib_index = (buffer->vbib_index + 1)%count;
+			idx = buffer->vbib_index;
+		}
+		else
+		{
+			idx = (*self->swapchainFrameFn)(self);
+		}
+	}
 
 	void* data;
 	if(vkMapMemory(engine->device,
@@ -344,6 +355,7 @@ void vkk_renderer_draw(vkk_renderer_t* self,
                        vkk_buffer_t** vertex_buffers)
 {
 	assert(self);
+	assert(vertex_buffer_count <= 16);
 
 	vkk_engine_t* engine = self->engine;
 
@@ -354,17 +366,14 @@ void vkk_renderer_draw(vkk_renderer_t* self,
 		0, 0, 0, 0,
 		0, 0, 0, 0
 	};
-	VkBuffer vb_buffers[16];
-	uint32_t swapchain_frame;
-	swapchain_frame = (*self->swapchainFrameFn)(self);
 
 	// fill in the vertex buffers
 	int i = 0;
 	int idx;
+	VkBuffer vb_buffers[16];
 	for(i = 0; i < vertex_buffer_count; ++i)
 	{
-		idx = (vertex_buffers[i]->update == VKK_UPDATE_MODE_DEFAULT) ?
-		      swapchain_frame : 0;
+		idx = vertex_buffers[i]->vbib_index;
 		vb_buffers[i] = vertex_buffers[i]->buffer[idx];
 	}
 
@@ -392,6 +401,7 @@ void vkk_renderer_drawIndexed(vkk_renderer_t* self,
                               vkk_buffer_t** vertex_buffers)
 {
 	assert(self);
+	assert(vertex_buffer_count <= 16);
 
 	vkk_engine_t* engine = self->engine;
 
@@ -402,17 +412,14 @@ void vkk_renderer_drawIndexed(vkk_renderer_t* self,
 		0, 0, 0, 0,
 		0, 0, 0, 0
 	};
-	VkBuffer vb_buffers[16];
-	uint32_t swapchain_frame;
-	swapchain_frame = (*self->swapchainFrameFn)(self);
 
 	// fill in the vertex buffers
 	int i = 0;
 	int idx;
+	VkBuffer vb_buffers[16];
 	for(i = 0; i < vertex_buffer_count; ++i)
 	{
-		idx = (vertex_buffers[i]->update == VKK_UPDATE_MODE_DEFAULT) ?
-		      swapchain_frame : 0;
+		idx = vertex_buffers[i]->vbib_index;
 		vb_buffers[i] = vertex_buffers[i]->buffer[idx];
 	}
 
@@ -423,8 +430,7 @@ void vkk_renderer_drawIndexed(vkk_renderer_t* self,
 		VK_INDEX_TYPE_UINT32
 	};
 
-	idx = (index_buffer->update == VKK_UPDATE_MODE_DEFAULT) ?
-	      swapchain_frame : 0;
+	idx = index_buffer->vbib_index;
 	VkBuffer ib_buffer = index_buffer->buffer[idx];
 
 	vkCmdBindIndexBuffer(cb, ib_buffer, 0,
