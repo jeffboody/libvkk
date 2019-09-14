@@ -306,6 +306,7 @@ void vkk_renderer_surfaceSize(vkk_renderer_t* self,
                               uint32_t* _height);
 void vkk_renderer_updateBuffer(vkk_renderer_t* self,
                                vkk_buffer_t* buffer,
+                               size_t size,
                                const void* buf);
 void vkk_renderer_bindGraphicsPipeline(vkk_renderer_t* self,
                                        vkk_graphicsPipeline_t* gp);

@@ -114,11 +114,19 @@ void vkk_renderer_surfaceSize(vkk_renderer_t* self,
 
 void vkk_renderer_updateBuffer(vkk_renderer_t* self,
                                vkk_buffer_t* buffer,
+                               size_t size,
                                const void* buf)
 {
 	assert(self);
 
 	vkk_engine_t* engine = self->engine;
+
+	if(size > buffer->size)
+	{
+		LOGE("invalid size=%i buffer->size=%i",
+		     (int) size, (int) buffer->size);
+		return;
+	}
 
 	if(buffer->update == VKK_UPDATE_MODE_STATIC)
 	{
@@ -157,14 +165,11 @@ void vkk_renderer_updateBuffer(vkk_renderer_t* self,
 	}
 
 	void* data;
-	if(vkMapMemory(engine->device,
-	               buffer->memory[idx],
-	               0, buffer->size, 0,
-	               &data) == VK_SUCCESS)
+	if(vkMapMemory(engine->device, buffer->memory[idx],
+	               0, size, 0, &data) == VK_SUCCESS)
 	{
-		memcpy(data, buf, buffer->size);
-		vkUnmapMemory(engine->device,
-		              buffer->memory[idx]);
+		memcpy(data, buf, size);
+		vkUnmapMemory(engine->device, buffer->memory[idx]);
 	}
 	else
 	{
