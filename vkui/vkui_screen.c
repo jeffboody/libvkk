@@ -30,6 +30,9 @@
 #define LOG_TAG "vkui"
 #include "../../libcc/math/cc_mat4f.h"
 #include "../../libcc/cc_log.h"
+#include "../../libpak/pak_file.h"
+#include "../../texgz/texgz_png.h"
+#include "../../texgz/texgz_jpeg.h"
 #include "vkui_key.h"
 #include "vkui_screen.h"
 #include "vkui_widget.h"
@@ -338,10 +341,6 @@ void vkui_screen_bind(vkui_screen_t* self, int bind)
 	{
 		vkk_renderer_bindGraphicsPipeline(self->renderer,
 		                                  self->gp_color);
-
-		vkk_renderer_bindUniformSets(self->renderer,
-		                             self->pl, 1,
-		                             &self->us_mvp);
 	}
 	else if(bind == VKUI_SCREEN_BIND_IMAGE)
 	{
@@ -653,6 +652,12 @@ vkui_screen_new(vkk_engine_t* engine,
 		goto fail_us_mvp;
 	}
 
+	self->sprite_map = cc_map_new();
+	if(self->sprite_map == NULL)
+	{
+		goto fail_sprite_map;
+	}
+
 	self->engine        = engine;
 	self->density       = 1.0f;
 	self->scale         = VKUI_SCREEN_SCALE_MEDIUM;
@@ -669,6 +674,8 @@ vkui_screen_new(vkk_engine_t* engine,
 	return self;
 
 	// failure
+	fail_sprite_map:
+		cc_map_delete(&self->sprite_map);
 	fail_us_mvp:
 		vkk_engine_deleteBuffer(engine, &self->ub_mvp);
 	fail_ub_mvp:
@@ -712,6 +719,22 @@ void vkui_screen_delete(vkui_screen_t** _self)
 	if(self)
 	{
 		vkk_engine_t* engine = self->engine;
+
+		cc_mapIter_t  miterator;
+		cc_mapIter_t* miter;
+		miter = cc_map_head(self->sprite_map, &miterator);
+		while(miter)
+		{
+			vkui_spriteImage_t* img;
+			img = (vkui_spriteImage_t*)
+			      cc_map_remove(self->sprite_map, &miter);
+			vkk_engine_deleteUniformSet(self->engine,
+			                            &img->us_image);
+			vkk_engine_deleteImage(self->engine,
+			                       &img->image);
+			free(img);
+		}
+		cc_map_delete(&self->sprite_map);
 
 		vkk_engine_deleteUniformSet(engine, &self->us_mvp);
 		vkk_engine_deleteBuffer(engine, &self->ub_mvp);
@@ -1010,4 +1033,161 @@ void vkui_screen_draw(vkui_screen_t* self)
 		(*playClick)(self->sound_fx);
 		self->clicked = 0;
 	}
+}
+
+vkui_spriteImage_t*
+vkui_screen_spriteImage(vkui_screen_t* self,
+                        const char* name)
+{
+	assert(self);
+	assert(name);
+
+	vkui_spriteImage_t* img;
+	cc_mapIter_t miter;
+	img = (vkui_spriteImage_t*)
+	      cc_map_find(self->sprite_map, &miter, name);
+	if(img)
+	{
+		return img;
+	}
+
+	img = (vkui_spriteImage_t*)
+	      calloc(1, sizeof(vkui_spriteImage_t));
+	if(img == NULL)
+	{
+		LOGE("calloc failed");
+		return NULL;
+	}
+
+	pak_file_t* pak;
+	pak = pak_file_open(self->resource, PAK_FLAG_READ);
+	if(pak == NULL)
+	{
+		goto fail_pak;
+	}
+
+	int size = pak_file_seek(pak, name);
+	if(size == 0)
+	{
+		goto fail_seek;
+	}
+
+	texgz_tex_t* tex = NULL;
+	if(strstr(name, ".png"))
+	{
+		tex = texgz_png_importf(pak->f, (size_t) size);
+	}
+	else if(strstr(name, ".jpg"))
+	{
+		tex = texgz_jpeg_importf(pak->f);
+	}
+	else if(strstr(name, ".texgz"))
+	{
+		tex = texgz_tex_importf(pak->f, (size_t) size);
+	}
+	else
+	{
+		LOGE("invalid name=%s", name);
+	}
+
+	if(tex == NULL)
+	{
+		goto fail_tex;
+	}
+
+	int image_format = -1;
+	if(tex->type == TEXGZ_UNSIGNED_BYTE)
+	{
+		if((tex->format == TEXGZ_ALPHA) ||
+		   (tex->format == TEXGZ_LUMINANCE))
+		{
+			image_format = VKK_IMAGE_FORMAT_R8;
+		}
+		else if(tex->format == TEXGZ_LUMINANCE_ALPHA)
+		{
+			image_format = VKK_IMAGE_FORMAT_RG88;
+		}
+		else if(tex->format == TEXGZ_RGB)
+		{
+			image_format = VKK_IMAGE_FORMAT_RGB888;
+		}
+		else if(tex->format == TEXGZ_RGBA)
+		{
+			image_format = VKK_IMAGE_FORMAT_RGBA8888;
+		}
+	}
+
+	if(image_format < 0)
+	{
+		LOGE("invalid type=0x%X, format=0x%X",
+		     tex->type, tex->format);
+		goto fail_format;
+	}
+
+	if((tex->width  != tex->stride) ||
+	   (tex->height != tex->vstride))
+	{
+		LOGE("invalid width=%i, height=%i, stride=%i, vstride=%i",
+		     tex->width, tex->height, tex->stride, tex->vstride);
+		goto fail_size;
+	}
+
+	img->image = vkk_engine_newImage(self->engine,
+	                                 tex->width, tex->height,
+	                                 image_format, 1,
+	                                 VKK_STAGE_FS,
+	                                 tex->pixels);
+	if(img->image == NULL)
+	{
+		goto fail_image;
+	}
+
+	vkk_uniformAttachment_t ua_array_image[1] =
+	{
+		// layout(set=3, binding=0) uniform sampler2D image;
+		{
+			.binding = 0,
+			.type    = VKK_UNIFORM_TYPE_SAMPLER,
+			.image   = img->image
+		}
+	};
+
+	img->us_image = vkk_engine_newUniformSet(self->engine,
+	                                         3, 1,
+	                                         ua_array_image,
+	                                         self->usf3_image);
+	if(img->us_image == NULL)
+	{
+		goto fail_us_img;
+	}
+
+	if(cc_map_add(self->sprite_map, (const void*) img,
+	              name) == 0)
+	{
+		goto fail_add;
+	}
+
+	texgz_tex_delete(&tex);
+	pak_file_close(&pak);
+
+	// success
+	return img;
+
+	// failure
+	fail_add:
+		vkk_engine_deleteUniformSet(self->engine,
+		                            &img->us_image);
+	fail_us_img:
+		vkk_engine_deleteImage(self->engine,
+		                       &img->image);
+	fail_image:
+	fail_size:
+	fail_format:
+		texgz_tex_delete(&tex);
+	fail_tex:
+	fail_seek:
+		pak_file_close(&pak);
+	fail_pak:
+		free(img);
+	return NULL;
 }

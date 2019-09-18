@@ -25,6 +25,8 @@
 #define vkui_screen_H
 
 #include "../../libcc/math/cc_rect12f.h"
+#include "../../libcc/cc_map.h"
+#include "vkui_sprite.h"
 #include "vkui.h"
 
 #define VKUI_SCREEN_BIND_NONE     0
@@ -82,6 +84,9 @@ typedef struct vkui_screen_s
 	int   clicked;
 	void* sound_fx;
 	vkui_screen_playClickFn playClick;
+
+	// sprite images
+	cc_map_t* sprite_map;
 } vkui_screen_t;
 
 void  vkui_screen_sizei(vkui_screen_t* self,
@@ -104,5 +109,9 @@ void  vkui_screen_bind(vkui_screen_t* self,
 void  vkui_screen_scissor(vkui_screen_t* self,
                           cc_rect1f_t* rect);
 void  vkui_screen_playClick(vkui_screen_t* self);
+
+vkui_spriteImage_t*
+vkui_screen_spriteImage(vkui_screen_t* self,
+                        const char* name);
 
 #endif
