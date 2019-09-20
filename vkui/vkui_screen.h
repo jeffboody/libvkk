@@ -26,13 +26,16 @@
 
 #include "../../libcc/math/cc_rect12f.h"
 #include "../../libcc/cc_map.h"
+#include "../../libcc/cc_multimap.h"
+#include "vkui_font.h"
 #include "vkui_sprite.h"
 #include "vkui.h"
 
 #define VKUI_SCREEN_BIND_NONE     0
 #define VKUI_SCREEN_BIND_COLOR    1
 #define VKUI_SCREEN_BIND_IMAGE    2
-#define VKUI_SCREEN_BIND_TRICOLOR 3
+#define VKUI_SCREEN_BIND_TEXT     3
+#define VKUI_SCREEN_BIND_TRICOLOR 4
 
 typedef struct vkui_screen_s
 {
@@ -47,6 +50,7 @@ typedef struct vkui_screen_s
 	vkk_pipelineLayout_t*    pl;
 	vkk_graphicsPipeline_t*  gp_color;
 	vkk_graphicsPipeline_t*  gp_image;
+	vkk_graphicsPipeline_t*  gp_text;
 	vkk_graphicsPipeline_t*  gp_tricolor;
 	vkk_buffer_t*            ub_mvp;
 	vkk_uniformSet_t*        us_mvp;
@@ -87,28 +91,39 @@ typedef struct vkui_screen_s
 
 	// sprite images
 	cc_map_t* sprite_map;
+
+	// font
+	vkui_font_t* font_array[2];
+
+	// text vb
+	cc_multimap_t* map_text_vb;
 } vkui_screen_t;
 
-void  vkui_screen_sizei(vkui_screen_t* self,
-                        int* w, int* h);
-void  vkui_screen_sizef(vkui_screen_t* self,
-                        float* w, float* h);
-int   vkui_screen_scalei(vkui_screen_t* self);
-float vkui_screen_scalef(vkui_screen_t* self);
-void  vkui_screen_dirty(vkui_screen_t* self);
-void  vkui_screen_layoutBorder(vkui_screen_t* self,
-                               int border,
-                               float* hborder,
-                               float* vborder);
-float vkui_screen_layoutHLine(vkui_screen_t* self,
-                              int size);
-float vkui_screen_layoutText(vkui_screen_t* self,
-                             int size);
-void  vkui_screen_bind(vkui_screen_t* self,
-                       int bind);
-void  vkui_screen_scissor(vkui_screen_t* self,
-                          cc_rect1f_t* rect);
-void  vkui_screen_playClick(vkui_screen_t* self);
+void          vkui_screen_sizei(vkui_screen_t* self,
+                                int* w, int* h);
+void          vkui_screen_sizef(vkui_screen_t* self,
+                                float* w, float* h);
+int           vkui_screen_scalei(vkui_screen_t* self);
+float         vkui_screen_scalef(vkui_screen_t* self);
+void          vkui_screen_dirty(vkui_screen_t* self);
+void          vkui_screen_layoutBorder(vkui_screen_t* self,
+                                       int border,
+                                       float* hborder,
+                                       float* vborder);
+float         vkui_screen_layoutHLine(vkui_screen_t* self,
+                                      int size);
+float         vkui_screen_layoutText(vkui_screen_t* self,
+                                     int size);
+void          vkui_screen_bind(vkui_screen_t* self,
+                               int bind);
+void          vkui_screen_scissor(vkui_screen_t* self,
+                                  cc_rect1f_t* rect);
+void          vkui_screen_playClick(vkui_screen_t* self);
+vkui_font_t*  vkui_screen_font(vkui_screen_t* self,
+                               int font_type);
+vkk_buffer_t* vkui_screen_textVb(vkui_screen_t* self,
+                                 uint32_t size,
+                                 vkk_buffer_t* vb);
 
 vkui_spriteImage_t*
 vkui_screen_spriteImage(vkui_screen_t* self,

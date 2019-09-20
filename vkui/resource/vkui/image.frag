@@ -27,6 +27,6 @@ void main()
 	}
 	else
 	{
-		fragColor  = vec4(color.rgb, color.a*texel.a);
+		fragColor  = vec4(color.rgb, color.a*texel.r);
 	}
 }

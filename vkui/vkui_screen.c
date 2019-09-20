@@ -347,6 +347,11 @@ void vkui_screen_bind(vkui_screen_t* self, int bind)
 		vkk_renderer_bindGraphicsPipeline(self->renderer,
 		                                  self->gp_image);
 	}
+	else if(bind == VKUI_SCREEN_BIND_TEXT)
+	{
+		vkk_renderer_bindGraphicsPipeline(self->renderer,
+		                                  self->gp_text);
+	}
 	else if(bind == VKUI_SCREEN_BIND_TRICOLOR)
 	{
 		vkk_renderer_bindGraphicsPipeline(self->renderer,
@@ -399,6 +404,16 @@ vkui_screen_new(vkk_engine_t* engine,
 		LOGE("calloc failed");
 		return NULL;
 	}
+
+	self->engine        = engine;
+	self->density       = 1.0f;
+	self->scale         = VKUI_SCREEN_SCALE_MEDIUM;
+	self->dirty         = 1;
+	self->pointer_state = VKUI_WIDGET_POINTER_UP;
+	self->sound_fx      = sound_fx;
+	self->playClick     = playClick;
+
+	snprintf(self->resource, 256, "%s", resource);
 
 	self->renderer = vkk_engine_renderer(engine);
 
@@ -601,6 +616,15 @@ vkui_screen_new(vkk_engine_t* engine,
 		goto fail_gp_image;
 	}
 
+	// text requires triangles
+	gpi_image.primitive = VKK_PRIMITIVE_TRIANGLE_LIST;
+	self->gp_text = vkk_engine_newGraphicsPipeline(engine,
+	                                               &gpi_image);
+	if(self->gp_text == NULL)
+	{
+		goto fail_gp_text;
+	}
+
 	vkk_graphicsPipelineInfo_t gpi_tricolor =
 	{
 		.renderer          = self->renderer,
@@ -658,30 +682,49 @@ vkui_screen_new(vkk_engine_t* engine,
 		goto fail_sprite_map;
 	}
 
-	self->engine        = engine;
-	self->density       = 1.0f;
-	self->scale         = VKUI_SCREEN_SCALE_MEDIUM;
-	self->top_widget    = NULL;
-	self->focus_widget  = NULL;
-	self->dirty         = 1;
-	self->pointer_state = VKUI_WIDGET_POINTER_UP;
-	self->sound_fx      = sound_fx;
-	self->playClick     = playClick;
+	self->font_array[0] = vkui_font_new(self, resource,
+	                                    "BarlowSemiCondensed-Regular-64.texz",
+	                                    "BarlowSemiCondensed-Regular-64.xml");
+	if(self->font_array[0] == NULL)
+	{
+		goto fail_font_array0;
+	}
 
-	snprintf(self->resource, 256, "%s", resource);
+	self->font_array[1] = vkui_font_new(self, resource,
+	                                    "BarlowSemiCondensed-Bold-64.texz",
+	                                    "BarlowSemiCondensed-Bold-64.xml");
+	if(self->font_array[1] == NULL)
+	{
+		goto fail_font_array1;
+	}
+
+	self->map_text_vb = cc_multimap_new(NULL);
+	if(self->map_text_vb == NULL)
+	{
+		goto fail_map_text_vb;
+	}
 
 	// success
 	return self;
 
 	// failure
-	fail_sprite_map:
+	fail_map_text_vb:
+		vkui_font_delete(&self->font_array[1]);
+	fail_font_array1:
+		vkui_font_delete(&self->font_array[0]);
+	fail_font_array0:
 		cc_map_delete(&self->sprite_map);
+	fail_sprite_map:
+		vkk_engine_deleteUniformSet(engine, &self->us_mvp);
 	fail_us_mvp:
 		vkk_engine_deleteBuffer(engine, &self->ub_mvp);
 	fail_ub_mvp:
 		vkk_engine_deleteGraphicsPipeline(engine,
 		                                  &self->gp_tricolor);
 	fail_gp_tricolor:
+		vkk_engine_deleteGraphicsPipeline(engine,
+		                                  &self->gp_text);
+	fail_gp_text:
 		vkk_engine_deleteGraphicsPipeline(engine,
 		                                  &self->gp_image);
 	fail_gp_image:
@@ -720,6 +763,21 @@ void vkui_screen_delete(vkui_screen_t** _self)
 	{
 		vkk_engine_t* engine = self->engine;
 
+		cc_multimapIter_t  mmiterator;
+		cc_multimapIter_t* mmiter;
+		mmiter = cc_multimap_head(self->map_text_vb, &mmiterator);
+		while(mmiter)
+		{
+			vkk_buffer_t* vb;
+			vb = (vkk_buffer_t*)
+			     cc_multimap_remove(self->map_text_vb, &mmiter);
+			vkk_engine_deleteBuffer(self->engine, &vb);
+		}
+		cc_multimap_delete(&self->map_text_vb);
+
+		vkui_font_delete(&self->font_array[1]);
+		vkui_font_delete(&self->font_array[0]);
+
 		cc_mapIter_t  miterator;
 		cc_mapIter_t* miter;
 		miter = cc_map_head(self->sprite_map, &miterator);
@@ -740,6 +798,8 @@ void vkui_screen_delete(vkui_screen_t** _self)
 		vkk_engine_deleteBuffer(engine, &self->ub_mvp);
 		vkk_engine_deleteGraphicsPipeline(engine,
 		                                  &self->gp_tricolor);
+		vkk_engine_deleteGraphicsPipeline(engine,
+		                                  &self->gp_text);
 		vkk_engine_deleteGraphicsPipeline(engine,
 		                                  &self->gp_image);
 		vkk_engine_deleteGraphicsPipeline(engine,
@@ -1016,7 +1076,7 @@ void vkui_screen_draw(vkui_screen_t* self)
 	}
 
 	cc_mat4f_t mvp;
-	cc_mat4f_ortho(&mvp, 1, 0.0f, w, h, 0.0f, 0.0f, 2.0f);
+	cc_mat4f_ortho(&mvp, 1, 0.0f, w, 0.0f, h, 0.0f, 2.0f);
 	vkk_renderer_updateBuffer(self->renderer, self->ub_mvp,
 	                          sizeof(cc_mat4f_t),
 	                          (const void*) &mvp);
@@ -1033,6 +1093,58 @@ void vkui_screen_draw(vkui_screen_t* self)
 		(*playClick)(self->sound_fx);
 		self->clicked = 0;
 	}
+}
+
+vkui_font_t*
+vkui_screen_font(vkui_screen_t* self, int font_type)
+{
+	assert(self);
+
+	return self->font_array[font_type];
+}
+
+vkk_buffer_t*
+vkui_screen_textVb(vkui_screen_t* self, uint32_t size,
+                   vkk_buffer_t* vb)
+{
+	// vb may be NULL
+	assert(self);
+
+	// return vb to the pool
+	if(vb)
+	{
+		size_t sz = vkk_buffer_size(vb);
+		if(cc_multimap_addf(self->map_text_vb,
+		                    (const void*) vb,
+		                    "%i", (int) sz) == 0)
+		{
+			LOGE("buffer size=%i leaked", (int) sz);
+			return NULL;
+		}
+	}
+
+	// check for realloc buffer
+	if(size == 0)
+	{
+		return NULL;
+	}
+
+	// reuse an existing buffer
+	cc_multimapIter_t  miterator;
+	cc_multimapIter_t* miter = &miterator;
+	if(cc_multimap_findf(self->map_text_vb, miter,
+	                     "%i", (int) size))
+	{
+		vb = (vkk_buffer_t*)
+		     cc_multimap_remove(self->map_text_vb, &miter);
+		return vb;
+	}
+
+	// create a new buffer
+	return vkk_engine_newBuffer(self->engine,
+	                            VKK_UPDATE_MODE_DEFAULT,
+	                            VKK_BUFFER_USAGE_VERTEX,
+	                            size, NULL);
 }
 
 vkui_spriteImage_t*
@@ -1081,7 +1193,7 @@ vkui_screen_spriteImage(vkui_screen_t* self,
 	{
 		tex = texgz_jpeg_importf(pak->f);
 	}
-	else if(strstr(name, ".texgz"))
+	else if(strstr(name, ".texz"))
 	{
 		tex = texgz_tex_importf(pak->f, (size_t) size);
 	}
@@ -1134,7 +1246,7 @@ vkui_screen_spriteImage(vkui_screen_t* self,
 
 	img->image = vkk_engine_newImage(self->engine,
 	                                 tex->width, tex->height,
-	                                 image_format, 1,
+	                                 image_format, 0,
 	                                 VKK_STAGE_FS,
 	                                 tex->pixels);
 	if(img->image == NULL)

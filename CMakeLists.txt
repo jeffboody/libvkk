@@ -5,8 +5,10 @@ add_compile_options(-Wall)
 
 if(VKK_USE_VKUI)
     set(SOURCE_VKUI
+        vkui/vkui_font.c
         vkui/vkui_screen.c
         vkui/vkui_sprite.c
+        vkui/vkui_text.c
         vkui/vkui_widget.c)
 endif()
 

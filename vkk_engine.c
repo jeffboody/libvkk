@@ -1706,7 +1706,8 @@ vkk_image_t* vkk_engine_newImage(vkk_engine_t* self,
 
 		if((w != width) || (h != height))
 		{
-			LOGE("invalid width=%u, height=%u", width, height);
+			LOGE("invalid w=%u, width=%u, h=%u, height=%u",
+			     w, width, h, height);
 			return NULL;
 		}
 
