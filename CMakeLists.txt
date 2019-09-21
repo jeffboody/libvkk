@@ -15,6 +15,7 @@ if(VKK_USE_VKUI)
         vkui/vkui_sprite.c
         vkui/vkui_radiobox.c
         vkui/vkui_radiolist.c
+        vkui/vkui_textbox.c
         vkui/vkui_text.c
         vkui/vkui_widget.c)
 endif()
