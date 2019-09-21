@@ -7,10 +7,11 @@ CLASSES = \
 	vkk_util
 ifeq ($(VKK_USE_VKUI),1)
 	CLASSES += \
-		vkui/vkui_font   \
-		vkui/vkui_screen \
-		vkui/vkui_sprite \
-		vkui/vkui_text   \
+		vkui/vkui_bulletbox \
+		vkui/vkui_font      \
+		vkui/vkui_screen    \
+		vkui/vkui_sprite    \
+		vkui/vkui_text      \
 		vkui/vkui_widget
 endif
 SOURCE  = $(CLASSES:%=%.c)
