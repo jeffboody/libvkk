@@ -683,16 +683,16 @@ vkui_screen_new(vkk_engine_t* engine,
 	}
 
 	self->font_array[0] = vkui_font_new(self, resource,
-	                                    "BarlowSemiCondensed-Regular-64.texz",
-	                                    "BarlowSemiCondensed-Regular-64.xml");
+	                                    "vkui/BarlowSemiCondensed-Regular-64.texz",
+	                                    "vkui/BarlowSemiCondensed-Regular-64.xml");
 	if(self->font_array[0] == NULL)
 	{
 		goto fail_font_array0;
 	}
 
 	self->font_array[1] = vkui_font_new(self, resource,
-	                                    "BarlowSemiCondensed-Bold-64.texz",
-	                                    "BarlowSemiCondensed-Bold-64.xml");
+	                                    "vkui/BarlowSemiCondensed-Bold-64.texz",
+	                                    "vkui/BarlowSemiCondensed-Bold-64.xml");
 	if(self->font_array[1] == NULL)
 	{
 		goto fail_font_array1;
