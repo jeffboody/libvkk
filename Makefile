@@ -19,6 +19,7 @@ ifeq ($(VKK_USE_VKUI),1)
 		vkui/vkui_radiolist \
 		vkui/vkui_textbox   \
 		vkui/vkui_text      \
+		vkui/vkui_viewbox   \
 		vkui/vkui_widget
 endif
 SOURCE  = $(CLASSES:%=%.c)
