@@ -10,6 +10,7 @@ ifeq ($(VKK_USE_VKUI),1)
 		vkui/vkui_bulletbox \
 		vkui/vkui_checkbox  \
 		vkui/vkui_font      \
+		vkui/vkui_hline     \
 		vkui/vkui_screen    \
 		vkui/vkui_sprite    \
 		vkui/vkui_text      \
