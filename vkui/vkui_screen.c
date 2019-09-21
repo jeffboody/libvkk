@@ -1181,6 +1181,7 @@ vkui_screen_spriteImage(vkui_screen_t* self,
 	int size = pak_file_seek(pak, name);
 	if(size == 0)
 	{
+		LOGE("invalid %s", name);
 		goto fail_seek;
 	}
 
@@ -1204,6 +1205,7 @@ vkui_screen_spriteImage(vkui_screen_t* self,
 
 	if(tex == NULL)
 	{
+		LOGE("invalid name=%s", name);
 		goto fail_tex;
 	}
 
@@ -1231,16 +1233,16 @@ vkui_screen_spriteImage(vkui_screen_t* self,
 
 	if(image_format < 0)
 	{
-		LOGE("invalid type=0x%X, format=0x%X",
-		     tex->type, tex->format);
+		LOGE("invalid name=%s, type=0x%X, format=0x%X",
+		     name, tex->type, tex->format);
 		goto fail_format;
 	}
 
 	if((tex->width  != tex->stride) ||
 	   (tex->height != tex->vstride))
 	{
-		LOGE("invalid width=%i, height=%i, stride=%i, vstride=%i",
-		     tex->width, tex->height, tex->stride, tex->vstride);
+		LOGE("invalid name=%s, width=%i, height=%i, stride=%i, vstride=%i",
+		     name, tex->width, tex->height, tex->stride, tex->vstride);
 		goto fail_size;
 	}
 
