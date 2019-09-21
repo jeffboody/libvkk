@@ -10,6 +10,7 @@ if(VKK_USE_VKUI)
         vkui/vkui_font.c
         vkui/vkui_hline.c
         vkui/vkui_layer.c
+        vkui/vkui_listbox.c
         vkui/vkui_screen.c
         vkui/vkui_sprite.c
         vkui/vkui_text.c

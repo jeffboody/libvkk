@@ -12,6 +12,7 @@ ifeq ($(VKK_USE_VKUI),1)
 		vkui/vkui_font      \
 		vkui/vkui_hline     \
 		vkui/vkui_layer     \
+		vkui/vkui_listbox   \
 		vkui/vkui_screen    \
 		vkui/vkui_sprite    \
 		vkui/vkui_text      \
