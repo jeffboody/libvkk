@@ -187,8 +187,9 @@ vkk_engine_initSDL(vkk_engine_t* self, const char* app_name)
 	FILE* f = fopen("sdl.cfg", "r");
 	if(f)
 	{
-		if(fscanf(f, "%i %i %i",
-		          &width, &height, &fullscreen) != 3)
+		float density;
+		if(fscanf(f, "%i %i %f %i",
+		          &width, &height, &density, &fullscreen) != 4)
 		{
 			LOGW("fscanf failed");
 		}
