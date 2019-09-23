@@ -367,7 +367,6 @@ vkui_screen_scissor(vkui_screen_t* self, cc_rect1f_t* rect)
 	assert(self);
 	assert(rect);
 
-	// TODO - verify scissor
 	vkk_renderer_scissor(self->renderer,
 	                     (uint32_t) (rect->l + 0.5f),
 	                     (uint32_t) (rect->t + 0.5f),

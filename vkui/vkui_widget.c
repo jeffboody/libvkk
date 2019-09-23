@@ -209,8 +209,7 @@ void vkui_widget_delete(vkui_widget_t** _self)
 	if(self)
 	{
 		vkui_screen_t* screen = self->screen;
-
-		// TODO - screen top
+		assert(self != screen->top_widget);
 
 		if(vkui_widget_hasFocus(self))
 		{
@@ -377,11 +376,9 @@ void vkui_widget_layoutSize(vkui_widget_t* self,
 	float sh;
 	vkui_screen_sizef(self->screen, &sw, &sh);
 
-	// TODO - font
-	//vkui_font_t* font = vkui_screen_font(self->screen,
-	//                                     VKUI_TEXT_FONTTYPE_REGULAR);
-	//float ar    = vkui_font_aspectRatioAvg(font);
-	float ar    = 0.5f;
+	vkui_font_t* font = vkui_screen_font(self->screen,
+	                                     VKUI_TEXT_FONTTYPE_REGULAR);
+	float ar    = vkui_font_aspectRatioAvg(font);
 	int   style = layout->wrapy - VKUI_WIDGET_WRAP_STRETCH_TEXT_SMALL;
 	float th    = vkui_screen_layoutText(self->screen, style);
 	float tw    = ar*th;
