@@ -26,6 +26,7 @@
 
 #include "../../libcc/math/cc_rect12f.h"
 #include "../../libcc/math/cc_vec4f.h"
+#include "vkui_tricolor.h"
 #include "vkui.h"
 
 #define VKUI_WIDGET_BORDER_HSMALL   0x01
@@ -124,16 +125,17 @@ typedef struct vkui_widget_s
 	// relevant for layers and defaults to TL otherwise
 	int anchor;
 
-	// header position
-	float header_y;
-
 	// sound fx for clicks
 	int sound_fx;
 
 	// shader data
-	vkk_buffer_t*     vb_color_xyuv;
+	vkk_buffer_t*     vb_xyuv;
 	vkk_buffer_t*     ub_color;
 	vkk_uniformSet_t* us_color;
+
+	// optional tricolor shader
+	// used by scroll bars and viewbox
+	vkui_tricolor_t* tricolor;
 } vkui_widget_t;
 
 vkui_widget_t* vkui_widget_new(vkui_screen_t* screen,
@@ -166,7 +168,12 @@ void           vkui_widget_anchor(vkui_widget_t* self,
                                   int anchor);
 void           vkui_widget_soundFx(vkui_widget_t* self,
                                    int sound_fx);
-void           vkui_widget_headerY(vkui_widget_t* self, float y);
+int            vkui_widget_tricolor(vkui_widget_t* self,
+                                    cc_vec4f_t* color0,
+                                    cc_vec4f_t* color1,
+                                    cc_vec4f_t* color2);
+void           vkui_widget_tricolorAB(vkui_widget_t* self,
+                                      float a, float b);
 void           vkui_widget_scrollTop(vkui_widget_t* self);
 int            vkui_widget_hasFocus(vkui_widget_t* self);
 void           vkui_widget_privReflowFn(vkui_widget_t* self,

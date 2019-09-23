@@ -146,8 +146,8 @@ typedef struct vkui_widgetLayout_s
 typedef struct vkui_widgetScroll_s
 {
 	int        scroll_bar;
-	cc_vec4f_t color_scroll0;
-	cc_vec4f_t color_scroll1;
+	cc_vec4f_t color0;
+	cc_vec4f_t color1;
 } vkui_widgetScroll_t;
 
 typedef struct vkui_widgetFn_s

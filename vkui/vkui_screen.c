@@ -507,21 +507,21 @@ vkui_screen_new(vkk_engine_t* engine,
 
 	vkk_uniformBinding_t ub4_array[4] =
 	{
-		// layout(std140, set=4, binding=0) uniform uniformHeader
+		// layout(std140, set=4, binding=0) uniform uniformColor0
 		{
 			.binding  = 0,
 			.type     = VKK_UNIFORM_TYPE_BUFFER,
 			.stage    = VKK_STAGE_FS,
 			.sampler  = NULL
 		},
-		// layout(std140, set=4, binding=1) uniform uniformBody
+		// layout(std140, set=4, binding=1) uniform uniformColor1
 		{
 			.binding  = 1,
 			.type     = VKK_UNIFORM_TYPE_BUFFER,
 			.stage    = VKK_STAGE_FS,
 			.sampler  = NULL
 		},
-		// layout(std140, set=4, binding=2) uniform uniformFooter
+		// layout(std140, set=4, binding=2) uniform uniformColor2
 		{
 			.binding  = 2,
 			.type     = VKK_UNIFORM_TYPE_BUFFER,

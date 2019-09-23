@@ -196,6 +196,10 @@ vkui_viewbox_layout(vkui_widget_t* widget,
 	vkui_widget_layoutXYClip(body, x, y, &rect_clip,
 	                         dragx, dragy);
 
+	// tricolor values
+	float a = bullet->rect_border.t + bullet->rect_border.h;
+	float b = body->rect_border.t + body->rect_border.h;
+
 	// layout footer
 	if(footer)
 	{
@@ -209,7 +213,11 @@ vkui_viewbox_layout(vkui_widget_t* widget,
 		                    &rect_clip);
 		vkui_widget_layoutXYClip(footer, x, y, &rect_clip,
 		                         dragx, dragy);
+
+		b = footer->rect_border.t;
 	}
+
+	vkui_widget_tricolorAB(widget, a, b);
 }
 
 static void
@@ -243,18 +251,7 @@ vkui_viewbox_draw(vkui_widget_t* widget)
 {
 	assert(widget);
 
-	vkui_widgetLayout_t* layout = &widget->layout;
-
-	// bullet separator y
-	float h_bo = 0.0f;
-	float v_bo = 0.0f;
 	vkui_viewbox_t* self = (vkui_viewbox_t*) widget;
-	vkui_screen_layoutBorder(widget->screen,
-	                         layout->border,
-	                         &h_bo, &v_bo);
-	vkui_widget_t* w = &(self->bullet->widget);
-	float          y = w->rect_border.t +
-	                   w->rect_border.h + v_bo;
 
 	vkui_widget_draw((vkui_widget_t*) self->bullet);
 	vkui_widget_draw(self->body);
@@ -262,7 +259,6 @@ vkui_viewbox_draw(vkui_widget_t* widget)
 	{
 		vkui_widget_draw(self->footer);
 	}
-	vkui_widget_headerY(widget, y);
 }
 
 static void
@@ -326,10 +322,14 @@ vkui_viewbox_new(vkui_screen_t* screen, size_t wsize,
 		.draw_fn      = vkui_viewbox_draw,
 	};
 
-	// TODO - use tricolor widget
+	cc_vec4f_t clear =
+	{
+		.a = 0.0f
+	};
+
 	vkui_viewbox_t* self;
 	self = (vkui_viewbox_t*)
-	       vkui_widget_new(screen, wsize, &style->color_body,
+	       vkui_widget_new(screen, wsize, &clear,
 	                       layout, &scroll, &viewbox_fn,
 	                       &priv_fn);
 	if(self == NULL)
@@ -337,6 +337,14 @@ vkui_viewbox_new(vkui_screen_t* screen, size_t wsize,
 		return NULL;
 	}
 	vkui_widget_soundFx((vkui_widget_t*) self, 0);
+
+	if(vkui_widget_tricolor((vkui_widget_t*) self,
+	                        &style->color_header,
+	                        &style->color_body,
+	                        &style->color_footer) == 0)
+	{
+		goto fail_tricolor;
+	}
 
 	self->bullet = vkui_bulletbox_new(screen, 0, fn,
 	                                  &style->text_style,
@@ -354,6 +362,7 @@ vkui_viewbox_new(vkui_screen_t* screen, size_t wsize,
 
 	// failure
 	fail_bullet:
+	fail_tricolor:
 		vkui_widget_delete((vkui_widget_t**) &self);
 	return NULL;
 }

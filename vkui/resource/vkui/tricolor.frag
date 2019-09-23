@@ -4,19 +4,19 @@
 
 layout(location=0) in vec4 varying_xyuv;
 
-layout(std140, set=4, binding=0) uniform uniformHeader
+layout(std140, set=4, binding=0) uniform uniformColor0
 {
-	vec4 header;
+	vec4 color0;
 };
 
-layout(std140, set=4, binding=1) uniform uniformBody
+layout(std140, set=4, binding=1) uniform uniformColor1
 {
-	vec4 body;
+	vec4 color1;
 };
 
-layout(std140, set=4, binding=2) uniform uniformFooter
+layout(std140, set=4, binding=2) uniform uniformColor2
 {
-	vec4 footer;
+	vec4 color2;
 };
 
 layout(std140, set=4, binding=3) uniform uniformAb
@@ -30,14 +30,14 @@ void main()
 {
 	if(varying_xyuv.y < ab.x)
 	{
-		fragColor = header;
+		fragColor = color0;
 	}
-	if(varying_xyuv.y > ab.y)
+	else if(varying_xyuv.y > ab.y)
 	{
-		fragColor = footer;
+		fragColor = color2;
 	}
 	else
 	{
-		fragColor = body;
+		fragColor = color1;
 	}
 }

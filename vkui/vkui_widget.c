@@ -149,14 +149,14 @@ vkui_widget_new(vkui_screen_t* screen, size_t wsize,
 	}
 
 	// shader data
-	self->vb_color_xyuv = vkk_engine_newBuffer(screen->engine,
-	                                           VKK_UPDATE_MODE_DEFAULT,
-	                                           VKK_BUFFER_USAGE_VERTEX,
-	                                           4*VKUI_WIDGET_BEZEL*sizeof(cc_vec4f_t),
-	                                           NULL);
-	if(self->vb_color_xyuv == NULL)
+	self->vb_xyuv = vkk_engine_newBuffer(screen->engine,
+	                                     VKK_UPDATE_MODE_DEFAULT,
+	                                     VKK_BUFFER_USAGE_VERTEX,
+	                                     4*VKUI_WIDGET_BEZEL*sizeof(cc_vec4f_t),
+	                                     NULL);
+	if(self->vb_xyuv == NULL)
 	{
-		goto fail_vb_color_xyuv;
+		goto fail_vb_xyuv;
 	}
 
 	self->ub_color = vkk_engine_newBuffer(screen->engine,
@@ -188,15 +188,31 @@ vkui_widget_new(vkui_screen_t* screen, size_t wsize,
 		goto fail_us_color;
 	}
 
+	// add the optional scrollbar
+	if(scroll->scroll_bar)
+	{
+		self->tricolor = vkui_tricolor_new(self->screen,
+		                                   &scroll->color0,
+		                                   &scroll->color1,
+		                                   &scroll->color0);
+		if(self->tricolor == NULL)
+		{
+			goto fail_tricolor;
+		}
+	}
+
 	// success
 	return self;
 
 	// failure
+	fail_tricolor:
+		vkk_engine_deleteUniformSet(screen->engine,
+		                            &self->us_color);
 	fail_us_color:
 		vkk_engine_deleteBuffer(screen->engine, &self->ub_color);
 	fail_ub_color:
-		vkk_engine_deleteBuffer(screen->engine, &self->vb_color_xyuv);
-	fail_vb_color_xyuv:
+		vkk_engine_deleteBuffer(screen->engine, &self->vb_xyuv);
+	fail_vb_xyuv:
 		free(self);
 	return NULL;
 }
@@ -216,12 +232,13 @@ void vkui_widget_delete(vkui_widget_t** _self)
 			vkui_screen_focus(screen, NULL);
 		}
 
+		vkui_tricolor_delete(&self->tricolor);
 		vkk_engine_deleteUniformSet(screen->engine,
 		                            &self->us_color);
 		vkk_engine_deleteBuffer(screen->engine,
 		                        &self->ub_color);
 		vkk_engine_deleteBuffer(screen->engine,
-		                        &self->vb_color_xyuv);
+		                        &self->vb_xyuv);
 		free(self);
 		*_self = NULL;
 	}
@@ -238,7 +255,7 @@ void vkui_widget_layoutXYClip(vkui_widget_t* self,
 	vkui_screen_t* screen = self->screen;
 
 	vkui_widgetLayout_t* layout  = &self->layout;
-	//vkui_widgetScroll_t* scroll  = &self->scroll;
+	vkui_widgetScroll_t* scroll  = &self->scroll;
 	vkui_widgetPrivFn_t* priv_fn = &self->priv_fn;
 
 	float w  = self->rect_border.w;
@@ -353,13 +370,39 @@ void vkui_widget_layoutXYClip(vkui_widget_t* self,
 	                         t + v_bo, l + h_bo,
 	                         b - v_bo, r - v_bo,
 	                         radius);
-	// vb_color_xyuv
+	// vb_xyuv
 	vkk_renderer_updateBuffer(screen->renderer,
-	                          self->vb_color_xyuv,
+	                          self->vb_xyuv,
 	                          sizeof(xyuv),
 	                          (const void*) xyuv);
 
-	// TODO - scroll_bar
+	cc_rect1f_t rect_border_clip;
+	if(cc_rect1f_intersect(&self->rect_border,
+	                       &self->rect_clip,
+	                       &rect_border_clip))
+	{
+		if(scroll->scroll_bar)
+		{
+			float h_bo = 0.0f;
+			float v_bo = 0.0f;
+			vkui_screen_layoutBorder(self->screen,
+			                         VKUI_WIDGET_BORDER_MEDIUM,
+			                         &h_bo, &v_bo);
+
+			float w = h_bo;
+			float t = rect_border_clip.t;
+			float l = rect_border_clip.l + rect_border_clip.w - w;
+			float h = rect_border_clip.h;
+			cc_rect1f_t rect =
+			{
+				.t = t,
+				.l = l,
+				.w = w,
+				.h = h,
+			};
+			vkui_tricolor_rect(self->tricolor, &rect);
+		}
+	}
 }
 
 void vkui_widget_layoutSize(vkui_widget_t* self,
@@ -654,8 +697,7 @@ void vkui_widget_draw(vkui_widget_t* self)
 {
 	assert(self);
 
-	// TODO - scroll
-	// vkui_widgetScroll_t* scroll  = &self->scroll;
+	vkui_widgetScroll_t* scroll  = &self->scroll;
 	vkui_widgetPrivFn_t* priv_fn = &self->priv_fn;
 
 	cc_rect1f_t rect_border_clip;
@@ -667,8 +709,8 @@ void vkui_widget_draw(vkui_widget_t* self)
 	}
 
 	// fill the widget
-	vkui_screen_t* screen       = self->screen;
-	cc_vec4f_t*  color = &self->color;
+	vkui_screen_t* screen = self->screen;
+	cc_vec4f_t*    color  = &self->color;
 	if(color->a > 0.0f)
 	{
 		vkui_screen_scissor(screen, &rect_border_clip);
@@ -682,7 +724,14 @@ void vkui_widget_draw(vkui_widget_t* self)
 		                             screen->pl, 2,
 		                             us_array);
 		vkk_renderer_draw(screen->renderer, 4*VKUI_WIDGET_BEZEL,
-		                  1, &self->vb_color_xyuv);
+		                  1, &self->vb_xyuv);
+	}
+	else if((scroll->scroll_bar == 0) && self->tricolor)
+	{
+		vkui_screen_scissor(screen, &rect_border_clip);
+		vkui_tricolor_drawBuffer(self->tricolor,
+		                         4*VKUI_WIDGET_BEZEL,
+		                         self->vb_xyuv);
 	}
 
 	// draw the contents
@@ -697,7 +746,37 @@ void vkui_widget_draw(vkui_widget_t* self)
 			(*draw_fn)(self);
 		}
 
-		// TODO - draw the scroll bar
+		// draw the scroll bar
+		float s = rect_draw_clip.h/self->rect_draw.h;
+		if(scroll->scroll_bar && (s < 1.0f))
+		{
+			// clamp the start/end points
+			float a = -self->drag_dy/self->rect_draw.h;
+			float b = a + s;
+			if(a < 0.0f)
+			{
+				a = 0.0f;
+			}
+			else if(a > 1.0f)
+			{
+				a = 1.0f;
+			}
+
+			if(b < 0.0f)
+			{
+				b = 0.0f;
+			}
+			else if(b > 1.0f)
+			{
+				b = 1.0f;
+			}
+			a = rect_border_clip.t + a*rect_border_clip.h;
+			b = rect_border_clip.t + b*rect_border_clip.h;
+
+			vkui_tricolor_ab(self->tricolor, a, b);
+			vkui_screen_scissor(screen, &rect_border_clip);
+			vkui_tricolor_drawRect(self->tricolor);
+		}
 	}
 }
 
@@ -729,11 +808,38 @@ void vkui_widget_soundFx(vkui_widget_t* self,
 	self->sound_fx = sound_fx;
 }
 
-void vkui_widget_headerY(vkui_widget_t* self, float y)
+int vkui_widget_tricolor(vkui_widget_t* self,
+                         cc_vec4f_t* color0,
+                         cc_vec4f_t* color1,
+                         cc_vec4f_t* color2)
+{
+	assert(self);
+	assert(color0);
+	assert(color1);
+	assert(color2);
+
+	if(self->tricolor)
+	{
+		LOGE("invalid");
+		return 0;
+	}
+
+	self->tricolor = vkui_tricolor_new(self->screen, color0,
+	                                   color1, color2);
+	if(self->tricolor == NULL)
+	{
+		return 0;
+	}
+
+	return 1;
+}
+
+void vkui_widget_tricolorAB(vkui_widget_t* self,
+                           float a, float b)
 {
 	assert(self);
 
-	self->header_y = y;
+	vkui_tricolor_ab(self->tricolor, a, b);
 }
 
 void vkui_widget_scrollTop(vkui_widget_t* self)
