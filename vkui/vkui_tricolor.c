@@ -256,10 +256,10 @@ void vkui_tricolor_drawRect(vkui_tricolor_t* self)
 	float r = rect->l + rect->w;
 	float xyuv[] =
 	{
-		t, r, 1.0f, 0.0f, // tr
-		t, l, 0.0f, 0.0f, // tl
-		b, l, 0.0f, 1.0f, // bl
-		b, r, 1.0f, 1.0f, // br
+		r, t, 1.0f, 0.0f, // tr
+		l, t, 0.0f, 0.0f, // tl
+		l, b, 0.0f, 1.0f, // bl
+		r, b, 1.0f, 1.0f, // br
 	};
 
 	vkk_renderer_updateBuffer(screen->renderer,
