@@ -747,11 +747,11 @@ void vkui_widget_draw(vkui_widget_t* self)
 		}
 
 		// draw the scroll bar
-		float s = rect_draw_clip.h/self->rect_draw.h;
+		float s = self->rect_clip.h/self->rect_border.h;
 		if(scroll->scroll_bar && (s < 1.0f))
 		{
 			// clamp the start/end points
-			float a = -self->drag_dy/self->rect_draw.h;
+			float a = -self->drag_dy/self->rect_border.h;
 			float b = a + s;
 			if(a < 0.0f)
 			{
