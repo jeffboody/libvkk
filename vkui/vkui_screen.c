@@ -1216,6 +1216,12 @@ vkui_screen_spriteImage(vkui_screen_t* self,
 		goto fail_tex;
 	}
 
+	if((tex->type == TEXGZ_UNSIGNED_SHORT_4_4_4_4) &&
+	   (tex->format == TEXGZ_RGBA))
+	{
+		texgz_tex_convert(tex, TEXGZ_UNSIGNED_BYTE, TEXGZ_RGBA);
+	}
+
 	int image_format = -1;
 	if(tex->type == TEXGZ_UNSIGNED_BYTE)
 	{
