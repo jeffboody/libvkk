@@ -1002,8 +1002,16 @@ void vkui_screen_draw(vkui_screen_t* self)
 {
 	assert(self);
 
+	uint32_t uw;
+	uint32_t uh;
 	vkk_renderer_surfaceSize(self->renderer,
-	                         &self->w, &self->h);
+	                         &uw, &uh);
+	if((uw != self->w) || (uh != self->h))
+	{
+		self->w     = uw;
+		self->h     = uh;
+		self->dirty = 1;
+	}
 
 	vkui_widget_t* top = self->top_widget;
 	if(top == NULL)
