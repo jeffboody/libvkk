@@ -387,7 +387,8 @@ vkk_defaultRenderer_deleteDepth(vkk_renderer_t* base)
 
 	vkk_engine_t* engine = base->engine;
 
-	vkk_engine_deleteImage(engine, &self->depth_image);
+	vkk_engine_deleteDefaultDepthImage(engine,
+	                                   &self->depth_image);
 }
 
 static int

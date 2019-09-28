@@ -1254,6 +1254,396 @@ static void vkk_engine_initImageUsage(vkk_engine_t* self)
 }
 
 /***********************************************************
+* engine destructor API                                    *
+***********************************************************/
+
+static vkk_object_t*
+vkk_object_new(int type, void* obj)
+{
+	assert(obj);
+
+	vkk_object_t* self;
+	self = (vkk_object_t*) CALLOC(1, sizeof(vkk_object_t));
+	if(self == NULL)
+	{
+		LOGE("CALLOC failed");
+		return NULL;
+	}
+
+	self->type = type;
+	self->obj  = obj;
+	return self;
+}
+
+static void
+vkk_object_delete(vkk_object_t** _self)
+{
+	assert(_self);
+
+	vkk_object_t* self = *_self;
+	if(self)
+	{
+		FREE(self);
+		*_self = NULL;
+	}
+}
+
+static void
+vkk_engine_destructRenderer(vkk_engine_t* self,
+                            vkk_renderer_t** _renderer)
+{
+	assert(self);
+	assert(_renderer);
+
+	vkk_offscreenRenderer_delete(_renderer);
+}
+
+static void
+vkk_engine_destructBuffer(vkk_engine_t* self, int wait,
+                          vkk_buffer_t** _buffer)
+{
+	assert(self);
+	assert(_buffer);
+
+	vkk_buffer_t* buffer = *_buffer;
+	if(buffer)
+	{
+		if(wait)
+		{
+			vkk_engine_rendererWaitForTimestamp(self, buffer->ts);
+		}
+
+		uint32_t count;
+		count = (buffer->update == VKK_UPDATE_MODE_DEFAULT) ?
+		        vkk_engine_swapchainImageCount(self) : 1;
+		int i;
+		for(i = 0; i < count; ++i)
+		{
+			vkFreeMemory(self->device,
+			             buffer->memory[i],
+			             NULL);
+			vkDestroyBuffer(self->device,
+			                buffer->buffer[i],
+			                NULL);
+		}
+		FREE(buffer->memory);
+		FREE(buffer->buffer);
+		FREE(buffer);
+		*_buffer = NULL;
+	}
+}
+
+static void
+vkk_engine_destructImage(vkk_engine_t* self, int wait,
+                         vkk_image_t** _image)
+{
+	assert(self);
+	assert(_image);
+
+	vkk_image_t* image = *_image;
+	if(image)
+	{
+		if(wait)
+		{
+			vkk_engine_rendererWaitForTimestamp(self, image->ts);
+		}
+
+		vkDestroyImageView(self->device, image->image_view,
+		                   NULL);
+		vkFreeMemory(self->device, image->memory, NULL);
+		vkDestroyImage(self->device, image->image, NULL);
+		FREE(image->layout_array);
+		FREE(image);
+		*_image = NULL;
+	}
+}
+
+static void
+vkk_engine_destructSampler(vkk_engine_t* self, int wait,
+                           vkk_sampler_t** _sampler)
+{
+	assert(self);
+	assert(_sampler);
+
+	vkk_sampler_t* sampler = *_sampler;
+	if(sampler)
+	{
+		if(wait)
+		{
+			vkk_engine_rendererWaitForTimestamp(self, sampler->ts);
+		}
+
+		vkDestroySampler(self->device, sampler->sampler, NULL);
+		FREE(sampler);
+		*_sampler = NULL;
+	}
+}
+
+static void
+vkk_engine_destructUniformSetFactory(vkk_engine_t* self,
+                                     vkk_uniformSetFactory_t** _usf)
+{
+	assert(self);
+	assert(_usf);
+
+	vkk_uniformSetFactory_t* usf = *_usf;
+	if(usf)
+	{
+		cc_listIter_t* iter;
+		iter = cc_list_head(usf->us_list);
+		while(iter)
+		{
+			vkk_uniformSet_t* us;
+			us = (vkk_uniformSet_t*)
+			     cc_list_remove(usf->us_list, &iter);
+			FREE(us->ds_array);
+			FREE(us);
+		}
+
+		iter = cc_list_head(usf->dp_list);
+		while(iter)
+		{
+			VkDescriptorPool dp;
+			dp = (VkDescriptorPool)
+			     cc_list_remove(usf->dp_list, &iter);
+			vkDestroyDescriptorPool(self->device, dp, NULL);
+		}
+
+		cc_list_delete(&usf->dp_list);
+		cc_list_delete(&usf->us_list);
+		vkDestroyDescriptorSetLayout(self->device,
+		                             usf->ds_layout, NULL);
+		FREE(usf->ub_array);
+		FREE(usf);
+		*_usf = NULL;
+	}
+}
+
+static void
+vkk_engine_destructUniformSet(vkk_engine_t* self, int wait,
+                              vkk_uniformSet_t** _us)
+{
+	assert(self);
+	assert(_us);
+
+	vkk_uniformSet_t* us = *_us;
+	if(us)
+	{
+		if(wait)
+		{
+			vkk_engine_rendererWaitForTimestamp(self, us->ts);
+		}
+
+		vkk_engine_usfLock(self);
+		if(cc_list_append(us->usf->us_list, NULL,
+		                  (const void*) us) == NULL)
+		{
+			// when an error occurs the uniform set will
+			// be unreachable from the factory but the
+			// uniform set will still be freed when the
+			// corresponding uniform set factory is freed
+			FREE(us->ds_array);
+			FREE(us->ua_array);
+			FREE(us);
+		}
+		vkk_engine_usfUnlock(self);
+		*_us = NULL;
+	}
+}
+
+static void
+vkk_engine_destructPipelineLayout(vkk_engine_t* self,
+                                  vkk_pipelineLayout_t** _pl)
+{
+	assert(self);
+	assert(_pl);
+
+	vkk_pipelineLayout_t* pl = *_pl;
+	if(pl)
+	{
+		vkDestroyPipelineLayout(self->device,
+		                        pl->pl, NULL);
+		FREE(pl);
+		*_pl = NULL;
+	}
+}
+
+static void
+vkk_engine_destructGraphicsPipeline(vkk_engine_t* self, int wait,
+                                    vkk_graphicsPipeline_t** _gp)
+{
+	assert(self);
+	assert(_gp);
+
+	vkk_graphicsPipeline_t* gp = *_gp;
+	if(gp)
+	{
+		if(wait)
+		{
+			vkk_engine_rendererWaitForTimestamp(self, gp->ts);
+		}
+
+		vkDestroyPipeline(self->device,
+		                  gp->pipeline, NULL);
+		FREE(gp);
+		*_gp = NULL;
+	}
+}
+
+static int
+vkk_engine_runDestructFn(int tid, void* owner, void* task)
+{
+	assert(owner);
+	assert(task);
+
+	vkk_engine_t* engine;
+	vkk_object_t* object;
+	engine = (vkk_engine_t*) owner;
+	object = (vkk_object_t*) task;
+
+	if(object->type == VKK_OBJECT_TYPE_RENDERER)
+	{
+		vkk_engine_destructRenderer(engine,
+		                            &object->renderer);
+	}
+	else if(object->type == VKK_OBJECT_TYPE_BUFFER)
+	{
+		vkk_engine_destructBuffer(engine, 1,
+		                          &object->buffer);
+	}
+	else if(object->type == VKK_OBJECT_TYPE_IMAGE)
+	{
+		vkk_engine_destructImage(engine, 1,
+		                         &object->image);
+	}
+	else if(object->type == VKK_OBJECT_TYPE_SAMPLER)
+	{
+		vkk_engine_destructSampler(engine, 1,
+		                           &object->sampler);
+	}
+	else if(object->type == VKK_OBJECT_TYPE_UNIFORMSETFACTORY)
+	{
+		vkk_engine_destructUniformSetFactory(engine,
+		                                     &object->usf);
+	}
+	else if(object->type == VKK_OBJECT_TYPE_UNIFORMSET)
+	{
+		vkk_engine_destructUniformSet(engine, 1,
+		                              &object->us);
+	}
+	else if(object->type == VKK_OBJECT_TYPE_PIPELINELAYOUT)
+	{
+		vkk_engine_destructPipelineLayout(engine,
+		                                  &object->pl);
+	}
+	else if(object->type == VKK_OBJECT_TYPE_GRAPHICSPIPELINE)
+	{
+		vkk_engine_destructGraphicsPipeline(engine, 1,
+		                                    &object->gp);
+	}
+	else
+	{
+		LOGE("invalid type=%i", object->type);
+	}
+
+	return 1;
+}
+
+static void
+vkk_engine_finishDestructFn(void* owner, void* task,
+                            int status)
+{
+	assert(owner);
+	assert(task);
+
+	vkk_object_t* object;
+	object = (vkk_object_t*) task;
+	vkk_object_delete(&object);
+}
+
+static void
+vkk_engine_deleteObject(vkk_engine_t* self, int type,
+                        void* obj)
+{
+	assert(self);
+	assert(obj);
+
+	vkk_object_t* object;
+	object = vkk_object_new(type, obj);
+	if(object == NULL)
+	{
+		goto fail_object;
+	}
+
+	int status = cc_workq_run(self->workq_destruct,
+	                          (void*) object, 0);
+	if(status == CC_WORKQ_STATUS_ERROR)
+	{
+		goto fail_run;
+	}
+
+	// success
+	return;
+
+	// failure
+	// destruct immediately but wait for idle if necessary
+	fail_run:
+		vkk_object_delete(&object);
+	fail_object:
+	{
+		if(type == VKK_OBJECT_TYPE_RENDERER)
+		{
+			vkk_engine_destructRenderer(self,
+			                            (vkk_renderer_t**) &obj);
+		}
+		else if(type == VKK_OBJECT_TYPE_BUFFER)
+		{
+			vkk_engine_queueWaitIdle(self);
+			vkk_engine_destructBuffer(self, 0,
+			                          (vkk_buffer_t**) &obj);
+		}
+		else if(type == VKK_OBJECT_TYPE_IMAGE)
+		{
+			vkk_engine_queueWaitIdle(self);
+			vkk_engine_destructImage(self, 0,
+			                         (vkk_image_t**) &obj);
+		}
+		else if(type == VKK_OBJECT_TYPE_SAMPLER)
+		{
+			vkk_engine_queueWaitIdle(self);
+			vkk_engine_destructSampler(self, 0,
+			                           (vkk_sampler_t**) &obj);
+		}
+		else if(type == VKK_OBJECT_TYPE_UNIFORMSETFACTORY)
+		{
+			vkk_engine_destructUniformSetFactory(self,
+			                                     (vkk_uniformSetFactory_t**) &obj);
+		}
+		else if(type == VKK_OBJECT_TYPE_UNIFORMSET)
+		{
+			vkk_engine_queueWaitIdle(self);
+			vkk_engine_destructUniformSet(self, 0,
+			                              (vkk_uniformSet_t**) &obj);
+		}
+		else if(type == VKK_OBJECT_TYPE_PIPELINELAYOUT)
+		{
+			vkk_engine_destructPipelineLayout(self,
+			                                  (vkk_pipelineLayout_t**) &obj);
+		}
+		else if(type == VKK_OBJECT_TYPE_GRAPHICSPIPELINE)
+		{
+			vkk_engine_queueWaitIdle(self);
+			vkk_engine_destructGraphicsPipeline(self, 0,
+			                                    (vkk_graphicsPipeline_t**) &obj);
+		}
+		else
+		{
+			LOGE("invalid type=%i", type);
+		}
+	}
+}
+
+/***********************************************************
 * engine new/delete API                                    *
 ***********************************************************/
 
@@ -1291,7 +1681,7 @@ vkk_engine_t* vkk_engine_new(void* app,
 		}
 	#endif
 
-	self->version = VK_MAKE_VERSION(1,0,4);
+	self->version = VK_MAKE_VERSION(1,0,5);
 
 	snprintf(self->resource, 256, "%s", resource);
 	snprintf(self->cache, 256, "%s", cache);
@@ -1366,10 +1756,20 @@ vkk_engine_t* vkk_engine_new(void* app,
 		goto fail_renderer;
 	}
 
+	self->workq_destruct = cc_workq_new((void*) self, 1,
+	                                    vkk_engine_runDestructFn,
+	                                    vkk_engine_finishDestructFn);
+	if(self->workq_destruct == NULL)
+	{
+		goto fail_workq_destruct;
+	}
+
 	// success
 	return self;
 
 	// failure
+	fail_workq_destruct:
+		vkk_defaultRenderer_delete(&self->renderer);
 	fail_renderer:
 		cc_map_delete(&self->shader_modules);
 	fail_shader_modules:
@@ -1414,7 +1814,11 @@ void vkk_engine_delete(vkk_engine_t** _self)
 	{
 		assert(self->shutdown);
 
+		// finish destruction workq
+		// objects in workq may depend on default renderer
+		cc_workq_finish(self->workq_destruct);
 		vkk_defaultRenderer_delete(&self->renderer);
+		cc_workq_delete(&self->workq_destruct);
 
 		cc_mapIter_t  miterator;
 		cc_mapIter_t* miter;
@@ -1476,14 +1880,19 @@ void vkk_engine_deleteRenderer(vkk_engine_t* self,
 	assert(self);
 	assert(_renderer);
 
-	// do not delete default renderer
 	vkk_renderer_t* renderer = *_renderer;
-	if(self->renderer == renderer)
+	if(renderer)
 	{
-		return;
-	}
+		// do not delete default renderer
+		if(self->renderer == renderer)
+		{
+			return;
+		}
 
-	vkk_offscreenRenderer_delete(_renderer);
+		vkk_engine_deleteObject(self, VKK_OBJECT_TYPE_RENDERER,
+		                        (void*) renderer);
+		*_renderer = NULL;
+	}
 }
 
 vkk_buffer_t*
@@ -1646,24 +2055,8 @@ void vkk_engine_deleteBuffer(vkk_engine_t* self,
 	vkk_buffer_t* buffer = *_buffer;
 	if(buffer)
 	{
-		vkk_engine_rendererWaitForTimestamp(self, buffer->ts);
-
-		uint32_t count;
-		count = (buffer->update == VKK_UPDATE_MODE_DEFAULT) ?
-		        vkk_engine_swapchainImageCount(self) : 1;
-		int i;
-		for(i = 0; i < count; ++i)
-		{
-			vkFreeMemory(self->device,
-			             buffer->memory[i],
-			             NULL);
-			vkDestroyBuffer(self->device,
-			                buffer->buffer[i],
-			                NULL);
-		}
-		FREE(buffer->memory);
-		FREE(buffer->buffer);
-		FREE(buffer);
+		vkk_engine_deleteObject(self, VKK_OBJECT_TYPE_BUFFER,
+		                        (void*) buffer);
 		*_buffer = NULL;
 	}
 }
@@ -1908,14 +2301,8 @@ void vkk_engine_deleteImage(vkk_engine_t* self,
 	vkk_image_t* image = *_image;
 	if(image)
 	{
-		vkk_engine_rendererWaitForTimestamp(self, image->ts);
-
-		vkDestroyImageView(self->device, image->image_view,
-		                   NULL);
-		vkFreeMemory(self->device, image->memory, NULL);
-		vkDestroyImage(self->device, image->image, NULL);
-		FREE(image->layout_array);
-		FREE(image);
+		vkk_engine_deleteObject(self, VKK_OBJECT_TYPE_IMAGE,
+		                        (void*) image);
 		*_image = NULL;
 	}
 }
@@ -1999,10 +2386,8 @@ void vkk_engine_deleteSampler(vkk_engine_t* self,
 	vkk_sampler_t* sampler = *_sampler;
 	if(sampler)
 	{
-		vkk_engine_rendererWaitForTimestamp(self, sampler->ts);
-
-		vkDestroySampler(self->device, sampler->sampler, NULL);
-		FREE(sampler);
+		vkk_engine_deleteObject(self, VKK_OBJECT_TYPE_SAMPLER,
+		                        (void*) sampler);
 		*_sampler = NULL;
 	}
 }
@@ -2143,32 +2528,9 @@ vkk_engine_deleteUniformSetFactory(vkk_engine_t* self,
 	vkk_uniformSetFactory_t* usf = *_usf;
 	if(usf)
 	{
-		cc_listIter_t* iter;
-		iter = cc_list_head(usf->us_list);
-		while(iter)
-		{
-			vkk_uniformSet_t* us;
-			us = (vkk_uniformSet_t*)
-			     cc_list_remove(usf->us_list, &iter);
-			FREE(us->ds_array);
-			FREE(us);
-		}
-
-		iter = cc_list_head(usf->dp_list);
-		while(iter)
-		{
-			VkDescriptorPool dp;
-			dp = (VkDescriptorPool)
-			     cc_list_remove(usf->dp_list, &iter);
-			vkDestroyDescriptorPool(self->device, dp, NULL);
-		}
-
-		cc_list_delete(&usf->dp_list);
-		cc_list_delete(&usf->us_list);
-		vkDestroyDescriptorSetLayout(self->device,
-		                             usf->ds_layout, NULL);
-		FREE(usf->ub_array);
-		FREE(usf);
+		vkk_engine_deleteObject(self,
+		                        VKK_OBJECT_TYPE_UNIFORMSETFACTORY,
+		                        (void*) usf);
 		*_usf = NULL;
 	}
 }
@@ -2346,21 +2708,8 @@ void vkk_engine_deleteUniformSet(vkk_engine_t* self,
 	vkk_uniformSet_t* us = *_us;
 	if(us)
 	{
-		vkk_engine_rendererWaitForTimestamp(self, us->ts);
-
-		vkk_engine_usfLock(self);
-		if(cc_list_append(us->usf->us_list, NULL,
-		                  (const void*) us) == NULL)
-		{
-			// when an error occurs the uniform set will
-			// be unreachable from the factory but the
-			// uniform set will still be freed when the
-			// corresponding uniform set factory is freed
-			FREE(us->ds_array);
-			FREE(us->ua_array);
-			FREE(us);
-		}
-		vkk_engine_usfUnlock(self);
+		vkk_engine_deleteObject(self, VKK_OBJECT_TYPE_UNIFORMSET,
+		                        (void*) us);
 		*_us = NULL;
 	}
 }
@@ -2444,9 +2793,9 @@ void vkk_engine_deletePipelineLayout(vkk_engine_t* self,
 	vkk_pipelineLayout_t* pl = *_pl;
 	if(pl)
 	{
-		vkDestroyPipelineLayout(self->device,
-		                        pl->pl, NULL);
-		FREE(pl);
+		vkk_engine_deleteObject(self,
+		                        VKK_OBJECT_TYPE_PIPELINELAYOUT,
+		                        (void*) pl);
 		*_pl = NULL;
 	}
 }
@@ -2794,11 +3143,9 @@ void vkk_engine_deleteGraphicsPipeline(vkk_engine_t* self,
 	vkk_graphicsPipeline_t* gp = *_gp;
 	if(gp)
 	{
-		vkk_engine_rendererWaitForTimestamp(self, gp->ts);
-
-		vkDestroyPipeline(self->device,
-		                  gp->pipeline, NULL);
-		FREE(gp);
+		vkk_engine_deleteObject(self,
+		                        VKK_OBJECT_TYPE_GRAPHICSPIPELINE,
+		                        (void*) gp);
 		*_gp = NULL;
 	}
 }
@@ -3227,4 +3574,14 @@ void vkk_engine_rendererWaitForTimestamp(vkk_engine_t* self,
 		vkk_engine_rendererWait(self);
 	}
 	vkk_engine_rendererUnlock(self);
+}
+
+void
+vkk_engine_deleteDefaultDepthImage(vkk_engine_t* self,
+                                   vkk_image_t** _image)
+{
+	assert(self);
+	assert(_image);
+
+	vkk_engine_destructImage(self, 0, _image);
 }

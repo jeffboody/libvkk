@@ -159,9 +159,9 @@ typedef struct
  *
  *  1) objects may be created from any thread using the
  *     engine handle
- *  2) objects must be deleted from a worker thread if the
- *     engine has not been shutdown yet otherwise a deadlock
- *     may occur
+ *  2) objects may be deleted from any thread as long as
+ *     any renderer which used the object has already called
+ *     vkk_renderer_end().
  *  3) an object cannot be used by any thread once deleted
  *  4) image, sampler, uniformSetFactory and pipelineLayout
  *     may be shared between renderers

@@ -36,6 +36,7 @@
 
 #include "../libcc/cc_list.h"
 #include "../libcc/cc_map.h"
+#include "../libcc/cc_workq.h"
 #include "vkk.h"
 
 #define VKK_ENGINE_MAX_USF_COUNT 16
@@ -105,6 +106,34 @@ typedef struct vkk_graphicsPipeline_s
 	VkPipeline pipeline;
 } vkk_graphicsPipeline_t;
 
+#define VKK_OBJECT_TYPE_RENDERER          0
+#define VKK_OBJECT_TYPE_BUFFER            1
+#define VKK_OBJECT_TYPE_IMAGE             2
+#define VKK_OBJECT_TYPE_SAMPLER           3
+#define VKK_OBJECT_TYPE_UNIFORMSETFACTORY 4
+#define VKK_OBJECT_TYPE_UNIFORMSET        5
+#define VKK_OBJECT_TYPE_PIPELINELAYOUT    6
+#define VKK_OBJECT_TYPE_GRAPHICSPIPELINE  7
+#define VKK_OBJECT_TYPE_COUNT             8
+
+typedef struct vkk_object_s
+{
+	int type;
+
+	union
+	{
+		void*                    obj;
+		vkk_renderer_t*          renderer;
+		vkk_buffer_t*            buffer;
+		vkk_image_t*             image;
+		vkk_sampler_t*           sampler;
+		vkk_uniformSetFactory_t* usf;
+		vkk_uniformSet_t*        us;
+		vkk_pipelineLayout_t*    pl;
+		vkk_graphicsPipeline_t*  gp;
+	};
+} vkk_object_t;
+
 typedef struct vkk_engine_s
 {
 	// window state
@@ -170,6 +199,9 @@ typedef struct vkk_engine_s
 	// default renderer
 	int             shutdown;
 	vkk_renderer_t* renderer;
+
+	// workqs
+	cc_workq_t* workq_destruct;
 } vkk_engine_t;
 
 /*
@@ -215,5 +247,12 @@ void vkk_engine_rendererSignal(vkk_engine_t* self);
 void vkk_engine_rendererWait(vkk_engine_t* self);
 void vkk_engine_rendererWaitForTimestamp(vkk_engine_t* self,
                                          double ts);
+
+/*
+ * delete default depth buffer
+ */
+
+void vkk_engine_deleteDefaultDepthImage(vkk_engine_t* self,
+                                        vkk_image_t** _image);
 
 #endif
