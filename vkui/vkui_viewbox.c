@@ -198,7 +198,7 @@ vkui_viewbox_layout(vkui_widget_t* widget,
 
 	// tricolor values
 	float a = bullet->rect_border.t + bullet->rect_border.h;
-	float b = body->rect_border.t + body->rect_border.h;
+	float b = widget->rect_border.t + widget->rect_border.h;
 
 	// layout footer
 	if(footer)
