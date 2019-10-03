@@ -347,7 +347,7 @@ vkui_viewbox_new(vkui_screen_t* screen, size_t wsize,
 	}
 
 	self->bullet = vkui_bulletbox_new(screen, 0, fn,
-	                                  &style->text_style,
+	                                  &style->bulletbox_style,
 	                                  sprite_array);
 	if(self->bullet == NULL)
 	{

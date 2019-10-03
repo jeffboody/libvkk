@@ -58,11 +58,11 @@ vkui_radiobox_click(vkui_widget_t* widget, void* priv,
 
 vkui_radiobox_t*
 vkui_radiobox_new(vkui_screen_t* screen, size_t wsize,
-                  vkui_textStyle_t* text_style,
+                  vkui_bulletboxStyle_t* bulletbox_style,
                   int value, vkui_radiolist_t* parent)
 {
 	assert(screen);
-	assert(text_style);
+	assert(bulletbox_style);
 	assert(parent);
 
 	if(wsize == 0)
@@ -85,7 +85,7 @@ vkui_radiobox_new(vkui_screen_t* screen, size_t wsize,
 	vkui_radiobox_t* self;
 	self = (vkui_radiobox_t*)
 	       vkui_bulletbox_new(screen, wsize, &widget_fn,
-	                          text_style, sprite_array);
+	                          bulletbox_style, sprite_array);
 	if(self == NULL)
 	{
 		return NULL;

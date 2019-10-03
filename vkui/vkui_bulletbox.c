@@ -141,13 +141,16 @@ static void vkui_bulletbox_draw(vkui_widget_t* widget)
 vkui_bulletbox_t*
 vkui_bulletbox_new(vkui_screen_t* screen, size_t wsize,
                    vkui_widgetFn_t* fn,
-                   vkui_textStyle_t* text_style,
+                   vkui_bulletboxStyle_t* bulletbox_style,
                    const char** sprite_array)
 {
 	assert(screen);
 	assert(fn);
-	assert(text_style);
+	assert(bulletbox_style);
 	assert(sprite_array);
+
+	vkui_textStyle_t* text_style;
+	text_style = &bulletbox_style->text_style;
 
 	if(wsize == 0)
 	{
@@ -207,7 +210,11 @@ vkui_bulletbox_new(vkui_screen_t* screen, size_t wsize,
 
 	// convert spacing to border
 	int spacing = text_style->spacing;
-	int border  = spacing | (spacing >> 4);
+	int border  = spacing | VKUI_WIDGET_BORDER_HMEDIUM;
+	if(spacing < VKUI_TEXT_SPACING_MEDIUM)
+	{
+		border = spacing | VKUI_WIDGET_BORDER_HSMALL;
+	}
 
 	vkui_widgetLayout_t sprite_layout =
 	{
@@ -225,7 +232,7 @@ vkui_bulletbox_new(vkui_screen_t* screen, size_t wsize,
 
 	self->icon = vkui_sprite_new(screen, 0, &sprite_layout,
 	                             &sprite_fn,
-	                             &text_style->color,
+	                             &bulletbox_style->color_icon,
 	                             sprite_array);
 	if(self->icon == NULL)
 	{

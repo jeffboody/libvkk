@@ -69,10 +69,11 @@ vkui_checkbox_refresh(vkui_widget_t* widget, void* priv)
 
 vkui_checkbox_t*
 vkui_checkbox_new(vkui_screen_t* screen, size_t wsize,
-                  vkui_textStyle_t* text_style, int* pvalue)
+                  vkui_bulletboxStyle_t* bulletbox_style,
+                  int* pvalue)
 {
 	assert(screen);
-	assert(text_style);
+	assert(bulletbox_style);
 	assert(pvalue);
 
 	if(wsize == 0)
@@ -96,7 +97,7 @@ vkui_checkbox_new(vkui_screen_t* screen, size_t wsize,
 	vkui_checkbox_t* self;
 	self = (vkui_checkbox_t*)
 	       vkui_bulletbox_new(screen, wsize, &widget_fn,
-	                          text_style, sprite_array);
+	                          bulletbox_style, sprite_array);
 	if(self == NULL)
 	{
 		return NULL;

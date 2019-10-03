@@ -31,8 +31,8 @@ typedef struct vkui_radiolist_s
 {
 	vkui_listbox_t listbox;
 
-	// text properties
-	vkui_textStyle_t text_style;
+	// bulletbox properties
+	vkui_bulletboxStyle_t bulletbox_style;
 
 	// radiolist value
 	int* pvalue;

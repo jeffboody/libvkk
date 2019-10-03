@@ -70,13 +70,13 @@ vkui_radiolist_t*
 vkui_radiolist_new(vkui_screen_t* screen, size_t wsize,
                    vkui_widgetLayout_t* layout,
                    vkui_widgetScroll_t* scroll,
-                   vkui_textStyle_t* text_style,
+                   vkui_bulletboxStyle_t* bulletbox_style,
                    int* pvalue)
 {
 	assert(screen);
 	assert(layout);
 	assert(scroll);
-	assert(text_style);
+	assert(bulletbox_style);
 	assert(pvalue);
 
 	if(wsize == 0)
@@ -101,8 +101,8 @@ vkui_radiolist_new(vkui_screen_t* screen, size_t wsize,
 	self->pvalue = pvalue;
 	self->value  = *pvalue;
 
-	memcpy(&self->text_style, text_style,
-	       sizeof(vkui_textStyle_t));
+	memcpy(&self->bulletbox_style, bulletbox_style,
+	       sizeof(vkui_bulletboxStyle_t));
 
 	return self;
 }
@@ -151,7 +151,8 @@ void vkui_radiolist_add(vkui_radiolist_t* self, int value,
 	vkui_widget_t* widget = (vkui_widget_t*) self;
 	vkui_radiobox_t* rb;
 	rb = vkui_radiobox_new(widget->screen, 0,
-	                       &self->text_style, value, self);
+	                       &self->bulletbox_style, value,
+	                       self);
 	if(rb == NULL)
 	{
 		return;

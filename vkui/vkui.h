@@ -175,12 +175,18 @@ typedef struct vkui_textStyle_s
 	cc_vec4f_t color;
 } vkui_textStyle_t;
 
+typedef struct vkui_bulletboxStyle_s
+{
+	cc_vec4f_t       color_icon;
+	vkui_textStyle_t text_style;
+} vkui_bulletboxStyle_t;
+
 typedef struct vkui_viewboxStyle_s
 {
-	cc_vec4f_t       color_header;
-	cc_vec4f_t       color_body;
-	cc_vec4f_t       color_footer;
-	vkui_textStyle_t text_style;
+	cc_vec4f_t color_header;
+	cc_vec4f_t color_body;
+	cc_vec4f_t color_footer;
+	vkui_bulletboxStyle_t bulletbox_style;
 } vkui_viewboxStyle_t;
 
 /*
@@ -221,7 +227,7 @@ void           vkui_screen_draw(vkui_screen_t* self);
 vkui_bulletbox_t* vkui_bulletbox_new(vkui_screen_t* screen,
                                      size_t wsize,
                                      vkui_widgetFn_t* fn,
-                                     vkui_textStyle_t* text_style,
+                                     vkui_bulletboxStyle_t* bulletbox_style,
                                      const char** sprite_array);
 void              vkui_bulletbox_delete(vkui_bulletbox_t** _self);
 void              vkui_bulletbox_select(vkui_bulletbox_t* self,
@@ -232,7 +238,7 @@ void              vkui_bulletbox_label(vkui_bulletbox_t* self,
 // checkbox
 vkui_checkbox_t* vkui_checkbox_new(vkui_screen_t* screen,
                                    size_t wsize,
-                                   vkui_textStyle_t* text_style,
+                                   vkui_bulletboxStyle_t* bulletbox_style,
                                    int* pvalue);
 void             vkui_checkbox_delete(vkui_checkbox_t** _self);
 void             vkui_checkbox_label(vkui_checkbox_t* self,
@@ -272,7 +278,7 @@ vkui_widget_t*  vkui_listbox_remove(vkui_listbox_t* self);
 // radiobox
 vkui_radiobox_t* vkui_radiobox_new(vkui_screen_t* screen,
                                    size_t wsize,
-                                   vkui_textStyle_t* text_style,
+                                   vkui_bulletboxStyle_t* bulletbox_style,
                                    int value,
                                    vkui_radiolist_t* parent);
 void             vkui_radiobox_delete(vkui_radiobox_t** _self);
@@ -284,7 +290,7 @@ vkui_radiolist_t* vkui_radiolist_new(vkui_screen_t* screen,
                                      size_t wsize,
                                      vkui_widgetLayout_t* layout,
                                      vkui_widgetScroll_t* scroll,
-                                     vkui_textStyle_t* text_style,
+                                     vkui_bulletboxStyle_t* bulletbox_style,
                                      int* pvalue);
 void            vkui_radiolist_delete(vkui_radiolist_t** _self);
 void            vkui_radiolist_clear(vkui_radiolist_t* self);
