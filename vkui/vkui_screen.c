@@ -820,18 +820,20 @@ void vkui_screen_delete(vkui_screen_t** _self)
 	}
 }
 
-void
+vkui_widget_t*
 vkui_screen_top(vkui_screen_t* self, vkui_widget_t* top)
 {
 	assert(self);
 
 	if(self->top_widget == top)
 	{
-		return;
+		return NULL;
 	}
 
-	self->top_widget = top;
-	self->dirty      = 1;
+	vkui_widget_t* prev = self->top_widget;
+	self->top_widget    = top;
+	self->dirty         = 1;
+	return prev;
 }
 
 void
