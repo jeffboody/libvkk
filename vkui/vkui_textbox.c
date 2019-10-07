@@ -47,12 +47,28 @@ vkui_textbox_print(vkui_textbox_t* self, const char* string)
 	vkui_widget_t*  widget  = (vkui_widget_t*) self;
 	vkui_listbox_t* listbox = (vkui_listbox_t*) self;
 
+	vkui_textLayout_t text_layout =
+	{
+		.border   = VKUI_WIDGET_BORDER_NONE,
+		.wrapx    = VKUI_WIDGET_WRAP_SHRINK,
+		.aspectx  = VKUI_WIDGET_ASPECT_DEFAULT,
+		.stretchx = 1.0f
+	};
+
 	vkui_textFn_t text_fn;
 	memset(&text_fn, 0, sizeof(vkui_textFn_t));
 
+	cc_vec4f_t clear =
+	{
+		.r = 0.0f,
+		.g = 0.0f,
+		.b = 0.0f,
+		.a = 0.0f,
+	};
+
 	vkui_text_t* text;
-	text = vkui_text_new(widget->screen, 0, &self->text_style,
-	                     &text_fn);
+	text = vkui_text_new(widget->screen, 0, &text_layout,
+	                     &self->text_style, &text_fn, &clear);
 	if(text == NULL)
 	{
 		return;

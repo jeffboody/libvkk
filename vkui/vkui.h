@@ -159,6 +159,14 @@ typedef struct vkui_widgetFn_s
 	vkui_widget_refreshFn refresh_fn;
 } vkui_widgetFn_t;
 
+typedef struct vkui_textLayout_s
+{
+	int   border;
+	int   wrapx;
+	int   aspectx;
+	float stretchx;
+} vkui_textLayout_t;
+
 typedef struct vkui_textFn_s
 {
 	// functions may be NULL
@@ -314,8 +322,10 @@ void          vkui_sprite_rotate(vkui_sprite_t* self,
 // text
 vkui_text_t* vkui_text_new(vkui_screen_t* screen,
                            size_t wsize,
+                           vkui_textLayout_t* text_layout,
                            vkui_textStyle_t* text_style,
-                           vkui_textFn_t* text_fn);
+                           vkui_textFn_t* text_fn,
+                           cc_vec4f_t* color_fill);
 void        vkui_text_delete(vkui_text_t** _self);
 void        vkui_text_label(vkui_text_t* self,
                             const char* fmt, ...);

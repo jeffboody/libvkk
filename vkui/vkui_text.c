@@ -132,19 +132,22 @@ vkui_text_size(vkui_widget_t* widget, float* w, float* h)
 	vkui_text_t*      self  = (vkui_text_t*) widget;
 	vkui_textStyle_t* style = &self->style;
 
-	float size   = vkui_screen_layoutText(widget->screen,
-	                                      style->size);
-	float width  = (float) 0.0f;
-	float height = (float) vkui_text_height(self);
-	if(vkui_widget_hasFocus(widget))
+	float size = vkui_screen_layoutText(widget->screen,
+	                                    style->size);
+	if(widget->layout.wrapx == VKUI_WIDGET_WRAP_SHRINK)
 	{
-		width = (float) vkui_text_width(self, 1);
+		float width  = (float) 0.0f;
+		float height = (float) vkui_text_height(self);
+		if(vkui_widget_hasFocus(widget))
+		{
+			width = (float) vkui_text_width(self, 1);
+		}
+		else
+		{
+			width = (float) vkui_text_width(self, 0);
+		}
+		*w = size*(width/height);
 	}
-	else
-	{
-		width = (float) vkui_text_width(self, 0);
-	}
-	*w = size*(width/height);
 	*h = size;
 }
 
@@ -347,12 +350,16 @@ vkui_text_keyPress(vkui_widget_t* widget, void* priv,
 
 vkui_text_t*
 vkui_text_new(vkui_screen_t* screen, size_t wsize,
-              vkui_textStyle_t* style,
-              vkui_textFn_t* text_fn)
+              vkui_textLayout_t* text_layout,
+              vkui_textStyle_t* text_style,
+              vkui_textFn_t* text_fn,
+              cc_vec4f_t* color_fill)
 {
 	assert(screen);
-	assert(style);
+	assert(text_layout);
+	assert(text_style);
 	assert(text_fn);
+	assert(color_fill);
 
 	if(wsize == 0)
 	{
@@ -361,12 +368,13 @@ vkui_text_new(vkui_screen_t* screen, size_t wsize,
 
 	vkui_widgetLayout_t layout =
 	{
-		.border   = style->spacing,
-		.wrapx    = VKUI_WIDGET_WRAP_SHRINK,
+		.border   = text_layout->border ? text_layout->border :
+		                                  text_style->spacing,
+		.wrapx    = text_layout->wrapx,
 		.wrapy    = VKUI_WIDGET_WRAP_SHRINK,
-		.aspectx  = VKUI_WIDGET_ASPECT_DEFAULT,
+		.aspectx  = text_layout->aspectx,
 		.aspecty  = VKUI_WIDGET_ASPECT_DEFAULT,
-		.stretchx = 1.0f,
+		.stretchx = text_layout->stretchx,
 		.stretchy = 1.0f
 	};
 
@@ -382,17 +390,9 @@ vkui_text_new(vkui_screen_t* screen, size_t wsize,
 		.draw_fn     = vkui_text_draw,
 	};
 
-	cc_vec4f_t clear =
-	{
-		.r = 0.0f,
-		.g = 0.0f,
-		.b = 0.0f,
-		.a = 0.0f,
-	};
-
 	vkui_text_t* self;
 	self = (vkui_text_t*)
-	       vkui_widget_new(screen, wsize, &clear, &layout,
+	       vkui_widget_new(screen, wsize, color_fill, &layout,
 	                       &widget_scroll, &text_fn->fn,
 	                       &priv_fn);
 	if(self == NULL)
@@ -420,7 +420,7 @@ vkui_text_new(vkui_screen_t* screen, size_t wsize,
 	}
 
 	self->enter_fn = text_fn->enter_fn;
-	memcpy(&self->style, style, sizeof(vkui_textStyle_t));
+	memcpy(&self->style, text_style, sizeof(vkui_textStyle_t));
 
 	self->ub_mvp = vkk_engine_newBuffer(screen->engine,
 	                                    VKK_UPDATE_MODE_DEFAULT,
@@ -452,7 +452,7 @@ vkui_text_new(vkui_screen_t* screen, size_t wsize,
 	                                      VKK_UPDATE_MODE_STATIC,
 	                                      VKK_BUFFER_USAGE_UNIFORM,
 	                                      sizeof(cc_vec4f_t),
-	                                      &style->color);
+	                                      &text_style->color);
 	if(self->ub_color == NULL)
 	{
 		goto fail_ub_color;

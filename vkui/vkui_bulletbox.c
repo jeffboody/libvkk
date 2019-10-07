@@ -239,11 +239,20 @@ vkui_bulletbox_new(vkui_screen_t* screen, size_t wsize,
 		goto fail_icon;
 	}
 
+	vkui_textLayout_t text_layout =
+	{
+		.border   = VKUI_WIDGET_BORDER_NONE,
+		.wrapx    = VKUI_WIDGET_WRAP_SHRINK,
+		.aspectx  = VKUI_WIDGET_ASPECT_DEFAULT,
+		.stretchx = 1.0f
+	};
+
 	vkui_textFn_t text_fn;
 	memset(&text_fn, 0, sizeof(vkui_textFn_t));
 
-	self->text = vkui_text_new(screen, 0, text_style,
-	                           &text_fn);
+	self->text = vkui_text_new(screen, 0, &text_layout,
+	                           text_style, &text_fn,
+	                           &clear);
 	if(self->text == NULL)
 	{
 		goto fail_text;
