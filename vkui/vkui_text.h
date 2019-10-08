@@ -36,7 +36,7 @@ typedef struct vkui_text_s
 	vkui_textStyle_t  style;
 
 	// string data
-	size_t string_size;
+	size_t size;
 	char*  string;
 	float* xyuv;
 

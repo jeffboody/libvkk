@@ -43,33 +43,38 @@
 ***********************************************************/
 
 static int
-vkui_text_resize(vkui_text_t* self, size_t string_size)
+vkui_text_resize(vkui_text_t* self, size_t size)
 {
 	assert(self);
 
 	vkui_widget_t* widget = (vkui_widget_t*) self;
 	vkui_screen_t* screen = widget->screen;
 
+	if(self->size >= size)
+	{
+		return 1;
+	}
+
 	// round to the next largest size
 	size_t req_size = 16;
-	if(string_size > 256)
+	if(size > 256)
 	{
-		LOGW("invalid string_size=%i", (int) string_size);
+		LOGW("invalid size=%i", (int) size);
 		return 0;
 	}
-	else if(string_size > 128)
+	else if(size > 128)
 	{
 		req_size = 256;
 	}
-	else if(string_size > 64)
+	else if(size > 64)
 	{
 		req_size = 128;
 	}
-	else if(string_size > 32)
+	else if(size > 32)
 	{
 		req_size = 64;
 	}
-	else if(string_size > 16)
+	else if(size > 16)
 	{
 		req_size = 32;
 	}
@@ -77,48 +82,36 @@ vkui_text_resize(vkui_text_t* self, size_t string_size)
 	// check if vb_xyuv is valid
 	// 2 triangles, 3 vertices, 4 components => 24
 	size_t xyuv_size = 24*req_size*sizeof(float);
-	if(self->vb_xyuv &&
-	   (xyuv_size == vkk_buffer_size(self->vb_xyuv)))
+	self->vb_xyuv = vkui_screen_textVb(screen, xyuv_size,
+	                                   self->vb_xyuv);
+	if(self->vb_xyuv == NULL)
 	{
-		// continue
-	}
-	else
-	{
-		self->vb_xyuv = vkui_screen_textVb(screen, xyuv_size,
-		                                   self->vb_xyuv);
-		if(self->vb_xyuv == NULL)
-		{
-			return 0;
-		}
+		return 0;
 	}
 
-	if(self->string_size >= string_size)
-	{
-		return 1;
-	}
-
-	char* string = (char*) realloc(self->string, string_size);
+	char* string = (char*) realloc(self->string, req_size);
 	if(string == NULL)
 	{
 		LOGE("realloc failed");
 		return 0;
 	}
-	string[string_size - 1] = '\0';
+	string[size - 1] = '\0';
+	self->string = string;
 
 	// allocate size for string and cursor character
 	// which is stored in place of the null character
 	// 2 triangles, 3 vertices, 4 components => 24
-	xyuv_size = 24*string_size*sizeof(float);
 	float* xyuv = (float*) realloc(self->xyuv, xyuv_size);
 	if(xyuv == NULL)
 	{
 		LOGE("realloc failed");
 		return 0;
 	}
+	self->xyuv = xyuv;
 
-	self->string      = string;
-	self->string_size = string_size;
-	self->xyuv        = xyuv;
+	// resize was successful
+	self->size = req_size;
+
 	return 1;
 }
 
@@ -284,7 +277,8 @@ vkui_text_keyPress(vkui_widget_t* widget, void* priv,
 		return 0;
 	}
 
-	int len = strlen(self->string);
+	size_t len  = strlen(self->string);
+	size_t size = len + 1;
 	if(keycode == VKUI_KEY_ENTER)
 	{
 		(*enter_fn)(widget, priv, self->string);
@@ -298,7 +292,8 @@ vkui_text_keyPress(vkui_widget_t* widget, void* priv,
 		if(len > 0)
 		{
 			self->string[len - 1] = '\0';
-			len -= 1;
+			len  -= 1;
+			size -= 1;
 		}
 		else
 		{
@@ -307,11 +302,12 @@ vkui_text_keyPress(vkui_widget_t* widget, void* priv,
 	}
 	else
 	{
-		if(vkui_text_resize(self, len + 1))
+		if(vkui_text_resize(self, size + 1))
 		{
 			self->string[len]     = (char) keycode;
 			self->string[len + 1] = '\0';
-			len += 1;
+			len  += 1;
+			size += 1;
 		}
 		else
 		{
@@ -329,12 +325,11 @@ vkui_text_keyPress(vkui_widget_t* widget, void* priv,
 
 	// add the cursor
 	vkui_text_addc(self, VKUI_FONT_CURSOR, len, &offset);
-	++len;
 
 	if(self->vb_xyuv)
 	{
 		// 2 triangles, 3 vertices, 4 components => 24
-		size_t xyuv_size = 24*len*sizeof(float);
+		size_t xyuv_size = 24*size*sizeof(float);
 		vkk_renderer_updateBuffer(screen->renderer,
 		                          self->vb_xyuv, xyuv_size,
 		                          (const void*) self->xyuv);
@@ -398,25 +393,6 @@ vkui_text_new(vkui_screen_t* screen, size_t wsize,
 	if(self == NULL)
 	{
 		return NULL;
-	}
-
-	self->string_size = 16;
-	self->string = calloc(self->string_size, sizeof(char));
-	if(self->string == NULL)
-	{
-		LOGE("calloc failed");
-		goto fail_string;
-	}
-
-	// allocate size for string and cursor character
-	// which is stored in place of the null character
-	// 2 triangles, 3 vertices, 4 components => 24
-	size_t xyuv_size = 24*self->string_size*sizeof(float);
-	self->xyuv = (float*) malloc(xyuv_size);
-	if(self->xyuv == NULL)
-	{
-		LOGE("malloc failed");
-		goto fail_xyuv;
 	}
 
 	self->enter_fn = text_fn->enter_fn;
@@ -523,10 +499,6 @@ vkui_text_new(vkui_screen_t* screen, size_t wsize,
 		vkk_engine_deleteBuffer(screen->engine,
 		                        &self->ub_mvp);
 	fail_ub_mvp:
-		free(self->xyuv);
-	fail_xyuv:
-		free(self->string);
-	fail_string:
 		vkui_widget_delete((vkui_widget_t**) &self);
 	return NULL;
 }
@@ -541,7 +513,6 @@ void vkui_text_delete(vkui_text_t** _self)
 		vkui_widget_t* widget = (vkui_widget_t*) self;
 		vkui_screen_t* screen = widget->screen;
 
-		vkui_screen_textVb(screen, 0, self->vb_xyuv);
 		vkk_engine_deleteUniformSet(screen->engine,
 		                            &self->us_multiply);
 		vkk_engine_deleteBuffer(screen->engine,
@@ -554,6 +525,7 @@ void vkui_text_delete(vkui_text_t** _self)
 		                            &self->us_mvp);
 		vkk_engine_deleteBuffer(screen->engine,
 		                        &self->ub_mvp);
+		vkui_screen_textVb(screen, 0, self->vb_xyuv);
 
 		free(self->xyuv);
 		free(self->string);
@@ -617,29 +589,28 @@ vkui_text_label(vkui_text_t* self, const char* fmt, ...)
 	va_end(argptr);
 
 	// fill the string
-	size_t len1        = strlen(tmp_string);
-	size_t string_size = len1 + 1;
-	if(vkui_text_resize(self, string_size) == 0)
+	size_t len  = strlen(tmp_string);
+	size_t size = len + 1;
+	if(vkui_text_resize(self, size) == 0)
 	{
 		return;
 	}
-	snprintf(self->string, string_size, "%s", tmp_string);
+	snprintf(self->string, size, "%s", tmp_string);
 
 	int   i;
 	float offset = 0.0f;
-	for(i = 0; i < len1; ++i)
+	for(i = 0; i < len; ++i)
 	{
 		vkui_text_addc(self, self->string[i], i, &offset);
 	}
 
 	// add the cursor
-	vkui_text_addc(self, VKUI_FONT_CURSOR, len1, &offset);
-	++len1;
+	vkui_text_addc(self, VKUI_FONT_CURSOR, len, &offset);
 
 	if(self->vb_xyuv)
 	{
 		// 2 triangles, 3 vertices, 4 components => 24
-		size_t xyuv_size = 24*len1*sizeof(float);
+		size_t xyuv_size = 24*size*sizeof(float);
 		vkk_renderer_updateBuffer(screen->renderer,
 		                          self->vb_xyuv, xyuv_size,
 		                          (const void*) self->xyuv);
