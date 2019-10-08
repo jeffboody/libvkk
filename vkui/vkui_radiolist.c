@@ -52,12 +52,13 @@ vkui_radiolist_refresh(vkui_widget_t* widget, void* priv)
 	{
 		self->value = *(self->pvalue);
 
-		vkui_radiobox_t* rb;
-		rb = (vkui_radiobox_t*) vkui_listbox_remove(listbox);
-		while(rb)
+		cc_listIter_t* iter = cc_list_head(listbox->list);
+		while(iter)
 		{
+			vkui_radiobox_t* rb;
+			rb = (vkui_radiobox_t*) cc_list_peekIter(iter);
 			vkui_radiobox_refresh(rb);
-			rb = (vkui_radiobox_t*) vkui_listbox_remove(listbox);
+			iter = cc_list_next(iter);
 		}
 	}
 }
