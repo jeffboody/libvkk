@@ -1079,7 +1079,9 @@ void vkui_screen_draw(vkui_screen_t* self)
 			.h = h,
 		};
 
-		vkui_widget_layoutSize(top, &w, &h);
+		float layout_w = w;
+		float layout_h = h;
+		vkui_widget_layoutSize(top, &layout_w, &layout_h);
 		vkui_widget_layoutXYClip(top, 0.0f, 0.0f, &clip, 1, 1);
 		self->dirty = 0;
 	}
