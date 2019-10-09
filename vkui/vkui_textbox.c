@@ -228,11 +228,13 @@ vkui_textbox_reflow(vkui_widget_t* widget, float w, float h)
 			else
 			{
 				// measure width of "dst tok"
+				int len = strlen(dst) + strlen(tok) + 1;
 				snprintf(tmp, 256, "%s %s", dst, tok);
 				tmp[255] = '\0';
 				float width = (float) vkui_font_measure(font, tmp);
 
-				if(size*(width/height) <= w)
+				if((size*(width/height) <= w) &&
+				   (len <= 255))
 				{
 					// append to current line
 					snprintf(dst, 256, "%s", tmp);
