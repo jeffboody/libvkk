@@ -158,10 +158,7 @@ vkui_sprite_new(vkui_screen_t* screen,
 
 	cc_vec4f_t clear =
 	{
-		.r = 0.0f,
-		.g = 0.0f,
-		.b = 0.0f,
-		.a = 0.0f,
+		.a = 0.0f
 	};
 
 	vkui_sprite_t* self;

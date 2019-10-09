@@ -60,10 +60,7 @@ vkui_textbox_print(vkui_textbox_t* self, const char* string)
 
 	cc_vec4f_t clear =
 	{
-		.r = 0.0f,
-		.g = 0.0f,
-		.b = 0.0f,
-		.a = 0.0f,
+		.a = 0.0f
 	};
 
 	vkui_text_t* text;
@@ -288,10 +285,16 @@ vkui_textbox_new(vkui_screen_t* screen, size_t wsize,
 		wsize = sizeof(vkui_textbox_t);
 	}
 
+	cc_vec4f_t clear =
+	{
+		.a = 0.0f
+	};
+
 	vkui_textbox_t* self;
 	self = (vkui_textbox_t*)
 	vkui_listbox_new(screen, wsize, layout, scroll, fn,
-	                 VKUI_LISTBOX_ORIENTATION_VERTICAL);
+	                 VKUI_LISTBOX_ORIENTATION_VERTICAL,
+	                 &clear);
 	if(self == NULL)
 	{
 		return NULL;

@@ -455,12 +455,14 @@ vkui_listbox_t*
 vkui_listbox_new(vkui_screen_t* screen, size_t wsize,
                  vkui_widgetLayout_t* layout,
                  vkui_widgetScroll_t* scroll,
-                 vkui_widgetFn_t* fn, int orientation)
+                 vkui_widgetFn_t* fn, int orientation,
+                 cc_vec4f_t* color)
 {
 	assert(screen);
 	assert(layout);
 	assert(scroll);
 	assert(fn);
+	assert(color);
 
 	if(wsize == 0)
 	{
@@ -487,17 +489,9 @@ vkui_listbox_new(vkui_screen_t* screen, size_t wsize,
 		.draw_fn   = vkui_listbox_draw,
 	};
 
-	cc_vec4f_t clear =
-	{
-		.r = 0.0f,
-		.g = 0.0f,
-		.b = 0.0f,
-		.a = 0.0f,
-	};
-
 	vkui_listbox_t* self;
 	self = (vkui_listbox_t*)
-	       vkui_widget_new(screen, wsize, &clear, layout,
+	       vkui_widget_new(screen, wsize, color, layout,
 	                       scroll, &list_fn, &priv_fn);
 	if(self == NULL)
 	{

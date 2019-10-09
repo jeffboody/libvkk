@@ -276,7 +276,8 @@ vkui_listbox_t* vkui_listbox_new(vkui_screen_t* screen,
                                  vkui_widgetLayout_t* layout,
                                  vkui_widgetScroll_t* scroll,
                                  vkui_widgetFn_t* fn,
-                                 int orientation);
+                                 int orientation,
+                                 cc_vec4f_t* color);
 void            vkui_listbox_delete(vkui_listbox_t** _self);
 void            vkui_listbox_clear(vkui_listbox_t* self);
 int             vkui_listbox_add(vkui_listbox_t* self,

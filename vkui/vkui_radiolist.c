@@ -90,10 +90,16 @@ vkui_radiolist_new(vkui_screen_t* screen, size_t wsize,
 		.refresh_fn = vkui_radiolist_refresh,
 	};
 
+	cc_vec4f_t clear =
+	{
+		.a = 0.0f
+	};
+
 	vkui_radiolist_t* self;
 	self = (vkui_radiolist_t*)
 	       vkui_listbox_new(screen, wsize, layout, scroll, &fn,
-	                        VKUI_LISTBOX_ORIENTATION_VERTICAL);
+	                        VKUI_LISTBOX_ORIENTATION_VERTICAL,
+	                        &clear);
 	if(self == NULL)
 	{
 		return NULL;
