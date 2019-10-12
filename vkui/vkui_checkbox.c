@@ -96,8 +96,10 @@ vkui_checkbox_new(vkui_screen_t* screen, size_t wsize,
 
 	vkui_checkbox_t* self;
 	self = (vkui_checkbox_t*)
-	       vkui_bulletbox_new(screen, wsize, &widget_fn,
-	                          bulletbox_style, sprite_array);
+	       vkui_bulletbox_new(screen, wsize,
+	                          VKUI_WIDGET_ANCHOR_TL,
+	                          &widget_fn, bulletbox_style,
+	                          sprite_array);
 	if(self == NULL)
 	{
 		return NULL;

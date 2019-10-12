@@ -123,14 +123,13 @@ vkui_hline_new(vkui_screen_t* screen, size_t wsize, int size,
 		wsize = sizeof(vkui_hline_t);
 	}
 
-	int wrapy = VKUI_WIDGET_WRAP_STRETCH_TEXT_SMALL +
+	int wrapy = VKUI_WIDGET_WRAP_STRETCH_TEXT_VSMALL +
 	            size - VKUI_HLINE_SIZE_SMALL;
 	vkui_widgetLayout_t layout =
 	{
+		.anchor   = VKUI_WIDGET_ANCHOR_CC,
 		.wrapx    = VKUI_WIDGET_WRAP_STRETCH_PARENT,
 		.wrapy    = wrapy,
-		.aspectx  = VKUI_WIDGET_ASPECT_DEFAULT,
-		.aspecty  = VKUI_WIDGET_ASPECT_DEFAULT,
 		.stretchx = 1.0f,
 		.stretchy = 1.0f
 	};
@@ -175,8 +174,6 @@ vkui_hline_new(vkui_screen_t* screen, size_t wsize, int size,
 	{
 		goto fail_line;
 	}
-
-	vkui_widget_anchor(self->line, VKUI_WIDGET_ANCHOR_CC);
 
 	// success
 	return self;

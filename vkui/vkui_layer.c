@@ -261,7 +261,7 @@ void vkui_layer_clear(vkui_layer_t* self)
 	vkui_screen_dirty(widget->screen);
 }
 
-int vkui_layer_add(vkui_layer_t* self, int anchor,
+int vkui_layer_add(vkui_layer_t* self,
                    vkui_widget_t* widget)
 {
 	assert(self);
@@ -275,7 +275,6 @@ int vkui_layer_add(vkui_layer_t* self, int anchor,
 
 	vkui_screen_dirty(widget->screen);
 	vkui_widget_scrollTop(widget);
-	vkui_widget_anchor(widget, anchor);
 
 	return 1;
 }

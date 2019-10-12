@@ -128,7 +128,6 @@ vkui_widget_new(vkui_screen_t* screen, size_t wsize,
 	}
 
 	self->screen   = screen;
-	self->anchor   = VKUI_WIDGET_ANCHOR_TL;
 	self->sound_fx = 1;
 
 	memcpy(&self->color, color, sizeof(cc_vec4f_t));
@@ -140,12 +139,12 @@ vkui_widget_new(vkui_screen_t* screen, size_t wsize,
 	// check for invalid layouts
 	if(layout->wrapx == VKUI_WIDGET_WRAP_SHRINK)
 	{
-		assert(layout->aspectx != VKUI_WIDGET_ASPECT_SQUARE);
+		assert(layout->stretchx == 0.0f);
 	}
 
 	if(layout->wrapy == VKUI_WIDGET_WRAP_SHRINK)
 	{
-		assert(layout->aspecty != VKUI_WIDGET_ASPECT_SQUARE);
+		assert(layout->stretchy == 0.0f);
 	}
 
 	// shader data
@@ -272,38 +271,38 @@ void vkui_widget_layoutXYClip(vkui_widget_t* self,
 	cc_rect1f_copy(clip, &self->rect_clip);
 
 	// anchor the widget origin
-	if(self->anchor == VKUI_WIDGET_ANCHOR_TC)
+	if(layout->anchor == VKUI_WIDGET_ANCHOR_TC)
 	{
 		l = x - w2;
 	}
-	else if(self->anchor == VKUI_WIDGET_ANCHOR_TR)
+	else if(layout->anchor == VKUI_WIDGET_ANCHOR_TR)
 	{
 		l = x - w;
 	}
-	else if(self->anchor == VKUI_WIDGET_ANCHOR_CL)
+	else if(layout->anchor == VKUI_WIDGET_ANCHOR_CL)
 	{
 		t = y - h2;
 	}
-	else if(self->anchor == VKUI_WIDGET_ANCHOR_CC)
+	else if(layout->anchor == VKUI_WIDGET_ANCHOR_CC)
 	{
 		t = y - h2;
 		l = x - w2;
 	}
-	else if(self->anchor == VKUI_WIDGET_ANCHOR_CR)
+	else if(layout->anchor == VKUI_WIDGET_ANCHOR_CR)
 	{
 		t = y - h2;
 		l = x - w;
 	}
-	else if(self->anchor == VKUI_WIDGET_ANCHOR_BL)
+	else if(layout->anchor == VKUI_WIDGET_ANCHOR_BL)
 	{
 		t = y - h;
 	}
-	else if(self->anchor == VKUI_WIDGET_ANCHOR_BC)
+	else if(layout->anchor == VKUI_WIDGET_ANCHOR_BC)
 	{
 		t = y - h;
 		l = x - w2;
 	}
-	else if(self->anchor == VKUI_WIDGET_ANCHOR_BR)
+	else if(layout->anchor == VKUI_WIDGET_ANCHOR_BR)
 	{
 		t = y - h;
 		l = x - w;
@@ -415,25 +414,14 @@ void vkui_widget_layoutSize(vkui_widget_t* self,
 	vkui_widgetLayout_t* layout  = &self->layout;
 	vkui_widgetPrivFn_t* priv_fn = &self->priv_fn;
 
-	float sw;
-	float sh;
-	vkui_screen_sizef(self->screen, &sw, &sh);
-
+	// initialize font aspect ratio
 	vkui_font_t* font = vkui_screen_font(self->screen,
 	                                     VKUI_TEXT_FONTTYPE_REGULAR);
 	float ar    = vkui_font_aspectRatioAvg(font);
-	int   style = layout->wrapy - VKUI_WIDGET_WRAP_STRETCH_TEXT_SMALL;
-	float th    = vkui_screen_layoutText(self->screen, style);
-	float tw    = ar*th;
-
-	// screen/text/parent square
-	float ssq = (sw > sh) ? sh : sw;
-	float tsq = th;   // always use the height for square
-	float psq = (*w > *h) ? *h : *w;
-	int   sqw = (layout->aspectx == VKUI_WIDGET_ASPECT_SQUARE);
-	int   sqh = (layout->aspecty == VKUI_WIDGET_ASPECT_SQUARE);
 
 	// initialize size
+	int   style;
+	float sz   = 0.0f;
 	float h_bo = 0.0f;
 	float v_bo = 0.0f;
 	vkui_screen_layoutBorder(self->screen, layout->border,
@@ -443,31 +431,30 @@ void vkui_widget_layoutSize(vkui_widget_t* self,
 		self->rect_draw.w   = *w - 2.0f*h_bo;
 		self->rect_border.w = *w;
 	}
-	else
+	else if(layout->wrapx == VKUI_WIDGET_WRAP_STRETCH_PARENT)
 	{
-		float rw = 0.0f;
-		if(layout->wrapx == VKUI_WIDGET_WRAP_STRETCH_SCREEN)
-		{
-			rw = sqw ? ssq : sw;
-			rw *= layout->stretchx;
-			self->rect_draw.w   = rw - 2.0f*h_bo;
-			self->rect_border.w = rw;
-		}
-		else if((layout->wrapx >= VKUI_WIDGET_WRAP_STRETCH_TEXT_SMALL) &&
-		        (layout->wrapx <= VKUI_WIDGET_WRAP_STRETCH_TEXT_LARGE))
-		{
-			rw = sqw ? tsq : tw;
-			rw *= layout->stretchx;
-			self->rect_draw.w   = rw;
-			self->rect_border.w = rw + 2.0f*h_bo;
-		}
-		else
-		{
-			rw = sqw ? psq : *w;
-			rw *= layout->stretchx;
-			self->rect_draw.w   = rw - 2.0f*h_bo;
-			self->rect_border.w = rw;
-		}
+		sz = *w;
+		sz *= layout->stretchx;
+		self->rect_draw.w   = sz - 2.0f*h_bo;
+		self->rect_border.w = sz;
+	}
+	else if((layout->wrapx >= VKUI_WIDGET_WRAP_STRETCH_TEXT_VSMALL) &&
+	        (layout->wrapx <= VKUI_WIDGET_WRAP_STRETCH_TEXT_VLARGE))
+	{
+		style = layout->wrapx - VKUI_WIDGET_WRAP_STRETCH_TEXT_VSMALL;
+		sz = vkui_screen_layoutText(self->screen, style);
+		sz *= layout->stretchx;
+		self->rect_draw.w   = sz;
+		self->rect_border.w = sz + 2.0f*h_bo;
+	}
+	else if((layout->wrapx >= VKUI_WIDGET_WRAP_STRETCH_TEXT_HSMALL) &&
+	        (layout->wrapx <= VKUI_WIDGET_WRAP_STRETCH_TEXT_HLARGE))
+	{
+		style = layout->wrapx - VKUI_WIDGET_WRAP_STRETCH_TEXT_HSMALL;
+		sz = ar*vkui_screen_layoutText(self->screen, style);
+		sz *= layout->stretchx;
+		self->rect_draw.w   = sz;
+		self->rect_border.w = sz + 2.0f*h_bo;
 	}
 
 	// intersect draw with border interior
@@ -476,36 +463,36 @@ void vkui_widget_layoutSize(vkui_widget_t* self,
 		self->rect_draw.w = 0.0f;
 	}
 
+	float rh = 0.0f;
 	if(layout->wrapy == VKUI_WIDGET_WRAP_SHRINK)
 	{
 		self->rect_draw.h   = *h - 2.0f*v_bo;
 		self->rect_border.h = *h;
 	}
-	else
+	else if(layout->wrapy == VKUI_WIDGET_WRAP_STRETCH_PARENT)
 	{
-		float rh = 0.0f;
-		if(layout->wrapy == VKUI_WIDGET_WRAP_STRETCH_SCREEN)
-		{
-			rh = sqh ? ssq : sh;
-			rh *= layout->stretchy;
-			self->rect_draw.h   = rh - 2.0f*v_bo;
-			self->rect_border.h = rh;
-		}
-		else if((layout->wrapy >= VKUI_WIDGET_WRAP_STRETCH_TEXT_SMALL) &&
-		        (layout->wrapy <= VKUI_WIDGET_WRAP_STRETCH_TEXT_LARGE))
-		{
-			rh = sqh ? tsq : th;
-			rh *= layout->stretchy;
-			self->rect_draw.h   = rh;
-			self->rect_border.h = rh + 2.0f*v_bo;
-		}
-		else
-		{
-			rh = sqh ? psq : *h;
-			rh *= layout->stretchy;
-			self->rect_draw.h   = rh - 2.0f*v_bo;
-			self->rect_border.h = rh;
-		}
+		rh = *h;
+		rh *= layout->stretchy;
+		self->rect_draw.h   = rh - 2.0f*v_bo;
+		self->rect_border.h = rh;
+	}
+	else if((layout->wrapy >= VKUI_WIDGET_WRAP_STRETCH_TEXT_VSMALL) &&
+	        (layout->wrapy <= VKUI_WIDGET_WRAP_STRETCH_TEXT_VLARGE))
+	{
+		style = layout->wrapy - VKUI_WIDGET_WRAP_STRETCH_TEXT_VSMALL;
+		sz = vkui_screen_layoutText(self->screen, style);
+		sz *= layout->stretchy;
+		self->rect_draw.h   = sz;
+		self->rect_border.h = sz + 2.0f*v_bo;
+	}
+	else if((layout->wrapy >= VKUI_WIDGET_WRAP_STRETCH_TEXT_HSMALL) &&
+	        (layout->wrapy <= VKUI_WIDGET_WRAP_STRETCH_TEXT_HLARGE))
+	{
+		style = layout->wrapy - VKUI_WIDGET_WRAP_STRETCH_TEXT_HSMALL;
+		sz = ar*vkui_screen_layoutText(self->screen, style);
+		sz *= layout->stretchy;
+		self->rect_draw.h   = sz;
+		self->rect_border.h = sz + 2.0f*v_bo;
 	}
 
 	// intersect draw with border interior
@@ -561,6 +548,8 @@ void vkui_widget_layoutAnchor(vkui_widget_t* self,
 	assert(x);
 	assert(y);
 
+	vkui_widgetLayout_t* layout = &self->layout;
+
 	// initialize to tl corner
 	*x = rect->l;
 	*y = rect->t;
@@ -569,38 +558,38 @@ void vkui_widget_layoutAnchor(vkui_widget_t* self,
 	float h  = rect->h;
 	float w2 = w/2.0f;
 	float h2 = h/2.0f;
-	if(self->anchor == VKUI_WIDGET_ANCHOR_TC)
+	if(layout->anchor == VKUI_WIDGET_ANCHOR_TC)
 	{
 		*x += w2;
 	}
-	else if(self->anchor == VKUI_WIDGET_ANCHOR_TR)
+	else if(layout->anchor == VKUI_WIDGET_ANCHOR_TR)
 	{
 		*x += w;
 	}
-	else if(self->anchor == VKUI_WIDGET_ANCHOR_CL)
+	else if(layout->anchor == VKUI_WIDGET_ANCHOR_CL)
 	{
 		*y += h2;
 	}
-	else if(self->anchor == VKUI_WIDGET_ANCHOR_CC)
+	else if(layout->anchor == VKUI_WIDGET_ANCHOR_CC)
 	{
 		*x += w2;
 		*y += h2;
 	}
-	else if(self->anchor == VKUI_WIDGET_ANCHOR_CR)
+	else if(layout->anchor == VKUI_WIDGET_ANCHOR_CR)
 	{
 		*x += w;
 		*y += h2;
 	}
-	else if(self->anchor == VKUI_WIDGET_ANCHOR_BL)
+	else if(layout->anchor == VKUI_WIDGET_ANCHOR_BL)
 	{
 		*y += h;
 	}
-	else if(self->anchor == VKUI_WIDGET_ANCHOR_BC)
+	else if(layout->anchor == VKUI_WIDGET_ANCHOR_BC)
 	{
 		*x += w2;
 		*y += h;
 	}
-	else if(self->anchor == VKUI_WIDGET_ANCHOR_BR)
+	else if(layout->anchor == VKUI_WIDGET_ANCHOR_BR)
 	{
 		*x += w;
 		*y += h;
@@ -796,13 +785,6 @@ void vkui_widget_refresh(vkui_widget_t* self)
 	{
 		(*refresh_fn)(self, fn->priv);
 	}
-}
-
-void vkui_widget_anchor(vkui_widget_t* self, int anchor)
-{
-	assert(self);
-
-	self->anchor = anchor;
 }
 
 void vkui_widget_soundFx(vkui_widget_t* self,

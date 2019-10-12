@@ -140,6 +140,7 @@ static void vkui_bulletbox_draw(vkui_widget_t* widget)
 
 vkui_bulletbox_t*
 vkui_bulletbox_new(vkui_screen_t* screen, size_t wsize,
+                   int anchor,
                    vkui_widgetFn_t* fn,
                    vkui_bulletboxStyle_t* bulletbox_style,
                    const char** sprite_array)
@@ -159,12 +160,7 @@ vkui_bulletbox_new(vkui_screen_t* screen, size_t wsize,
 
 	vkui_widgetLayout_t widget_layout =
 	{
-		.wrapx      = VKUI_WIDGET_WRAP_SHRINK,
-		.wrapy      = VKUI_WIDGET_WRAP_SHRINK,
-		.aspectx    = VKUI_WIDGET_ASPECT_DEFAULT,
-		.aspecty    = VKUI_WIDGET_ASPECT_DEFAULT,
-		.stretchx   = 1.0f,
-		.stretchy   = 1.0f
+		.anchor = anchor
 	};
 
 	cc_vec4f_t clear =
@@ -195,14 +191,14 @@ vkui_bulletbox_new(vkui_screen_t* screen, size_t wsize,
 		return NULL;
 	}
 
-	int wrap = VKUI_WIDGET_WRAP_STRETCH_TEXT_MEDIUM;
+	int wrap = VKUI_WIDGET_WRAP_STRETCH_TEXT_VMEDIUM;
 	if(text_style->size == VKUI_TEXT_SIZE_LARGE)
 	{
-		wrap = VKUI_WIDGET_WRAP_STRETCH_TEXT_LARGE;
+		wrap = VKUI_WIDGET_WRAP_STRETCH_TEXT_VLARGE;
 	}
 	else if(text_style->size == VKUI_TEXT_SIZE_SMALL)
 	{
-		wrap = VKUI_WIDGET_WRAP_STRETCH_TEXT_SMALL;
+		wrap = VKUI_WIDGET_WRAP_STRETCH_TEXT_VSMALL;
 	}
 
 	// convert spacing to border
@@ -218,8 +214,6 @@ vkui_bulletbox_new(vkui_screen_t* screen, size_t wsize,
 		.border   = border,
 		.wrapx    = wrap,
 		.wrapy    = wrap,
-		.aspectx  = VKUI_WIDGET_ASPECT_SQUARE,
-		.aspecty  = VKUI_WIDGET_ASPECT_SQUARE,
 		.stretchx = 1.0f,
 		.stretchy = 1.0f
 	};
@@ -238,10 +232,7 @@ vkui_bulletbox_new(vkui_screen_t* screen, size_t wsize,
 
 	vkui_textLayout_t text_layout =
 	{
-		.border   = VKUI_WIDGET_BORDER_NONE,
-		.wrapx    = VKUI_WIDGET_WRAP_SHRINK,
-		.aspectx  = VKUI_WIDGET_ASPECT_DEFAULT,
-		.stretchx = 1.0f
+		.border = VKUI_WIDGET_BORDER_NONE
 	};
 
 	vkui_textFn_t text_fn;

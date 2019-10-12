@@ -366,11 +366,7 @@ vkui_text_new(vkui_screen_t* screen, size_t wsize,
 		.border   = text_layout->border ? text_layout->border :
 		                                  text_style->spacing,
 		.wrapx    = text_layout->wrapx,
-		.wrapy    = VKUI_WIDGET_WRAP_SHRINK,
-		.aspectx  = text_layout->aspectx,
-		.aspecty  = VKUI_WIDGET_ASPECT_DEFAULT,
 		.stretchx = text_layout->stretchx,
-		.stretchy = 1.0f
 	};
 
 	vkui_widgetScroll_t widget_scroll =

@@ -66,20 +66,19 @@
 #define VKUI_WIDGET_ANCHOR_BC 7
 #define VKUI_WIDGET_ANCHOR_BR 8
 
-#define VKUI_WIDGET_WRAP_SHRINK              0
-#define VKUI_WIDGET_WRAP_STRETCH_PARENT      1
-#define VKUI_WIDGET_WRAP_STRETCH_SCREEN      2
-#define VKUI_WIDGET_WRAP_STRETCH_TEXT_SMALL  3
-#define VKUI_WIDGET_WRAP_STRETCH_TEXT_MEDIUM 4
-#define VKUI_WIDGET_WRAP_STRETCH_TEXT_LARGE  5
+#define VKUI_WIDGET_WRAP_SHRINK               0
+#define VKUI_WIDGET_WRAP_STRETCH_PARENT       1
+#define VKUI_WIDGET_WRAP_STRETCH_TEXT_VSMALL  2
+#define VKUI_WIDGET_WRAP_STRETCH_TEXT_VMEDIUM 3
+#define VKUI_WIDGET_WRAP_STRETCH_TEXT_VLARGE  4
+#define VKUI_WIDGET_WRAP_STRETCH_TEXT_HSMALL  5
+#define VKUI_WIDGET_WRAP_STRETCH_TEXT_HMEDIUM 6
+#define VKUI_WIDGET_WRAP_STRETCH_TEXT_HLARGE  7
 
-#define VKUI_WIDGET_ASPECT_DEFAULT 0
-#define VKUI_WIDGET_ASPECT_SQUARE  1
-
-#define VKUI_WIDGET_BORDER_NONE    0x00
-#define VKUI_WIDGET_BORDER_SMALL   0x11
-#define VKUI_WIDGET_BORDER_MEDIUM  0x22
-#define VKUI_WIDGET_BORDER_LARGE   0x44
+#define VKUI_WIDGET_BORDER_NONE   0x00
+#define VKUI_WIDGET_BORDER_SMALL  0x11
+#define VKUI_WIDGET_BORDER_MEDIUM 0x22
+#define VKUI_WIDGET_BORDER_LARGE  0x44
 
 /*
  * opaque objects
@@ -123,6 +122,12 @@ typedef void (*vkui_widget_refreshFn)(vkui_widget_t* widget,
 
 typedef struct vkui_widgetLayout_s
 {
+	// anchor
+	//    the anchor point defines how a widget is attached to
+	//    its parent/container widget
+	//    e.g. an CC anchor for a widget that is added to a
+	//    layer will cause the center of the widget to be
+	//    placed at the center of the layer
 	// horizontal/vertical wrapping
 	//    shrink:
 	//       size of children plus border
@@ -135,10 +140,9 @@ typedef struct vkui_widgetLayout_s
 	//       children may be stretch or shrink
 	//       top level widget must be stretch
 	int   border;
+	int   anchor;
 	int   wrapx;
 	int   wrapy;
-	int   aspectx;
-	int   aspecty;
 	float stretchx;
 	float stretchy;
 } vkui_widgetLayout_t;
@@ -162,8 +166,8 @@ typedef struct vkui_widgetFn_s
 typedef struct vkui_textLayout_s
 {
 	int   border;
+	int   anchor;
 	int   wrapx;
-	int   aspectx;
 	float stretchx;
 } vkui_textLayout_t;
 
@@ -234,6 +238,7 @@ void           vkui_screen_draw(vkui_screen_t* self);
 // bulletbox
 vkui_bulletbox_t* vkui_bulletbox_new(vkui_screen_t* screen,
                                      size_t wsize,
+                                     int anchor,
                                      vkui_widgetFn_t* fn,
                                      vkui_bulletboxStyle_t* bulletbox_style,
                                      const char** sprite_array);
@@ -266,7 +271,7 @@ vkui_layer_t*  vkui_layer_new(vkui_screen_t* screen,
                               cc_vec4f_t* color);
 void           vkui_layer_delete(vkui_layer_t** _self);
 void           vkui_layer_clear(vkui_layer_t* self);
-int            vkui_layer_add(vkui_layer_t* self, int anchor,
+int            vkui_layer_add(vkui_layer_t* self,
                               vkui_widget_t* widget);
 vkui_widget_t* vkui_layer_remove(vkui_layer_t* self);
 

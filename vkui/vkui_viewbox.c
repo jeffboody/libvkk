@@ -346,7 +346,9 @@ vkui_viewbox_new(vkui_screen_t* screen, size_t wsize,
 		goto fail_tricolor;
 	}
 
-	self->bullet = vkui_bulletbox_new(screen, 0, fn,
+	self->bullet = vkui_bulletbox_new(screen, 0,
+	                                  VKUI_WIDGET_ANCHOR_TL,
+	                                  fn,
 	                                  &style->bulletbox_style,
 	                                  sprite_array);
 	if(self->bullet == NULL)

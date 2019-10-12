@@ -120,11 +120,6 @@ typedef struct vkui_widget_s
 	vkui_widgetFn_t     fn;
 	vkui_widgetPrivFn_t priv_fn;
 
-	// anchor to the widget parent
-	// anchor is not part of the layout since it is only
-	// relevant for layers and defaults to TL otherwise
-	int anchor;
-
 	// sound fx for clicks
 	int sound_fx;
 
@@ -164,8 +159,6 @@ void           vkui_widget_drag(vkui_widget_t* self,
                                 float dx, float dy);
 void           vkui_widget_draw(vkui_widget_t* self);
 void           vkui_widget_refresh(vkui_widget_t* self);
-void           vkui_widget_anchor(vkui_widget_t* self,
-                                  int anchor);
 void           vkui_widget_soundFx(vkui_widget_t* self,
                                    int sound_fx);
 void           vkui_widget_color(vkui_widget_t* self,

@@ -49,10 +49,7 @@ vkui_textbox_print(vkui_textbox_t* self, const char* string)
 
 	vkui_textLayout_t text_layout =
 	{
-		.border   = VKUI_WIDGET_BORDER_NONE,
-		.wrapx    = VKUI_WIDGET_WRAP_SHRINK,
-		.aspectx  = VKUI_WIDGET_ASPECT_DEFAULT,
-		.stretchx = 1.0f
+		.border = VKUI_WIDGET_BORDER_NONE
 	};
 
 	vkui_textFn_t text_fn;
