@@ -168,6 +168,8 @@ void           vkui_widget_anchor(vkui_widget_t* self,
                                   int anchor);
 void           vkui_widget_soundFx(vkui_widget_t* self,
                                    int sound_fx);
+void           vkui_widget_color(vkui_widget_t* self,
+                                 cc_vec4f_t* color);
 int            vkui_widget_tricolor(vkui_widget_t* self,
                                     cc_vec4f_t* color0,
                                     cc_vec4f_t* color1,

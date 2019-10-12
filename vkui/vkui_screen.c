@@ -457,7 +457,7 @@ vkui_screen_new(vkk_engine_t* engine,
 	};
 
 	self->usf1_color = vkk_engine_newUniformSetFactory(engine,
-	                                                   VKK_UPDATE_MODE_STATIC,
+	                                                   VKK_UPDATE_MODE_DEFAULT,
 	                                                   1,
 	                                                   ub1_array);
 	if(self->usf1_color == NULL)

@@ -319,6 +319,8 @@ void          vkui_sprite_select(vkui_sprite_t* self,
                                  uint32_t index);
 void          vkui_sprite_rotate(vkui_sprite_t* self,
                                  float theta);
+void          vkui_sprite_fill(vkui_sprite_t* self,
+                               cc_vec4f_t* color);
 
 // text
 vkui_text_t* vkui_text_new(vkui_screen_t* screen,

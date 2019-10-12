@@ -376,3 +376,12 @@ void vkui_sprite_rotate(vkui_sprite_t* self, float theta)
 
 	self->theta = theta;
 }
+
+void vkui_sprite_fill(vkui_sprite_t* self,
+                      cc_vec4f_t* color)
+{
+	assert(self);
+	assert(color);
+
+	vkui_widget_color((vkui_widget_t*) self, color);
+}

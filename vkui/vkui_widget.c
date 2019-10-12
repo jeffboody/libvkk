@@ -160,7 +160,7 @@ vkui_widget_new(vkui_screen_t* screen, size_t wsize,
 	}
 
 	self->ub_color = vkk_engine_newBuffer(screen->engine,
-	                                      VKK_UPDATE_MODE_STATIC,
+	                                      VKK_UPDATE_MODE_DEFAULT,
 	                                      VKK_BUFFER_USAGE_UNIFORM,
 	                                      sizeof(cc_vec4f_t),
 	                                      color);
@@ -713,6 +713,11 @@ void vkui_widget_draw(vkui_widget_t* self)
 	cc_vec4f_t*    color  = &self->color;
 	if(color->a > 0.0f)
 	{
+		vkk_renderer_updateBuffer(screen->renderer,
+		                          self->ub_color,
+		                          sizeof(cc_vec4f_t),
+		                          (const void*) &self->color);
+
 		vkui_screen_scissor(screen, &rect_border_clip);
 		vkui_screen_bind(screen, VKUI_SCREEN_BIND_COLOR);
 		vkk_uniformSet_t* us_array[2] =
@@ -806,6 +811,15 @@ void vkui_widget_soundFx(vkui_widget_t* self,
 	assert(self);
 
 	self->sound_fx = sound_fx;
+}
+
+void vkui_widget_color(vkui_widget_t* self,
+                       cc_vec4f_t* color)
+{
+	assert(self);
+	assert(color);
+
+	cc_vec4f_copy(color, &self->color);
 }
 
 int vkui_widget_tricolor(vkui_widget_t* self,
