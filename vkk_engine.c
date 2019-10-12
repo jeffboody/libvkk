@@ -1681,7 +1681,7 @@ vkk_engine_t* vkk_engine_new(void* app,
 		}
 	#endif
 
-	self->version = VK_MAKE_VERSION(1,0,5);
+	self->version = VK_MAKE_VERSION(1,0,6);
 
 	snprintf(self->resource, 256, "%s", resource);
 	snprintf(self->cache, 256, "%s", cache);
@@ -1857,9 +1857,12 @@ void vkk_engine_shutdown(vkk_engine_t* self)
 	assert(self);
 
 	vkk_engine_rendererLock(self);
-	vkDeviceWaitIdle(self->device);
-	self->shutdown = 1;
-	vkk_engine_rendererSignal(self);
+	if(self->shutdown == 0)
+	{
+		vkDeviceWaitIdle(self->device);
+		self->shutdown = 1;
+		vkk_engine_rendererSignal(self);
+	}
 	vkk_engine_rendererUnlock(self);
 }
 
