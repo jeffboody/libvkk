@@ -44,7 +44,13 @@ vkui_hline_size(vkui_widget_t* widget, float* w, float* h)
 
 	vkui_hline_t * self = (vkui_hline_t*) widget;
 
-	float hline_w = *w;
+	float h_bo = 0.0f;
+	float v_bo = 0.0f;
+	vkui_screen_layoutBorder(widget->screen,
+	                         VKUI_WIDGET_BORDER_MEDIUM,
+	                         &h_bo, &v_bo);
+
+	float hline_w = *w - 2.0f*h_bo;
 	float hline_h = *h;
 	vkui_widget_layoutSize(self->line, &hline_w, &hline_h);
 }
