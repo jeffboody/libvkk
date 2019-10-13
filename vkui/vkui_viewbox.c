@@ -44,11 +44,10 @@ vkui_viewbox_size(vkui_widget_t* widget, float* w, float* h)
 	assert(w);
 	assert(h);
 
-	vkui_widgetLayout_t* layout = &widget->layout;
-	vkui_viewbox_t*      self   = (vkui_viewbox_t*) widget;
-	vkui_widget_t*       bullet = (vkui_widget_t*) self->bullet;
-	vkui_widget_t*       body   = self->body;
-	vkui_widget_t*       footer = self->footer;
+	vkui_viewbox_t* self   = (vkui_viewbox_t*) widget;
+	vkui_widget_t*  bullet = (vkui_widget_t*) self->bullet;
+	vkui_widget_t*  body   = self->body;
+	vkui_widget_t*  footer = self->footer;
 
 	float wmax     = 0.0f;
 	float hsum     = 0.0f;
@@ -59,20 +58,6 @@ vkui_viewbox_size(vkui_widget_t* widget, float* w, float* h)
 	vkui_widget_layoutSize(bullet, &bullet_w, &bullet_h);
 	wmax = bullet_w;
 	hsum = bullet_h;
-
-	// layout separator(s)
-	float h_bo = 0.0f;
-	float v_bo = 0.0f;
-	vkui_screen_layoutBorder(widget->screen, layout->border,
-	                         &h_bo, &v_bo);
-	if(footer)
-	{
-		hsum += 4.0f*v_bo;
-	}
-	else
-	{
-		hsum += 2.0f*v_bo;
-	}
 
 	// layout footer
 	if(footer)
@@ -95,7 +80,7 @@ vkui_viewbox_size(vkui_widget_t* widget, float* w, float* h)
 
 	// layout body
 	float body_w = *w;
-	float body_h = *h - hsum ;
+	float body_h = *h - hsum;
 	if(body_h < 0.0f)
 	{
 		body_h = 0.0f;
@@ -146,13 +131,17 @@ vkui_viewbox_layout(vkui_widget_t* widget,
 	vkui_widget_t*       body   = self->body;
 	vkui_widget_t*       footer = self->footer;
 
+	// note that the viewbox layout is a bit unique because
+	// the top/bottom borders are inserted between header/body
+	// and footer/body rather than at the absolute top/bottom
+
 	// initialize the layout
 	float x  = 0.0f;
 	float y  = 0.0f;
-	float t  = self->widget.rect_draw.t;
+	float t  = self->widget.rect_border.t;
 	float l  = self->widget.rect_draw.l;
 	float w  = self->widget.rect_draw.w;
-	float h  = self->widget.rect_draw.h;
+	float h  = self->widget.rect_border.h;
 	float bullet_h = bullet->rect_border.h;
 	float footer_h = 0.0f;
 	cc_rect1f_t rect_clip;
@@ -181,12 +170,12 @@ vkui_viewbox_layout(vkui_widget_t* widget,
 	if(footer)
 	{
 		footer_h = footer->rect_border.h;
-		rect_draw.t = t + bullet_h + 2.0f*v_bo;
-		rect_draw.h = h - bullet_h - 4.0f*v_bo - footer_h;
+		rect_draw.t = t + bullet_h + v_bo;
+		rect_draw.h = h - bullet_h - footer_h - 2.0f*v_bo;
 	}
 	else
 	{
-		rect_draw.t = t + bullet_h + 2.0f*v_bo;
+		rect_draw.t = t + bullet_h + v_bo;
 		rect_draw.h = h - bullet_h - 2.0f*v_bo;
 	}
 	vkui_widget_layoutAnchor(body, &rect_draw, &x, &y);
