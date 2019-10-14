@@ -264,35 +264,35 @@ vkui_screen_layoutBorder(vkui_screen_t* self, int border,
 	*hborder = 0.0f;
 	*vborder = 0.0f;
 
-	float size = vkui_screen_layoutText(self,
-	                                    VKUI_TEXT_SIZE_MEDIUM);
+	float size = 0.25f*vkui_screen_layoutText(self,
+	                                          VKUI_TEXT_SIZE_MEDIUM);
 
 	// horizontal
 	if(border & VKUI_WIDGET_BORDER_HSMALL)
 	{
-		*hborder = 0.125f*size;
+		*hborder = 0.66f*size;
 	}
 	else if(border & VKUI_WIDGET_BORDER_HMEDIUM)
 	{
-		*hborder = 0.25f*size;
+		*hborder = size;
 	}
 	else if(border & VKUI_WIDGET_BORDER_HLARGE)
 	{
-		*hborder = 0.5f*size;
+		*hborder = 1.5f*size;
 	}
 
 	// vertical
 	if(border & VKUI_WIDGET_BORDER_VSMALL)
 	{
-		*vborder = 0.125f*size;
+		*vborder = 0.66f*size;
 	}
 	else if(border & VKUI_WIDGET_BORDER_VMEDIUM)
 	{
-		*vborder = 0.25f*size;
+		*vborder = size;
 	}
 	else if(border & VKUI_WIDGET_BORDER_VLARGE)
 	{
-		*vborder = 0.5f*size;
+		*vborder = 1.5f*size;
 	}
 }
 
@@ -300,15 +300,16 @@ float vkui_screen_layoutHLine(vkui_screen_t* self, int size)
 {
 	assert(self);
 
+	int lw = 6.0f;
 	if(size == VKUI_HLINE_SIZE_SMALL)
 	{
-		return 3.0f;
+		lw = 0.66f*lw;
 	}
 	else if(size == VKUI_HLINE_SIZE_LARGE)
 	{
-		return 9.0f;
+		lw = 1.5f*lw;
 	}
-	return 6.0f;
+	return lw;
 }
 
 float vkui_screen_layoutText(vkui_screen_t* self, int size)
