@@ -44,13 +44,18 @@ vkui_hline_size(vkui_widget_t* widget, float* w, float* h)
 
 	vkui_hline_t * self = (vkui_hline_t*) widget;
 
+	// subtract border so that the hline doesn't intersect
+	// with a scroll bar
+	// note: this uses a border width of HLINE_SIZE - 1 to
+	// minimize the asymetry on the hline which means that
+	// a small HLINE will not have any spacing
 	float h_bo = 0.0f;
 	float v_bo = 0.0f;
 	vkui_screen_layoutBorder(widget->screen,
-	                         VKUI_WIDGET_BORDER_MEDIUM,
+	                         VKUI_WIDGET_BORDER_NONE + self->size,
 	                         &h_bo, &v_bo);
 
-	float hline_w = *w - 2.0f*h_bo;
+	float hline_w = *w - h_bo;
 	float hline_h = *h;
 	vkui_widget_layoutSize(self->line, &hline_w, &hline_h);
 }
@@ -127,7 +132,7 @@ vkui_hline_new(vkui_screen_t* screen, size_t wsize, int size,
 	            size - VKUI_HLINE_SIZE_SMALL;
 	vkui_widgetLayout_t layout =
 	{
-		.anchor   = VKUI_WIDGET_ANCHOR_CC,
+		.anchor   = VKUI_WIDGET_ANCHOR_CL,
 		.wrapx    = VKUI_WIDGET_WRAP_STRETCH_PARENT,
 		.wrapy    = wrapy,
 		.stretchx = 1.0f,
@@ -164,9 +169,11 @@ vkui_hline_new(vkui_screen_t* screen, size_t wsize, int size,
 		return NULL;
 	}
 
+	self->size = size;
+
 	// override the line properties
 	memset(&priv_fn, 0, sizeof(vkui_widgetPrivFn_t));
-	layout.stretchy = 0.15f;
+	layout.stretchy = 0.10f;
 
 	self->line = vkui_widget_new(screen, 0, color, &layout,
 	                             &scroll, &fn, &priv_fn);

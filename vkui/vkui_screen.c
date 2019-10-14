@@ -296,22 +296,6 @@ vkui_screen_layoutBorder(vkui_screen_t* self, int border,
 	}
 }
 
-float vkui_screen_layoutHLine(vkui_screen_t* self, int size)
-{
-	assert(self);
-
-	int lw = 6.0f;
-	if(size == VKUI_HLINE_SIZE_SMALL)
-	{
-		lw = 0.66f*lw;
-	}
-	else if(size == VKUI_HLINE_SIZE_LARGE)
-	{
-		lw = 1.5f*lw;
-	}
-	return lw;
-}
-
 float vkui_screen_layoutText(vkui_screen_t* self, int size)
 {
 	assert(self);

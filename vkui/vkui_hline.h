@@ -31,6 +31,8 @@ typedef struct vkui_hline_s
 {
 	vkui_widget_t  widget;
 	vkui_widget_t* line;
+
+	int size;
 } vkui_hline_t;
 
 #endif
