@@ -697,6 +697,14 @@ void vkui_widget_draw(vkui_widget_t* self)
 		return;
 	}
 
+	cc_rect1f_t rect_draw_clip;
+	if(cc_rect1f_intersect(&self->rect_draw,
+	                       &self->rect_clip,
+	                       &rect_draw_clip) == 0)
+	{
+		return;
+	}
+
 	// fill the widget
 	vkui_screen_t* screen = self->screen;
 	cc_vec4f_t*    color  = &self->color;
@@ -729,48 +737,43 @@ void vkui_widget_draw(vkui_widget_t* self)
 	}
 
 	// draw the contents
-	cc_rect1f_t rect_draw_clip;
-	if(cc_rect1f_intersect(&self->rect_draw, &self->rect_clip,
-	                       &rect_draw_clip))
+	vkui_widget_drawFn draw_fn = priv_fn->draw_fn;
+	if(draw_fn)
 	{
-		vkui_widget_drawFn draw_fn = priv_fn->draw_fn;
-		if(draw_fn)
+		vkui_screen_scissor(screen, &rect_draw_clip);
+		(*draw_fn)(self);
+	}
+
+	// draw the scroll bar
+	float s = self->rect_clip.h/self->rect_border.h;
+	if(scroll->scroll_bar && (s < 1.0f))
+	{
+		// clamp the start/end points
+		float a = -self->drag_dy/self->rect_border.h;
+		float b = a + s;
+		if(a < 0.0f)
 		{
-			vkui_screen_scissor(screen, &rect_draw_clip);
-			(*draw_fn)(self);
+			a = 0.0f;
+		}
+		else if(a > 1.0f)
+		{
+			a = 1.0f;
 		}
 
-		// draw the scroll bar
-		float s = self->rect_clip.h/self->rect_border.h;
-		if(scroll->scroll_bar && (s < 1.0f))
+		if(b < 0.0f)
 		{
-			// clamp the start/end points
-			float a = -self->drag_dy/self->rect_border.h;
-			float b = a + s;
-			if(a < 0.0f)
-			{
-				a = 0.0f;
-			}
-			else if(a > 1.0f)
-			{
-				a = 1.0f;
-			}
-
-			if(b < 0.0f)
-			{
-				b = 0.0f;
-			}
-			else if(b > 1.0f)
-			{
-				b = 1.0f;
-			}
-			a = rect_border_clip.t + a*rect_border_clip.h;
-			b = rect_border_clip.t + b*rect_border_clip.h;
-
-			vkui_tricolor_ab(self->tricolor, a, b);
-			vkui_screen_scissor(screen, &rect_border_clip);
-			vkui_tricolor_drawRect(self->tricolor);
+			b = 0.0f;
 		}
+		else if(b > 1.0f)
+		{
+			b = 1.0f;
+		}
+		a = rect_border_clip.t + a*rect_border_clip.h;
+		b = rect_border_clip.t + b*rect_border_clip.h;
+
+		vkui_tricolor_ab(self->tricolor, a, b);
+		vkui_screen_scissor(screen, &rect_border_clip);
+		vkui_tricolor_drawRect(self->tricolor);
 	}
 }
 
