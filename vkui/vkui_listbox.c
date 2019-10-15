@@ -532,7 +532,10 @@ void vkui_listbox_clear(vkui_listbox_t* self)
 {
 	assert(self);
 
+	vkui_widget_t* widget = (vkui_widget_t*) self;
+
 	cc_list_discard(self->list);
+	vkui_screen_dirty(widget->screen);
 }
 
 int vkui_listbox_add(vkui_listbox_t* self,
