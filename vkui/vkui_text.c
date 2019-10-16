@@ -365,6 +365,7 @@ vkui_text_new(vkui_screen_t* screen, size_t wsize,
 	{
 		.border   = text_layout->border ? text_layout->border :
 		                                  text_style->spacing,
+		.anchor   = text_layout->anchor,
 		.wrapx    = text_layout->wrapx,
 		.stretchx = text_layout->stretchx,
 	};
