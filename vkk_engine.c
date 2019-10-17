@@ -250,9 +250,6 @@ vkk_engine_newInstance(vkk_engine_t* self,
 		.apiVersion         = self->version
 	};
 
-	#ifndef ANDROID
-		#define DEBUG_LAYERS
-	#endif
 	#if defined(DEBUG_LAYERS)
 		uint32_t layer_count = 1;
 		const char* layer_names[] =
