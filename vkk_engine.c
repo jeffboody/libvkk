@@ -3273,8 +3273,8 @@ void vkk_engine_mipmapImage(vkk_engine_t* self,
 					.z = 0,
 				},
 				{
-					.x = (uint32_t) (w >> (i - 1)),
-					.y = (uint32_t) (h >> (i - 1)),
+					.x = (uint32_t) (w >> (i - 1)) + 1,
+					.y = (uint32_t) (h >> (i - 1)) + 1,
 					.z = 1,
 				}
 			},
@@ -3293,8 +3293,8 @@ void vkk_engine_mipmapImage(vkk_engine_t* self,
 					.z = 0,
 				},
 				{
-					.x = (uint32_t) (w >> i),
-					.y = (uint32_t) (h >> i),
+					.x = (uint32_t) (w >> i) + 1,
+					.y = (uint32_t) (h >> i) + 1,
 					.z = 1,
 				}
 			}
