@@ -47,7 +47,7 @@ typedef struct
 	vkui_fontcoords_t coords[128];
 
 	// shader data
-	vkui_spriteImage_t* image;
+	vkk_image_t* image;
 } vkui_font_t;
 
 vkui_font_t* vkui_font_new(vkui_screen_t* screen,

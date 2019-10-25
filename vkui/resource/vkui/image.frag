@@ -14,7 +14,7 @@ layout(std140, set=2, binding=0) uniform uniformMultiply
 	bool multiply;
 };
 
-layout(set=3, binding=0) uniform sampler2D image;
+layout(set=2, binding=1) uniform sampler2D image;
 
 layout(location=0) out vec4 fragColor;
 

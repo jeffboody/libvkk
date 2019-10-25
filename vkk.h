@@ -77,9 +77,11 @@
 #define VKK_STAGE_VSFS  3
 #define VKK_STAGE_COUNT 4
 
-#define VKK_UNIFORM_TYPE_BUFFER  0
-#define VKK_UNIFORM_TYPE_SAMPLER 1
-#define VKK_UNIFORM_TYPE_COUNT   2
+#define VKK_UNIFORM_TYPE_BUFFER      0
+#define VKK_UNIFORM_TYPE_SAMPLER     1
+#define VKK_UNIFORM_TYPE_BUFFER_REF  2
+#define VKK_UNIFORM_TYPE_SAMPLER_REF 3
+#define VKK_UNIFORM_TYPE_COUNT       4
 
 #define VKK_UPDATE_MODE_STATIC    0
 #define VKK_UPDATE_MODE_DEFAULT   1
@@ -183,6 +185,8 @@ typedef struct
  *     e) when update is set to DEFAULT and the buffer
  *        usage is vertex or index then the buffer may be
  *        updated zero or one times
+ *  8) a pipeline layout may be associated with up to 4
+ *     uniform set factories
  *  9) graphics pipelines are NOT shared between renderers
  * 10) CPU and GPU synchronization is handled automatically
  *     by the engine with the exception of the shutdown
@@ -308,6 +312,10 @@ void vkk_renderer_updateBuffer(vkk_renderer_t* self,
                                vkk_buffer_t* buffer,
                                size_t size,
                                const void* buf);
+void vkk_renderer_updateUniformSetRefs(vkk_renderer_t* self,
+                                       vkk_uniformSet_t* us,
+                                       uint32_t ua_count,
+                                       vkk_uniformAttachment_t* ua_array);
 void vkk_renderer_bindGraphicsPipeline(vkk_renderer_t* self,
                                        vkk_graphicsPipeline_t* gp);
 void vkk_renderer_bindUniformSets(vkk_renderer_t* self,

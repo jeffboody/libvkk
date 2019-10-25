@@ -450,7 +450,7 @@ vkui_screen_new(vkk_engine_t* engine,
 		goto fail_usf1_color;
 	}
 
-	vkk_uniformBinding_t ub2_array[1] =
+	vkk_uniformBinding_t ub2_array[2] =
 	{
 		// layout(std140, set=2, binding=0) uniform uniformMultiply
 		{
@@ -459,61 +459,48 @@ vkui_screen_new(vkk_engine_t* engine,
 			.stage    = VKK_STAGE_FS,
 			.sampler  = NULL
 		},
-	};
-
-	self->usf2_multiply = vkk_engine_newUniformSetFactory(engine,
-	                                                      VKK_UPDATE_MODE_DEFAULT,
-	                                                      1,
-	                                                      ub2_array);
-	if(self->usf2_multiply == NULL)
-	{
-		goto fail_usf2_multiply;
-	}
-
-	vkk_uniformBinding_t ub3_array[1] =
-	{
-		// layout(set=3, binding=0) uniform sampler2D image;
+		// layout(set=2, binding=1) uniform sampler2D image;
 		{
-			.binding  = 0,
-			.type     = VKK_UNIFORM_TYPE_SAMPLER,
+			.binding  = 1,
+			.type     = VKK_UNIFORM_TYPE_SAMPLER_REF,
 			.stage    = VKK_STAGE_FS,
 			.sampler  = self->sampler
 		},
 	};
 
-	self->usf3_image = vkk_engine_newUniformSetFactory(engine,
-	                                                   VKK_UPDATE_MODE_STATIC,
-	                                                   1,
-	                                                   ub3_array);
-	if(self->usf3_image == NULL)
+	self->usf2_multiplyImage = vkk_engine_newUniformSetFactory(engine,
+	                                                           VKK_UPDATE_MODE_DEFAULT,
+	                                                           2,
+	                                                           ub2_array);
+	if(self->usf2_multiplyImage == NULL)
 	{
-		goto fail_usf3_image;
+		goto fail_usf2_multiplyImage;
 	}
 
-	vkk_uniformBinding_t ub4_array[4] =
+	vkk_uniformBinding_t ub3_array[4] =
 	{
-		// layout(std140, set=4, binding=0) uniform uniformColor0
+		// layout(std140, set=3, binding=0) uniform uniformColor0
 		{
 			.binding  = 0,
 			.type     = VKK_UNIFORM_TYPE_BUFFER,
 			.stage    = VKK_STAGE_FS,
 			.sampler  = NULL
 		},
-		// layout(std140, set=4, binding=1) uniform uniformColor1
+		// layout(std140, set=3, binding=1) uniform uniformColor1
 		{
 			.binding  = 1,
 			.type     = VKK_UNIFORM_TYPE_BUFFER,
 			.stage    = VKK_STAGE_FS,
 			.sampler  = NULL
 		},
-		// layout(std140, set=4, binding=2) uniform uniformColor2
+		// layout(std140, set=3, binding=2) uniform uniformColor2
 		{
 			.binding  = 2,
 			.type     = VKK_UNIFORM_TYPE_BUFFER,
 			.stage    = VKK_STAGE_FS,
 			.sampler  = NULL
 		},
-		// layout(std140, set=4, binding=3) uniform uniformAb
+		// layout(std140, set=3, binding=3) uniform uniformAb
 		{
 			.binding  = 3,
 			.type     = VKK_UNIFORM_TYPE_BUFFER,
@@ -522,25 +509,24 @@ vkui_screen_new(vkk_engine_t* engine,
 		},
 	};
 
-	self->usf4_tricolor = vkk_engine_newUniformSetFactory(engine,
+	self->usf3_tricolor = vkk_engine_newUniformSetFactory(engine,
 	                                                      VKK_UPDATE_MODE_DEFAULT,
 	                                                      4,
-	                                                      ub4_array);
-	if(self->usf4_tricolor == NULL)
+	                                                      ub3_array);
+	if(self->usf3_tricolor == NULL)
 	{
-		goto fail_usf4_tricolor;
+		goto fail_usf3_tricolor;
 	}
 
-	vkk_uniformSetFactory_t* usf_array[5] =
+	vkk_uniformSetFactory_t* usf_array[4] =
 	{
 		self->usf0_mvp,
 		self->usf1_color,
-		self->usf2_multiply,
-		self->usf3_image,
-		self->usf4_tricolor,
+		self->usf2_multiplyImage,
+		self->usf3_tricolor,
 	};
 
-	self->pl = vkk_engine_newPipelineLayout(engine, 5,
+	self->pl = vkk_engine_newPipelineLayout(engine, 4,
 	                                        usf_array);
 	if(self->pl == NULL)
 	{
@@ -718,14 +704,11 @@ vkui_screen_new(vkk_engine_t* engine,
 		vkk_engine_deletePipelineLayout(engine, &self->pl);
 	fail_pl:
 		vkk_engine_deleteUniformSetFactory(engine,
-		                                   &self->usf4_tricolor);
-	fail_usf4_tricolor:
+		                                   &self->usf3_tricolor);
+	fail_usf3_tricolor:
 		vkk_engine_deleteUniformSetFactory(engine,
-		                                   &self->usf3_image);
-	fail_usf3_image:
-		vkk_engine_deleteUniformSetFactory(engine,
-		                                   &self->usf2_multiply);
-	fail_usf2_multiply:
+		                                   &self->usf2_multiplyImage);
+	fail_usf2_multiplyImage:
 		vkk_engine_deleteUniformSetFactory(engine,
 		                                   &self->usf1_color);
 	fail_usf1_color:
@@ -767,14 +750,11 @@ void vkui_screen_delete(vkui_screen_t** _self)
 		miter = cc_map_head(self->sprite_map, &miterator);
 		while(miter)
 		{
-			vkui_spriteImage_t* img;
-			img = (vkui_spriteImage_t*)
-			      cc_map_remove(self->sprite_map, &miter);
-			vkk_engine_deleteUniformSet(self->engine,
-			                            &img->us_image);
+			vkk_image_t* image;
+			image = (vkk_image_t*)
+			        cc_map_remove(self->sprite_map, &miter);
 			vkk_engine_deleteImage(self->engine,
-			                       &img->image);
-			free(img);
+			                       &image);
 		}
 		cc_map_delete(&self->sprite_map);
 
@@ -790,11 +770,9 @@ void vkui_screen_delete(vkui_screen_t** _self)
 		                                  &self->gp_color);
 		vkk_engine_deletePipelineLayout(engine, &self->pl);
 		vkk_engine_deleteUniformSetFactory(engine,
-		                                   &self->usf4_tricolor);
+		                                   &self->usf3_tricolor);
 		vkk_engine_deleteUniformSetFactory(engine,
-		                                   &self->usf3_image);
-		vkk_engine_deleteUniformSetFactory(engine,
-		                                   &self->usf2_multiply);
+		                                   &self->usf2_multiplyImage);
 		vkk_engine_deleteUniformSetFactory(engine,
 		                                   &self->usf1_color);
 		vkk_engine_deleteUniformSetFactory(engine,
@@ -1143,35 +1121,27 @@ vkui_screen_textVb(vkui_screen_t* self, uint32_t size,
 	                            size, NULL);
 }
 
-vkui_spriteImage_t*
+vkk_image_t*
 vkui_screen_spriteImage(vkui_screen_t* self,
                         const char* name)
 {
 	assert(self);
 	assert(name);
 
-	vkui_spriteImage_t* img;
+	vkk_image_t* image;
 	cc_mapIter_t miter;
-	img = (vkui_spriteImage_t*)
-	      cc_map_find(self->sprite_map, &miter, name);
-	if(img)
+	image = (vkk_image_t*)
+	        cc_map_find(self->sprite_map, &miter, name);
+	if(image)
 	{
-		return img;
-	}
-
-	img = (vkui_spriteImage_t*)
-	      calloc(1, sizeof(vkui_spriteImage_t));
-	if(img == NULL)
-	{
-		LOGE("calloc failed");
-		return NULL;
+		return image;
 	}
 
 	pak_file_t* pak;
 	pak = pak_file_open(self->resource, PAK_FLAG_READ);
 	if(pak == NULL)
 	{
-		goto fail_pak;
+		return NULL;
 	}
 
 	int size = pak_file_seek(pak, name);
@@ -1253,36 +1223,17 @@ vkui_screen_spriteImage(vkui_screen_t* self,
 		goto fail_size;
 	}
 
-	img->image = vkk_engine_newImage(self->engine,
-	                                 tex->width, tex->height,
-	                                 image_format, 0,
-	                                 VKK_STAGE_FS,
-	                                 tex->pixels);
-	if(img->image == NULL)
+	image = vkk_engine_newImage(self->engine,
+	                            tex->width, tex->height,
+	                            image_format, 0,
+	                            VKK_STAGE_FS,
+	                            tex->pixels);
+	if(image == NULL)
 	{
 		goto fail_image;
 	}
 
-	vkk_uniformAttachment_t ua_array_image[1] =
-	{
-		// layout(set=3, binding=0) uniform sampler2D image;
-		{
-			.binding = 0,
-			.type    = VKK_UNIFORM_TYPE_SAMPLER,
-			.image   = img->image
-		}
-	};
-
-	img->us_image = vkk_engine_newUniformSet(self->engine,
-	                                         3, 1,
-	                                         ua_array_image,
-	                                         self->usf3_image);
-	if(img->us_image == NULL)
-	{
-		goto fail_us_img;
-	}
-
-	if(cc_map_add(self->sprite_map, (const void*) img,
+	if(cc_map_add(self->sprite_map, (const void*) image,
 	              name) == 0)
 	{
 		goto fail_add;
@@ -1292,15 +1243,12 @@ vkui_screen_spriteImage(vkui_screen_t* self,
 	pak_file_close(&pak);
 
 	// success
-	return img;
+	return image;
 
 	// failure
 	fail_add:
-		vkk_engine_deleteUniformSet(self->engine,
-		                            &img->us_image);
-	fail_us_img:
 		vkk_engine_deleteImage(self->engine,
-		                       &img->image);
+		                       &image);
 	fail_image:
 	fail_size:
 	fail_format:
@@ -1308,7 +1256,5 @@ vkui_screen_spriteImage(vkui_screen_t* self,
 	fail_tex:
 	fail_seek:
 		pak_file_close(&pak);
-	fail_pak:
-		free(img);
 	return NULL;
 }

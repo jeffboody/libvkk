@@ -51,15 +51,14 @@ static void vkui_sprite_draw(vkui_widget_t* widget)
 {
 	assert(widget);
 
-	vkui_sprite_t*      self   = (vkui_sprite_t*) widget;
-	vkui_screen_t*      screen = widget->screen;
-	vkui_spriteImage_t* img    = self->image_array[self->index];
+	vkui_sprite_t* self   = (vkui_sprite_t*) widget;
+	vkui_screen_t* screen = widget->screen;
+	vkk_image_t*   image  = self->image_array[self->index];
 
 	vkui_screen_bind(widget->screen, VKUI_SCREEN_BIND_IMAGE);
 
-	int multiply   = 1;
-	int img_format = vkk_image_format(img->image);
-	if(img_format == VKK_IMAGE_FORMAT_R8)
+	int multiply = 1;
+	if(vkk_image_format(image) == VKK_IMAGE_FORMAT_R8)
 	{
 		multiply = 0;
 	}
@@ -88,16 +87,26 @@ static void vkui_sprite_draw(vkui_widget_t* widget)
 	                          sizeof(cc_mat4f_t),
 	                          (const void*) &mvp);
 
-	vkk_uniformSet_t* us_array[4] =
+	vkk_uniformAttachment_t ua =
+	{
+		.binding = 1,
+		.type    = VKK_UNIFORM_TYPE_SAMPLER_REF,
+		.image   = image
+	};
+
+	vkk_renderer_updateUniformSetRefs(screen->renderer,
+	                                  self->us_multiplyImage,
+	                                  1, &ua);
+
+	vkk_uniformSet_t* us_array[3] =
 	{
 		self->us_mvp,
 		self->us_color,
-		self->us_multiply,
-		img->us_image
+		self->us_multiplyImage,
 	};
 
 	vkk_renderer_bindUniformSets(screen->renderer,
-	                             screen->pl, 4,
+	                             screen->pl, 3,
 	                             us_array);
 	vkk_renderer_draw(screen->renderer, 4,
 	                  1, &self->vb_color_xyuv);
@@ -174,9 +183,9 @@ vkui_sprite_new(vkui_screen_t* screen,
 	self->index = 0;
 	self->theta = 0.0f;
 
-	self->image_array = (vkui_spriteImage_t**)
+	self->image_array = (vkk_image_t**)
 	                    calloc(count,
-	                           sizeof(vkui_spriteImage_t));
+	                           sizeof(vkk_image_t*));
 	if(self->image_array == NULL)
 	{
 		LOGE("calloc failed");
@@ -186,14 +195,14 @@ vkui_sprite_new(vkui_screen_t* screen,
 	int i;
 	for(i = 0; i < count; ++i)
 	{
-		vkui_spriteImage_t* img;
-		img = vkui_screen_spriteImage(screen,
-		                              sprite_array[i]);
-		if(img == NULL)
+		vkk_image_t* image;
+		image = vkui_screen_spriteImage(screen,
+		                                sprite_array[i]);
+		if(image == NULL)
 		{
-			goto fail_img;
+			goto fail_image;
 		}
-		self->image_array[i] = img;
+		self->image_array[i] = image;
 	}
 
 	self->ub_mvp = vkk_engine_newBuffer(screen->engine,
@@ -286,20 +295,20 @@ vkui_sprite_new(vkui_screen_t* screen,
 		},
 	};
 
-	self->us_multiply = vkk_engine_newUniformSet(screen->engine,
-	                                             2, 1,
-	                                             ua_array_multiply,
-	                                             screen->usf2_multiply);
-	if(self->us_multiply == NULL)
+	self->us_multiplyImage = vkk_engine_newUniformSet(screen->engine,
+	                                                  2, 1,
+	                                                  ua_array_multiply,
+	                                                  screen->usf2_multiplyImage);
+	if(self->us_multiplyImage == NULL)
 	{
-		goto fail_us_multiply;
+		goto fail_us_multiplyImage;
 	}
 
 	// success
 	return self;
 
 	// failure
-	fail_us_multiply:
+	fail_us_multiplyImage:
 		vkk_engine_deleteUniformSet(screen->engine,
 		                            &self->us_color);
 	fail_us_color:
@@ -318,7 +327,7 @@ vkui_sprite_new(vkui_screen_t* screen,
 		vkk_engine_deleteBuffer(screen->engine,
 		                        &self->ub_mvp);
 	fail_ub_mvp:
-	fail_img:
+	fail_image:
 		free(self->image_array);
 	fail_image_array:
 		vkui_widget_delete((vkui_widget_t**) &self);
@@ -336,7 +345,7 @@ void vkui_sprite_delete(vkui_sprite_t** _self)
 		vkui_screen_t* screen = widget->screen;
 
 		vkk_engine_deleteUniformSet(screen->engine,
-		                            &self->us_multiply);
+		                            &self->us_multiplyImage);
 		vkk_engine_deleteUniformSet(screen->engine,
 		                            &self->us_color);
 		vkk_engine_deleteUniformSet(screen->engine,

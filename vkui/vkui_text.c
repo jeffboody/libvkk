@@ -192,20 +192,30 @@ static void vkui_text_draw(vkui_widget_t* widget)
 		                          sizeof(int),
 		                          (const void*) &multiply);
 
-		vkui_screen_bind(screen, VKUI_SCREEN_BIND_TEXT);
-
 		vkui_font_t* font = vkui_screen_font(screen,
 		                                     style->font_type);
-		vkk_uniformSet_t* us_font[4] =
+		vkk_uniformAttachment_t ua =
+		{
+			.binding = 1,
+			.type    = VKK_UNIFORM_TYPE_SAMPLER_REF,
+			.image   = font->image
+		};
+
+		vkk_renderer_updateUniformSetRefs(screen->renderer,
+		                                  self->us_multiplyImage,
+		                                  1, &ua);
+
+		vkui_screen_bind(screen, VKUI_SCREEN_BIND_TEXT);
+
+		vkk_uniformSet_t* us_font[3] =
 		{
 			self->us_mvp,
 			self->us_color,
-			self->us_multiply,
-			font->image->us_image
+			self->us_multiplyImage,
 		};
 
 		vkk_renderer_bindUniformSets(screen->renderer,
-		                             screen->pl, 4,
+		                             screen->pl, 3,
 		                             us_font);
 
 		vkk_renderer_draw(screen->renderer, 2*3*len,
@@ -465,12 +475,12 @@ vkui_text_new(vkui_screen_t* screen, size_t wsize,
 		.buffer  = self->ub_multiply
 	};
 
-	self->us_multiply = vkk_engine_newUniformSet(screen->engine,
-	                                             2, 1, &ua_multiply,
-	                                             screen->usf2_multiply);
-	if(self->us_multiply == NULL)
+	self->us_multiplyImage = vkk_engine_newUniformSet(screen->engine,
+	                                                  2, 1, &ua_multiply,
+	                                                  screen->usf2_multiplyImage);
+	if(self->us_multiplyImage == NULL)
 	{
-		goto fail_us_multiply;
+		goto fail_us_multiplyImage;
 	}
 
 	// initialize string and cursor
@@ -480,7 +490,7 @@ vkui_text_new(vkui_screen_t* screen, size_t wsize,
 	return self;
 
 	// failure
-	fail_us_multiply:
+	fail_us_multiplyImage:
 		vkk_engine_deleteBuffer(screen->engine,
 		                        &self->ub_multiply);
 	fail_ub_multiply:
@@ -511,7 +521,7 @@ void vkui_text_delete(vkui_text_t** _self)
 		vkui_screen_t* screen = widget->screen;
 
 		vkk_engine_deleteUniformSet(screen->engine,
-		                            &self->us_multiply);
+		                            &self->us_multiplyImage);
 		vkk_engine_deleteBuffer(screen->engine,
 		                        &self->ub_multiply);
 		vkk_engine_deleteUniformSet(screen->engine,

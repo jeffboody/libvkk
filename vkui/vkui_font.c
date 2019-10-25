@@ -175,7 +175,7 @@ vkui_font_loadXml(vkui_font_t* self,
 
 	uint32_t W;
 	uint32_t H;
-	vkk_image_size(self->image->image, &W, &H);
+	vkk_image_size(self->image, &W, &H);
 
 	// validate xml
 	// check height
@@ -304,7 +304,7 @@ void vkui_font_request(vkui_font_t* self,
 
 	uint32_t W;
 	uint32_t H;
-	vkk_image_size(self->image->image, &W, &H);
+	vkk_image_size(self->image, &W, &H);
 
 	// fill in tex coords
 	tc->t = (float) self->coords[(int) c].y;

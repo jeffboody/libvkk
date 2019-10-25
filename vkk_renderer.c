@@ -32,6 +32,122 @@
 #include "vkk_renderer.h"
 
 /***********************************************************
+* private                                                  *
+***********************************************************/
+
+static void
+vkk_fillUniformAttachmentArray(vkk_uniformAttachment_t* dst,
+                               uint32_t src_ua_count,
+                               vkk_uniformAttachment_t* src,
+                               vkk_uniformSetFactory_t* usf)
+{
+	assert(dst);
+	assert(src);
+	assert(usf);
+
+	// dst binding/type already filled in
+	// validate and fill buffer/image union
+	uint32_t i;
+	for(i = 0; i < src_ua_count; ++i)
+	{
+		uint32_t b = src[i].binding;
+		assert(b < usf->ub_count);
+		assert(b == dst[b].binding);
+		assert((src[i].type == VKK_UNIFORM_TYPE_BUFFER_REF) ||
+		       (src[i].type == VKK_UNIFORM_TYPE_SAMPLER_REF));
+		assert(src[i].type == dst[b].type);
+
+		dst[b].buffer = src[i].buffer;
+	}
+}
+
+static void
+vkk_renderer_updateUniformBufferRef(vkk_renderer_t* self,
+                                    vkk_uniformSet_t* us,
+                                    uint32_t swapchain_frame,
+                                    vkk_buffer_t* buffer,
+                                    uint32_t binding)
+{
+	assert(self);
+	assert(us);
+	assert(buffer);
+
+	vkk_engine_t* engine = self->engine;
+
+	uint32_t idx;
+	idx = (buffer->update == VKK_UPDATE_MODE_DEFAULT) ?
+	      swapchain_frame : 0;
+	VkDescriptorBufferInfo db_info =
+	{
+		.buffer  = buffer->buffer[idx],
+		.offset  = 0,
+		.range   = buffer->size
+	};
+
+	idx = (us->usf->update == VKK_UPDATE_MODE_DEFAULT) ?
+	      swapchain_frame : 0;
+	VkWriteDescriptorSet writes =
+	{
+		.sType            = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
+		.pNext            = NULL,
+		.dstSet           = us->ds_array[idx],
+		.dstBinding       = binding,
+		.dstArrayElement  = 0,
+		.descriptorCount  = 1,
+		.descriptorType   = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
+		.pImageInfo       = NULL,
+		.pBufferInfo      = &db_info,
+		.pTexelBufferView = NULL,
+	};
+
+	vkUpdateDescriptorSets(engine->device, 1, &writes,
+	                       0, NULL);
+}
+
+static void
+vkk_renderer_updateUniformSamplerRef(vkk_renderer_t* self,
+                                     vkk_uniformSet_t* us,
+                                     uint32_t swapchain_frame,
+                                     vkk_sampler_t* sampler,
+                                     vkk_image_t* image,
+                                     uint32_t binding)
+{
+	assert(self);
+	assert(us);
+	assert(sampler);
+	assert(image);
+
+	vkk_engine_t* engine = self->engine;
+
+	VkDescriptorImageInfo di_info =
+	{
+		.sampler     = sampler->sampler,
+		.imageView   = image->image_view,
+		.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL
+	};
+
+	uint32_t idx;
+	idx = (us->usf->update == VKK_UPDATE_MODE_DEFAULT) ?
+	      swapchain_frame : 0;
+	VkWriteDescriptorSet writes =
+	{
+		.sType            = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
+		.pNext            = NULL,
+		.dstSet           = us->ds_array[idx],
+		.dstBinding       = binding,
+		.dstArrayElement  = 0,
+		.descriptorCount  = 1,
+		.descriptorType   = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
+		.pImageInfo       = &di_info,
+		.pBufferInfo      = NULL,
+		.pTexelBufferView = NULL,
+	};
+
+	vkUpdateDescriptorSets(engine->device, 1, &writes,
+	                       0, NULL);
+}
+
+/***********************************************************
 * public                                                   *
 ***********************************************************/
 
@@ -177,6 +293,47 @@ void vkk_renderer_updateBuffer(vkk_renderer_t* self,
 	else
 	{
 		LOGW("vkMapMemory failed");
+	}
+}
+
+void
+vkk_renderer_updateUniformSetRefs(vkk_renderer_t* self,
+                                  vkk_uniformSet_t* us,
+                                  uint32_t ua_count,
+                                  vkk_uniformAttachment_t* ua_array)
+{
+	assert(self);
+	assert(us);
+	assert(ua_array);
+
+	vkk_uniformSetFactory_t* usf = us->usf;
+
+	vkk_fillUniformAttachmentArray(us->ua_array, ua_count,
+	                               ua_array, usf);
+
+	uint32_t swapchain_frame;
+	swapchain_frame = (*self->swapchainFrameFn)(self);
+
+	// attach buffers and images
+	uint32_t i;
+	for(i = 0; i < ua_count; ++i)
+	{
+		if(ua_array[i].type == VKK_UNIFORM_TYPE_BUFFER_REF)
+		{
+			vkk_renderer_updateUniformBufferRef(self, us,
+			                                    swapchain_frame,
+			                                    ua_array[i].buffer,
+			                                    ua_array[i].binding);
+		}
+		else if(ua_array[i].type == VKK_UNIFORM_TYPE_SAMPLER_REF)
+		{
+			uint32_t b = ua_array[i].binding;
+			vkk_renderer_updateUniformSamplerRef(self, us,
+			                                     swapchain_frame,
+			                                     usf->ub_array[b].sampler,
+			                                     ua_array[i].image,
+			                                     ua_array[i].binding);
+		}
 	}
 }
 

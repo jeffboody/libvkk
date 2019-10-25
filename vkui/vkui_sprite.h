@@ -28,12 +28,6 @@
 #include "vkui_widget.h"
 #include "vkui.h"
 
-typedef struct vkui_spriteImage_s
-{
-	vkk_image_t*      image;
-	vkk_uniformSet_t* us_image;
-} vkui_spriteImage_t;
-
 typedef struct vkui_sprite_s
 {
 	vkui_widget_t widget;
@@ -44,14 +38,14 @@ typedef struct vkui_sprite_s
 	float    theta;
 
 	// shader data
-	vkui_spriteImage_t** image_array;
-	vkk_buffer_t*        vb_color_xyuv;
-	vkk_buffer_t*        ub_mvp;
-	vkk_buffer_t*        ub_color;
-	vkk_buffer_t*        ub_multiply;
-	vkk_uniformSet_t*    us_mvp;
-	vkk_uniformSet_t*    us_color;
-	vkk_uniformSet_t*    us_multiply;
+	vkk_image_t**     image_array;
+	vkk_buffer_t*     vb_color_xyuv;
+	vkk_buffer_t*     ub_mvp;
+	vkk_buffer_t*     ub_color;
+	vkk_buffer_t*     ub_multiply;
+	vkk_uniformSet_t* us_mvp;
+	vkk_uniformSet_t* us_color;
+	vkk_uniformSet_t* us_multiplyImage;
 } vkui_sprite_t;
 
 #endif

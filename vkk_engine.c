@@ -817,6 +817,8 @@ vkk_engine_newDescriptorPoolLocked(vkk_engine_t* self,
 	{
 		VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
 		VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
+		VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
+		VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
 	};
 
 	// fill the descriptor pool size array and
@@ -1640,6 +1642,38 @@ vkk_engine_deleteObject(vkk_engine_t* self, int type,
 	}
 }
 
+static void
+vkk_copyUniformAttachmentArray(vkk_uniformAttachment_t* dst,
+                               uint32_t src_ua_count,
+                               vkk_uniformAttachment_t* src,
+                               vkk_uniformSetFactory_t* usf)
+{
+	assert(dst);
+	assert(src);
+	assert(usf);
+
+	// fill binding/type
+	uint32_t i;
+	for(i = 0; i < usf->ub_count; ++i)
+	{
+		dst[i].binding = usf->ub_array[i].binding;
+		dst[i].type    = usf->ub_array[i].type;
+	}
+
+	// validate and fill buffer/image union
+	for(i = 0; i < src_ua_count; ++i)
+	{
+		uint32_t b = src[i].binding;
+		assert(b < usf->ub_count);
+		assert(b == dst[b].binding);
+		assert((src[i].type == VKK_UNIFORM_TYPE_BUFFER) ||
+		       (src[i].type == VKK_UNIFORM_TYPE_SAMPLER));
+		assert(src[i].type == dst[b].type);
+
+		dst[b].buffer = src[i].buffer;
+	}
+}
+
 /***********************************************************
 * engine new/delete API                                    *
 ***********************************************************/
@@ -1678,7 +1712,7 @@ vkk_engine_t* vkk_engine_new(void* app,
 		}
 	#endif
 
-	self->version = VK_MAKE_VERSION(1,0,6);
+	self->version = VK_MAKE_VERSION(1,0,7);
 
 	snprintf(self->resource, 256, "%s", resource);
 	snprintf(self->cache, 256, "%s", cache);
@@ -2405,6 +2439,8 @@ vkk_engine_newUniformSetFactory(vkk_engine_t* self,
 	{
 		VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
 		VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
+		VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
+		VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
 	};
 
 	VkShaderStageFlags ss_map[VKK_STAGE_COUNT] =
@@ -2545,7 +2581,6 @@ vkk_engine_newUniformSet(vkk_engine_t* self,
 	assert(self);
 	assert(ua_array);
 	assert(usf);
-	assert(ua_count == usf->ub_count);
 
 	vkk_renderer_t* renderer = self->renderer;
 
@@ -2588,20 +2623,20 @@ vkk_engine_newUniformSet(vkk_engine_t* self,
 		}
 
 		us->set      = set;
-		us->ua_count = ua_count;
+		us->ua_count = usf->ub_count;
 		us->usf      = usf;
 
 		// copy the ua_array
 		us->ua_array = (vkk_uniformAttachment_t*)
-		               CALLOC(ua_count,
+		               CALLOC(usf->ub_count,
 		                      sizeof(vkk_uniformAttachment_t));
 		if(us->ua_array == NULL)
 		{
 			LOGE("CALLOC failed");
 			goto fail_ua_array;
 		}
-		memcpy(us->ua_array, ua_array,
-		       ua_count*sizeof(vkk_uniformAttachment_t));
+		vkk_copyUniformAttachmentArray(us->ua_array, ua_count,
+		                               ua_array, usf);
 
 		uint32_t ds_count;
 		ds_count = (usf->update == VKK_UPDATE_MODE_DEFAULT) ?
@@ -2659,17 +2694,15 @@ vkk_engine_newUniformSet(vkk_engine_t* self,
 		us->usf = usf;
 
 		// copy the ua_array
-		memcpy(us->ua_array, ua_array,
-		       ua_count*sizeof(vkk_uniformAttachment_t));
+		memset(us->ua_array, 0,
+		       usf->ub_count*sizeof(vkk_uniformAttachment_t));
+		vkk_copyUniformAttachmentArray(us->ua_array, ua_count,
+		                               ua_array, usf);
 	}
 
 	// attach buffers and images
 	for(i = 0; i < ua_count; ++i)
 	{
-		assert(ua_array[i].binding == usf->ub_array[i].binding);
-		assert(ua_array[i].type == usf->ub_array[i].type);
-		assert(ua_array[i].type < VKK_UNIFORM_TYPE_COUNT);
-
 		if(ua_array[i].type == VKK_UNIFORM_TYPE_BUFFER)
 		{
 			vkk_engine_attachUniformBuffer(self, us,
@@ -2678,8 +2711,9 @@ vkk_engine_newUniformSet(vkk_engine_t* self,
 		}
 		else if(ua_array[i].type == VKK_UNIFORM_TYPE_SAMPLER)
 		{
+			uint32_t b = ua_array[i].binding;
 			vkk_engine_attachUniformSampler(self, us,
-			                                usf->ub_array[i].sampler,
+			                                usf->ub_array[b].sampler,
 			                                ua_array[i].image,
 			                                ua_array[i].binding);
 		}

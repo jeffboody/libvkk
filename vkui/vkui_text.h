@@ -45,7 +45,7 @@ typedef struct vkui_text_s
 	vkk_buffer_t*     ub_mvp;
 	vkk_uniformSet_t* us_mvp;
 	vkk_buffer_t*     ub_multiply;
-	vkk_uniformSet_t* us_multiply;
+	vkk_uniformSet_t* us_multiplyImage;
 	vkk_buffer_t*     ub_color;
 	vkk_uniformSet_t* us_color;
 } vkui_text_t;

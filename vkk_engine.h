@@ -39,7 +39,9 @@
 #include "../libcc/cc_workq.h"
 #include "vkk.h"
 
-#define VKK_ENGINE_MAX_USF_COUNT 16
+// this value corresponds to the Vulkan required supported
+// limit for maxBoundDescriptorSets
+#define VKK_ENGINE_MAX_USF_COUNT 4
 
 typedef struct vkk_buffer_s
 {

@@ -110,25 +110,25 @@ vkui_tricolor_t* vkui_tricolor_new(vkui_screen_t* screen,
 
 	vkk_uniformAttachment_t ua_array[4] =
 	{
-		// layout(std140, set=4, binding=0) uniform uniformColor0
+		// layout(std140, set=3, binding=0) uniform uniformColor0
 		{
 			.binding = 0,
 			.type    = VKK_UNIFORM_TYPE_BUFFER,
 			.buffer  = self->ub_color0
 		},
-		// layout(std140, set=4, binding=1) uniform uniformColor1
+		// layout(std140, set=3, binding=1) uniform uniformColor1
 		{
 			.binding = 1,
 			.type    = VKK_UNIFORM_TYPE_BUFFER,
 			.buffer  = self->ub_color1
 		},
-		// layout(std140, set=4, binding=2) uniform uniformColor2
+		// layout(std140, set=3, binding=2) uniform uniformColor2
 		{
 			.binding = 2,
 			.type    = VKK_UNIFORM_TYPE_BUFFER,
 			.buffer  = self->ub_color2
 		},
-		// layout(std140, set=4, binding=3) uniform uniformAb
+		// layout(std140, set=3, binding=3) uniform uniformAb
 		{
 			.binding = 3,
 			.type    = VKK_UNIFORM_TYPE_BUFFER,
@@ -137,9 +137,9 @@ vkui_tricolor_t* vkui_tricolor_new(vkui_screen_t* screen,
 	};
 
 	self->us = vkk_engine_newUniformSet(screen->engine,
-	                                    4, 4,
+	                                    3, 4,
 	                                    ua_array,
-	                                    screen->usf4_tricolor);
+	                                    screen->usf3_tricolor);
 	if(self->us == NULL)
 	{
 		goto fail_us;

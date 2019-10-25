@@ -44,9 +44,8 @@ typedef struct vkui_screen_s
 	vkk_sampler_t*           sampler;
 	vkk_uniformSetFactory_t* usf0_mvp;
 	vkk_uniformSetFactory_t* usf1_color;
-	vkk_uniformSetFactory_t* usf2_multiply;
-	vkk_uniformSetFactory_t* usf3_image;
-	vkk_uniformSetFactory_t* usf4_tricolor;
+	vkk_uniformSetFactory_t* usf2_multiplyImage;
+	vkk_uniformSetFactory_t* usf3_tricolor;
 	vkk_pipelineLayout_t*    pl;
 	vkk_graphicsPipeline_t*  gp_color;
 	vkk_graphicsPipeline_t*  gp_image;
@@ -125,7 +124,7 @@ vkk_buffer_t* vkui_screen_textVb(vkui_screen_t* self,
                                  uint32_t size,
                                  vkk_buffer_t* vb);
 
-vkui_spriteImage_t*
+vkk_image_t*
 vkui_screen_spriteImage(vkui_screen_t* self,
                         const char* name);
 
