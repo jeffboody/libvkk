@@ -254,7 +254,7 @@ vkk_engine_newInstance(vkk_engine_t* self,
 		uint32_t layer_count = 1;
 		const char* layer_names[] =
 		{
-			"VK_LAYER_LUNARG_standard_validation"
+			"VK_LAYER_KHRONOS_validation"
 		};
 	#elif defined(DEBUG_DUMP)
 		uint32_t layer_count = 2;
