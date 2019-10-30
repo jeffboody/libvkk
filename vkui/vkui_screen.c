@@ -29,6 +29,7 @@
 
 #define LOG_TAG "vkui"
 #include "../../libcc/math/cc_mat4f.h"
+#include "../../libcc/cc_memory.h"
 #include "../../libcc/cc_log.h"
 #include "../../libpak/pak_file.h"
 #include "../../texgz/texgz_png.h"
@@ -382,10 +383,10 @@ vkui_screen_new(vkk_engine_t* engine,
 	assert(playClick);
 
 	vkui_screen_t* self;
-	self = (vkui_screen_t*) calloc(1, sizeof(vkui_screen_t));
+	self = (vkui_screen_t*) CALLOC(1, sizeof(vkui_screen_t));
 	if(self == NULL)
 	{
-		LOGE("calloc failed");
+		LOGE("CALLOC failed");
 		return NULL;
 	}
 
@@ -717,7 +718,7 @@ vkui_screen_new(vkk_engine_t* engine,
 	fail_usf0_mvp:
 		vkk_engine_deleteSampler(engine, &self->sampler);
 	fail_sampler:
-		free(self);
+		FREE(self);
 	return NULL;
 }
 
@@ -778,7 +779,7 @@ void vkui_screen_delete(vkui_screen_t** _self)
 		vkk_engine_deleteUniformSetFactory(engine,
 		                                   &self->usf0_mvp);
 		vkk_engine_deleteSampler(engine, &self->sampler);
-		free(self);
+		FREE(self);
 		*_self = NULL;
 	}
 }

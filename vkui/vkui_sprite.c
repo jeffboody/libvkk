@@ -29,6 +29,7 @@
 
 #define LOG_TAG "vkui"
 #include "../../libcc/math/cc_mat4f.h"
+#include "../../libcc/cc_memory.h"
 #include "../../libcc/cc_log.h"
 #include "vkui_screen.h"
 #include "vkui_sprite.h"
@@ -184,11 +185,11 @@ vkui_sprite_new(vkui_screen_t* screen,
 	self->theta = 0.0f;
 
 	self->image_array = (vkk_image_t**)
-	                    calloc(count,
+	                    CALLOC(count,
 	                           sizeof(vkk_image_t*));
 	if(self->image_array == NULL)
 	{
-		LOGE("calloc failed");
+		LOGE("CALLOC failed");
 		goto fail_image_array;
 	}
 
@@ -328,7 +329,7 @@ vkui_sprite_new(vkui_screen_t* screen,
 		                        &self->ub_mvp);
 	fail_ub_mvp:
 	fail_image:
-		free(self->image_array);
+		FREE(self->image_array);
 	fail_image_array:
 		vkui_widget_delete((vkui_widget_t**) &self);
 	return NULL;
@@ -358,7 +359,7 @@ void vkui_sprite_delete(vkui_sprite_t** _self)
 		                        &self->vb_color_xyuv);
 		vkk_engine_deleteBuffer(screen->engine,
 		                        &self->ub_mvp);
-		free(self->image_array);
+		FREE(self->image_array);
 		vkui_widget_delete((vkui_widget_t**) _self);
 	}
 }

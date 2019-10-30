@@ -28,6 +28,7 @@
 #include <string.h>
 
 #define LOG_TAG "vkui"
+#include "../../libcc/cc_memory.h"
 #include "../../libcc/cc_log.h"
 #include "vkui_screen.h"
 #include "vkui_text.h"
@@ -364,7 +365,7 @@ void vkui_textbox_clear(vkui_textbox_t* self)
 	{
 		void* string;
 		string = (void*) cc_list_remove(self->strings, &iter);
-		free(string);
+		FREE(string);
 	}
 
 	vkui_widget_t* widget = (vkui_widget_t*) self;
@@ -387,10 +388,10 @@ void vkui_textbox_printf(vkui_textbox_t* self,
 	// copy string
 	size_t len    = strlen(s) + 1;
 	char*  string = (char*)
-	                calloc(len, sizeof(char));
+	                CALLOC(len, sizeof(char));
 	if(string == NULL)
 	{
-		LOGE("calloc failed");
+		LOGE("CALLOC failed");
 		return;
 	}
 	snprintf(string, len, "%s", s);
@@ -410,5 +411,5 @@ void vkui_textbox_printf(vkui_textbox_t* self,
 
 	// failure
 	fail_append:
-		free(string);
+		FREE(string);
 }

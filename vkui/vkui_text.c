@@ -31,6 +31,7 @@
 #define LOG_TAG "vkui"
 #include "../../libcc/math/cc_mat4f.h"
 #include "../../libcc/math/cc_vec4f.h"
+#include "../../libcc/cc_memory.h"
 #include "../../libcc/cc_log.h"
 #include "../../libcc/cc_timestamp.h"
 #include "vkui_font.h"
@@ -89,10 +90,10 @@ vkui_text_resize(vkui_text_t* self, size_t size)
 		return 0;
 	}
 
-	char* string = (char*) realloc(self->string, req_size);
+	char* string = (char*) REALLOC(self->string, req_size);
 	if(string == NULL)
 	{
-		LOGE("realloc failed");
+		LOGE("REALLOC failed");
 		return 0;
 	}
 	string[size - 1] = '\0';
@@ -101,10 +102,10 @@ vkui_text_resize(vkui_text_t* self, size_t size)
 	// allocate size for string and cursor character
 	// which is stored in place of the null character
 	// 2 triangles, 3 vertices, 4 components => 24
-	float* xyuv = (float*) realloc(self->xyuv, xyuv_size);
+	float* xyuv = (float*) REALLOC(self->xyuv, xyuv_size);
 	if(xyuv == NULL)
 	{
-		LOGE("realloc failed");
+		LOGE("REALLOC failed");
 		return 0;
 	}
 	self->xyuv = xyuv;

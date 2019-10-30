@@ -28,6 +28,7 @@
 
 #define LOG_TAG "vkui"
 #include "../../libcc/math/cc_rect12f.h"
+#include "../../libcc/cc_memory.h"
 #include "../../libcc/cc_log.h"
 #include "vkui_screen.h"
 #include "vkui_widget.h"
@@ -120,10 +121,10 @@ vkui_widget_new(vkui_screen_t* screen, size_t wsize,
 		wsize = sizeof(vkui_widget_t);
 	}
 
-	vkui_widget_t* self = (vkui_widget_t*) calloc(1, wsize);
+	vkui_widget_t* self = (vkui_widget_t*) CALLOC(1, wsize);
 	if(self == NULL)
 	{
-		LOGE("calloc failed");
+		LOGE("CALLOC failed");
 		return NULL;
 	}
 
@@ -212,7 +213,7 @@ vkui_widget_new(vkui_screen_t* screen, size_t wsize,
 	fail_ub_color:
 		vkk_engine_deleteBuffer(screen->engine, &self->vb_xyuv);
 	fail_vb_xyuv:
-		free(self);
+		FREE(self);
 	return NULL;
 }
 
@@ -238,7 +239,7 @@ void vkui_widget_delete(vkui_widget_t** _self)
 		                        &self->ub_color);
 		vkk_engine_deleteBuffer(screen->engine,
 		                        &self->vb_xyuv);
-		free(self);
+		FREE(self);
 		*_self = NULL;
 	}
 }

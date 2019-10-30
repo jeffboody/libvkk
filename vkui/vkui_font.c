@@ -27,6 +27,7 @@
 
 #define LOG_TAG "vkui"
 #include "../../libcc/cc_log.h"
+#include "../../libcc/cc_memory.h"
 #include "../../libpak/pak_file.h"
 #include "../../texgz/texgz_tex.h"
 #include "../../libxmlstream/xml_istream.h"
@@ -232,10 +233,10 @@ vkui_font_new(vkui_screen_t* screen, const char* resource,
 	assert(xmlname);
 
 	vkui_font_t* self;
-	self = (vkui_font_t*) malloc(sizeof(vkui_font_t));
+	self = (vkui_font_t*) MALLOC(sizeof(vkui_font_t));
 	if(self == NULL)
 	{
-		LOGE("malloc failed");
+		LOGE("MALLOC failed");
 		return NULL;
 	}
 
@@ -267,7 +268,7 @@ vkui_font_new(vkui_screen_t* screen, const char* resource,
 	// failure
 	fail_coords:
 	fail_image:
-		free(self);
+		FREE(self);
 	return NULL;
 }
 
@@ -279,7 +280,7 @@ void vkui_font_delete(vkui_font_t** _self)
 	if(self)
 	{
 		// image is a reference
-		free(self);
+		FREE(self);
 		*_self = NULL;
 	}
 }
