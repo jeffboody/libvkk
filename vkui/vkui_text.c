@@ -180,7 +180,7 @@ static void vkui_text_draw(vkui_widget_t* widget)
 		vkui_screen_sizef(screen, &w, &h);
 
 		cc_mat4f_t mvp;
-		cc_mat4f_ortho(&mvp, 1, 0.0f, w, 0.0f, h, 0.0f, 2.0f);
+		cc_mat4f_orthoVK(&mvp, 1, 0.0f, w, h, 0.0f, 0.0f, 2.0f);
 		cc_mat4f_translate(&mvp, 0, x, y, 0.0f);
 		cc_mat4f_scale(&mvp, 0, size, size, 1.0f);
 		vkk_renderer_updateBuffer(screen->renderer,

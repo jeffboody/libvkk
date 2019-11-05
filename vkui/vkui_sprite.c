@@ -79,7 +79,7 @@ static void vkui_sprite_draw(vkui_widget_t* widget)
 	float ww = widget->rect_draw.w;
 	float hh = widget->rect_draw.h;
 	vkui_screen_sizef(screen, &w, &h);
-	cc_mat4f_ortho(&pm, 1, 0.0f, w, 0.0f, h, 0.0f, 2.0f);
+	cc_mat4f_orthoVK(&pm, 1, 0.0f, w, h, 0.0f, 0.0f, 2.0f);
 	cc_mat4f_translate(&mvm, 1, x + ww/2.0f, y + hh/2.0f, 0.0f);
 	cc_mat4f_rotate(&mvm, 0, self->theta, 0.0f, 0.0f, 1.0f);
 	cc_mat4f_scale(&mvm, 0, ww, hh, 1.0f);
