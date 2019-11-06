@@ -774,14 +774,7 @@ vkk_defaultRenderer_new(vkk_engine_t* engine)
 	}
 
 	vkk_renderer_t* base = &(self->base);
-	vkk_renderer_init(base, engine,
-	                  vkk_defaultRenderer_begin,
-	                  NULL,
-	                  vkk_defaultRenderer_end,
-	                  vkk_defaultRenderer_surfaceSize,
-	                  vkk_defaultRenderer_renderPass,
-	                  vkk_defaultRenderer_commandBuffer,
-	                  vkk_defaultRenderer_swapchainFrame);
+	vkk_renderer_init(base, engine);
 
 	if(vkk_defaultRenderer_newSwapchain(base) == 0)
 	{

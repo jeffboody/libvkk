@@ -56,26 +56,10 @@ typedef uint32_t
 typedef struct vkk_renderer_s
 {
 	vkk_engine_t* engine;
-
-	// function pointers
-	vkk_renderer_beginDefaultFn   beginDefaultFn;
-	vkk_renderer_beginOffscreenFn beginOffscreenFn;
-	vkk_renderer_endFn            endFn;
-	vkk_renderer_surfaceSizeFn    surfaceSizeFn;
-	vkk_renderer_renderPassFn     renderPassFn;
-	vkk_renderer_commandBufferFn  commandBufferFn;
-	vkk_renderer_swapchainFrameFn swapchainFrameFn;
 } vkk_renderer_t;
 
 void         vkk_renderer_init(vkk_renderer_t* self,
-                               vkk_engine_t* engine,
-                               vkk_renderer_beginDefaultFn beginDefaultFn,
-                               vkk_renderer_beginOffscreenFn beginOffscreenFn,
-                               vkk_renderer_endFn endFn,
-                               vkk_renderer_surfaceSizeFn surfaceSizeFn,
-                               vkk_renderer_renderPassFn renderPassFn,
-                               vkk_renderer_commandBufferFn commandBufferFn,
-                               vkk_renderer_swapchainFrameFn swapchainFrameFn);
+                               vkk_engine_t* engine);
 VkRenderPass vkk_renderer_renderPass(vkk_renderer_t* self);
 
 #endif

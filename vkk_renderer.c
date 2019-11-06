@@ -28,6 +28,7 @@
 #define LOG_TAG "vkk"
 #include "../libcc/cc_log.h"
 #include "vkk_defaultRenderer.h"
+#include "vkk_offscreenRenderer.h"
 #include "vkk_engine.h"
 #include "vkk_renderer.h"
 
@@ -159,9 +160,8 @@ int vkk_renderer_beginDefault(vkk_renderer_t* self,
 
 	vkk_engine_t* engine = self->engine;
 
-	// check for the default renderer and valid callback
-	if((self != engine->renderer) ||
-	   (self->beginDefaultFn == NULL))
+	// check for the default renderer
+	if(self != engine->renderer)
 	{
 		LOGE("invalid");
 		return 0;
@@ -179,7 +179,7 @@ int vkk_renderer_beginDefault(vkk_renderer_t* self,
 	// flush the destruct workq
 	cc_workq_flush(engine->workq_destruct);
 
-	return (*self->beginDefaultFn)(self, clear_color);
+	return vkk_defaultRenderer_begin(self, clear_color);
 }
 
 int vkk_renderer_beginOffscreen(vkk_renderer_t* self,
@@ -192,9 +192,8 @@ int vkk_renderer_beginOffscreen(vkk_renderer_t* self,
 
 	vkk_engine_t* engine = self->engine;
 
-	// check for an offscreen renderer and valid callback
-	if((self == engine->renderer) ||
-	   (self->beginOffscreenFn == NULL))
+	// check for an offscreen renderer
+	if(self == engine->renderer)
 	{
 		LOGE("invalid");
 		return 0;
@@ -209,16 +208,24 @@ int vkk_renderer_beginOffscreen(vkk_renderer_t* self,
 	}
 	vkk_engine_rendererUnlock(engine);
 
-	return (*self->beginOffscreenFn)(self, image,
-	                                 clear_color);
+	return vkk_offscreenRenderer_begin(self, image,
+	                                   clear_color);
 }
 
 void vkk_renderer_end(vkk_renderer_t* self)
 {
 	assert(self);
-	assert(self->endFn);
 
-	(*self->endFn)(self);
+	vkk_engine_t* engine = self->engine;
+
+	if(self == engine->renderer)
+	{
+		vkk_defaultRenderer_end(self);
+	}
+	else
+	{
+		vkk_offscreenRenderer_end(self);
+	}
 }
 
 void vkk_renderer_surfaceSize(vkk_renderer_t* self,
@@ -226,9 +233,17 @@ void vkk_renderer_surfaceSize(vkk_renderer_t* self,
                               uint32_t* _height)
 {
 	assert(self);
-	assert(self->surfaceSizeFn);
 
-	(*self->surfaceSizeFn)(self, _width, _height);
+	vkk_engine_t* engine = self->engine;
+
+	if(self == engine->renderer)
+	{
+		vkk_defaultRenderer_surfaceSize(self, _width, _height);
+	}
+	else
+	{
+		vkk_offscreenRenderer_surfaceSize(self, _width, _height);
+	}
 }
 
 void vkk_renderer_updateBuffer(vkk_renderer_t* self,
@@ -277,9 +292,13 @@ void vkk_renderer_updateBuffer(vkk_renderer_t* self,
 			buffer->vbib_index = (buffer->vbib_index + 1)%count;
 			idx = buffer->vbib_index;
 		}
+		else if(self == engine->renderer)
+		{
+			idx = vkk_defaultRenderer_swapchainFrame(self);
+		}
 		else
 		{
-			idx = (*self->swapchainFrameFn)(self);
+			idx = vkk_offscreenRenderer_swapchainFrame(self);
 		}
 	}
 
@@ -306,13 +325,21 @@ vkk_renderer_updateUniformSetRefs(vkk_renderer_t* self,
 	assert(us);
 	assert(ua_array);
 
-	vkk_uniformSetFactory_t* usf = us->usf;
+	vkk_engine_t*            engine = self->engine;
+	vkk_uniformSetFactory_t* usf    = us->usf;
 
 	vkk_fillUniformAttachmentArray(us->ua_array, ua_count,
 	                               ua_array, usf);
 
 	uint32_t swapchain_frame;
-	swapchain_frame = (*self->swapchainFrameFn)(self);
+	if(self == engine->renderer)
+	{
+		swapchain_frame = vkk_defaultRenderer_swapchainFrame(self);
+	}
+	else
+	{
+		swapchain_frame = vkk_offscreenRenderer_swapchainFrame(self);
+	}
 
 	// attach buffers and images
 	uint32_t i;
@@ -344,7 +371,16 @@ void vkk_renderer_bindGraphicsPipeline(vkk_renderer_t* self,
 
 	vkk_engine_t* engine = self->engine;
 
-	VkCommandBuffer cb = (*self->commandBufferFn)(self);
+	VkCommandBuffer cb;
+	if(self == engine->renderer)
+	{
+		cb = vkk_defaultRenderer_commandBuffer(self);
+	}
+	else
+	{
+		cb = vkk_offscreenRenderer_commandBuffer(self);
+	}
+
 	vkCmdBindPipeline(cb,
 	                  VK_PIPELINE_BIND_POINT_GRAPHICS,
 	                  gp->pipeline);
@@ -384,7 +420,15 @@ void vkk_renderer_bindUniformSets(vkk_renderer_t* self,
 	uint32_t        idx;
 	VkDescriptorSet ds[VKK_ENGINE_MAX_USF_COUNT];
 	uint32_t        swapchain_frame;
-	swapchain_frame = (*self->swapchainFrameFn)(self);
+	if(self == engine->renderer)
+	{
+		swapchain_frame = vkk_defaultRenderer_swapchainFrame(self);
+	}
+	else
+	{
+		swapchain_frame = vkk_offscreenRenderer_swapchainFrame(self);
+	}
+
 	for(i = 0; i < us_count; ++i)
 	{
 		idx   = (us_array[i]->usf->update == VKK_UPDATE_MODE_DEFAULT) ?
@@ -417,7 +461,16 @@ void vkk_renderer_bindUniformSets(vkk_renderer_t* self,
 
 	uint32_t first = us_array[0]->set;
 
-	VkCommandBuffer cb = (*self->commandBufferFn)(self);
+	VkCommandBuffer cb;
+	if(self == engine->renderer)
+	{
+		cb = vkk_defaultRenderer_commandBuffer(self);
+	}
+	else
+	{
+		cb = vkk_offscreenRenderer_commandBuffer(self);
+	}
+
 	vkCmdBindDescriptorSets(cb,
 	                        VK_PIPELINE_BIND_POINT_GRAPHICS,
 	                        pl->pl, first, us_count, ds,
@@ -427,6 +480,8 @@ void vkk_renderer_bindUniformSets(vkk_renderer_t* self,
 void vkk_renderer_clearDepth(vkk_renderer_t* self)
 {
 	assert(self);
+
+	vkk_engine_t* engine = self->engine;
 
 	uint32_t width;
 	uint32_t height;
@@ -465,7 +520,16 @@ void vkk_renderer_clearDepth(vkk_renderer_t* self)
 		}
 	};
 
-	VkCommandBuffer cb = (*self->commandBufferFn)(self);
+	VkCommandBuffer cb;
+	if(self == engine->renderer)
+	{
+		cb = vkk_defaultRenderer_commandBuffer(self);
+	}
+	else
+	{
+		cb = vkk_offscreenRenderer_commandBuffer(self);
+	}
+
 	vkCmdClearAttachments(cb, 1, &ca, 1, &rect);
 }
 
@@ -474,6 +538,8 @@ void vkk_renderer_viewport(vkk_renderer_t* self,
                            float width, float height)
 {
 	assert(self);
+
+	vkk_engine_t* engine = self->engine;
 
 	VkViewport viewport =
 	{
@@ -485,7 +551,16 @@ void vkk_renderer_viewport(vkk_renderer_t* self,
 		.maxDepth = 1.0f
 	};
 
-	VkCommandBuffer cb = (*self->commandBufferFn)(self);
+	VkCommandBuffer cb;
+	if(self == engine->renderer)
+	{
+		cb = vkk_defaultRenderer_commandBuffer(self);
+	}
+	else
+	{
+		cb = vkk_offscreenRenderer_commandBuffer(self);
+	}
+
 	vkCmdSetViewport(cb, 0, 1, &viewport);
 }
 
@@ -494,6 +569,8 @@ void vkk_renderer_scissor(vkk_renderer_t* self,
                           uint32_t width, uint32_t height)
 {
 	assert(self);
+
+	vkk_engine_t* engine = self->engine;
 
 	VkRect2D scissor =
 	{
@@ -509,7 +586,16 @@ void vkk_renderer_scissor(vkk_renderer_t* self,
 		}
 	};
 
-	VkCommandBuffer cb = (*self->commandBufferFn)(self);
+	VkCommandBuffer cb;
+	if(self == engine->renderer)
+	{
+		cb = vkk_defaultRenderer_commandBuffer(self);
+	}
+	else
+	{
+		cb = vkk_offscreenRenderer_commandBuffer(self);
+	}
+
 	vkCmdSetScissor(cb, 0, 1, &scissor);
 }
 
@@ -542,7 +628,16 @@ void vkk_renderer_draw(vkk_renderer_t* self,
 		vb_buffers[i] = vertex_buffers[i]->buffer[idx];
 	}
 
-	VkCommandBuffer cb = (*self->commandBufferFn)(self);
+	VkCommandBuffer cb;
+	if(self == engine->renderer)
+	{
+		cb = vkk_defaultRenderer_commandBuffer(self);
+	}
+	else
+	{
+		cb = vkk_offscreenRenderer_commandBuffer(self);
+	}
+
 	vkCmdBindVertexBuffers(cb, 0, vertex_buffer_count,
 	                       vb_buffers, vb_offsets);
 	vkCmdDraw(cb, vertex_count, 1, 0, 0);
@@ -588,7 +683,16 @@ void vkk_renderer_drawIndexed(vkk_renderer_t* self,
 		vb_buffers[i] = vertex_buffers[i]->buffer[idx];
 	}
 
-	VkCommandBuffer cb = (*self->commandBufferFn)(self);
+	VkCommandBuffer cb;
+	if(self == engine->renderer)
+	{
+		cb = vkk_defaultRenderer_commandBuffer(self);
+	}
+	else
+	{
+		cb = vkk_offscreenRenderer_commandBuffer(self);
+	}
+
 	VkIndexType it_map[VKK_INDEX_TYPE_COUNT] =
 	{
 		VK_INDEX_TYPE_UINT16,
@@ -617,54 +721,58 @@ void vkk_renderer_drawIndexed(vkk_renderer_t* self,
 }
 
 void vkk_renderer_init(vkk_renderer_t* self,
-                       vkk_engine_t* engine,
-                       vkk_renderer_beginDefaultFn beginDefaultFn,
-                       vkk_renderer_beginOffscreenFn beginOffscreenFn,
-                       vkk_renderer_endFn endFn,
-                       vkk_renderer_surfaceSizeFn surfaceSizeFn,
-                       vkk_renderer_renderPassFn renderPassFn,
-                       vkk_renderer_commandBufferFn commandBufferFn,
-                       vkk_renderer_swapchainFrameFn swapchainFrameFn)
+                       vkk_engine_t* engine)
 {
 	assert(self);
 	assert(engine);
-	assert(beginDefaultFn || beginOffscreenFn);
-	assert(endFn);
-	assert(surfaceSizeFn);
-	assert(renderPassFn);
-	assert(commandBufferFn);
-	assert(swapchainFrameFn);
 
-	self->engine           = engine;
-	self->beginDefaultFn   = beginDefaultFn;
-	self->beginOffscreenFn = beginOffscreenFn;
-	self->endFn            = endFn;
-	self->surfaceSizeFn    = surfaceSizeFn;
-	self->renderPassFn     = renderPassFn;
-	self->commandBufferFn  = commandBufferFn;
-	self->swapchainFrameFn = swapchainFrameFn;
+	self->engine = engine;
 }
 
 VkRenderPass vkk_renderer_renderPass(vkk_renderer_t* self)
 {
 	assert(self);
-	assert(self->renderPassFn);
 
-	return (*self->renderPassFn)(self);
+	vkk_engine_t* engine = self->engine;
+
+	if(self == engine->renderer)
+	{
+		return vkk_defaultRenderer_renderPass(self);
+	}
+	else
+	{
+		return vkk_offscreenRenderer_renderPass(self);
+	}
 }
 
 VkCommandBuffer vkk_renderer_commandBuffer(vkk_renderer_t* self)
 {
 	assert(self);
-	assert(self->commandBufferFn);
 
-	return (*self->commandBufferFn)(self);
+	vkk_engine_t* engine = self->engine;
+
+	if(self == engine->renderer)
+	{
+		return vkk_defaultRenderer_commandBuffer(self);
+	}
+	else
+	{
+		return vkk_offscreenRenderer_commandBuffer(self);
+	}
 }
 
 uint32_t vkk_renderer_swapchainFrame(vkk_renderer_t* self)
 {
 	assert(self);
-	assert(self->swapchainFrameFn);
 
-	return (*self->swapchainFrameFn)(self);
+	vkk_engine_t* engine = self->engine;
+
+	if(self == engine->renderer)
+	{
+		return vkk_defaultRenderer_swapchainFrame(self);
+	}
+	else
+	{
+		return vkk_offscreenRenderer_swapchainFrame(self);
+	}
 }

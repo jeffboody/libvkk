@@ -307,14 +307,7 @@ vkk_offscreenRenderer_new(vkk_engine_t* engine,
 	self->image  = NULL;
 
 	vkk_renderer_t* base = &(self->base);
-	vkk_renderer_init(base, engine,
-	                  NULL,
-	                  vkk_offscreenRenderer_begin,
-	                  vkk_offscreenRenderer_end,
-	                  vkk_offscreenRenderer_surfaceSize,
-	                  vkk_offscreenRenderer_renderPass,
-	                  vkk_offscreenRenderer_commandBuffer,
-	                  vkk_offscreenRenderer_swapchainFrame);
+	vkk_renderer_init(base, engine);
 
 	VkFenceCreateInfo f_info =
 	{
