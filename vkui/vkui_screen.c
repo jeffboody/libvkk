@@ -1124,8 +1124,10 @@ vkui_screen_textVb(vkui_screen_t* self, uint32_t size,
 
 vkk_image_t*
 vkui_screen_spriteImage(vkui_screen_t* self,
-                        const char* name)
+                        const char* name,
+                        texgz_tex_t** _tex)
 {
+	// _tex may be NULL
 	assert(self);
 	assert(name);
 
@@ -1240,7 +1242,14 @@ vkui_screen_spriteImage(vkui_screen_t* self,
 		goto fail_add;
 	}
 
-	texgz_tex_delete(&tex);
+	if(_tex)
+	{
+		*_tex = tex;
+	}
+	else
+	{
+		texgz_tex_delete(&tex);
+	}
 	pak_file_close(&pak);
 
 	// success

@@ -197,8 +197,8 @@ vkui_sprite_new(vkui_screen_t* screen,
 	for(i = 0; i < count; ++i)
 	{
 		vkk_image_t* image;
-		image = vkui_screen_spriteImage(screen,
-		                                sprite_array[i]);
+		image = vkui_screen_spriteImage(screen, sprite_array[i],
+		                                NULL);
 		if(image == NULL)
 		{
 			goto fail_image;

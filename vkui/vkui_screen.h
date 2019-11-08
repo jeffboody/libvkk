@@ -126,6 +126,7 @@ vkk_buffer_t* vkui_screen_textVb(vkui_screen_t* self,
 
 vkk_image_t*
 vkui_screen_spriteImage(vkui_screen_t* self,
-                        const char* name);
+                        const char* name,
+                        texgz_tex_t** _tex);
 
 #endif

@@ -240,7 +240,8 @@ vkui_font_new(vkui_screen_t* screen, const char* resource,
 		return NULL;
 	}
 
-	self->image = vkui_screen_spriteImage(screen, texname);
+	self->image = vkui_screen_spriteImage(screen, texname,
+	                                      &self->tex);
 	if(self->image == NULL)
 	{
 		goto fail_image;
@@ -280,6 +281,7 @@ void vkui_font_delete(vkui_font_t** _self)
 	if(self)
 	{
 		// image is a reference
+		texgz_tex_delete(&self->tex);
 		FREE(self);
 		*_self = NULL;
 	}
@@ -287,10 +289,12 @@ void vkui_font_delete(vkui_font_t** _self)
 
 void vkui_font_request(vkui_font_t* self,
                        char c,
+                       cc_rect2f_t* pc,
                        cc_rect2f_t* tc,
                        cc_rect2f_t* vc)
 {
 	assert(self);
+	assert(pc);
 	assert(tc);
 	assert(vc);
 
@@ -307,15 +311,19 @@ void vkui_font_request(vkui_font_t* self,
 	uint32_t H;
 	vkk_image_size(self->image, &W, &H);
 
+	// fill in the pixel coords
+	pc->t = (float) self->coords[(int) c].y;
+	pc->l = (float) self->coords[(int) c].x;
+	pc->b = pc->t + h - 1.0f;
+	pc->r = pc->l + w - 1.0f;
+
 	// fill in tex coords
-	tc->t = (float) self->coords[(int) c].y;
-	tc->l = (float) self->coords[(int) c].x;
-	tc->b = tc->t + h - 1.0f;
-	tc->r = tc->l + w - 1.0f;
-	tc->t /= (float) (H - 1);
-	tc->l /= (float) (W - 1);
-	tc->b /= (float) (H - 1);
-	tc->r /= (float) (W - 1);
+	float hf = (float) (H - 1);
+	float wf = (float) (W - 1);
+	tc->t = pc->t/hf;
+	tc->l = pc->l/wf;
+	tc->b = pc->b/hf;
+	tc->r = pc->r/wf;
 
 	// fill in vertex coords
 	vc->t = 0.0f;
@@ -362,4 +370,59 @@ int vkui_font_measure(vkui_font_t* self, const char* s)
 		++s;
 	}
 	return width;
+}
+
+texgz_tex_t*
+vkui_font_render(vkui_font_t* self, const char* s)
+{
+	assert(self);
+	assert(s);
+
+	int width  = vkui_font_measure(self, s);
+	int height = vkui_font_height(self);
+	texgz_tex_t* tex = texgz_tex_new(width, height,
+	                                 width, height,
+	                                 TEXGZ_UNSIGNED_BYTE,
+	                                 TEXGZ_ALPHA,
+	                                 NULL);
+	if(tex == NULL)
+	{
+		return NULL;
+	}
+
+	// blit characters
+	int xs = 0;
+	int ys = 0;
+	int xd = 0;
+	int yd = 0;
+	cc_rect2f_t pc;
+	cc_rect2f_t tc;
+	cc_rect2f_t vc;
+	while(s[0] != '\0')
+	{
+		vkui_font_request(self, s[0],
+		                  &pc, &tc, &vc);
+
+		xs    = pc.l;
+		ys    = pc.t;
+		width = vkui_font_width(self, s[0]);
+
+		if(texgz_tex_blit(self->tex, tex,
+                          width, height,
+                          xs, ys, xd, yd) == 0)
+		{
+			goto fail_blit;
+		}
+
+		xd += width;
+		++s;
+	}
+
+	// success
+	return tex;
+
+	// failure
+	fail_blit:
+		texgz_tex_delete(&tex);
+	return NULL;
 }

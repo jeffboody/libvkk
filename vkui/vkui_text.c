@@ -237,9 +237,10 @@ vkui_text_addc(vkui_text_t* self, char c, int i,
 	vkui_font_t*      font   = vkui_screen_font(screen,
 	                                            style->font_type);
 
+	cc_rect2f_t pc;
 	cc_rect2f_t tc;
 	cc_rect2f_t vc;
-	vkui_font_request(font, c, &tc, &vc);
+	vkui_font_request(font, c, &pc, &tc, &vc);
 
 	// compute xyuv
 	self->xyuv[24*i +  0] = vc.l + offset;   // tl

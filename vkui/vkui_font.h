@@ -25,6 +25,7 @@
 #define vkui_font_H
 
 #include "../../libcc/math/cc_rect12f.h"
+#include "../../texgz/texgz_tex.h"
 #include "vkui_sprite.h"
 #include "vkui.h"
 
@@ -40,6 +41,8 @@ typedef struct
 
 typedef struct
 {
+	texgz_tex_t* tex;
+
 	// font attributes
 	int   size;
 	int   h;
@@ -54,15 +57,18 @@ vkui_font_t* vkui_font_new(vkui_screen_t* screen,
                            const char* resource,
                            const char* texname,
                            const char* xmlname);
-void        vkui_font_delete(vkui_font_t** _self);
-void        vkui_font_request(vkui_font_t* self,
-                              char c,
-                              cc_rect2f_t* tc,
-                              cc_rect2f_t* vc);
-float       vkui_font_aspectRatioAvg(vkui_font_t* self);
-int         vkui_font_width(vkui_font_t* self, char c);
-int         vkui_font_height(vkui_font_t* self);
-int         vkui_font_measure(vkui_font_t* self,
+void         vkui_font_delete(vkui_font_t** _self);
+void         vkui_font_request(vkui_font_t* self,
+                               char c,
+                               cc_rect2f_t* pc,
+                               cc_rect2f_t* tc,
+                               cc_rect2f_t* vc);
+float        vkui_font_aspectRatioAvg(vkui_font_t* self);
+int          vkui_font_width(vkui_font_t* self, char c);
+int          vkui_font_height(vkui_font_t* self);
+int          vkui_font_measure(vkui_font_t* self,
+                               const char* s);
+texgz_tex_t* vkui_font_render(vkui_font_t* self,
                               const char* s);
 
 #endif
