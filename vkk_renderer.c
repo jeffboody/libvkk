@@ -654,7 +654,7 @@ void vkk_renderer_draw(vkk_renderer_t* self,
 }
 
 void vkk_renderer_drawIndexed(vkk_renderer_t* self,
-                              uint32_t vertex_count,
+                              uint32_t index_count,
                               uint32_t vertex_buffer_count,
                               int index_type,
                               vkk_buffer_t* index_buffer,
@@ -706,7 +706,7 @@ void vkk_renderer_drawIndexed(vkk_renderer_t* self,
 	                     it_map[index_type]);
 	vkCmdBindVertexBuffers(cb, 0, vertex_buffer_count,
 	                       vb_buffers, vb_offsets);
-	vkCmdDrawIndexed(cb, vertex_count, 1, 0, 0, 0);
+	vkCmdDrawIndexed(cb, index_count, 1, 0, 0, 0);
 
 	// update timestamps
 	if(self == engine->renderer)

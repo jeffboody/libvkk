@@ -338,7 +338,7 @@ void vkk_renderer_draw(vkk_renderer_t* self,
                        uint32_t vertex_buffer_count,
                        vkk_buffer_t** vertex_buffers);
 void vkk_renderer_drawIndexed(vkk_renderer_t* self,
-                              uint32_t vertex_count,
+                              uint32_t index_count,
                               uint32_t vertex_buffer_count,
                               int index_type,
                               vkk_buffer_t* index_buffer,
