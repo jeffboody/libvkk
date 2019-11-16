@@ -77,8 +77,8 @@ vkui_radiobox_new(vkui_screen_t* screen, size_t wsize,
 
 	const char* sprite_array[] =
 	{
-		"ic_radio_button_unchecked_white_24dp.texz",
-		"ic_radio_button_checked_white_24dp.texz",
+		"vkui/ic_radio_button_unchecked_white_24dp.texz",
+		"vkui/ic_radio_button_checked_white_24dp.texz",
 		NULL
 	};
 
