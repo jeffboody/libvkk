@@ -402,10 +402,10 @@ vkui_screen_new(vkk_engine_t* engine,
 
 	self->renderer = vkk_engine_renderer(engine);
 
-	self->sampler = vkk_engine_newSampler(engine,
-	                                      VKK_SAMPLER_FILTER_LINEAR,
-	                                      VKK_SAMPLER_FILTER_LINEAR,
-	                                      VKK_SAMPLER_MIPMAP_MODE_NEAREST);
+	self->sampler = vkk_sampler_new(engine,
+	                                VKK_SAMPLER_FILTER_LINEAR,
+	                                VKK_SAMPLER_FILTER_LINEAR,
+	                                VKK_SAMPLER_MIPMAP_MODE_NEAREST);
 	if(self->sampler == NULL)
 	{
 		goto fail_sampler;
@@ -422,10 +422,10 @@ vkui_screen_new(vkk_engine_t* engine,
 		},
 	};
 
-	self->usf0_mvp = vkk_engine_newUniformSetFactory(engine,
-	                                                 VKK_UPDATE_MODE_DEFAULT,
-	                                                 1,
-	                                                 ub0_array);
+	self->usf0_mvp = vkk_uniformSetFactory_new(engine,
+	                                           VKK_UPDATE_MODE_DEFAULT,
+	                                           1,
+	                                           ub0_array);
 	if(self->usf0_mvp == NULL)
 	{
 		goto fail_usf0_mvp;
@@ -442,10 +442,10 @@ vkui_screen_new(vkk_engine_t* engine,
 		},
 	};
 
-	self->usf1_color = vkk_engine_newUniformSetFactory(engine,
-	                                                   VKK_UPDATE_MODE_DEFAULT,
-	                                                   1,
-	                                                   ub1_array);
+	self->usf1_color = vkk_uniformSetFactory_new(engine,
+	                                             VKK_UPDATE_MODE_DEFAULT,
+	                                             1,
+	                                             ub1_array);
 	if(self->usf1_color == NULL)
 	{
 		goto fail_usf1_color;
@@ -469,10 +469,10 @@ vkui_screen_new(vkk_engine_t* engine,
 		},
 	};
 
-	self->usf2_multiplyImage = vkk_engine_newUniformSetFactory(engine,
-	                                                           VKK_UPDATE_MODE_DEFAULT,
-	                                                           2,
-	                                                           ub2_array);
+	self->usf2_multiplyImage = vkk_uniformSetFactory_new(engine,
+	                                                     VKK_UPDATE_MODE_DEFAULT,
+	                                                     2,
+	                                                     ub2_array);
 	if(self->usf2_multiplyImage == NULL)
 	{
 		goto fail_usf2_multiplyImage;
@@ -510,10 +510,10 @@ vkui_screen_new(vkk_engine_t* engine,
 		},
 	};
 
-	self->usf3_tricolor = vkk_engine_newUniformSetFactory(engine,
-	                                                      VKK_UPDATE_MODE_DEFAULT,
-	                                                      4,
-	                                                      ub3_array);
+	self->usf3_tricolor = vkk_uniformSetFactory_new(engine,
+	                                                VKK_UPDATE_MODE_DEFAULT,
+	                                                4,
+	                                                ub3_array);
 	if(self->usf3_tricolor == NULL)
 	{
 		goto fail_usf3_tricolor;
@@ -527,8 +527,7 @@ vkui_screen_new(vkk_engine_t* engine,
 		self->usf3_tricolor,
 	};
 
-	self->pl = vkk_engine_newPipelineLayout(engine, 4,
-	                                        usf_array);
+	self->pl = vkk_pipelineLayout_new(engine, 4, usf_array);
 	if(self->pl == NULL)
 	{
 		goto fail_pl;
@@ -557,8 +556,8 @@ vkui_screen_new(vkk_engine_t* engine,
 		.blend_mode        = VKK_BLEND_MODE_TRANSPARENCY
 	};
 
-	self->gp_color = vkk_engine_newGraphicsPipeline(engine,
-	                                                &gpi_color);
+	self->gp_color = vkk_graphicsPipeline_new(engine,
+	                                          &gpi_color);
 	if(self->gp_color == NULL)
 	{
 		goto fail_gp_color;
@@ -580,8 +579,8 @@ vkui_screen_new(vkk_engine_t* engine,
 		.blend_mode        = VKK_BLEND_MODE_TRANSPARENCY
 	};
 
-	self->gp_image = vkk_engine_newGraphicsPipeline(engine,
-	                                                &gpi_image);
+	self->gp_image = vkk_graphicsPipeline_new(engine,
+	                                          &gpi_image);
 	if(self->gp_image == NULL)
 	{
 		goto fail_gp_image;
@@ -589,8 +588,8 @@ vkui_screen_new(vkk_engine_t* engine,
 
 	// text requires triangles
 	gpi_image.primitive = VKK_PRIMITIVE_TRIANGLE_LIST;
-	self->gp_text = vkk_engine_newGraphicsPipeline(engine,
-	                                               &gpi_image);
+	self->gp_text = vkk_graphicsPipeline_new(engine,
+	                                         &gpi_image);
 	if(self->gp_text == NULL)
 	{
 		goto fail_gp_text;
@@ -612,18 +611,17 @@ vkui_screen_new(vkk_engine_t* engine,
 		.blend_mode        = VKK_BLEND_MODE_TRANSPARENCY
 	};
 
-	self->gp_tricolor = vkk_engine_newGraphicsPipeline(engine,
-	                                                   &gpi_tricolor);
+	self->gp_tricolor = vkk_graphicsPipeline_new(engine,
+	                                             &gpi_tricolor);
 	if(self->gp_tricolor == NULL)
 	{
 		goto fail_gp_tricolor;
 	}
 
-	self->ub_mvp = vkk_engine_newBuffer(engine,
-	                                    VKK_UPDATE_MODE_DEFAULT,
-	                                    VKK_BUFFER_USAGE_UNIFORM,
-	                                    sizeof(cc_mat4f_t),
-	                                    NULL);
+	self->ub_mvp = vkk_buffer_new(engine,
+	                              VKK_UPDATE_MODE_DEFAULT,
+	                              VKK_BUFFER_USAGE_UNIFORM,
+	                              sizeof(cc_mat4f_t), NULL);
 	if(self->ub_mvp == NULL)
 	{
 		goto fail_ub_mvp;
@@ -639,9 +637,9 @@ vkui_screen_new(vkk_engine_t* engine,
 		}
 	};
 
-	self->us_mvp = vkk_engine_newUniformSet(engine, 0, 1,
-	                                        ua_array_mvp,
-	                                        self->usf0_mvp);
+	self->us_mvp = vkk_uniformSet_new(engine, 0, 1,
+	                                  ua_array_mvp,
+	                                  self->usf0_mvp);
 	if(self->us_mvp == NULL)
 	{
 		goto fail_us_mvp;
@@ -686,37 +684,29 @@ vkui_screen_new(vkk_engine_t* engine,
 	fail_font_array0:
 		cc_map_delete(&self->sprite_map);
 	fail_sprite_map:
-		vkk_engine_deleteUniformSet(engine, &self->us_mvp);
+		vkk_uniformSet_delete(&self->us_mvp);
 	fail_us_mvp:
-		vkk_engine_deleteBuffer(engine, &self->ub_mvp);
+		vkk_buffer_delete(&self->ub_mvp);
 	fail_ub_mvp:
-		vkk_engine_deleteGraphicsPipeline(engine,
-		                                  &self->gp_tricolor);
+		vkk_graphicsPipeline_delete(&self->gp_tricolor);
 	fail_gp_tricolor:
-		vkk_engine_deleteGraphicsPipeline(engine,
-		                                  &self->gp_text);
+		vkk_graphicsPipeline_delete(&self->gp_text);
 	fail_gp_text:
-		vkk_engine_deleteGraphicsPipeline(engine,
-		                                  &self->gp_image);
+		vkk_graphicsPipeline_delete(&self->gp_image);
 	fail_gp_image:
-		vkk_engine_deleteGraphicsPipeline(engine,
-		                                  &self->gp_color);
+		vkk_graphicsPipeline_delete(&self->gp_color);
 	fail_gp_color:
-		vkk_engine_deletePipelineLayout(engine, &self->pl);
+		vkk_pipelineLayout_delete(&self->pl);
 	fail_pl:
-		vkk_engine_deleteUniformSetFactory(engine,
-		                                   &self->usf3_tricolor);
+		vkk_uniformSetFactory_delete(&self->usf3_tricolor);
 	fail_usf3_tricolor:
-		vkk_engine_deleteUniformSetFactory(engine,
-		                                   &self->usf2_multiplyImage);
+		vkk_uniformSetFactory_delete(&self->usf2_multiplyImage);
 	fail_usf2_multiplyImage:
-		vkk_engine_deleteUniformSetFactory(engine,
-		                                   &self->usf1_color);
+		vkk_uniformSetFactory_delete(&self->usf1_color);
 	fail_usf1_color:
-		vkk_engine_deleteUniformSetFactory(engine,
-		                                   &self->usf0_mvp);
+		vkk_uniformSetFactory_delete(&self->usf0_mvp);
 	fail_usf0_mvp:
-		vkk_engine_deleteSampler(engine, &self->sampler);
+		vkk_sampler_delete(&self->sampler);
 	fail_sampler:
 		FREE(self);
 	return NULL;
@@ -729,8 +719,6 @@ void vkui_screen_delete(vkui_screen_t** _self)
 	vkui_screen_t* self = *_self;
 	if(self)
 	{
-		vkk_engine_t* engine = self->engine;
-
 		cc_multimapIter_t  mmiterator;
 		cc_multimapIter_t* mmiter;
 		mmiter = cc_multimap_head(self->map_text_vb, &mmiterator);
@@ -739,7 +727,7 @@ void vkui_screen_delete(vkui_screen_t** _self)
 			vkk_buffer_t* vb;
 			vb = (vkk_buffer_t*)
 			     cc_multimap_remove(self->map_text_vb, &mmiter);
-			vkk_engine_deleteBuffer(self->engine, &vb);
+			vkk_buffer_delete(&vb);
 		}
 		cc_multimap_delete(&self->map_text_vb);
 
@@ -754,31 +742,22 @@ void vkui_screen_delete(vkui_screen_t** _self)
 			vkk_image_t* image;
 			image = (vkk_image_t*)
 			        cc_map_remove(self->sprite_map, &miter);
-			vkk_engine_deleteImage(self->engine,
-			                       &image);
+			vkk_image_delete(&image);
 		}
 		cc_map_delete(&self->sprite_map);
 
-		vkk_engine_deleteUniformSet(engine, &self->us_mvp);
-		vkk_engine_deleteBuffer(engine, &self->ub_mvp);
-		vkk_engine_deleteGraphicsPipeline(engine,
-		                                  &self->gp_tricolor);
-		vkk_engine_deleteGraphicsPipeline(engine,
-		                                  &self->gp_text);
-		vkk_engine_deleteGraphicsPipeline(engine,
-		                                  &self->gp_image);
-		vkk_engine_deleteGraphicsPipeline(engine,
-		                                  &self->gp_color);
-		vkk_engine_deletePipelineLayout(engine, &self->pl);
-		vkk_engine_deleteUniformSetFactory(engine,
-		                                   &self->usf3_tricolor);
-		vkk_engine_deleteUniformSetFactory(engine,
-		                                   &self->usf2_multiplyImage);
-		vkk_engine_deleteUniformSetFactory(engine,
-		                                   &self->usf1_color);
-		vkk_engine_deleteUniformSetFactory(engine,
-		                                   &self->usf0_mvp);
-		vkk_engine_deleteSampler(engine, &self->sampler);
+		vkk_uniformSet_delete(&self->us_mvp);
+		vkk_buffer_delete(&self->ub_mvp);
+		vkk_graphicsPipeline_delete(&self->gp_tricolor);
+		vkk_graphicsPipeline_delete(&self->gp_text);
+		vkk_graphicsPipeline_delete(&self->gp_image);
+		vkk_graphicsPipeline_delete(&self->gp_color);
+		vkk_pipelineLayout_delete(&self->pl);
+		vkk_uniformSetFactory_delete(&self->usf3_tricolor);
+		vkk_uniformSetFactory_delete(&self->usf2_multiplyImage);
+		vkk_uniformSetFactory_delete(&self->usf1_color);
+		vkk_uniformSetFactory_delete(&self->usf0_mvp);
+		vkk_sampler_delete(&self->sampler);
 		FREE(self);
 		*_self = NULL;
 	}
@@ -1116,10 +1095,10 @@ vkui_screen_textVb(vkui_screen_t* self, uint32_t size,
 	}
 
 	// create a new buffer
-	return vkk_engine_newBuffer(self->engine,
-	                            VKK_UPDATE_MODE_DEFAULT,
-	                            VKK_BUFFER_USAGE_VERTEX,
-	                            size, NULL);
+	return vkk_buffer_new(self->engine,
+	                      VKK_UPDATE_MODE_DEFAULT,
+	                      VKK_BUFFER_USAGE_VERTEX,
+	                      size, NULL);
 }
 
 vkk_image_t*
@@ -1226,11 +1205,10 @@ vkui_screen_spriteImage(vkui_screen_t* self,
 		goto fail_size;
 	}
 
-	image = vkk_engine_newImage(self->engine,
-	                            tex->width, tex->height,
-	                            image_format, 0,
-	                            VKK_STAGE_FS,
-	                            tex->pixels);
+	image = vkk_image_new(self->engine,
+	                      tex->width, tex->height,
+	                      image_format, 0, VKK_STAGE_FS,
+	                      tex->pixels);
 	if(image == NULL)
 	{
 		goto fail_image;
@@ -1257,8 +1235,7 @@ vkui_screen_spriteImage(vkui_screen_t* self,
 
 	// failure
 	fail_add:
-		vkk_engine_deleteImage(self->engine,
-		                       &image);
+		vkk_image_delete(&image);
 	fail_image:
 	fail_size:
 	fail_format:

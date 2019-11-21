@@ -26,13 +26,20 @@
 
 #define LOG_TAG "vkk"
 #include "../libcc/cc_log.h"
-#include "vkk.h"
 #include "vkk_engine.h"
+#include "vkk_image.h"
+#include "vkk_uniformSetFactory.h"
 #include "vkk_util.h"
 
 /***********************************************************
 * public                                                   *
 ***********************************************************/
+
+uint32_t VKK_MAKE_VERSION(uint32_t major, uint32_t minor,
+                          uint32_t patch)
+{
+	return VK_MAKE_VERSION(major, minor, patch);
+}
 
 void vkk_util_imageMemoryBarrier(vkk_image_t* image,
                                  VkCommandBuffer cb,
@@ -201,4 +208,36 @@ VkFormat vkk_util_imageFormat(int format)
 	};
 
 	return format_map[format];
+}
+
+void
+vkk_util_copyUniformAttachmentArray(vkk_uniformAttachment_t* dst,
+                                    uint32_t src_ua_count,
+                                    vkk_uniformAttachment_t* src,
+                                    vkk_uniformSetFactory_t* usf)
+{
+	assert(dst);
+	assert(src);
+	assert(usf);
+
+	// fill binding/type
+	uint32_t i;
+	for(i = 0; i < usf->ub_count; ++i)
+	{
+		dst[i].binding = usf->ub_array[i].binding;
+		dst[i].type    = usf->ub_array[i].type;
+	}
+
+	// validate and fill buffer/image union
+	for(i = 0; i < src_ua_count; ++i)
+	{
+		uint32_t b = src[i].binding;
+		assert(b < usf->ub_count);
+		assert(b == dst[b].binding);
+		assert((src[i].type == VKK_UNIFORM_TYPE_BUFFER) ||
+		       (src[i].type == VKK_UNIFORM_TYPE_SAMPLER));
+		assert(src[i].type == dst[b].type);
+
+		dst[b].buffer = src[i].buffer;
+	}
 }

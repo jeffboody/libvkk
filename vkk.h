@@ -26,6 +26,9 @@
 
 #include <stdint.h>
 
+uint32_t VKK_MAKE_VERSION(uint32_t major, uint32_t minor,
+                          uint32_t patch);
+
 /*
  * constants
  */
@@ -157,7 +160,7 @@ typedef struct
 } vkk_graphicsPipelineInfo_t;
 
 /*
- * engine new/delete API
+ * engine API
  *
  *  1) objects may be created from any thread using the
  *     engine handle
@@ -197,78 +200,16 @@ typedef struct
  *     events
  */
 
-vkk_engine_t*            vkk_engine_new(void* app,
-                                        const char* app_name,
-                                        uint32_t app_version,
-                                        const char* resource,
-                                        const char* cache);
-void                     vkk_engine_delete(vkk_engine_t** _self);
-void                     vkk_engine_shutdown(vkk_engine_t* self);
-vkk_renderer_t*          vkk_engine_newRenderer(vkk_engine_t* self,
-                                                uint32_t width,
-                                                uint32_t height,
-                                                int format);
-void                     vkk_engine_deleteRenderer(vkk_engine_t* self,
-                                                   vkk_renderer_t** _renderer);
-vkk_buffer_t*            vkk_engine_newBuffer(vkk_engine_t* self,
-                                              int update,
-                                              int usage,
-                                              size_t size,
-                                              const void* buf);
-void                     vkk_engine_deleteBuffer(vkk_engine_t* self,
-                                                 vkk_buffer_t** _buffer);
-vkk_image_t*             vkk_engine_newImage(vkk_engine_t* self,
-                                             uint32_t width,
-                                             uint32_t height,
-                                             int format,
-                                             int mipmap,
-                                             int stage,
-                                             const void* pixels);
-void                     vkk_engine_deleteImage(vkk_engine_t* self,
-                                                vkk_image_t** _image);
-vkk_sampler_t*           vkk_engine_newSampler(vkk_engine_t* self,
-                                               int min_filter,
-                                               int mag_filter,
-                                               int mipmap_mode);
-void                     vkk_engine_deleteSampler(vkk_engine_t* self,
-                                                  vkk_sampler_t** _sampler);
-vkk_uniformSetFactory_t* vkk_engine_newUniformSetFactory(vkk_engine_t* self,
-                                                         int update,
-                                                         uint32_t ub_count,
-                                                         vkk_uniformBinding_t* ub_array);
-void                     vkk_engine_deleteUniformSetFactory(vkk_engine_t* self,
-                                                            vkk_uniformSetFactory_t** _usf);
-vkk_uniformSet_t*        vkk_engine_newUniformSet(vkk_engine_t* self,
-                                                  uint32_t set,
-                                                  uint32_t ua_count,
-                                                  vkk_uniformAttachment_t* ua_array,
-                                                  vkk_uniformSetFactory_t* usf);
-void                     vkk_engine_deleteUniformSet(vkk_engine_t* self,
-                                                     vkk_uniformSet_t** _us);
-vkk_pipelineLayout_t*    vkk_engine_newPipelineLayout(vkk_engine_t* self,
-                                                      uint32_t usf_count,
-                                                      vkk_uniformSetFactory_t** usf_array);
-void                     vkk_engine_deletePipelineLayout(vkk_engine_t* self,
-                                                         vkk_pipelineLayout_t** _pl);
-vkk_graphicsPipeline_t*  vkk_engine_newGraphicsPipeline(vkk_engine_t* self,
-                                                        vkk_graphicsPipelineInfo_t* gpi);
-void                     vkk_engine_deleteGraphicsPipeline(vkk_engine_t* self,
-                                                           vkk_graphicsPipeline_t** _gp);
-
-/*
- * query API
- */
-
-
-uint32_t VKK_MAKE_VERSION(uint32_t major, uint32_t minor,
-                          uint32_t patch);
-size_t   vkk_buffer_size(vkk_buffer_t* self);
-int      vkk_engine_imageCaps(vkk_engine_t* self,
-                              int format);
-uint32_t vkk_engine_version(vkk_engine_t* self);
-int      vkk_image_format(vkk_image_t* self);
-size_t   vkk_image_size(vkk_image_t* self,
-                        uint32_t* _width, uint32_t* height);
+vkk_engine_t* vkk_engine_new(void* app,
+                             const char* app_name,
+                             uint32_t app_version,
+                             const char* resource,
+                             const char* cache);
+void          vkk_engine_delete(vkk_engine_t** _self);
+void          vkk_engine_shutdown(vkk_engine_t* self);
+int           vkk_engine_imageCaps(vkk_engine_t* self,
+                                   int format);
+uint32_t      vkk_engine_version(vkk_engine_t* self);
 
 /*
  * default renderer API
@@ -282,6 +223,93 @@ size_t   vkk_image_size(vkk_image_t* self,
 
 int             vkk_engine_resize(vkk_engine_t* self);
 vkk_renderer_t* vkk_engine_renderer(vkk_engine_t* self);
+
+/*
+ * buffer API
+ */
+
+vkk_buffer_t* vkk_buffer_new(vkk_engine_t* engine,
+                             int update,
+                             int usage,
+                             size_t size,
+                             const void* buf);
+void          vkk_buffer_delete(vkk_buffer_t** _self);
+size_t        vkk_buffer_size(vkk_buffer_t* self);
+
+/*
+ * image API
+ */
+
+vkk_image_t* vkk_image_new(vkk_engine_t* engine,
+                           uint32_t width,
+                           uint32_t height,
+                           int format,
+                           int mipmap,
+                           int stage,
+                           const void* pixels);
+void         vkk_image_delete(vkk_image_t** _self);
+int          vkk_image_format(vkk_image_t* self);
+size_t       vkk_image_size(vkk_image_t* self,
+                            uint32_t* _width,
+                            uint32_t* height);
+
+/*
+ * sampler API
+ */
+
+vkk_sampler_t* vkk_sampler_new(vkk_engine_t* engine,
+                               int min_filter,
+                               int mag_filter,
+                               int mipmap_mode);
+void           vkk_sampler_delete(vkk_sampler_t** _self);
+
+/*
+ * uniform set factory API
+ */
+
+vkk_uniformSetFactory_t* vkk_uniformSetFactory_new(vkk_engine_t* engine,
+                                                   int update,
+                                                   uint32_t ub_count,
+                                                   vkk_uniformBinding_t* ub_array);
+void                     vkk_uniformSetFactory_delete(vkk_uniformSetFactory_t** _self);
+
+/*
+ * uniform set API
+ */
+
+vkk_uniformSet_t* vkk_uniformSet_new(vkk_engine_t* engine,
+                                     uint32_t set,
+                                     uint32_t ua_count,
+                                     vkk_uniformAttachment_t* ua_array,
+                                     vkk_uniformSetFactory_t* usf);
+void              vkk_uniformSet_delete(vkk_uniformSet_t** _self);
+
+/*
+ * pipeline layout API
+ */
+
+vkk_pipelineLayout_t* vkk_pipelineLayout_new(vkk_engine_t* engine,
+                                             uint32_t usf_count,
+                                             vkk_uniformSetFactory_t** usf_array);
+void                  vkk_pipelineLayout_delete(vkk_pipelineLayout_t** _self);
+
+/*
+ * graphics pipeline API
+ */
+
+vkk_graphicsPipeline_t* vkk_graphicsPipeline_new(vkk_engine_t* engine,
+                                                 vkk_graphicsPipelineInfo_t* gpi);
+void                    vkk_graphicsPipeline_delete(vkk_graphicsPipeline_t** _self);
+
+/*
+ * offscreen renderer API
+ */
+
+vkk_renderer_t* vkk_renderer_new(vkk_engine_t* engine,
+                                 uint32_t width,
+                                 uint32_t height,
+                                 int format);
+void            vkk_renderer_delete(vkk_renderer_t** _self);
 
 /*
  * rendering API

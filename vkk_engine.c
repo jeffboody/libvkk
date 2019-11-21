@@ -30,16 +30,17 @@
 #include "../libcc/cc_log.h"
 #include "../libcc/cc_memory.h"
 #include "../libpak/pak_file.h"
+#include "vkk_buffer.h"
 #include "vkk_defaultRenderer.h"
 #include "vkk_engine.h"
+#include "vkk_graphicsPipeline.h"
+#include "vkk_image.h"
 #include "vkk_offscreenRenderer.h"
+#include "vkk_pipelineLayout.h"
+#include "vkk_sampler.h"
+#include "vkk_uniformSet.h"
+#include "vkk_uniformSetFactory.h"
 #include "vkk_util.h"
-
-#define VKK_DESCRIPTOR_POOL_SIZE 64
-
-/***********************************************************
-* private - vkk_image_t                                    *
-***********************************************************/
 
 /***********************************************************
 * private                                                  *
@@ -110,40 +111,6 @@ vkk_engine_hasDeviceExtensions(vkk_engine_t* self,
 	fail_enabled:
 	fail_properties:
 		FREE(properties);
-	return 0;
-}
-
-static int
-vkk_engine_getMemoryTypeIndex(vkk_engine_t* self,
-                              uint32_t mt_bits,
-                              VkFlags mp_flags,
-                              uint32_t* mt_index)
-{
-	assert(self);
-	assert(mt_index);
-
-	VkPhysicalDeviceMemoryProperties mp;
-	vkGetPhysicalDeviceMemoryProperties(self->physical_device,
-	                                    &mp);
-
-	// find a memory type that meets the memory requirements
-	int i;
-	for(i = 0; i < mp.memoryTypeCount; ++i)
-	{
-		if(mt_bits & 1)
-		{
-			VkFlags mp_flagsi;
-			mp_flagsi = mp.memoryTypes[i].propertyFlags;
-			if((mp_flagsi & mp_flags) == mp_flags)
-			{
-				*mt_index = i;
-				return 1;
-			}
-		}
-		mt_bits >>= 1;
-	}
-
-	LOGE("invalid memory type");
 	return 0;
 }
 
@@ -739,471 +706,6 @@ vkk_engine_importShaderModule(vkk_engine_t* self,
 	return NULL;
 }
 
-static VkShaderModule
-vkk_engine_getShaderModule(vkk_engine_t* self,
-                           const char* fname)
-{
-	assert(self);
-	assert(fname);
-
-	vkk_engine_smLock(self);
-
-	cc_mapIter_t miter;
-	VkShaderModule sm;
-	sm = (VkShaderModule)
-	     cc_map_find(self->shader_modules, &miter, fname);
-	if(sm != VK_NULL_HANDLE)
-	{
-		vkk_engine_smUnlock(self);
-		return sm;
-	}
-
-	size_t    size = 0;
-	uint32_t* code;
-	code = vkk_engine_importShaderModule(self, fname, &size);
-	if(code == NULL)
-	{
-		vkk_engine_smUnlock(self);
-		return VK_NULL_HANDLE;
-	}
-
-	VkShaderModuleCreateInfo sm_info =
-	{
-		.sType    = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO,
-		.pNext    = NULL,
-		.flags    = 0,
-		.codeSize = size,
-		.pCode    = code
-	};
-
-	if(vkCreateShaderModule(self->device, &sm_info, NULL,
-	                        &sm) != VK_SUCCESS)
-	{
-		vkk_engine_smUnlock(self);
-		LOGE("vkCreateShaderModule failed");
-		goto fail_create;
-	}
-
-	if(cc_map_add(self->shader_modules, (const void*) sm,
-	              fname) == 0)
-	{
-		vkk_engine_smUnlock(self);
-		goto fail_add;
-	}
-
-	FREE(code);
-
-	vkk_engine_smUnlock(self);
-
-	// success
-	return sm;
-
-	// failure
-	fail_add:
-		vkDestroyShaderModule(self->device, sm, NULL);
-	fail_create:
-		FREE(code);
-	return VK_NULL_HANDLE;
-}
-
-static VkDescriptorPool
-vkk_engine_newDescriptorPoolLocked(vkk_engine_t* self,
-                                   vkk_uniformSetFactory_t* usf)
-{
-	assert(self);
-	assert(usf);
-
-	VkDescriptorType dt_map[VKK_UNIFORM_TYPE_COUNT] =
-	{
-		VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
-		VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
-		VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
-		VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
-	};
-
-	// fill the descriptor pool size array and
-	// count the number of types in the factory
-	int      i;
-	uint32_t ps_count = 0;
-	uint32_t maxSets  = VKK_DESCRIPTOR_POOL_SIZE;
-	VkDescriptorPoolSize ps_array[VKK_UNIFORM_TYPE_COUNT];
-	for(i = 0; i < VKK_UNIFORM_TYPE_COUNT; ++i)
-	{
-		// ensure the factory can allocate maxSets of each type
-		char type_count = usf->type_count[i];
-		if(type_count)
-		{
-			VkDescriptorPoolSize* ps;
-			ps                  = &(ps_array[ps_count]);
-			ps->type            = dt_map[i];
-			ps->descriptorCount = type_count*VKK_DESCRIPTOR_POOL_SIZE;
-			if(ps->descriptorCount > maxSets)
-			{
-				maxSets = ps->descriptorCount;
-			}
-			++ps_count;
-		}
-	}
-
-	if(ps_count == 0)
-	{
-		LOGE("invalid");
-		return VK_NULL_HANDLE;
-	}
-
-	// create a new descriptor pool
-	VkDescriptorPool dp;
-	VkDescriptorPoolCreateInfo dp_info =
-	{
-		.sType         = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO,
-		.pNext         = NULL,
-		.flags         = 0,
-		.maxSets       = maxSets,
-		.poolSizeCount = ps_count,
-		.pPoolSizes    = ps_array
-	};
-	if(vkCreateDescriptorPool(self->device, &dp_info, NULL,
-	                          &dp) != VK_SUCCESS)
-	{
-		LOGE("vkCreateDescriptorPool failed");
-		return VK_NULL_HANDLE;
-	}
-
-	// append the descriptor pool
-	if(cc_list_append(usf->dp_list, NULL,
-	                  (const void*) dp) == NULL)
-	{
-		goto fail_append_dp;
-	}
-
-	usf->ds_available = VKK_DESCRIPTOR_POOL_SIZE;
-
-	// success
-	return dp;
-
-	// failure
-	fail_append_dp:
-		vkDestroyDescriptorPool(self->device, dp, NULL);
-	return VK_NULL_HANDLE;
-}
-
-static int
-vkk_engine_uploadImage(vkk_engine_t* self,
-                       vkk_image_t* image,
-                       const void* pixels)
-{
-	assert(self);
-	assert(image);
-	assert(pixels);
-
-	VkFenceCreateInfo f_info =
-	{
-		.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO,
-		.pNext = NULL,
-		.flags = 0
-	};
-
-	VkFence fence;
-	if(vkCreateFence(self->device, &f_info, NULL,
-	                 &fence) != VK_SUCCESS)
-	{
-		LOGE("vkCreateFence failed");
-		return 0;
-	}
-
-	// create a transfer buffer
-	uint32_t width;
-	uint32_t height;
-	size_t size = vkk_image_size(image, &width, &height);
-	VkBufferCreateInfo b_info =
-	{
-		.sType                 = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,
-		.pNext                 = NULL,
-		.flags                 = 0,
-		.size                  = size,
-		.usage                 = VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
-		.sharingMode           = VK_SHARING_MODE_EXCLUSIVE,
-		.queueFamilyIndexCount = 1,
-		.pQueueFamilyIndices   = &self->queue_family_index
-	};
-
-	VkBuffer buffer;
-	if(vkCreateBuffer(self->device, &b_info, NULL,
-	                  &buffer) != VK_SUCCESS)
-	{
-		LOGE("vkCreateBuffer failed");
-		goto fail_buffer;
-	}
-
-	// allocate memory for the transfer buffer
-	VkMemoryRequirements mr;
-	vkGetBufferMemoryRequirements(self->device, buffer, &mr);
-
-	VkFlags mp_flags = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT |
-	                   VK_MEMORY_PROPERTY_HOST_COHERENT_BIT;
-	uint32_t mt_index;
-	if(vkk_engine_getMemoryTypeIndex(self,
-	                                 mr.memoryTypeBits,
-	                                 mp_flags,
-	                                 &mt_index) == 0)
-	{
-		goto fail_memory_type;
-	}
-
-	VkMemoryAllocateInfo ma_info =
-	{
-		.sType           = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO,
-		.pNext           = NULL,
-		.allocationSize  = mr.size,
-		.memoryTypeIndex = mt_index
-	};
-
-	VkDeviceMemory memory;
-	if(vkAllocateMemory(self->device, &ma_info, NULL,
-	                    &memory) != VK_SUCCESS)
-	{
-		LOGE("vkAllocateMemory failed");
-		goto fail_allocate_memory;
-	}
-
-	// copy pixels into transfer buffer memory
-	void* data;
-	if(vkMapMemory(self->device, memory, 0, mr.size, 0,
-	               &data) != VK_SUCCESS)
-	{
-		LOGE("vkMapMemory failed");
-		goto fail_map;
-	}
-	memcpy(data, pixels, size);
-	vkUnmapMemory(self->device, memory);
-
-	if(vkBindBufferMemory(self->device, buffer, memory,
-	                      0) != VK_SUCCESS)
-	{
-		LOGE("vkBindBufferMemory failed");
-		goto fail_bind;
-	}
-
-	// allocate a transfer command buffer
-	VkCommandBuffer cb;
-	if(vkk_engine_allocateCommandBuffers(self, 1, &cb) == 0)
-	{
-		goto fail_allocate_cb;
-	}
-
-	// begin the transfer commands
-	VkCommandBufferInheritanceInfo cbi_info =
-	{
-		.sType                = VK_STRUCTURE_TYPE_COMMAND_BUFFER_INHERITANCE_INFO,
-		.pNext                = NULL,
-		.renderPass           = VK_NULL_HANDLE,
-		.subpass              = 0,
-		.framebuffer          = VK_NULL_HANDLE,
-		.occlusionQueryEnable = VK_FALSE,
-		.queryFlags           = 0,
-		.pipelineStatistics   = 0
-	};
-
-	VkCommandBufferBeginInfo cb_info =
-	{
-		.sType            = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,
-		.pNext            = NULL,
-		.flags            = 0,
-		.pInheritanceInfo = &cbi_info
-	};
-
-	vkk_engine_cmdLock(self);
-	if(vkBeginCommandBuffer(cb, &cb_info) != VK_SUCCESS)
-	{
-		LOGE("vkBeginCommandBuffer failed");
-		vkk_engine_cmdUnlock(self);
-		goto fail_begin_cb;
-	}
-
-	// transition the image to copy the transfer buffer to
-	// the image and generate mip levels if needed
-	vkk_util_imageMemoryBarrier(image, cb,
-	                            VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
-	                            0, image->mip_levels);
-
-	// copy the transfer buffer to the image
-	VkBufferImageCopy bic =
-	{
-		.bufferOffset      = 0,
-		.bufferRowLength   = 0,
-		.bufferImageHeight = 0,
-		.imageSubresource  =
-		{
-			.aspectMask     = VK_IMAGE_ASPECT_COLOR_BIT,
-			.mipLevel       = 0,
-			.baseArrayLayer = 0,
-			.layerCount     = 1
-		},
-		.imageOffset =
-		{
-			.x = 0,
-			.y = 0,
-			.z = 0,
-		},
-		.imageExtent =
-		{
-			.width  = image->width,
-			.height = image->height,
-			.depth  = 1
-		}
-	};
-
-	vkCmdCopyBufferToImage(cb, buffer, image->image,
-	                       VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
-	                       1, &bic);
-
-	// at this point we may need to generate mip_levels if
-	// mipmapping was enabled
-	if(image->mip_levels > 1)
-	{
-		vkk_engine_mipmapImage(self, image, cb);
-	}
-
-	// transition the image from transfer mode to shading mode
-	vkk_util_imageMemoryBarrier(image, cb,
-	                            VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
-	                            0, image->mip_levels);
-
-	// end the transfer commands
-	vkEndCommandBuffer(cb);
-	vkk_engine_cmdUnlock(self);
-
-	// submit the commands
-	if(vkk_engine_queueSubmit(self, &cb,
-	                          NULL, NULL, NULL,
-	                          fence) == 0)
-	{
-		goto fail_submit;
-	}
-
-	uint64_t timeout = UINT64_MAX;
-	if(vkWaitForFences(self->device, 1, &fence, VK_TRUE,
-	                   timeout) != VK_SUCCESS)
-	{
-		LOGW("vkWaitForFences failed");
-		vkk_engine_queueWaitIdle(self);
-	}
-
-	// release temporary objects
-	vkk_engine_freeCommandBuffers(self, 1, &cb);
-	vkFreeMemory(self->device, memory, NULL);
-	vkDestroyBuffer(self->device, buffer, NULL);
-	vkDestroyFence(self->device, fence, NULL);
-
-	// success
-	return 1;
-
-	// failure
-	fail_submit:
-	fail_begin_cb:
-		vkk_engine_freeCommandBuffers(self, 1, &cb);
-	fail_allocate_cb:
-	fail_bind:
-	fail_map:
-		vkFreeMemory(self->device, memory, NULL);
-	fail_allocate_memory:
-	fail_memory_type:
-		vkDestroyBuffer(self->device, buffer, NULL);
-	fail_buffer:
-		vkDestroyFence(self->device, fence, NULL);
-	return 0;
-}
-
-static void
-vkk_engine_attachUniformBuffer(vkk_engine_t* self,
-                               vkk_uniformSet_t* us,
-                               vkk_buffer_t* buffer,
-                               uint32_t binding)
-{
-	assert(self);
-	assert(us);
-	assert(buffer);
-
-	uint32_t count;
-	count = (us->usf->update == VKK_UPDATE_MODE_DEFAULT) ?
-	        vkk_engine_swapchainImageCount(self) : 1;
-
-	int i;
-	for(i = 0; i < count; ++i)
-	{
-		uint32_t idx;
-		idx = (buffer->update == VKK_UPDATE_MODE_DEFAULT) ? i : 0;
-		VkDescriptorBufferInfo db_info =
-		{
-			.buffer  = buffer->buffer[idx],
-			.offset  = 0,
-			.range   = buffer->size
-		};
-
-		VkWriteDescriptorSet writes =
-		{
-			.sType            = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
-			.pNext            = NULL,
-			.dstSet           = us->ds_array[i],
-			.dstBinding       = binding,
-			.dstArrayElement  = 0,
-			.descriptorCount  = 1,
-			.descriptorType   = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
-			.pImageInfo       = NULL,
-			.pBufferInfo      = &db_info,
-			.pTexelBufferView = NULL,
-		};
-
-		vkUpdateDescriptorSets(self->device, 1, &writes,
-		                       0, NULL);
-	}
-}
-
-static void
-vkk_engine_attachUniformSampler(vkk_engine_t* self,
-                                vkk_uniformSet_t* us,
-                                vkk_sampler_t* sampler,
-                                vkk_image_t* image,
-                                uint32_t binding)
-{
-	assert(self);
-	assert(us);
-	assert(sampler);
-	assert(image);
-
-	uint32_t count;
-	count = (us->usf->update == VKK_UPDATE_MODE_DEFAULT) ?
-	        vkk_engine_swapchainImageCount(self) : 1;
-
-	int i;
-	for(i = 0; i < count; ++i)
-	{
-		VkDescriptorImageInfo di_info =
-		{
-			.sampler     = sampler->sampler,
-			.imageView   = image->image_view,
-			.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL
-		};
-
-		VkWriteDescriptorSet writes =
-		{
-			.sType            = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
-			.pNext            = NULL,
-			.dstSet           = us->ds_array[i],
-			.dstBinding       = binding,
-			.dstArrayElement  = 0,
-			.descriptorCount  = 1,
-			.descriptorType   = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
-			.pImageInfo       = &di_info,
-			.pBufferInfo      = NULL,
-			.pTexelBufferView = NULL,
-		};
-
-		vkUpdateDescriptorSets(self->device, 1, &writes,
-		                       0, NULL);
-	}
-}
-
 static void vkk_engine_initImageUsage(vkk_engine_t* self)
 {
 	assert(self);
@@ -1251,10 +753,6 @@ static void vkk_engine_initImageUsage(vkk_engine_t* self)
 		}
 	}
 }
-
-/***********************************************************
-* engine destructor API                                    *
-***********************************************************/
 
 static vkk_object_t*
 vkk_object_new(int type, void* obj)
@@ -1560,122 +1058,8 @@ vkk_engine_finishDestructFn(void* owner, void* task,
 	vkk_object_delete(&object);
 }
 
-static void
-vkk_engine_deleteObject(vkk_engine_t* self, int type,
-                        void* obj)
-{
-	assert(self);
-	assert(obj);
-
-	vkk_object_t* object;
-	object = vkk_object_new(type, obj);
-	if(object == NULL)
-	{
-		goto fail_object;
-	}
-
-	int status = cc_workq_run(self->workq_destruct,
-	                          (void*) object, 0);
-	if(status == CC_WORKQ_STATUS_ERROR)
-	{
-		goto fail_run;
-	}
-
-	// success
-	return;
-
-	// failure
-	// destruct immediately but wait for idle if necessary
-	fail_run:
-		vkk_object_delete(&object);
-	fail_object:
-	{
-		if(type == VKK_OBJECT_TYPE_RENDERER)
-		{
-			vkk_engine_destructRenderer(self,
-			                            (vkk_renderer_t**) &obj);
-		}
-		else if(type == VKK_OBJECT_TYPE_BUFFER)
-		{
-			vkk_engine_queueWaitIdle(self);
-			vkk_engine_destructBuffer(self, 0,
-			                          (vkk_buffer_t**) &obj);
-		}
-		else if(type == VKK_OBJECT_TYPE_IMAGE)
-		{
-			vkk_engine_queueWaitIdle(self);
-			vkk_engine_destructImage(self, 0,
-			                         (vkk_image_t**) &obj);
-		}
-		else if(type == VKK_OBJECT_TYPE_SAMPLER)
-		{
-			vkk_engine_queueWaitIdle(self);
-			vkk_engine_destructSampler(self, 0,
-			                           (vkk_sampler_t**) &obj);
-		}
-		else if(type == VKK_OBJECT_TYPE_UNIFORMSETFACTORY)
-		{
-			vkk_engine_destructUniformSetFactory(self,
-			                                     (vkk_uniformSetFactory_t**) &obj);
-		}
-		else if(type == VKK_OBJECT_TYPE_UNIFORMSET)
-		{
-			vkk_engine_queueWaitIdle(self);
-			vkk_engine_destructUniformSet(self, 0,
-			                              (vkk_uniformSet_t**) &obj);
-		}
-		else if(type == VKK_OBJECT_TYPE_PIPELINELAYOUT)
-		{
-			vkk_engine_destructPipelineLayout(self,
-			                                  (vkk_pipelineLayout_t**) &obj);
-		}
-		else if(type == VKK_OBJECT_TYPE_GRAPHICSPIPELINE)
-		{
-			vkk_engine_queueWaitIdle(self);
-			vkk_engine_destructGraphicsPipeline(self, 0,
-			                                    (vkk_graphicsPipeline_t**) &obj);
-		}
-		else
-		{
-			LOGE("invalid type=%i", type);
-		}
-	}
-}
-
-static void
-vkk_copyUniformAttachmentArray(vkk_uniformAttachment_t* dst,
-                               uint32_t src_ua_count,
-                               vkk_uniformAttachment_t* src,
-                               vkk_uniformSetFactory_t* usf)
-{
-	assert(dst);
-	assert(src);
-	assert(usf);
-
-	// fill binding/type
-	uint32_t i;
-	for(i = 0; i < usf->ub_count; ++i)
-	{
-		dst[i].binding = usf->ub_array[i].binding;
-		dst[i].type    = usf->ub_array[i].type;
-	}
-
-	// validate and fill buffer/image union
-	for(i = 0; i < src_ua_count; ++i)
-	{
-		uint32_t b = src[i].binding;
-		assert(b < usf->ub_count);
-		assert(b == dst[b].binding);
-		assert((src[i].type == VKK_UNIFORM_TYPE_BUFFER) ||
-		       (src[i].type == VKK_UNIFORM_TYPE_SAMPLER));
-		assert(src[i].type == dst[b].type);
-
-		dst[b].buffer = src[i].buffer;
-	}
-}
-
 /***********************************************************
-* engine new/delete API                                    *
+* public                                                   *
 ***********************************************************/
 
 vkk_engine_t* vkk_engine_new(void* app,
@@ -1712,7 +1096,7 @@ vkk_engine_t* vkk_engine_new(void* app,
 		}
 	#endif
 
-	self->version = VK_MAKE_VERSION(1,0,7);
+	self->version = VK_MAKE_VERSION(1,1,0);
 
 	snprintf(self->resource, 256, "%s", resource);
 	snprintf(self->cache, 256, "%s", cache);
@@ -1897,1310 +1281,6 @@ void vkk_engine_shutdown(vkk_engine_t* self)
 	vkk_engine_rendererUnlock(self);
 }
 
-vkk_renderer_t*
-vkk_engine_newRenderer(vkk_engine_t* self,
-                       uint32_t width, uint32_t height,
-                       int format)
-{
-	assert(self);
-
-	return vkk_offscreenRenderer_new(self, width, height,
-	                                 format);
-}
-
-void vkk_engine_deleteRenderer(vkk_engine_t* self,
-                               vkk_renderer_t** _renderer)
-{
-	assert(self);
-	assert(_renderer);
-
-	vkk_renderer_t* renderer = *_renderer;
-	if(renderer)
-	{
-		// do not delete default renderer
-		if(self->renderer == renderer)
-		{
-			return;
-		}
-
-		vkk_engine_deleteObject(self, VKK_OBJECT_TYPE_RENDERER,
-		                        (void*) renderer);
-		*_renderer = NULL;
-	}
-}
-
-vkk_buffer_t*
-vkk_engine_newBuffer(vkk_engine_t* self, int update,
-                     int usage, size_t size,
-                     const void* buf)
-{
-	// buf may be NULL
-	assert(self);
-
-	uint32_t count;
-	count = (update == VKK_UPDATE_MODE_DEFAULT) ?
-	        vkk_engine_swapchainImageCount(self) : 1;
-
-	VkBufferUsageFlags usage_map[VKK_BUFFER_USAGE_COUNT] =
-	{
-		VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
-		VK_BUFFER_USAGE_VERTEX_BUFFER_BIT,
-		VK_BUFFER_USAGE_INDEX_BUFFER_BIT
-	};
-
-	vkk_buffer_t* buffer;
-	buffer = (vkk_buffer_t*) CALLOC(1, sizeof(vkk_buffer_t));
-	if(buffer == NULL)
-	{
-		LOGE("CALLOC failed");
-		return NULL;
-	}
-
-	buffer->update = update;
-	buffer->usage  = usage;
-	buffer->size   = size;
-
-	buffer->buffer = (VkBuffer*)
-	                 CALLOC(count, sizeof(VkBuffer));
-	if(buffer->buffer == NULL)
-	{
-		LOGE("CALLOC failed");
-		goto fail_buffer;
-	}
-
-	buffer->memory = (VkDeviceMemory*)
-	                 CALLOC(count, sizeof(VkDeviceMemory));
-	if(buffer->memory == NULL)
-	{
-		LOGE("CALLOC failed");
-		goto fail_memory;
-	}
-
-	VkBufferCreateInfo b_info =
-	{
-		.sType                 = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,
-		.pNext                 = NULL,
-		.flags                 = 0,
-		.size                  = size,
-		.usage                 = usage_map[usage],
-		.sharingMode           = VK_SHARING_MODE_EXCLUSIVE,
-		.queueFamilyIndexCount = 1,
-		.pQueueFamilyIndices   = &self->queue_family_index
-	};
-
-	int i;
-	for(i = 0; i < count; ++i)
-	{
-		if(vkCreateBuffer(self->device, &b_info, NULL,
-		                  &buffer->buffer[i]) != VK_SUCCESS)
-		{
-			LOGE("vkCreateBuffer failed");
-			goto fail_create_buffer;
-		}
-
-		VkMemoryRequirements mr;
-		vkGetBufferMemoryRequirements(self->device,
-		                              buffer->buffer[i],
-		                              &mr);
-
-		VkFlags mp_flags = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT |
-		                   VK_MEMORY_PROPERTY_HOST_COHERENT_BIT;
-		uint32_t mt_index;
-		if(vkk_engine_getMemoryTypeIndex(self,
-		                                 mr.memoryTypeBits,
-		                                 mp_flags,
-		                                 &mt_index) == 0)
-		{
-			goto fail_memory_type;
-		}
-
-		VkMemoryAllocateInfo ma_info =
-		{
-			.sType           = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO,
-			.pNext           = NULL,
-			.allocationSize  = mr.size,
-			.memoryTypeIndex = mt_index
-		};
-
-		if(vkAllocateMemory(self->device, &ma_info, NULL,
-		                    &buffer->memory[i]) != VK_SUCCESS)
-		{
-			LOGE("vkAllocateMemory failed");
-			goto fail_allocate;
-		}
-
-		if(buf)
-		{
-			void* data;
-			if(vkMapMemory(self->device, buffer->memory[i],
-			               0, mr.size, 0, &data) != VK_SUCCESS)
-			{
-				LOGE("vkMapMemory failed");
-				goto fail_map;
-			}
-			memcpy(data, buf, size);
-			vkUnmapMemory(self->device, buffer->memory[i]);
-		}
-
-		if(vkBindBufferMemory(self->device,
-		                      buffer->buffer[i],
-		                      buffer->memory[i], 0) != VK_SUCCESS)
-		{
-			LOGE("vkBindBufferMemory failed");
-			goto fail_bind;
-		}
-	}
-
-	// success
-	return buffer;
-
-	// failure
-	fail_bind:
-	fail_map:
-	fail_allocate:
-	fail_memory_type:
-	fail_create_buffer:
-	{
-		int j;
-		for(j = 0; j <= i; ++j)
-		{
-			vkFreeMemory(self->device,
-			             buffer->memory[j],
-			             NULL);
-			vkDestroyBuffer(self->device,
-			                buffer->buffer[j],
-			                NULL);
-		}
-		FREE(buffer->memory);
-	}
-	fail_memory:
-		FREE(buffer->buffer);
-	fail_buffer:
-		FREE(buffer);
-	return NULL;
-}
-
-void vkk_engine_deleteBuffer(vkk_engine_t* self,
-                             vkk_buffer_t** _buffer)
-{
-	assert(self);
-	assert(_buffer);
-
-	vkk_buffer_t* buffer = *_buffer;
-	if(buffer)
-	{
-		vkk_engine_deleteObject(self, VKK_OBJECT_TYPE_BUFFER,
-		                        (void*) buffer);
-		*_buffer = NULL;
-	}
-}
-
-vkk_image_t* vkk_engine_newImage(vkk_engine_t* self,
-                                 uint32_t width,
-                                 uint32_t height,
-                                 int format,
-                                 int mipmap,
-                                 int stage,
-                                 const void* pixels)
-{
-	// pixels may be NULL for depth image or
-	// offscreen rendering
-	assert(self);
-
-	// check if mipmapped images are a power-of-two
-	// and compute the mip_levels
-	uint32_t mip_levels = 1;
-	if(mipmap)
-	{
-		// mipmap does not apply to the depth image
-		assert(format != VKK_IMAGE_FORMAT_DEPTH);
-
-		uint32_t w = 1;
-		uint32_t h = 1;
-		uint32_t n = 1;
-		uint32_t m = 1;
-
-		while(w < width)
-		{
-			w *= 2;
-			n += 1;
-		}
-
-		while(h < height)
-		{
-			h *= 2;
-			m += 1;
-		}
-
-		if((w != width) || (h != height))
-		{
-			LOGE("invalid w=%u, width=%u, h=%u, height=%u",
-			     w, width, h, height);
-			return NULL;
-		}
-
-		mip_levels = (m > n) ? m : n;
-	}
-
-	vkk_image_t* image;
-	image = (vkk_image_t*) CALLOC(1, sizeof(vkk_image_t));
-	if(image == NULL)
-	{
-		LOGE("CALLOC failed");
-		return NULL;
-	}
-
-	image->layout_array = (VkImageLayout*)
-	                      CALLOC(mip_levels, sizeof(VkImageLayout));
-	if(image->layout_array == NULL)
-	{
-		LOGE("CALLOC failed");
-		goto fail_layout_array;
-	}
-
-	image->width      = width;
-	image->height     = height;
-	image->format     = format;
-	image->stage      = stage;
-	image->mip_levels = mip_levels;
-
-	// initialize the image layout
-	int i;
-	for(i = 0; i < mip_levels; ++i)
-	{
-		image->layout_array[i] = VK_IMAGE_LAYOUT_UNDEFINED;
-	}
-
-	VkImageUsageFlags  usage      = VK_IMAGE_USAGE_TRANSFER_DST_BIT |
-	                                VK_IMAGE_USAGE_SAMPLED_BIT;
-	VkImageAspectFlags aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-	if(format == VKK_IMAGE_FORMAT_DEPTH)
-	{
-		usage      = VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT;
-		aspectMask = VK_IMAGE_ASPECT_DEPTH_BIT |
-		             VK_IMAGE_ASPECT_STENCIL_BIT;
-	}
-	else
-	{
-		if(mip_levels > 1)
-		{
-			// mip levels are generated iteratively by blitting
-			usage |= VK_IMAGE_USAGE_TRANSFER_SRC_BIT;
-		}
-
-		if(pixels == NULL)
-		{
-			// enable render-to-texture
-			usage |= VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
-		}
-	}
-
-	VkImageCreateInfo i_info =
-	{
-		.sType       = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,
-		.pNext       = NULL,
-		.flags       = 0,
-		.imageType   = VK_IMAGE_TYPE_2D,
-		.format      = vkk_util_imageFormat(format),
-		.extent      =
-		{
-			width,
-			height,
-			1
-		},
-		.mipLevels   = mip_levels,
-		.arrayLayers = 1,
-		.samples     = VK_SAMPLE_COUNT_1_BIT,
-		.tiling      = VK_IMAGE_TILING_OPTIMAL,
-		.usage       = usage,
-		.sharingMode = VK_SHARING_MODE_EXCLUSIVE,
-		.queueFamilyIndexCount = 1,
-		.pQueueFamilyIndices   = &self->queue_family_index,
-		.initialLayout         = VK_IMAGE_LAYOUT_UNDEFINED
-	};
-
-	if(vkCreateImage(self->device, &i_info, NULL,
-	                 &image->image) != VK_SUCCESS)
-	{
-		LOGE("vkCreateImage failed");
-		goto fail_create_image;
-	}
-
-	VkMemoryRequirements mr;
-	vkGetImageMemoryRequirements(self->device,
-	                             image->image,
-	                             &mr);
-
-	VkFlags  mp_flags = 0;
-	uint32_t mt_index;
-	if(vkk_engine_getMemoryTypeIndex(self,
-	                                 mr.memoryTypeBits,
-	                                 mp_flags,
-	                                 &mt_index) == 0)
-	{
-		goto fail_memory_type;
-	}
-
-	VkMemoryAllocateInfo ma_info =
-	{
-		.sType           = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO,
-		.pNext           = NULL,
-		.allocationSize  = mr.size,
-		.memoryTypeIndex = mt_index
-	};
-
-	if(vkAllocateMemory(self->device, &ma_info, NULL,
-	                    &image->memory) != VK_SUCCESS)
-	{
-		LOGE("vkAllocateMemory failed");
-		goto fail_allocate;
-	}
-
-	if(vkBindImageMemory(self->device, image->image,
-	                     image->memory, 0) != VK_SUCCESS)
-	{
-		LOGE("vkBindBufferMemory failed");
-		goto fail_bind;
-	}
-
-	VkImageViewCreateInfo iv_info =
-	{
-		.sType      = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO,
-		.pNext      = NULL,
-		.flags      = 0,
-		.image      = image->image,
-		.viewType   = VK_IMAGE_VIEW_TYPE_2D,
-		.format     = vkk_util_imageFormat(format),
-		.components =
-		{
-			.r = VK_COMPONENT_SWIZZLE_IDENTITY,
-			.g = VK_COMPONENT_SWIZZLE_IDENTITY,
-			.b = VK_COMPONENT_SWIZZLE_IDENTITY,
-			.a = VK_COMPONENT_SWIZZLE_IDENTITY
-		},
-		.subresourceRange =
-		{
-			.aspectMask     = aspectMask,
-			.baseMipLevel   = 0,
-			.levelCount     = mip_levels,
-			.baseArrayLayer = 0,
-			.layerCount     = 1
-		}
-	};
-
-	if(vkCreateImageView(self->device, &iv_info, NULL,
-	                     &image->image_view) != VK_SUCCESS)
-	{
-		LOGE("vkCreateImageView failed");
-		goto fail_image_view;
-	}
-
-	// upload pixel data
-	if(pixels && (format != VKK_IMAGE_FORMAT_DEPTH))
-	{
-		if(vkk_engine_uploadImage(self, image, pixels) == 0)
-		{
-			goto fail_upload;
-		}
-	}
-
-	// success
-	return image;
-
-	// failure
-	fail_upload:
-		vkDestroyImageView(self->device, image->image_view,
-		                   NULL);
-	fail_image_view:
-	fail_bind:
-		vkFreeMemory(self->device,
-		             image->memory, NULL);
-	fail_allocate:
-	fail_memory_type:
-		vkDestroyImage(self->device,
-		               image->image, NULL);
-	fail_create_image:
-		FREE(image->layout_array);
-	fail_layout_array:
-		FREE(image);
-	return NULL;
-}
-
-void vkk_engine_deleteImage(vkk_engine_t* self,
-                            vkk_image_t** _image)
-{
-	assert(self);
-	assert(_image);
-
-	vkk_image_t* image = *_image;
-	if(image)
-	{
-		vkk_engine_deleteObject(self, VKK_OBJECT_TYPE_IMAGE,
-		                        (void*) image);
-		*_image = NULL;
-	}
-}
-
-vkk_sampler_t*
-vkk_engine_newSampler(vkk_engine_t* self, int min_filter,
-                      int mag_filter, int mipmap_mode)
-{
-	assert(self);
-
-	vkk_sampler_t* sampler;
-	sampler = (vkk_sampler_t*)
-	          CALLOC(1, sizeof(vkk_sampler_t));
-	if(sampler == NULL)
-	{
-		LOGE("CALLOC failed");
-		return NULL;
-	}
-
-	VkFilter filter_map[VKK_SAMPLER_FILTER_COUNT] =
-	{
-		VK_FILTER_NEAREST,
-		VK_FILTER_LINEAR
-	};
-
-	VkSamplerMipmapMode mipmap_map[VKK_SAMPLER_MIPMAP_MODE_COUNT] =
-	{
-		VK_SAMPLER_MIPMAP_MODE_NEAREST,
-		VK_SAMPLER_MIPMAP_MODE_LINEAR
-	};
-
-	// Note: the maxLod represents the maximum number of mip
-	// levels that can be supported and is just used to clamp
-	// the computed maxLod for a particular texture.
-	// A large value for maxLod effectively allows all mip
-	// levels to be used for mipmapped textures.
-	VkSamplerCreateInfo si =
-	{
-		.sType                   = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO,
-		.pNext                   = NULL,
-		.flags                   = 0,
-		.magFilter               = filter_map[mag_filter],
-		.minFilter               = filter_map[min_filter],
-		.mipmapMode              = mipmap_map[mipmap_mode],
-		.addressModeU            = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE,
-		.addressModeV            = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE,
-		.addressModeW            = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE,
-		.mipLodBias              = 0.0f,
-		.anisotropyEnable        = VK_FALSE,
-		.maxAnisotropy           = 0.0f,
-		.compareEnable           = VK_FALSE,
-		.compareOp               = VK_COMPARE_OP_NEVER,
-		.minLod                  = 0.0f,
-		.maxLod                  = 1024.0f,
-		.borderColor             = VK_BORDER_COLOR_FLOAT_OPAQUE_WHITE,
-		.unnormalizedCoordinates = VK_FALSE
-	};
-
-	if(vkCreateSampler(self->device, &si, NULL,
-	                   &sampler->sampler) != VK_SUCCESS)
-	{
-		LOGE("vkCreateSampler failed");
-		goto fail_create;
-	}
-
-	// success
-	return sampler;
-
-	// failure
-	fail_create:
-		FREE(sampler);
-	return NULL;
-}
-
-void vkk_engine_deleteSampler(vkk_engine_t* self,
-                              vkk_sampler_t** _sampler)
-{
-	assert(self);
-	assert(_sampler);
-
-	vkk_sampler_t* sampler = *_sampler;
-	if(sampler)
-	{
-		vkk_engine_deleteObject(self, VKK_OBJECT_TYPE_SAMPLER,
-		                        (void*) sampler);
-		*_sampler = NULL;
-	}
-}
-
-vkk_uniformSetFactory_t*
-vkk_engine_newUniformSetFactory(vkk_engine_t* self,
-                                int update,
-                                uint32_t ub_count,
-                                vkk_uniformBinding_t* ub_array)
-{
-	assert(self);
-	assert(ub_array);
-
-	VkDescriptorType dt_map[VKK_UNIFORM_TYPE_COUNT] =
-	{
-		VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
-		VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
-		VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
-		VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
-	};
-
-	VkShaderStageFlags ss_map[VKK_STAGE_COUNT] =
-	{
-		0,
-		VK_SHADER_STAGE_VERTEX_BIT,
-		VK_SHADER_STAGE_FRAGMENT_BIT,
-		VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT
-	};
-
-	vkk_uniformSetFactory_t* usf;
-	usf = (vkk_uniformSetFactory_t*)
-	      CALLOC(1, sizeof(vkk_uniformSetFactory_t));
-	if(usf == NULL)
-	{
-		LOGE("CALLOC failed");
-		return NULL;
-	}
-
-	usf->update   = update;
-	usf->ub_count = ub_count;
-
-	// copy the ub_array
-	usf->ub_array = (vkk_uniformBinding_t*)
-	                CALLOC(ub_count,
-	                       sizeof(vkk_uniformBinding_t));
-	if(usf->ub_array == NULL)
-	{
-		LOGE("CALLOC failed");
-		goto fail_ub_array;
-	}
-	memcpy(usf->ub_array, ub_array,
-	       ub_count*sizeof(vkk_uniformBinding_t));
-
-	// create temportary descriptor set layout bindings
-	VkDescriptorSetLayoutBinding* bindings;
-	bindings = (VkDescriptorSetLayoutBinding*)
-	           CALLOC(ub_count,
-	                  sizeof(VkDescriptorSetLayoutBinding));
-	if(bindings == NULL)
-	{
-		LOGE("CALLOC failed");
-		goto fail_bindings;
-	}
-
-	// fill in bindings
-	int i;
-	for(i = 0; i < ub_count; ++i)
-	{
-		vkk_uniformBinding_t*         usb = &(ub_array[i]);
-		VkDescriptorSetLayoutBinding* b   = &(bindings[i]);
-		b->binding            = usb->binding;
-		b->descriptorType     = dt_map[usb->type];
-		b->descriptorCount    = 1;
-		b->stageFlags         = ss_map[usb->stage];
-		b->pImmutableSamplers = usb->sampler ? &usb->sampler->sampler : NULL;
-	}
-
-	VkDescriptorSetLayoutCreateInfo dsl_info =
-	{
-		.sType        = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO,
-		.pNext        = NULL,
-		.flags        = 0,
-		.bindingCount = ub_count,
-		.pBindings    = bindings,
-	};
-
-	if(vkCreateDescriptorSetLayout(self->device,
-	                               &dsl_info, NULL,
-	                               &usf->ds_layout) != VK_SUCCESS)
-	{
-		LOGE("vkCreateDescriptorSetLayout failed");
-		goto fail_create_dsl;
-	}
-
-	usf->dp_list = cc_list_new();
-	if(usf->dp_list == NULL)
-	{
-		goto fail_dp_list;
-	}
-
-	usf->us_list = cc_list_new();
-	if(usf->us_list == NULL)
-	{
-		goto fail_us_list;
-	}
-
-	// increment type counter
-	for(i = 0; i < ub_count; ++i)
-	{
-		++usf->type_count[ub_array[i].type];
-	}
-
-	FREE(bindings);
-
-	// success
-	return usf;
-
-	// failure
-	fail_us_list:
-		cc_list_delete(&usf->dp_list);
-	fail_dp_list:
-		vkDestroyDescriptorSetLayout(self->device,
-		                             usf->ds_layout, NULL);
-	fail_create_dsl:
-		FREE(bindings);
-	fail_bindings:
-		FREE(usf->ub_array);
-	fail_ub_array:
-		FREE(usf);
-	return NULL;
-}
-
-void
-vkk_engine_deleteUniformSetFactory(vkk_engine_t* self,
-                                   vkk_uniformSetFactory_t** _usf)
-{
-	assert(self);
-	assert(_usf);
-
-	vkk_uniformSetFactory_t* usf = *_usf;
-	if(usf)
-	{
-		vkk_engine_deleteObject(self,
-		                        VKK_OBJECT_TYPE_UNIFORMSETFACTORY,
-		                        (void*) usf);
-		*_usf = NULL;
-	}
-}
-
-vkk_uniformSet_t*
-vkk_engine_newUniformSet(vkk_engine_t* self,
-                         uint32_t set,
-                         uint32_t ua_count,
-                         vkk_uniformAttachment_t* ua_array,
-                         vkk_uniformSetFactory_t* usf)
-{
-	assert(self);
-	assert(ua_array);
-	assert(usf);
-
-	vkk_renderer_t* renderer = self->renderer;
-
-	// get the last expired timestamp
-	vkk_engine_rendererLock(self);
-	double ets = vkk_defaultRenderer_tsExpiredLocked(renderer);
-	vkk_engine_rendererUnlock(self);
-
-	// check if a uniform set can be reused
-	vkk_engine_usfLock(self);
-	vkk_uniformSet_t* us   = NULL;
-	cc_listIter_t*    iter = cc_list_head(usf->us_list);
-	while(iter)
-	{
-		vkk_uniformSet_t* tmp;
-		tmp = (vkk_uniformSet_t*)
-		      cc_list_peekIter(iter);
-
-		if(ets >= tmp->ts)
-		{
-			us = tmp;
-			cc_list_remove(usf->us_list, &iter);
-			break;
-		}
-
-		iter = cc_list_next(iter);
-	}
-	vkk_engine_usfUnlock(self);
-
-	int i;
-	if(us == NULL)
-	{
-		// create a new uniform set
-		us = (vkk_uniformSet_t*)
-		     CALLOC(1, sizeof(vkk_uniformSet_t));
-		if(us == NULL)
-		{
-			LOGE("CALLOC failed");
-			return NULL;
-		}
-
-		us->set      = set;
-		us->ua_count = usf->ub_count;
-		us->usf      = usf;
-
-		// copy the ua_array
-		us->ua_array = (vkk_uniformAttachment_t*)
-		               CALLOC(usf->ub_count,
-		                      sizeof(vkk_uniformAttachment_t));
-		if(us->ua_array == NULL)
-		{
-			LOGE("CALLOC failed");
-			goto fail_ua_array;
-		}
-		vkk_copyUniformAttachmentArray(us->ua_array, ua_count,
-		                               ua_array, usf);
-
-		uint32_t ds_count;
-		ds_count = (usf->update == VKK_UPDATE_MODE_DEFAULT) ?
-		           vkk_engine_swapchainImageCount(self) : 1;
-		us->ds_array = (VkDescriptorSet*)
-		               CALLOC(ds_count, sizeof(VkDescriptorSet));
-		if(us->ds_array == NULL)
-		{
-			LOGE("CALLOC failed");
-			goto fail_ds_array;
-		}
-
-		// initialize the descriptor set layouts
-		VkDescriptorSetLayout dsl_array[VKK_DESCRIPTOR_POOL_SIZE];
-		for(i = 0; i < ds_count; ++i)
-		{
-			dsl_array[i] = usf->ds_layout;
-		}
-
-		// allocate the descriptor set from the pool
-		vkk_engine_usfLock(self);
-		VkDescriptorPool dp;
-		dp = (VkDescriptorPool)
-		     cc_list_peekTail(usf->dp_list);
-
-		// create a new pool on demand
-		if((ds_count > usf->ds_available) || (dp == VK_NULL_HANDLE))
-		{
-			// create a new pool
-			dp = vkk_engine_newDescriptorPoolLocked(self, usf);
-			if(dp == VK_NULL_HANDLE)
-			{
-				vkk_engine_usfUnlock(self);
-				goto fail_dp;
-			}
-		}
-
-		if(vkk_engine_allocateDescriptorSetsLocked(self, dp,
-		                                           dsl_array,
-		                                           ds_count,
-		                                           us->ds_array) == 0)
-		{
-			vkk_engine_usfUnlock(self);
-			goto fail_allocate_ds;
-		}
-
-		usf->ds_available -= ds_count;
-		vkk_engine_usfUnlock(self);
-	}
-	else
-	{
-		// reuse the uniform set
-		us->ts  = 0.0;
-		us->set = set;
-		us->usf = usf;
-
-		// copy the ua_array
-		memset(us->ua_array, 0,
-		       usf->ub_count*sizeof(vkk_uniformAttachment_t));
-		vkk_copyUniformAttachmentArray(us->ua_array, ua_count,
-		                               ua_array, usf);
-	}
-
-	// attach buffers and images
-	for(i = 0; i < ua_count; ++i)
-	{
-		if(ua_array[i].type == VKK_UNIFORM_TYPE_BUFFER)
-		{
-			vkk_engine_attachUniformBuffer(self, us,
-			                               ua_array[i].buffer,
-			                               ua_array[i].binding);
-		}
-		else if(ua_array[i].type == VKK_UNIFORM_TYPE_SAMPLER)
-		{
-			uint32_t b = ua_array[i].binding;
-			vkk_engine_attachUniformSampler(self, us,
-			                                usf->ub_array[b].sampler,
-			                                ua_array[i].image,
-			                                ua_array[i].binding);
-		}
-	}
-
-	// success
-	return us;
-
-	// failure
-	fail_allocate_ds:
-	fail_dp:
-		FREE(us->ds_array);
-	fail_ds_array:
-		FREE(us->ua_array);
-	fail_ua_array:
-		FREE(us);
-	return NULL;
-}
-
-void vkk_engine_deleteUniformSet(vkk_engine_t* self,
-                                 vkk_uniformSet_t** _us)
-{
-	assert(self);
-	assert(_us);
-
-	vkk_uniformSet_t* us = *_us;
-	if(us)
-	{
-		vkk_engine_deleteObject(self, VKK_OBJECT_TYPE_UNIFORMSET,
-		                        (void*) us);
-		*_us = NULL;
-	}
-}
-
-vkk_pipelineLayout_t*
-vkk_engine_newPipelineLayout(vkk_engine_t* self,
-                             uint32_t usf_count,
-                             vkk_uniformSetFactory_t** usf_array)
-{
-	assert(self);
-	assert(usf_array);
-
-	if(usf_count > VKK_ENGINE_MAX_USF_COUNT)
-	{
-		LOGE("invalid usf_count=%i", usf_count);
-		return NULL;
-	}
-
-	vkk_pipelineLayout_t* pl;
-	pl = (vkk_pipelineLayout_t*)
-	     CALLOC(1, sizeof(vkk_pipelineLayout_t));
-	if(pl == NULL)
-	{
-		LOGE("CALLOC failed");
-		return NULL;
-	}
-
-	pl->usf_count = usf_count;
-
-	VkDescriptorSetLayout* dsl_array;
-	dsl_array = (VkDescriptorSetLayout*)
-	            CALLOC(usf_count, sizeof(VkDescriptorSetLayout));
-	if(dsl_array == NULL)
-	{
-		goto fail_dsl_array;
-	}
-
-	int i;
-	for(i = 0; i < usf_count; ++i)
-	{
-		dsl_array[i] = usf_array[i]->ds_layout;
-	}
-
-	VkPipelineLayoutCreateInfo pl_info =
-	{
-		.sType                  = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO,
-		.pNext                  = NULL,
-		.flags                  = 0,
-		.setLayoutCount         = usf_count,
-		.pSetLayouts            = dsl_array,
-		.pushConstantRangeCount = 0,
-		.pPushConstantRanges    = NULL
-	};
-
-	if(vkCreatePipelineLayout(self->device, &pl_info, NULL,
-	                          &pl->pl) != VK_SUCCESS)
-	{
-		LOGE("vkCreatePipelineLayout failed");
-		goto fail_create_pl;
-	}
-
-	FREE(dsl_array);
-
-	// success
-	return pl;
-
-	// failure
-	fail_create_pl:
-		FREE(dsl_array);
-	fail_dsl_array:
-		FREE(pl);
-	return NULL;
-}
-
-void vkk_engine_deletePipelineLayout(vkk_engine_t* self,
-                                     vkk_pipelineLayout_t** _pl)
-{
-	assert(self);
-	assert(_pl);
-
-	vkk_pipelineLayout_t* pl = *_pl;
-	if(pl)
-	{
-		vkk_engine_deleteObject(self,
-		                        VKK_OBJECT_TYPE_PIPELINELAYOUT,
-		                        (void*) pl);
-		*_pl = NULL;
-	}
-}
-
-vkk_graphicsPipeline_t*
-vkk_engine_newGraphicsPipeline(vkk_engine_t* self,
-                               vkk_graphicsPipelineInfo_t* gpi)
-{
-	assert(self);
-	assert(gpi);
-
-	VkShaderModule vs;
-	VkShaderModule fs;
-	vs = vkk_engine_getShaderModule(self, gpi->vs);
-	fs = vkk_engine_getShaderModule(self, gpi->fs);
-	if((vs == VK_NULL_HANDLE) || (fs == VK_NULL_HANDLE))
-	{
-		return NULL;
-	}
-
-	vkk_graphicsPipeline_t* gp;
-	gp = (vkk_graphicsPipeline_t*)
-	     CALLOC(1, sizeof(vkk_graphicsPipeline_t));
-	if(gp == NULL)
-	{
-		LOGE("CALLOC failed");
-		return NULL;
-	}
-
-	VkPipelineShaderStageCreateInfo pss_info[2] =
-	{
-		// vertex stage
-		{
-			.sType               = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,
-			.pNext               = NULL,
-			.flags               = 0,
-			.stage               = VK_SHADER_STAGE_VERTEX_BIT,
-			.module              = vs,
-			.pName               = "main",
-			.pSpecializationInfo = NULL
-		},
-
-		// fragment stage
-		{
-			.sType               = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,
-			.pNext               = NULL,
-			.flags               = 0,
-			.stage               = VK_SHADER_STAGE_FRAGMENT_BIT,
-			.module              = fs,
-			.pName               = "main",
-			.pSpecializationInfo = NULL
-		}
-	};
-
-	VkVertexInputBindingDescription* vib;
-	vib = (VkVertexInputBindingDescription*)
-	      CALLOC(gpi->vb_count, sizeof(VkVertexInputBindingDescription));
-	if(vib == NULL)
-	{
-		LOGE("CALLOC failed");
-		goto fail_vib;
-	}
-
-	VkVertexInputAttributeDescription* via;
-	via = (VkVertexInputAttributeDescription*)
-	      CALLOC(gpi->vb_count, sizeof(VkVertexInputAttributeDescription));
-	if(via == NULL)
-	{
-		LOGE("CALLOC failed");
-		goto fail_via;
-	}
-
-	uint32_t stride[VKK_VERTEX_FORMAT_COUNT] =
-	{
-		sizeof(float),
-		sizeof(int32_t),
-		sizeof(int16_t),
-		sizeof(uint32_t),
-		sizeof(uint16_t)
-	};
-
-	VkFormat format[4*VKK_VERTEX_FORMAT_COUNT] =
-	{
-		VK_FORMAT_R32_SFLOAT,
-		VK_FORMAT_R32G32_SFLOAT,
-		VK_FORMAT_R32G32B32_SFLOAT,
-		VK_FORMAT_R32G32B32A32_SFLOAT,
-		VK_FORMAT_R32_SINT,
-		VK_FORMAT_R32G32_SINT,
-		VK_FORMAT_R32G32B32_SINT,
-		VK_FORMAT_R32G32B32A32_SINT,
-		VK_FORMAT_R16_SINT,
-		VK_FORMAT_R16G16_SINT,
-		VK_FORMAT_R16G16B16_SINT,
-		VK_FORMAT_R16G16B16A16_SINT,
-		VK_FORMAT_R32_UINT,
-		VK_FORMAT_R32G32_UINT,
-		VK_FORMAT_R32G32B32_UINT,
-		VK_FORMAT_R32G32B32A32_UINT,
-		VK_FORMAT_R16_UINT,
-		VK_FORMAT_R16G16_UINT,
-		VK_FORMAT_R16G16B16_UINT,
-		VK_FORMAT_R16G16B16A16_UINT,
-	};
-
-	int i;
-	for(i = 0; i < gpi->vb_count; ++i)
-	{
-		vkk_vertexBufferInfo_t* vbi= &(gpi->vbi[i]);
-		vib[i].binding   = vbi->location;
-		vib[i].stride    = stride[vbi->format]*vbi->components;
-		vib[i].inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
-		via[i].location  = vbi->location;
-		via[i].binding   = vbi->location;
-		via[i].format    = format[4*vbi->format +
-		                          vbi->components - 1];
-		via[i].offset    = 0;
-	}
-
-	VkPipelineVertexInputStateCreateInfo pvis_info =
-	{
-		.sType                           = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO,
-		.pNext                           = NULL,
-		.flags                           = 0,
-		.vertexBindingDescriptionCount   = gpi->vb_count,
-		.pVertexBindingDescriptions      = vib,
-		.vertexAttributeDescriptionCount = gpi->vb_count,
-		.pVertexAttributeDescriptions    = via
-	};
-
-	VkPrimitiveTopology topology[VKK_PRIMITIVE_TRIANGLE_COUNT] =
-	{
-		VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST,
-		VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP,
-		VK_PRIMITIVE_TOPOLOGY_TRIANGLE_FAN
-	};
-	VkPipelineInputAssemblyStateCreateInfo pias_info =
-	{
-		.sType                  = VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO,
-		.pNext                  = NULL,
-		.flags                  = 0,
-		.topology               = topology[gpi->primitive],
-		.primitiveRestartEnable = gpi->primitive_restart
-	};
-
-	VkViewport viewport =
-	{
-		.x        = 0.0f,
-		.y        = 0.0f,
-		.width    = (float) 0.0,
-		.height   = (float) 0.0,
-		.minDepth = 0.0f,
-		.maxDepth = 1.0f
-	};
-
-	VkRect2D scissor =
-	{
-		.offset =
-		{
-			.x = 0,
-			.y = 0
-		},
-		.extent =
-		{
-			.width  = (uint32_t) 0,
-			.height = (uint32_t) 0,
-		}
-	};
-
-	VkPipelineViewportStateCreateInfo pvs_info =
-	{
-		.sType         = VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO,
-		.pNext         = NULL,
-		.flags         = 0,
-		.viewportCount = 1,
-		.pViewports    = &viewport,
-		.scissorCount  = 1,
-		.pScissors     = &scissor
-	};
-
-	VkCullModeFlags cullMode;
-	cullMode = gpi->cull_back ? VK_CULL_MODE_BACK_BIT :
-	                            VK_CULL_MODE_NONE;
-	VkPipelineRasterizationStateCreateInfo prs_info =
-	{
-		.sType                   = VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO,
-		.pNext                   = NULL,
-		.flags                   = 0,
-		.depthClampEnable        = VK_FALSE,
-		.rasterizerDiscardEnable = VK_FALSE,
-		.polygonMode             = VK_POLYGON_MODE_FILL,
-		.cullMode                = cullMode,
-		.frontFace               = VK_FRONT_FACE_COUNTER_CLOCKWISE,
-		.depthBiasEnable         = VK_FALSE,
-		.depthBiasConstantFactor = 0.0f,
-		.depthBiasClamp          = 0.0f,
-		.depthBiasSlopeFactor    = 0.0f,
-		.lineWidth               = 1.0f
-	};
-
-	VkPipelineMultisampleStateCreateInfo pms_info =
-	{
-		.sType                 = VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO,
-		.pNext                 = NULL,
-		.flags                 = 0,
-		.rasterizationSamples  = VK_SAMPLE_COUNT_1_BIT,
-		.sampleShadingEnable   = VK_FALSE,
-		.minSampleShading      = 0.0f,
-		.pSampleMask           = NULL,
-		.alphaToCoverageEnable = VK_FALSE,
-		.alphaToOneEnable      = VK_FALSE
-	};
-
-	VkPipelineDepthStencilStateCreateInfo pdss_info =
-	{
-		.sType                 = VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO,
-		.pNext                 = NULL,
-		.flags                 = 0,
-		.depthTestEnable       = gpi->depth_test,
-		.depthWriteEnable      = gpi->depth_write,
-		.depthCompareOp        = VK_COMPARE_OP_LESS,
-		.depthBoundsTestEnable = VK_FALSE,
-		.stencilTestEnable     = VK_FALSE,
-		.front =
-		{
-			.failOp      = VK_STENCIL_OP_KEEP,
-			.passOp      = VK_STENCIL_OP_KEEP,
-			.depthFailOp = VK_STENCIL_OP_KEEP,
-			.compareOp   = VK_COMPARE_OP_NEVER,
-			.compareMask = 0,
-			.writeMask   = 0,
-			.reference   = 0
-		},
-		.back =
-		{
-			.failOp      = VK_STENCIL_OP_KEEP,
-			.passOp      = VK_STENCIL_OP_KEEP,
-			.depthFailOp = VK_STENCIL_OP_KEEP,
-			.compareOp   = VK_COMPARE_OP_NEVER,
-			.compareMask = 0,
-			.writeMask   = 0,
-			.reference   = 0
-		},
-		.minDepthBounds = 0.0f,
-		.maxDepthBounds = 1.0f
-	};
-
-	VkPipelineColorBlendAttachmentState pcbs =
-	{
-		.blendEnable         = VK_FALSE,
-		.srcColorBlendFactor = VK_BLEND_FACTOR_SRC_ALPHA,
-		.dstColorBlendFactor = VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA,
-		.colorBlendOp        = VK_BLEND_OP_ADD,
-		.srcAlphaBlendFactor = VK_BLEND_FACTOR_SRC_ALPHA,
-		.dstAlphaBlendFactor = VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA,
-		.alphaBlendOp        = VK_BLEND_OP_ADD,
-		.colorWriteMask      = VK_COLOR_COMPONENT_R_BIT |
-		                       VK_COLOR_COMPONENT_G_BIT |
-		                       VK_COLOR_COMPONENT_B_BIT |
-		                       VK_COLOR_COMPONENT_A_BIT,
-	};
-
-	if(gpi->blend_mode == VKK_BLEND_MODE_TRANSPARENCY)
-	{
-		pcbs.blendEnable = VK_TRUE;
-	}
-
-	VkPipelineColorBlendStateCreateInfo pcbs_info =
-	{
-		.sType           = VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO,
-		.pNext           = NULL,
-		.flags           = 0,
-		.logicOpEnable   = VK_FALSE,
-		.logicOp         = VK_LOGIC_OP_CLEAR,
-		.attachmentCount = 1,
-		.pAttachments    = &pcbs,
-		.blendConstants  = { 0.0f, 0.0f, 0.0f, 0.0f }
-	};
-
-	VkDynamicState dynamic_state[2] =
-	{
-		VK_DYNAMIC_STATE_VIEWPORT,
-		VK_DYNAMIC_STATE_SCISSOR
-	};
-	VkPipelineDynamicStateCreateInfo pds_info =
-	{
-		.sType             = VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO,
-		.pNext             = NULL,
-		.flags             = 0,
-		.dynamicStateCount = 2,
-		.pDynamicStates    = dynamic_state,
-	};
-
-	VkGraphicsPipelineCreateInfo gp_info =
-	{
-		.sType               = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO,
-		.pNext               = NULL,
-		.flags               = 0,
-		.stageCount          = 2,
-		.pStages             = pss_info,
-		.pVertexInputState   = &pvis_info,
-		.pInputAssemblyState = &pias_info,
-		.pTessellationState  = NULL,
-		.pViewportState      = &pvs_info,
-		.pRasterizationState = &prs_info,
-		.pMultisampleState   = &pms_info,
-		.pDepthStencilState  = &pdss_info,
-		.pColorBlendState    = &pcbs_info,
-		.pDynamicState       = &pds_info,
-		.layout              = gpi->pl->pl,
-		.renderPass          = vkk_renderer_renderPass(gpi->renderer),
-		.subpass             = 0,
-		.basePipelineHandle  = VK_NULL_HANDLE,
-		.basePipelineIndex   = -1
-	};
-
-	if(vkCreateGraphicsPipelines(self->device,
-	                             self->pipeline_cache,
-	                             1, &gp_info, NULL,
-	                             &gp->pipeline) != VK_SUCCESS)
-	{
-		LOGE("vkCreateGraphicsPipelines failed");
-		goto fail_create;
-	}
-
-	// success
-	return gp;
-
-	// failure
-	fail_create:
-		FREE(via);
-	fail_via:
-		FREE(vib);
-	fail_vib:
-		FREE(gp);
-	return NULL;
-}
-
-void vkk_engine_deleteGraphicsPipeline(vkk_engine_t* self,
-                                       vkk_graphicsPipeline_t** _gp)
-{
-	assert(self);
-	assert(_gp);
-
-	vkk_graphicsPipeline_t* gp = *_gp;
-	if(gp)
-	{
-		vkk_engine_deleteObject(self,
-		                        VKK_OBJECT_TYPE_GRAPHICSPIPELINE,
-		                        (void*) gp);
-		*_gp = NULL;
-	}
-}
-
-/***********************************************************
-* query API                                                *
-***********************************************************/
-
-uint32_t VKK_MAKE_VERSION(uint32_t major, uint32_t minor,
-                          uint32_t patch)
-{
-	return VK_MAKE_VERSION(major, minor, patch);
-}
-
-size_t vkk_buffer_size(vkk_buffer_t* self)
-{
-	assert(self);
-
-	return self->size;
-}
-
 int vkk_engine_imageCaps(vkk_engine_t* self, int format)
 {
 	assert(self);
@@ -3214,40 +1294,6 @@ uint32_t vkk_engine_version(vkk_engine_t* self)
 
 	return self->version;
 }
-
-int vkk_image_format(vkk_image_t* self)
-{
-	assert(self);
-
-	return self->format;
-}
-
-size_t vkk_image_size(vkk_image_t* self,
-                      uint32_t* _width, uint32_t* _height)
-{
-	assert(self);
-	assert(_width);
-	assert(_height);
-
-	size_t bpp[VKK_IMAGE_FORMAT_COUNT] =
-	{
-		4, // VKK_IMAGE_FORMAT_RGBA8888
-		2, // VKK_IMAGE_FORMAT_RGBA4444
-		3, // VKK_IMAGE_FORMAT_RGB888
-		2, // VKK_IMAGE_FORMAT_RGB565
-		2, // VKK_IMAGE_FORMAT_RG88
-		1, // VKK_IMAGE_FORMAT_R8
-		4, // VKK_IMAGE_FORMAT_DEPTH
-	};
-
-	*_width  = self->width;
-	*_height = self->height;
-	return self->width*self->height*bpp[self->format];
-}
-
-/***********************************************************
-* default renderer API                                     *
-***********************************************************/
 
 int vkk_engine_resize(vkk_engine_t* self)
 {
@@ -3264,7 +1310,7 @@ vkk_renderer_t* vkk_engine_renderer(vkk_engine_t* self)
 }
 
 /***********************************************************
-* public                                                   *
+* protected                                                *
 ***********************************************************/
 
 void vkk_engine_mipmapImage(vkk_engine_t* self,
@@ -3371,13 +1417,239 @@ void vkk_engine_mipmapImage(vkk_engine_t* self,
 	}
 }
 
+int
+vkk_engine_uploadImage(vkk_engine_t* self,
+                       vkk_image_t* image,
+                       const void* pixels)
+{
+	assert(self);
+	assert(image);
+	assert(pixels);
+
+	VkFenceCreateInfo f_info =
+	{
+		.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO,
+		.pNext = NULL,
+		.flags = 0
+	};
+
+	VkFence fence;
+	if(vkCreateFence(self->device, &f_info, NULL,
+	                 &fence) != VK_SUCCESS)
+	{
+		LOGE("vkCreateFence failed");
+		return 0;
+	}
+
+	// create a transfer buffer
+	uint32_t width;
+	uint32_t height;
+	size_t size = vkk_image_size(image, &width, &height);
+	VkBufferCreateInfo b_info =
+	{
+		.sType                 = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,
+		.pNext                 = NULL,
+		.flags                 = 0,
+		.size                  = size,
+		.usage                 = VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
+		.sharingMode           = VK_SHARING_MODE_EXCLUSIVE,
+		.queueFamilyIndexCount = 1,
+		.pQueueFamilyIndices   = &self->queue_family_index
+	};
+
+	VkBuffer buffer;
+	if(vkCreateBuffer(self->device, &b_info, NULL,
+	                  &buffer) != VK_SUCCESS)
+	{
+		LOGE("vkCreateBuffer failed");
+		goto fail_buffer;
+	}
+
+	// allocate memory for the transfer buffer
+	VkMemoryRequirements mr;
+	vkGetBufferMemoryRequirements(self->device, buffer, &mr);
+
+	VkFlags mp_flags = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT |
+	                   VK_MEMORY_PROPERTY_HOST_COHERENT_BIT;
+	uint32_t mt_index;
+	if(vkk_engine_getMemoryTypeIndex(self,
+	                                 mr.memoryTypeBits,
+	                                 mp_flags,
+	                                 &mt_index) == 0)
+	{
+		goto fail_memory_type;
+	}
+
+	VkMemoryAllocateInfo ma_info =
+	{
+		.sType           = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO,
+		.pNext           = NULL,
+		.allocationSize  = mr.size,
+		.memoryTypeIndex = mt_index
+	};
+
+	VkDeviceMemory memory;
+	if(vkAllocateMemory(self->device, &ma_info, NULL,
+	                    &memory) != VK_SUCCESS)
+	{
+		LOGE("vkAllocateMemory failed");
+		goto fail_allocate_memory;
+	}
+
+	// copy pixels into transfer buffer memory
+	void* data;
+	if(vkMapMemory(self->device, memory, 0, mr.size, 0,
+	               &data) != VK_SUCCESS)
+	{
+		LOGE("vkMapMemory failed");
+		goto fail_map;
+	}
+	memcpy(data, pixels, size);
+	vkUnmapMemory(self->device, memory);
+
+	if(vkBindBufferMemory(self->device, buffer, memory,
+	                      0) != VK_SUCCESS)
+	{
+		LOGE("vkBindBufferMemory failed");
+		goto fail_bind;
+	}
+
+	// allocate a transfer command buffer
+	VkCommandBuffer cb;
+	if(vkk_engine_allocateCommandBuffers(self, 1, &cb) == 0)
+	{
+		goto fail_allocate_cb;
+	}
+
+	// begin the transfer commands
+	VkCommandBufferInheritanceInfo cbi_info =
+	{
+		.sType                = VK_STRUCTURE_TYPE_COMMAND_BUFFER_INHERITANCE_INFO,
+		.pNext                = NULL,
+		.renderPass           = VK_NULL_HANDLE,
+		.subpass              = 0,
+		.framebuffer          = VK_NULL_HANDLE,
+		.occlusionQueryEnable = VK_FALSE,
+		.queryFlags           = 0,
+		.pipelineStatistics   = 0
+	};
+
+	VkCommandBufferBeginInfo cb_info =
+	{
+		.sType            = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,
+		.pNext            = NULL,
+		.flags            = 0,
+		.pInheritanceInfo = &cbi_info
+	};
+
+	vkk_engine_cmdLock(self);
+	if(vkBeginCommandBuffer(cb, &cb_info) != VK_SUCCESS)
+	{
+		LOGE("vkBeginCommandBuffer failed");
+		vkk_engine_cmdUnlock(self);
+		goto fail_begin_cb;
+	}
+
+	// transition the image to copy the transfer buffer to
+	// the image and generate mip levels if needed
+	vkk_util_imageMemoryBarrier(image, cb,
+	                            VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+	                            0, image->mip_levels);
+
+	// copy the transfer buffer to the image
+	VkBufferImageCopy bic =
+	{
+		.bufferOffset      = 0,
+		.bufferRowLength   = 0,
+		.bufferImageHeight = 0,
+		.imageSubresource  =
+		{
+			.aspectMask     = VK_IMAGE_ASPECT_COLOR_BIT,
+			.mipLevel       = 0,
+			.baseArrayLayer = 0,
+			.layerCount     = 1
+		},
+		.imageOffset =
+		{
+			.x = 0,
+			.y = 0,
+			.z = 0,
+		},
+		.imageExtent =
+		{
+			.width  = image->width,
+			.height = image->height,
+			.depth  = 1
+		}
+	};
+
+	vkCmdCopyBufferToImage(cb, buffer, image->image,
+	                       VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+	                       1, &bic);
+
+	// at this point we may need to generate mip_levels if
+	// mipmapping was enabled
+	if(image->mip_levels > 1)
+	{
+		vkk_engine_mipmapImage(self, image, cb);
+	}
+
+	// transition the image from transfer mode to shading mode
+	vkk_util_imageMemoryBarrier(image, cb,
+	                            VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+	                            0, image->mip_levels);
+
+	// end the transfer commands
+	vkEndCommandBuffer(cb);
+	vkk_engine_cmdUnlock(self);
+
+	// submit the commands
+	if(vkk_engine_queueSubmit(self, &cb,
+	                          NULL, NULL, NULL,
+	                          fence) == 0)
+	{
+		goto fail_submit;
+	}
+
+	uint64_t timeout = UINT64_MAX;
+	if(vkWaitForFences(self->device, 1, &fence, VK_TRUE,
+	                   timeout) != VK_SUCCESS)
+	{
+		LOGW("vkWaitForFences failed");
+		vkk_engine_queueWaitIdle(self);
+	}
+
+	// release temporary objects
+	vkk_engine_freeCommandBuffers(self, 1, &cb);
+	vkFreeMemory(self->device, memory, NULL);
+	vkDestroyBuffer(self->device, buffer, NULL);
+	vkDestroyFence(self->device, fence, NULL);
+
+	// success
+	return 1;
+
+	// failure
+	fail_submit:
+	fail_begin_cb:
+		vkk_engine_freeCommandBuffers(self, 1, &cb);
+	fail_allocate_cb:
+	fail_bind:
+	fail_map:
+		vkFreeMemory(self->device, memory, NULL);
+	fail_allocate_memory:
+	fail_memory_type:
+		vkDestroyBuffer(self->device, buffer, NULL);
+	fail_buffer:
+		vkDestroyFence(self->device, fence, NULL);
+	return 0;
+}
+
 uint32_t vkk_engine_swapchainImageCount(vkk_engine_t* self)
 {
 	assert(self);
 
 	return vkk_defaultRenderer_swapchainImageCount(self->renderer);
 }
-
 
 int vkk_engine_queueSubmit(vkk_engine_t* self,
                            VkCommandBuffer* cb,
@@ -3512,6 +1784,278 @@ void vkk_engine_freeCommandBuffers(vkk_engine_t* self,
 	vkk_engine_cmdUnlock(self);
 }
 
+VkDescriptorPool
+vkk_engine_newDescriptorPoolLocked(vkk_engine_t* self,
+                                   vkk_uniformSetFactory_t* usf)
+{
+	assert(self);
+	assert(usf);
+
+	VkDescriptorType dt_map[VKK_UNIFORM_TYPE_COUNT] =
+	{
+		VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
+		VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
+		VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
+		VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
+	};
+
+	// fill the descriptor pool size array and
+	// count the number of types in the factory
+	int      i;
+	uint32_t ps_count = 0;
+	uint32_t maxSets  = VKK_DESCRIPTOR_POOL_SIZE;
+	VkDescriptorPoolSize ps_array[VKK_UNIFORM_TYPE_COUNT];
+	for(i = 0; i < VKK_UNIFORM_TYPE_COUNT; ++i)
+	{
+		// ensure the factory can allocate maxSets of each type
+		char type_count = usf->type_count[i];
+		if(type_count)
+		{
+			VkDescriptorPoolSize* ps;
+			ps                  = &(ps_array[ps_count]);
+			ps->type            = dt_map[i];
+			ps->descriptorCount = type_count*VKK_DESCRIPTOR_POOL_SIZE;
+			if(ps->descriptorCount > maxSets)
+			{
+				maxSets = ps->descriptorCount;
+			}
+			++ps_count;
+		}
+	}
+
+	if(ps_count == 0)
+	{
+		LOGE("invalid");
+		return VK_NULL_HANDLE;
+	}
+
+	// create a new descriptor pool
+	VkDescriptorPool dp;
+	VkDescriptorPoolCreateInfo dp_info =
+	{
+		.sType         = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO,
+		.pNext         = NULL,
+		.flags         = 0,
+		.maxSets       = maxSets,
+		.poolSizeCount = ps_count,
+		.pPoolSizes    = ps_array
+	};
+	if(vkCreateDescriptorPool(self->device, &dp_info, NULL,
+	                          &dp) != VK_SUCCESS)
+	{
+		LOGE("vkCreateDescriptorPool failed");
+		return VK_NULL_HANDLE;
+	}
+
+	// append the descriptor pool
+	if(cc_list_append(usf->dp_list, NULL,
+	                  (const void*) dp) == NULL)
+	{
+		goto fail_append_dp;
+	}
+
+	usf->ds_available = VKK_DESCRIPTOR_POOL_SIZE;
+
+	// success
+	return dp;
+
+	// failure
+	fail_append_dp:
+		vkDestroyDescriptorPool(self->device, dp, NULL);
+	return VK_NULL_HANDLE;
+}
+
+void
+vkk_engine_attachUniformBuffer(vkk_engine_t* self,
+                               vkk_uniformSet_t* us,
+                               vkk_buffer_t* buffer,
+                               uint32_t binding)
+{
+	assert(self);
+	assert(us);
+	assert(buffer);
+
+	uint32_t count;
+	count = (us->usf->update == VKK_UPDATE_MODE_DEFAULT) ?
+	        vkk_engine_swapchainImageCount(self) : 1;
+
+	int i;
+	for(i = 0; i < count; ++i)
+	{
+		uint32_t idx;
+		idx = (buffer->update == VKK_UPDATE_MODE_DEFAULT) ? i : 0;
+		VkDescriptorBufferInfo db_info =
+		{
+			.buffer  = buffer->buffer[idx],
+			.offset  = 0,
+			.range   = buffer->size
+		};
+
+		VkWriteDescriptorSet writes =
+		{
+			.sType            = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
+			.pNext            = NULL,
+			.dstSet           = us->ds_array[i],
+			.dstBinding       = binding,
+			.dstArrayElement  = 0,
+			.descriptorCount  = 1,
+			.descriptorType   = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
+			.pImageInfo       = NULL,
+			.pBufferInfo      = &db_info,
+			.pTexelBufferView = NULL,
+		};
+
+		vkUpdateDescriptorSets(self->device, 1, &writes,
+		                       0, NULL);
+	}
+}
+
+void
+vkk_engine_attachUniformSampler(vkk_engine_t* self,
+                                vkk_uniformSet_t* us,
+                                vkk_sampler_t* sampler,
+                                vkk_image_t* image,
+                                uint32_t binding)
+{
+	assert(self);
+	assert(us);
+	assert(sampler);
+	assert(image);
+
+	uint32_t count;
+	count = (us->usf->update == VKK_UPDATE_MODE_DEFAULT) ?
+	        vkk_engine_swapchainImageCount(self) : 1;
+
+	int i;
+	for(i = 0; i < count; ++i)
+	{
+		VkDescriptorImageInfo di_info =
+		{
+			.sampler     = sampler->sampler,
+			.imageView   = image->image_view,
+			.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL
+		};
+
+		VkWriteDescriptorSet writes =
+		{
+			.sType            = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
+			.pNext            = NULL,
+			.dstSet           = us->ds_array[i],
+			.dstBinding       = binding,
+			.dstArrayElement  = 0,
+			.descriptorCount  = 1,
+			.descriptorType   = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
+			.pImageInfo       = &di_info,
+			.pBufferInfo      = NULL,
+			.pTexelBufferView = NULL,
+		};
+
+		vkUpdateDescriptorSets(self->device, 1, &writes,
+		                       0, NULL);
+	}
+}
+
+int
+vkk_engine_getMemoryTypeIndex(vkk_engine_t* self,
+                              uint32_t mt_bits,
+                              VkFlags mp_flags,
+                              uint32_t* mt_index)
+{
+	assert(self);
+	assert(mt_index);
+
+	VkPhysicalDeviceMemoryProperties mp;
+	vkGetPhysicalDeviceMemoryProperties(self->physical_device,
+	                                    &mp);
+
+	// find a memory type that meets the memory requirements
+	int i;
+	for(i = 0; i < mp.memoryTypeCount; ++i)
+	{
+		if(mt_bits & 1)
+		{
+			VkFlags mp_flagsi;
+			mp_flagsi = mp.memoryTypes[i].propertyFlags;
+			if((mp_flagsi & mp_flags) == mp_flags)
+			{
+				*mt_index = i;
+				return 1;
+			}
+		}
+		mt_bits >>= 1;
+	}
+
+	LOGE("invalid memory type");
+	return 0;
+}
+
+VkShaderModule
+vkk_engine_getShaderModule(vkk_engine_t* self,
+                           const char* fname)
+{
+	assert(self);
+	assert(fname);
+
+	vkk_engine_smLock(self);
+
+	cc_mapIter_t miter;
+	VkShaderModule sm;
+	sm = (VkShaderModule)
+	     cc_map_find(self->shader_modules, &miter, fname);
+	if(sm != VK_NULL_HANDLE)
+	{
+		vkk_engine_smUnlock(self);
+		return sm;
+	}
+
+	size_t    size = 0;
+	uint32_t* code;
+	code = vkk_engine_importShaderModule(self, fname, &size);
+	if(code == NULL)
+	{
+		vkk_engine_smUnlock(self);
+		return VK_NULL_HANDLE;
+	}
+
+	VkShaderModuleCreateInfo sm_info =
+	{
+		.sType    = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO,
+		.pNext    = NULL,
+		.flags    = 0,
+		.codeSize = size,
+		.pCode    = code
+	};
+
+	if(vkCreateShaderModule(self->device, &sm_info, NULL,
+	                        &sm) != VK_SUCCESS)
+	{
+		vkk_engine_smUnlock(self);
+		LOGE("vkCreateShaderModule failed");
+		goto fail_create;
+	}
+
+	if(cc_map_add(self->shader_modules, (const void*) sm,
+	              fname) == 0)
+	{
+		vkk_engine_smUnlock(self);
+		goto fail_add;
+	}
+
+	FREE(code);
+
+	vkk_engine_smUnlock(self);
+
+	// success
+	return sm;
+
+	// failure
+	fail_add:
+		vkDestroyShaderModule(self->device, sm, NULL);
+	fail_create:
+		FREE(code);
+	return VK_NULL_HANDLE;
+}
+
 void vkk_engine_cmdLock(vkk_engine_t* self)
 {
 	assert(self);
@@ -3628,4 +2172,86 @@ vkk_engine_deleteDefaultDepthImage(vkk_engine_t* self,
 	assert(_image);
 
 	vkk_engine_destructImage(self, 0, _image);
+}
+
+void
+vkk_engine_deleteObject(vkk_engine_t* self, int type,
+                        void* obj)
+{
+	assert(self);
+	assert(obj);
+
+	vkk_object_t* object;
+	object = vkk_object_new(type, obj);
+	if(object == NULL)
+	{
+		goto fail_object;
+	}
+
+	int status = cc_workq_run(self->workq_destruct,
+	                          (void*) object, 0);
+	if(status == CC_WORKQ_STATUS_ERROR)
+	{
+		goto fail_run;
+	}
+
+	// success
+	return;
+
+	// failure
+	// destruct immediately but wait for idle if necessary
+	fail_run:
+		vkk_object_delete(&object);
+	fail_object:
+	{
+		if(type == VKK_OBJECT_TYPE_RENDERER)
+		{
+			vkk_engine_destructRenderer(self,
+			                            (vkk_renderer_t**) &obj);
+		}
+		else if(type == VKK_OBJECT_TYPE_BUFFER)
+		{
+			vkk_engine_queueWaitIdle(self);
+			vkk_engine_destructBuffer(self, 0,
+			                          (vkk_buffer_t**) &obj);
+		}
+		else if(type == VKK_OBJECT_TYPE_IMAGE)
+		{
+			vkk_engine_queueWaitIdle(self);
+			vkk_engine_destructImage(self, 0,
+			                         (vkk_image_t**) &obj);
+		}
+		else if(type == VKK_OBJECT_TYPE_SAMPLER)
+		{
+			vkk_engine_queueWaitIdle(self);
+			vkk_engine_destructSampler(self, 0,
+			                           (vkk_sampler_t**) &obj);
+		}
+		else if(type == VKK_OBJECT_TYPE_UNIFORMSETFACTORY)
+		{
+			vkk_engine_destructUniformSetFactory(self,
+			                                     (vkk_uniformSetFactory_t**) &obj);
+		}
+		else if(type == VKK_OBJECT_TYPE_UNIFORMSET)
+		{
+			vkk_engine_queueWaitIdle(self);
+			vkk_engine_destructUniformSet(self, 0,
+			                              (vkk_uniformSet_t**) &obj);
+		}
+		else if(type == VKK_OBJECT_TYPE_PIPELINELAYOUT)
+		{
+			vkk_engine_destructPipelineLayout(self,
+			                                  (vkk_pipelineLayout_t**) &obj);
+		}
+		else if(type == VKK_OBJECT_TYPE_GRAPHICSPIPELINE)
+		{
+			vkk_engine_queueWaitIdle(self);
+			vkk_engine_destructGraphicsPipeline(self, 0,
+			                                    (vkk_graphicsPipeline_t**) &obj);
+		}
+		else
+		{
+			LOGE("invalid type=%i", type);
+		}
+	}
 }

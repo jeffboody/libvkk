@@ -39,74 +39,7 @@
 #include "../libcc/cc_workq.h"
 #include "vkk.h"
 
-// this value corresponds to the Vulkan required supported
-// limit for maxBoundDescriptorSets
-#define VKK_ENGINE_MAX_USF_COUNT 4
-
-typedef struct vkk_buffer_s
-{
-	double          ts;
-	int             update;
-	int             usage;
-	uint32_t        vbib_index;
-	size_t          size;
-	VkBuffer*       buffer;
-	VkDeviceMemory* memory;
-} vkk_buffer_t;
-
-typedef struct vkk_image_s
-{
-	double         ts;
-	uint32_t       width;
-	uint32_t       height;
-	int            format;
-	int            stage;
-	uint32_t       mip_levels;
-	VkImageLayout* layout_array;
-	VkImage        image;
-	VkDeviceMemory memory;
-	VkImageView    image_view;
-} vkk_image_t;
-
-typedef struct vkk_sampler_s
-{
-	double    ts;
-	VkSampler sampler;
-} vkk_sampler_t;
-
-typedef struct vkk_uniformSetFactory_s
-{
-	int                   update;
-	uint32_t              ub_count;
-	vkk_uniformBinding_t* ub_array;
-	uint32_t              ds_available;
-	VkDescriptorSetLayout ds_layout;
-	cc_list_t*            dp_list;
-	cc_list_t*            us_list;
-	char                  type_count[VKK_UNIFORM_TYPE_COUNT];
-} vkk_uniformSetFactory_t;
-
-typedef struct vkk_uniformSet_s
-{
-	double                   ts;
-	uint32_t                 set;
-	uint32_t                 ua_count;
-	vkk_uniformAttachment_t* ua_array;
-	VkDescriptorSet*         ds_array;
-	vkk_uniformSetFactory_t* usf;
-} vkk_uniformSet_t;
-
-typedef struct vkk_pipelineLayout_s
-{
-	uint32_t usf_count;
-	VkPipelineLayout pl;
-} vkk_pipelineLayout_t;
-
-typedef struct vkk_graphicsPipeline_s
-{
-	double     ts;
-	VkPipeline pipeline;
-} vkk_graphicsPipeline_t;
+#define VKK_DESCRIPTOR_POOL_SIZE 64
 
 #define VKK_OBJECT_TYPE_RENDERER          0
 #define VKK_OBJECT_TYPE_BUFFER            1
@@ -210,51 +143,64 @@ typedef struct vkk_engine_s
  * engine util function
  */
 
-void     vkk_engine_mipmapImage(vkk_engine_t* self,
-                                vkk_image_t* image,
-                                VkCommandBuffer cb);
-uint32_t vkk_engine_swapchainImageCount(vkk_engine_t* self);
+void             vkk_engine_mipmapImage(vkk_engine_t* self,
+                                        vkk_image_t* image,
+                                        VkCommandBuffer cb);
+int              vkk_engine_uploadImage(vkk_engine_t* self,
+                                        vkk_image_t* image,
+                                        const void* pixels);
+uint32_t         vkk_engine_swapchainImageCount(vkk_engine_t* self);
+int              vkk_engine_queueSubmit(vkk_engine_t* self,
+                                        VkCommandBuffer* cb,
+                                        VkSemaphore* semaphore_acquire,
+                                        VkSemaphore* semaphore_submit,
+                                        VkPipelineStageFlags* wait_dst_stage_mask,
+                                        VkFence fence);
+void             vkk_engine_queueWaitIdle(vkk_engine_t* self);
+int              vkk_engine_allocateDescriptorSetsLocked(vkk_engine_t* self,
+                                                         VkDescriptorPool dp,
+                                                         const VkDescriptorSetLayout* dsl_array,
+                                                         uint32_t ds_count,
+                                                         VkDescriptorSet* ds_array);
+int              vkk_engine_allocateCommandBuffers(vkk_engine_t* self,
+                                                   int cb_count,
+                                                   VkCommandBuffer* cb_array);
+void             vkk_engine_freeCommandBuffers(vkk_engine_t* self,
+                                               uint32_t cb_count,
+                                               const VkCommandBuffer* cb_array);
+VkDescriptorPool vkk_engine_newDescriptorPoolLocked(vkk_engine_t* self,
+                                                    vkk_uniformSetFactory_t* usf);
+void             vkk_engine_attachUniformBuffer(vkk_engine_t* self,
+                                                vkk_uniformSet_t* us,
+                                                vkk_buffer_t* buffer,
+                                                uint32_t binding);
+void             vkk_engine_attachUniformSampler(vkk_engine_t* self,
+                                                 vkk_uniformSet_t* us,
+                                                 vkk_sampler_t* sampler,
+                                                 vkk_image_t* image,
+                                                 uint32_t binding);
+int              vkk_engine_getMemoryTypeIndex(vkk_engine_t* self,
+                                               uint32_t mt_bits,
+                                               VkFlags mp_flags,
+                                               uint32_t* mt_index);
+VkShaderModule   vkk_engine_getShaderModule(vkk_engine_t* self,
+                                            const char* fname);
+void             vkk_engine_cmdLock(vkk_engine_t* self);
+void             vkk_engine_cmdUnlock(vkk_engine_t* self);
+void             vkk_engine_usfLock(vkk_engine_t* self);
+void             vkk_engine_usfUnlock(vkk_engine_t* self);
+void             vkk_engine_smLock(vkk_engine_t* self);
+void             vkk_engine_smUnlock(vkk_engine_t* self);
+void             vkk_engine_rendererLock(vkk_engine_t* self);
+void             vkk_engine_rendererUnlock(vkk_engine_t* self);
+void             vkk_engine_rendererSignal(vkk_engine_t* self);
+void             vkk_engine_rendererWait(vkk_engine_t* self);
+void             vkk_engine_rendererWaitForTimestamp(vkk_engine_t* self,
+                                                     double ts);
+void             vkk_engine_deleteDefaultDepthImage(vkk_engine_t* self,
+                                                    vkk_image_t** _image);
 
-/*
- * engine synchronization
- */
-
-int  vkk_engine_queueSubmit(vkk_engine_t* self,
-                            VkCommandBuffer* cb,
-                            VkSemaphore* semaphore_acquire,
-                            VkSemaphore* semaphore_submit,
-                            VkPipelineStageFlags* wait_dst_stage_mask,
-                            VkFence fence);
-void vkk_engine_queueWaitIdle(vkk_engine_t* self);
-int  vkk_engine_allocateDescriptorSetsLocked(vkk_engine_t* self,
-                                             VkDescriptorPool dp,
-                                             const VkDescriptorSetLayout* dsl_array,
-                                             uint32_t ds_count,
-                                             VkDescriptorSet* ds_array);
-int  vkk_engine_allocateCommandBuffers(vkk_engine_t* self,
-                                       int cb_count,
-                                       VkCommandBuffer* cb_array);
-void vkk_engine_freeCommandBuffers(vkk_engine_t* self,
-                                   uint32_t cb_count,
-                                   const VkCommandBuffer* cb_array);
-void vkk_engine_cmdLock(vkk_engine_t* self);
-void vkk_engine_cmdUnlock(vkk_engine_t* self);
-void vkk_engine_usfLock(vkk_engine_t* self);
-void vkk_engine_usfUnlock(vkk_engine_t* self);
-void vkk_engine_smLock(vkk_engine_t* self);
-void vkk_engine_smUnlock(vkk_engine_t* self);
-void vkk_engine_rendererLock(vkk_engine_t* self);
-void vkk_engine_rendererUnlock(vkk_engine_t* self);
-void vkk_engine_rendererSignal(vkk_engine_t* self);
-void vkk_engine_rendererWait(vkk_engine_t* self);
-void vkk_engine_rendererWaitForTimestamp(vkk_engine_t* self,
-                                         double ts);
-
-/*
- * delete default depth buffer
- */
-
-void vkk_engine_deleteDefaultDepthImage(vkk_engine_t* self,
-                                        vkk_image_t** _image);
+void             vkk_engine_deleteObject(vkk_engine_t* self, int type,
+                                         void* obj);
 
 #endif

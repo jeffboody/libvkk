@@ -27,10 +27,17 @@ add_library(vkk
             STATIC
 
             # Source
+            vkk_buffer.c
             vkk_defaultRenderer.c
             vkk_engine.c
+            vkk_graphicsPipeline.c
+            vkk_image.c
             vkk_offscreenRenderer.c
+            vkk_pipelineLayout.c
             vkk_renderer.c
+            vkk_sampler.c
+            vkk_uniformSet.c
+            vkk_uniformSetFactory.c
             vkk_util.c
             ${SOURCE_VKUI})
 

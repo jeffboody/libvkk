@@ -21,8 +21,8 @@
  *
  */
 
-#ifndef vkk_util_H
-#define vkk_util_H
+#ifndef vkk_uniformSetFactory_H
+#define vkk_uniformSetFactory_H
 
 #ifdef ANDROID
 	#include <vulkan_wrapper.h>
@@ -30,22 +30,23 @@
 	#include <vulkan/vulkan.h>
 #endif
 
-void     vkk_util_imageMemoryBarrier(vkk_image_t* image,
-                                     VkCommandBuffer cb,
-                                     VkImageLayout newLayout,
-                                     uint32_t baseMipLevel,
-                                     uint32_t levelCount);
-void     vkk_util_imageMemoryBarrierRaw(VkImage image,
-                                        VkCommandBuffer cb,
-                                        int stage,
-                                        VkImageLayout oldLayout,
-                                        VkImageLayout newLayout,
-                                        uint32_t baseMipLevel,
-                                        uint32_t levelCount);
-VkFormat vkk_util_imageFormat(int format);
-void     vkk_util_copyUniformAttachmentArray(vkk_uniformAttachment_t* dst,
-                                             uint32_t src_ua_count,
-                                             vkk_uniformAttachment_t* src,
-                                             vkk_uniformSetFactory_t* usf);
+#include "vkk.h"
+
+// this value corresponds to the Vulkan required supported
+// limit for maxBoundDescriptorSets
+#define VKK_ENGINE_MAX_USF_COUNT 4
+
+typedef struct vkk_uniformSetFactory_s
+{
+	vkk_engine_t*         engine;
+	int                   update;
+	uint32_t              ub_count;
+	vkk_uniformBinding_t* ub_array;
+	uint32_t              ds_available;
+	VkDescriptorSetLayout ds_layout;
+	cc_list_t*            dp_list;
+	cc_list_t*            us_list;
+	char                  type_count[VKK_UNIFORM_TYPE_COUNT];
+} vkk_uniformSetFactory_t;
 
 #endif

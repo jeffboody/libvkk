@@ -58,51 +58,50 @@ vkui_tricolor_t* vkui_tricolor_new(vkui_screen_t* screen,
 
 	self->screen = screen;
 
-	self->vb_xyuv = vkk_engine_newBuffer(screen->engine,
-	                                     VKK_UPDATE_MODE_DEFAULT,
-	                                     VKK_BUFFER_USAGE_VERTEX,
-	                                     4*sizeof(cc_vec4f_t),
-	                                     NULL);
+	self->vb_xyuv = vkk_buffer_new(screen->engine,
+	                               VKK_UPDATE_MODE_DEFAULT,
+	                               VKK_BUFFER_USAGE_VERTEX,
+	                               4*sizeof(cc_vec4f_t),
+	                               NULL);
 	if(self->vb_xyuv == NULL)
 	{
 		goto fail_vb_xyuv;
 	}
 
-	self->ub_color0 = vkk_engine_newBuffer(screen->engine,
-	                                       VKK_UPDATE_MODE_STATIC,
-	                                       VKK_BUFFER_USAGE_UNIFORM,
-	                                       sizeof(cc_vec4f_t),
-	                                       color0);
+	self->ub_color0 = vkk_buffer_new(screen->engine,
+	                                 VKK_UPDATE_MODE_STATIC,
+	                                 VKK_BUFFER_USAGE_UNIFORM,
+	                                 sizeof(cc_vec4f_t),
+	                                 color0);
 	if(self->ub_color0 == NULL)
 	{
 		goto fail_ub_color0;
 	}
 
-	self->ub_color1 = vkk_engine_newBuffer(screen->engine,
-	                                       VKK_UPDATE_MODE_STATIC,
-	                                       VKK_BUFFER_USAGE_UNIFORM,
-	                                       sizeof(cc_vec4f_t),
-	                                       color1);
+	self->ub_color1 = vkk_buffer_new(screen->engine,
+	                                 VKK_UPDATE_MODE_STATIC,
+	                                 VKK_BUFFER_USAGE_UNIFORM,
+	                                 sizeof(cc_vec4f_t),
+	                                 color1);
 	if(self->ub_color1 == NULL)
 	{
 		goto fail_ub_color1;
 	}
 
-	self->ub_color2 = vkk_engine_newBuffer(screen->engine,
-	                                       VKK_UPDATE_MODE_STATIC,
-	                                       VKK_BUFFER_USAGE_UNIFORM,
-	                                       sizeof(cc_vec4f_t),
-	                                       color2);
+	self->ub_color2 = vkk_buffer_new(screen->engine,
+	                                 VKK_UPDATE_MODE_STATIC,
+	                                 VKK_BUFFER_USAGE_UNIFORM,
+	                                 sizeof(cc_vec4f_t),
+	                                 color2);
 	if(self->ub_color2 == NULL)
 	{
 		goto fail_ub_color2;
 	}
 
-	self->ub_ab = vkk_engine_newBuffer(screen->engine,
-	                                   VKK_UPDATE_MODE_DEFAULT,
-	                                   VKK_BUFFER_USAGE_UNIFORM,
-	                                   sizeof(cc_vec2f_t),
-	                                   NULL);
+	self->ub_ab = vkk_buffer_new(screen->engine,
+	                             VKK_UPDATE_MODE_DEFAULT,
+	                             VKK_BUFFER_USAGE_UNIFORM,
+	                             sizeof(cc_vec2f_t), NULL);
 	if(self->ub_ab == NULL)
 	{
 		goto fail_ub_ab;
@@ -136,10 +135,9 @@ vkui_tricolor_t* vkui_tricolor_new(vkui_screen_t* screen,
 		},
 	};
 
-	self->us = vkk_engine_newUniformSet(screen->engine,
-	                                    3, 4,
-	                                    ua_array,
-	                                    screen->usf3_tricolor);
+	self->us = vkk_uniformSet_new(screen->engine, 3, 4,
+	                              ua_array,
+	                              screen->usf3_tricolor);
 	if(self->us == NULL)
 	{
 		goto fail_us;
@@ -150,15 +148,15 @@ vkui_tricolor_t* vkui_tricolor_new(vkui_screen_t* screen,
 
 	// failure
 	fail_us:
-		vkk_engine_deleteBuffer(screen->engine, &self->ub_ab);
+		vkk_buffer_delete(&self->ub_ab);
 	fail_ub_ab:
-		vkk_engine_deleteBuffer(screen->engine, &self->ub_color2);
+		vkk_buffer_delete(&self->ub_color2);
 	fail_ub_color2:
-		vkk_engine_deleteBuffer(screen->engine, &self->ub_color1);
+		vkk_buffer_delete(&self->ub_color1);
 	fail_ub_color1:
-		vkk_engine_deleteBuffer(screen->engine, &self->ub_color0);
+		vkk_buffer_delete(&self->ub_color0);
 	fail_ub_color0:
-		vkk_engine_deleteBuffer(screen->engine, &self->vb_xyuv);
+		vkk_buffer_delete(&self->vb_xyuv);
 	fail_vb_xyuv:
 		FREE(self);
 	return NULL;
@@ -171,15 +169,12 @@ void vkui_tricolor_delete(vkui_tricolor_t** _self)
 	vkui_tricolor_t* self = *_self;
 	if(self)
 	{
-		vkui_screen_t* screen = self->screen;
-		vkk_engine_t*  engine = screen->engine;
-
-		vkk_engine_deleteUniformSet(engine, &self->us);
-		vkk_engine_deleteBuffer(engine, &self->ub_ab);
-		vkk_engine_deleteBuffer(engine, &self->ub_color2);
-		vkk_engine_deleteBuffer(engine, &self->ub_color1);
-		vkk_engine_deleteBuffer(engine, &self->ub_color0);
-		vkk_engine_deleteBuffer(engine, &self->vb_xyuv);
+		vkk_uniformSet_delete(&self->us);
+		vkk_buffer_delete(&self->ub_ab);
+		vkk_buffer_delete(&self->ub_color2);
+		vkk_buffer_delete(&self->ub_color1);
+		vkk_buffer_delete(&self->ub_color0);
+		vkk_buffer_delete(&self->vb_xyuv);
 		FREE(self);
 	}
 }

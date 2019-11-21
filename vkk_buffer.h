@@ -21,8 +21,8 @@
  *
  */
 
-#ifndef vkk_util_H
-#define vkk_util_H
+#ifndef vkk_buffer_H
+#define vkk_buffer_H
 
 #ifdef ANDROID
 	#include <vulkan_wrapper.h>
@@ -30,22 +30,18 @@
 	#include <vulkan/vulkan.h>
 #endif
 
-void     vkk_util_imageMemoryBarrier(vkk_image_t* image,
-                                     VkCommandBuffer cb,
-                                     VkImageLayout newLayout,
-                                     uint32_t baseMipLevel,
-                                     uint32_t levelCount);
-void     vkk_util_imageMemoryBarrierRaw(VkImage image,
-                                        VkCommandBuffer cb,
-                                        int stage,
-                                        VkImageLayout oldLayout,
-                                        VkImageLayout newLayout,
-                                        uint32_t baseMipLevel,
-                                        uint32_t levelCount);
-VkFormat vkk_util_imageFormat(int format);
-void     vkk_util_copyUniformAttachmentArray(vkk_uniformAttachment_t* dst,
-                                             uint32_t src_ua_count,
-                                             vkk_uniformAttachment_t* src,
-                                             vkk_uniformSetFactory_t* usf);
+#include "vkk.h"
+
+typedef struct vkk_buffer_s
+{
+	vkk_engine_t*   engine;
+	double          ts;
+	int             update;
+	int             usage;
+	uint32_t        vbib_index;
+	size_t          size;
+	VkBuffer*       buffer;
+	VkDeviceMemory* memory;
+} vkk_buffer_t;
 
 #endif

@@ -206,43 +206,43 @@ vkui_sprite_new(vkui_screen_t* screen,
 		self->image_array[i] = image;
 	}
 
-	self->ub_mvp = vkk_engine_newBuffer(screen->engine,
-	                                    VKK_UPDATE_MODE_DEFAULT,
-	                                    VKK_BUFFER_USAGE_UNIFORM,
-	                                    sizeof(cc_mat4f_t),
-	                                    NULL);
+	self->ub_mvp = vkk_buffer_new(screen->engine,
+	                              VKK_UPDATE_MODE_DEFAULT,
+	                              VKK_BUFFER_USAGE_UNIFORM,
+	                              sizeof(cc_mat4f_t),
+	                              NULL);
 	if(self->ub_mvp == NULL)
 	{
 		goto fail_ub_mvp;
 	}
 
-	self->vb_color_xyuv = vkk_engine_newBuffer(screen->engine,
-	                                           VKK_UPDATE_MODE_DEFAULT,
-	                                           VKK_BUFFER_USAGE_VERTEX,
-	                                           4*sizeof(cc_vec4f_t),
-	                                           XYUV);
+	self->vb_color_xyuv = vkk_buffer_new(screen->engine,
+	                                     VKK_UPDATE_MODE_DEFAULT,
+	                                     VKK_BUFFER_USAGE_VERTEX,
+	                                     4*sizeof(cc_vec4f_t),
+	                                     XYUV);
 	if(self->vb_color_xyuv == NULL)
 	{
 		goto fail_vb_color_xyuv;
 	}
 
 
-	self->ub_color = vkk_engine_newBuffer(screen->engine,
-	                                      VKK_UPDATE_MODE_STATIC,
-	                                      VKK_BUFFER_USAGE_UNIFORM,
-	                                      sizeof(cc_vec4f_t),
-	                                      color);
+	self->ub_color = vkk_buffer_new(screen->engine,
+	                                VKK_UPDATE_MODE_STATIC,
+	                                VKK_BUFFER_USAGE_UNIFORM,
+	                                sizeof(cc_vec4f_t),
+	                                color);
 	if(self->ub_color == NULL)
 	{
 		goto fail_ub_color;
 	}
 
 	int multiply = 0;
-	self->ub_multiply = vkk_engine_newBuffer(screen->engine,
-	                                         VKK_UPDATE_MODE_DEFAULT,
-	                                         VKK_BUFFER_USAGE_UNIFORM,
-	                                         sizeof(int),
-	                                         &multiply);
+	self->ub_multiply = vkk_buffer_new(screen->engine,
+	                                   VKK_UPDATE_MODE_DEFAULT,
+	                                   VKK_BUFFER_USAGE_UNIFORM,
+	                                   sizeof(int),
+	                                   &multiply);
 	if(self->ub_multiply == NULL)
 	{
 		goto fail_ub_multiply;
@@ -258,10 +258,9 @@ vkui_sprite_new(vkui_screen_t* screen,
 		},
 	};
 
-	self->us_mvp = vkk_engine_newUniformSet(screen->engine,
-	                                        0, 1,
-	                                        ua_array_mvp,
-	                                        screen->usf0_mvp);
+	self->us_mvp = vkk_uniformSet_new(screen->engine, 0, 1,
+	                                  ua_array_mvp,
+	                                  screen->usf0_mvp);
 	if(self->us_mvp == NULL)
 	{
 		goto fail_us_mvp;
@@ -277,10 +276,9 @@ vkui_sprite_new(vkui_screen_t* screen,
 		},
 	};
 
-	self->us_color = vkk_engine_newUniformSet(screen->engine,
-	                                          1, 1,
-	                                          ua_array_color,
-	                                          screen->usf1_color);
+	self->us_color = vkk_uniformSet_new(screen->engine, 1, 1,
+	                                    ua_array_color,
+	                                    screen->usf1_color);
 	if(self->us_color == NULL)
 	{
 		goto fail_us_color;
@@ -296,10 +294,10 @@ vkui_sprite_new(vkui_screen_t* screen,
 		},
 	};
 
-	self->us_multiplyImage = vkk_engine_newUniformSet(screen->engine,
-	                                                  2, 1,
-	                                                  ua_array_multiply,
-	                                                  screen->usf2_multiplyImage);
+	self->us_multiplyImage = vkk_uniformSet_new(screen->engine,
+	                                            2, 1,
+	                                            ua_array_multiply,
+	                                            screen->usf2_multiplyImage);
 	if(self->us_multiplyImage == NULL)
 	{
 		goto fail_us_multiplyImage;
@@ -310,23 +308,17 @@ vkui_sprite_new(vkui_screen_t* screen,
 
 	// failure
 	fail_us_multiplyImage:
-		vkk_engine_deleteUniformSet(screen->engine,
-		                            &self->us_color);
+		vkk_uniformSet_delete(&self->us_color);
 	fail_us_color:
-		vkk_engine_deleteUniformSet(screen->engine,
-		                            &self->us_mvp);
+		vkk_uniformSet_delete(&self->us_mvp);
 	fail_us_mvp:
-		vkk_engine_deleteBuffer(screen->engine,
-		                        &self->ub_multiply);
+		vkk_buffer_delete(&self->ub_multiply);
 	fail_ub_multiply:
-		vkk_engine_deleteBuffer(screen->engine,
-		                        &self->ub_color);
+		vkk_buffer_delete(&self->ub_color);
 	fail_ub_color:
-		vkk_engine_deleteBuffer(screen->engine,
-		                        &self->vb_color_xyuv);
+		vkk_buffer_delete(&self->vb_color_xyuv);
 	fail_vb_color_xyuv:
-		vkk_engine_deleteBuffer(screen->engine,
-		                        &self->ub_mvp);
+		vkk_buffer_delete(&self->ub_mvp);
 	fail_ub_mvp:
 	fail_image:
 		FREE(self->image_array);
@@ -342,23 +334,13 @@ void vkui_sprite_delete(vkui_sprite_t** _self)
 	vkui_sprite_t* self = *_self;
 	if(self)
 	{
-		vkui_widget_t* widget = (vkui_widget_t*) self;
-		vkui_screen_t* screen = widget->screen;
-
-		vkk_engine_deleteUniformSet(screen->engine,
-		                            &self->us_multiplyImage);
-		vkk_engine_deleteUniformSet(screen->engine,
-		                            &self->us_color);
-		vkk_engine_deleteUniformSet(screen->engine,
-		                            &self->us_mvp);
-		vkk_engine_deleteBuffer(screen->engine,
-		                        &self->ub_multiply);
-		vkk_engine_deleteBuffer(screen->engine,
-		                        &self->ub_color);
-		vkk_engine_deleteBuffer(screen->engine,
-		                        &self->vb_color_xyuv);
-		vkk_engine_deleteBuffer(screen->engine,
-		                        &self->ub_mvp);
+		vkk_uniformSet_delete(&self->us_multiplyImage);
+		vkk_uniformSet_delete(&self->us_color);
+		vkk_uniformSet_delete(&self->us_mvp);
+		vkk_buffer_delete(&self->ub_multiply);
+		vkk_buffer_delete(&self->ub_color);
+		vkk_buffer_delete(&self->vb_color_xyuv);
+		vkk_buffer_delete(&self->ub_mvp);
 		FREE(self->image_array);
 		vkui_widget_delete((vkui_widget_t**) _self);
 	}

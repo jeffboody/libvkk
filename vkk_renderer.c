@@ -27,10 +27,17 @@
 
 #define LOG_TAG "vkk"
 #include "../libcc/cc_log.h"
+#include "vkk_buffer.h"
 #include "vkk_defaultRenderer.h"
-#include "vkk_offscreenRenderer.h"
 #include "vkk_engine.h"
+#include "vkk_graphicsPipeline.h"
+#include "vkk_image.h"
+#include "vkk_offscreenRenderer.h"
+#include "vkk_pipelineLayout.h"
 #include "vkk_renderer.h"
+#include "vkk_sampler.h"
+#include "vkk_uniformSet.h"
+#include "vkk_uniformSetFactory.h"
 
 /***********************************************************
 * private                                                  *
@@ -151,6 +158,38 @@ vkk_renderer_updateUniformSamplerRef(vkk_renderer_t* self,
 /***********************************************************
 * public                                                   *
 ***********************************************************/
+
+vkk_renderer_t*
+vkk_renderer_new(vkk_engine_t* engine,
+                 uint32_t width, uint32_t height,
+                 int format)
+{
+	assert(engine);
+
+	return vkk_offscreenRenderer_new(engine, width, height,
+	                                 format);
+}
+
+void vkk_renderer_delete(vkk_renderer_t** _self)
+{
+	assert(_self);
+
+	vkk_renderer_t* self = *_self;
+	if(self)
+	{
+		vkk_engine_t* engine = self->engine;
+
+		// do not delete default renderer
+		if(engine->renderer == self)
+		{
+			return;
+		}
+
+		vkk_engine_deleteObject(engine, VKK_OBJECT_TYPE_RENDERER,
+		                        (void*) self);
+		*_self = NULL;
+	}
+}
 
 int vkk_renderer_beginDefault(vkk_renderer_t* self,
                               float* clear_color)

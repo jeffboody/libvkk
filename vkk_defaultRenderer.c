@@ -31,6 +31,7 @@
 #include "../libcc/cc_timestamp.h"
 #include "vkk_defaultRenderer.h"
 #include "vkk_engine.h"
+#include "vkk_image.h"
 #include "vkk_util.h"
 
 /***********************************************************
@@ -364,11 +365,11 @@ vkk_defaultRenderer_newDepth(vkk_renderer_t* base)
 
 	vkk_engine_t* engine = base->engine;
 
-	self->depth_image = vkk_engine_newImage(engine,
-	                                        self->swapchain_extent.width,
-	                                        self->swapchain_extent.height,
-	                                        VKK_IMAGE_FORMAT_DEPTH,
-	                                        0, VKK_STAGE_DEPTH, NULL);
+	self->depth_image = vkk_image_new(engine,
+	                                  self->swapchain_extent.width,
+	                                  self->swapchain_extent.height,
+	                                  VKK_IMAGE_FORMAT_DEPTH,
+	                                  0, VKK_STAGE_DEPTH, NULL);
 	if(self->depth_image == NULL)
 	{
 		return 0;

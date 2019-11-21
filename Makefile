@@ -1,9 +1,16 @@
 TARGET  = libvkk.a
 CLASSES = \
+	vkk_buffer            \
 	vkk_defaultRenderer   \
 	vkk_engine            \
+	vkk_graphicsPipeline  \
+	vkk_image             \
 	vkk_offscreenRenderer \
+	vkk_pipelineLayout    \
 	vkk_renderer          \
+	vkk_sampler           \
+	vkk_uniformSet        \
+	vkk_uniformSetFactory \
 	vkk_util
 ifeq ($(VKK_USE_VKUI),1)
 	CLASSES += \
