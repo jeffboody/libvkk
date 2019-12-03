@@ -121,9 +121,7 @@ typedef struct vkk_engine_s
 	uint32_t queue_family_index;
 	VkQueue  queue;
 
-	// cache and pool state (optimizers)
 	VkPipelineCache pipeline_cache;
-	VkCommandPool   command_pool;
 
 	// shaders
 	cc_map_t* shader_modules;
@@ -162,12 +160,6 @@ int              vkk_engine_allocateDescriptorSetsLocked(vkk_engine_t* self,
                                                          const VkDescriptorSetLayout* dsl_array,
                                                          uint32_t ds_count,
                                                          VkDescriptorSet* ds_array);
-int              vkk_engine_allocateCommandBuffers(vkk_engine_t* self,
-                                                   int cb_count,
-                                                   VkCommandBuffer* cb_array);
-void             vkk_engine_freeCommandBuffers(vkk_engine_t* self,
-                                               uint32_t cb_count,
-                                               const VkCommandBuffer* cb_array);
 VkDescriptorPool vkk_engine_newDescriptorPoolLocked(vkk_engine_t* self,
                                                     vkk_uniformSetFactory_t* usf);
 void             vkk_engine_attachUniformBuffer(vkk_engine_t* self,

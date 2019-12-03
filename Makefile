@@ -1,6 +1,7 @@
 TARGET  = libvkk.a
 CLASSES = \
 	vkk_buffer            \
+	vkk_commandBuffer     \
 	vkk_defaultRenderer   \
 	vkk_engine            \
 	vkk_graphicsPipeline  \

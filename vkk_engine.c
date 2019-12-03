@@ -31,6 +31,7 @@
 #include "../libcc/cc_memory.h"
 #include "../libpak/pak_file.h"
 #include "vkk_buffer.h"
+#include "vkk_commandBuffer.h"
 #include "vkk_defaultRenderer.h"
 #include "vkk_engine.h"
 #include "vkk_graphicsPipeline.h"
@@ -600,7 +601,7 @@ vkk_engine_exportPipelineCache(vkk_engine_t* self)
 		FREE(data);
 }
 
-static int vkk_engine_newCacheAndPools(vkk_engine_t* self)
+static int vkk_engine_newPipelineCache(vkk_engine_t* self)
 {
 	assert(self);
 
@@ -625,28 +626,10 @@ static int vkk_engine_newCacheAndPools(vkk_engine_t* self)
 		goto fail_pipeline_cache;
 	}
 
-	VkCommandPoolCreateInfo cpc_info =
-	{
-		.sType            = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO,
-		.pNext            = NULL,
-		.flags            = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT,
-		.queueFamilyIndex = self->queue_family_index
-	};
-
-	if(vkCreateCommandPool(self->device, &cpc_info, NULL,
-	                       &self->command_pool) != VK_SUCCESS)
-	{
-		LOGE("vkCreateCommandPool failed");
-		goto fail_command_pool;
-	}
-
 	// success
 	return 1;
 
 	// failure
-	fail_command_pool:
-		vkDestroyPipelineCache(self->device,
-		                       self->pipeline_cache, NULL);
 	fail_pipeline_cache:
 		FREE(data);
 	return 0;
@@ -1152,9 +1135,9 @@ vkk_engine_t* vkk_engine_new(void* app,
 		goto fail_device;
 	}
 
-	if(vkk_engine_newCacheAndPools(self) == 0)
+	if(vkk_engine_newPipelineCache(self) == 0)
 	{
-		goto fail_cacheAndPools;
+		goto fail_pipeline_cache;
 	}
 
 	self->shader_modules = cc_map_new();
@@ -1188,11 +1171,9 @@ vkk_engine_t* vkk_engine_new(void* app,
 	fail_renderer:
 		cc_map_delete(&self->shader_modules);
 	fail_shader_modules:
-		vkDestroyCommandPool(self->device,
-		                     self->command_pool, NULL);
 		vkDestroyPipelineCache(self->device,
 		                       self->pipeline_cache, NULL);
-	fail_cacheAndPools:
+	fail_pipeline_cache:
 		vkDestroyDevice(self->device, NULL);
 	fail_device:
 	fail_physical_device:
@@ -1246,8 +1227,6 @@ void vkk_engine_delete(vkk_engine_t** _self)
 			vkDestroyShaderModule(self->device, sm, NULL);
 		}
 		cc_map_delete(&self->shader_modules);
-		vkDestroyCommandPool(self->device,
-		                     self->command_pool, NULL);
 		vkk_engine_exportPipelineCache(self);
 		vkDestroyPipelineCache(self->device,
 		                       self->pipeline_cache, NULL);
@@ -1515,11 +1494,15 @@ vkk_engine_uploadImage(vkk_engine_t* self,
 	}
 
 	// allocate a transfer command buffer
-	VkCommandBuffer cb;
-	if(vkk_engine_allocateCommandBuffers(self, 1, &cb) == 0)
+	vkk_commandBuffer_t* cmd_buffer;
+	cmd_buffer = vkk_commandBuffer_new(self, 1);
+	if(cmd_buffer == NULL)
 	{
-		goto fail_allocate_cb;
+		goto fail_cmd_buffer;
 	}
+
+	VkCommandBuffer cb;
+	cb = vkk_commandBuffer_get(cmd_buffer, 0);
 
 	// begin the transfer commands
 	VkCommandBufferInheritanceInfo cbi_info =
@@ -1620,7 +1603,7 @@ vkk_engine_uploadImage(vkk_engine_t* self,
 	}
 
 	// release temporary objects
-	vkk_engine_freeCommandBuffers(self, 1, &cb);
+	vkk_commandBuffer_delete(&cmd_buffer);
 	vkFreeMemory(self->device, memory, NULL);
 	vkDestroyBuffer(self->device, buffer, NULL);
 	vkDestroyFence(self->device, fence, NULL);
@@ -1631,8 +1614,8 @@ vkk_engine_uploadImage(vkk_engine_t* self,
 	// failure
 	fail_submit:
 	fail_begin_cb:
-		vkk_engine_freeCommandBuffers(self, 1, &cb);
-	fail_allocate_cb:
+		vkk_commandBuffer_delete(&cmd_buffer);
+	fail_cmd_buffer:
 	fail_bind:
 	fail_map:
 		vkFreeMemory(self->device, memory, NULL);
@@ -1737,51 +1720,6 @@ vkk_engine_allocateDescriptorSetsLocked(vkk_engine_t* self,
 	}
 
 	return 1;
-}
-
-int vkk_engine_allocateCommandBuffers(vkk_engine_t* self,
-                                      int cb_count,
-                                      VkCommandBuffer* cb_array)
-{
-	assert(self);
-	assert(cb_count > 0);
-	assert(cb_array);
-
-	VkCommandBufferAllocateInfo cba_info =
-	{
-		.sType              = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO,
-		.pNext              = NULL,
-		.commandPool        = self->command_pool,
-		.level              = VK_COMMAND_BUFFER_LEVEL_PRIMARY,
-		.commandBufferCount = cb_count
-	};
-
-	vkk_engine_cmdLock(self);
-	if(vkAllocateCommandBuffers(self->device, &cba_info,
-	                            cb_array) != VK_SUCCESS)
-	{
-		LOGE("vkAllocateCommandBuffers failed");
-		vkk_engine_cmdUnlock(self);
-		return 0;
-	}
-	vkk_engine_cmdUnlock(self);
-
-	return 1;
-}
-
-void vkk_engine_freeCommandBuffers(vkk_engine_t* self,
-                                   uint32_t cb_count,
-                                   const VkCommandBuffer* cb_array)
-{
-	assert(self);
-	assert(cb_array);
-
-	vkk_engine_cmdLock(self);
-	vkFreeCommandBuffers(self->device,
-	                     self->command_pool,
-	                     cb_count,
-	                     cb_array);
-	vkk_engine_cmdUnlock(self);
 }
 
 VkDescriptorPool

@@ -25,6 +25,7 @@
 #define vkk_offscreenRenderer_H
 
 #include "vkk.h"
+#include "vkk_commandBuffer.h"
 #include "vkk_renderer.h"
 
 typedef struct
@@ -53,7 +54,7 @@ typedef struct
 	VkFramebuffer framebuffer;
 
 	// command buffer
-	VkCommandBuffer cb;
+	vkk_commandBuffer_t* cmd_buffer;
 } vkk_offscreenRenderer_t;
 
 vkk_renderer_t* vkk_offscreenRenderer_new(vkk_engine_t* engine,

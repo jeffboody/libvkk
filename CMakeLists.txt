@@ -28,6 +28,7 @@ add_library(vkk
 
             # Source
             vkk_buffer.c
+            vkk_commandBuffer.c
             vkk_defaultRenderer.c
             vkk_engine.c
             vkk_graphicsPipeline.c

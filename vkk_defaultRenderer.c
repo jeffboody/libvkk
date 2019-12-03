@@ -30,6 +30,7 @@
 #include "../libcc/cc_memory.h"
 #include "../libcc/cc_timestamp.h"
 #include "vkk_defaultRenderer.h"
+#include "vkk_commandBuffer.h"
 #include "vkk_engine.h"
 #include "vkk_image.h"
 #include "vkk_util.h"
@@ -634,41 +635,6 @@ vkk_defaultRenderer_newRenderpass(vkk_renderer_t* base)
 }
 
 static int
-vkk_defaultRenderer_newCommandBuffers(vkk_renderer_t* base)
-{
-	assert(base);
-
-	vkk_defaultRenderer_t* self;
-	self = (vkk_defaultRenderer_t*) base;
-
-	vkk_engine_t* engine = base->engine;
-
-	self->cb_array = (VkCommandBuffer*)
-	                 CALLOC(self->swapchain_image_count,
-	                        sizeof(VkCommandBuffer));
-	if(self->cb_array == NULL)
-	{
-		LOGE("CALLOC failed");
-		return 0;
-	}
-
-	if(vkk_engine_allocateCommandBuffers(engine,
-	                                     self->swapchain_image_count,
-	                                     self->cb_array) == 0)
-	{
-		goto fail_allocate;
-	}
-
-	// success
-	return 1;
-
-	// failure
-	fail_allocate:
-		FREE(self->cb_array);
-	return 0;
-}
-
-static int
 vkk_defaultRenderer_newSemaphores(vkk_renderer_t* base)
 {
 	assert(base);
@@ -797,9 +763,11 @@ vkk_defaultRenderer_new(vkk_engine_t* engine)
 		goto fail_framebuffer;
 	}
 
-	if(vkk_defaultRenderer_newCommandBuffers(base) == 0)
+	self->cmd_buffers = vkk_commandBuffer_new(engine,
+	                                          self->swapchain_image_count);
+	if(self->cmd_buffers == NULL)
 	{
-		goto fail_cb_array;
+		goto fail_cmd_buffers;
 	}
 
 	self->ts_array = (double*)
@@ -822,11 +790,8 @@ vkk_defaultRenderer_new(vkk_engine_t* engine)
 	fail_semaphores:
 		FREE(self->ts_array);
 	fail_timestamps:
-		vkk_engine_freeCommandBuffers(engine,
-		                              self->swapchain_image_count,
-		                              self->cb_array);
-		FREE(self->cb_array);
-	fail_cb_array:
+		vkk_commandBuffer_delete(&self->cmd_buffers);
+	fail_cmd_buffers:
 		vkk_defaultRenderer_deleteFramebuffer(base);
 	fail_framebuffer:
 		vkk_defaultRenderer_deleteDepth(base);
@@ -867,10 +832,7 @@ void vkk_defaultRenderer_delete(vkk_renderer_t** _base)
 
 		FREE(self->ts_array);
 
-		vkk_engine_freeCommandBuffers(engine,
-		                              self->swapchain_image_count,
-		                              self->cb_array);
-		FREE(self->cb_array);
+		vkk_commandBuffer_delete(&self->cmd_buffers);
 		vkk_defaultRenderer_deleteFramebuffer(base);
 		vkk_defaultRenderer_deleteDepth(base);
 		vkDestroyRenderPass(engine->device,
@@ -1005,12 +967,11 @@ vkk_defaultRenderer_begin(vkk_renderer_t* base,
 	vkk_engine_rendererUnlock(engine);
 
 	VkCommandBuffer cb;
-	cb = self->cb_array[self->swapchain_frame];
-	vkk_engine_cmdLock(engine);
+	cb = vkk_commandBuffer_get(self->cmd_buffers,
+	                           self->swapchain_frame);
 	if(vkResetCommandBuffer(cb, 0) != VK_SUCCESS)
 	{
 		LOGE("vkResetCommandBuffer failed");
-		vkk_engine_cmdUnlock(engine);
 		return 0;
 	}
 
@@ -1039,7 +1000,6 @@ vkk_defaultRenderer_begin(vkk_renderer_t* base,
 	if(vkBeginCommandBuffer(cb, &cb_info) != VK_SUCCESS)
 	{
 		LOGE("vkBeginCommandBuffer failed");
-		vkk_engine_cmdUnlock(engine);
 		return 0;
 	}
 
@@ -1142,10 +1102,10 @@ void vkk_defaultRenderer_end(vkk_renderer_t* base)
 	                                 &semaphore_submit);
 
 	VkCommandBuffer cb;
-	cb = self->cb_array[self->swapchain_frame];
+	cb = vkk_commandBuffer_get(self->cmd_buffers,
+	                           self->swapchain_frame);
 	vkCmdEndRenderPass(cb);
 	vkEndCommandBuffer(cb);
-	vkk_engine_cmdUnlock(engine);
 
 	VkPipelineStageFlags wait_dst_stage_mask;
 	wait_dst_stage_mask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
@@ -1217,7 +1177,8 @@ vkk_defaultRenderer_commandBuffer(vkk_renderer_t* base)
 	vkk_defaultRenderer_t* self;
 	self = (vkk_defaultRenderer_t*) base;
 
-	return self->cb_array[self->swapchain_frame];
+	return vkk_commandBuffer_get(self->cmd_buffers,
+	                             self->swapchain_frame);
 }
 
 uint32_t

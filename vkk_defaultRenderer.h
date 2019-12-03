@@ -25,6 +25,7 @@
 #define vkk_defaultRenderer_H
 
 #include "vkk.h"
+#include "vkk_commandBuffer.h"
 #include "vkk_renderer.h"
 
 typedef struct
@@ -54,7 +55,7 @@ typedef struct
 
 	// command buffers
 	// one per swapchain image
-	VkCommandBuffer* cb_array;
+	vkk_commandBuffer_t* cmd_buffers;
 
 	// GPU timestamps
 	// ts_expired protected by renderer_mutex

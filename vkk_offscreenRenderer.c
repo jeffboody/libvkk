@@ -260,25 +260,6 @@ vkk_offscreenRenderer_deleteFramebuffer(vkk_renderer_t* base)
 	self->image                  = NULL;
 }
 
-static int
-vkk_offscreenRenderer_newCommandBuffer(vkk_renderer_t* base)
-{
-	assert(base);
-
-	vkk_offscreenRenderer_t* self;
-	self = (vkk_offscreenRenderer_t*) base;
-
-	vkk_engine_t* engine = base->engine;
-
-	if(vkk_engine_allocateCommandBuffers(engine, 1,
-	                                     &self->cb) == 0)
-	{
-		return 0;
-	}
-
-	return 1;
-}
-
 /***********************************************************
 * public                                                   *
 ***********************************************************/
@@ -335,16 +316,17 @@ vkk_offscreenRenderer_new(vkk_engine_t* engine,
 	self->framebuffer_image_view = VK_NULL_HANDLE;
 	self->framebuffer            = VK_NULL_HANDLE;
 
-	if(vkk_offscreenRenderer_newCommandBuffer(base) == 0)
+	self->cmd_buffer = vkk_commandBuffer_new(engine, 1);
+	if(self->cmd_buffer == NULL)
 	{
-		goto fail_cb;
+		goto fail_cmd_buffer;
 	}
 
 	// success
 	return base;
 
 	// failure
-	fail_cb:
+	fail_cmd_buffer:
 		vkk_offscreenRenderer_deleteDepth(base);
 	fail_depth:
 		vkDestroyRenderPass(engine->device,
@@ -369,7 +351,7 @@ void vkk_offscreenRenderer_delete(vkk_renderer_t** _base)
 		vkk_engine_t* engine = base->engine;
 
 		// framebuffer is deleted by end function
-		vkk_engine_freeCommandBuffers(engine, 1, &self->cb);
+		vkk_commandBuffer_delete(&self->cmd_buffer);
 		vkk_offscreenRenderer_deleteDepth(base);
 		vkDestroyRenderPass(engine->device,
 		                    self->render_pass, NULL);
@@ -414,11 +396,11 @@ vkk_offscreenRenderer_begin(vkk_renderer_t* base,
 		return 0;
 	}
 
-	vkk_engine_cmdLock(engine);
-	if(vkResetCommandBuffer(self->cb, 0) != VK_SUCCESS)
+	VkCommandBuffer cb;
+	cb = vkk_commandBuffer_get(self->cmd_buffer, 0);
+	if(vkResetCommandBuffer(cb, 0) != VK_SUCCESS)
 	{
 		LOGE("vkResetCommandBuffer failed");
-		vkk_engine_cmdUnlock(engine);
 		goto fail_reset;
 	}
 
@@ -442,17 +424,16 @@ vkk_offscreenRenderer_begin(vkk_renderer_t* base,
 		.pInheritanceInfo = &cbi_info
 	};
 
-	if(vkBeginCommandBuffer(self->cb, &cb_info) != VK_SUCCESS)
+	if(vkBeginCommandBuffer(cb, &cb_info) != VK_SUCCESS)
 	{
 		LOGE("vkBeginCommandBuffer failed");
-		vkk_engine_cmdUnlock(engine);
 		goto fail_begin_command_buffer;
 	}
 
-	vkk_util_imageMemoryBarrier(image, self->cb,
+	vkk_util_imageMemoryBarrier(image, cb,
 	                            VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
 	                            0, 1);
-	vkk_util_imageMemoryBarrier(self->depth_image, self->cb,
+	vkk_util_imageMemoryBarrier(self->depth_image, cb,
 	                            VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL,
 	                            0, 1);
 
@@ -466,7 +447,7 @@ vkk_offscreenRenderer_begin(vkk_renderer_t* base,
 		.minDepth = 0.0f,
 		.maxDepth = 1.0f
 	};
-	vkCmdSetViewport(self->cb, 0, 1, &viewport);
+	vkCmdSetViewport(cb, 0, 1, &viewport);
 
 	VkRect2D scissor =
 	{
@@ -481,7 +462,7 @@ vkk_offscreenRenderer_begin(vkk_renderer_t* base,
 			.height = self->height,
 		}
 	};
-	vkCmdSetScissor(self->cb, 0, 1, &scissor);
+	vkCmdSetScissor(cb, 0, 1, &scissor);
 
 	VkClearValue cv[2] =
 	{
@@ -519,7 +500,7 @@ vkk_offscreenRenderer_begin(vkk_renderer_t* base,
 		.pClearValues    = cv
 	};
 
-	vkCmdBeginRenderPass(self->cb,
+	vkCmdBeginRenderPass(cb,
 	                     &rp_info,
 	                     VK_SUBPASS_CONTENTS_INLINE);
 
@@ -543,13 +524,15 @@ void vkk_offscreenRenderer_end(vkk_renderer_t* base)
 	vkk_engine_t* engine = base->engine;
 	vkk_image_t*  image  = self->image;
 
-	vkCmdEndRenderPass(self->cb);
+	VkCommandBuffer cb;
+	cb = vkk_commandBuffer_get(self->cmd_buffer, 0);
+	vkCmdEndRenderPass(cb);
 
 	// at this point we may need to generate mip_levels if
 	// mipmapping was enabled
 	if(image->mip_levels > 1)
 	{
-		vkk_engine_mipmapImage(engine, image, self->cb);
+		vkk_engine_mipmapImage(engine, image, cb);
 	}
 
 	// transition the image to shading mode
@@ -558,18 +541,17 @@ void vkk_offscreenRenderer_end(vkk_renderer_t* base)
 	// requires further processing after the render pass
 	// completes and would cause the image->layout_array to
 	// become inconsistent
-	vkk_util_imageMemoryBarrier(image, self->cb,
+	vkk_util_imageMemoryBarrier(image, cb,
 	                            VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
 	                            0, image->mip_levels);
 
-	vkEndCommandBuffer(self->cb);
-	vkk_engine_cmdUnlock(engine);
+	vkEndCommandBuffer(cb);
 
 	VkPipelineStageFlags wait_dst_stage_mask;
 	wait_dst_stage_mask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
 
 	vkResetFences(engine->device, 1, &self->fence);
-	if(vkk_engine_queueSubmit(engine, &self->cb,
+	if(vkk_engine_queueSubmit(engine, &cb,
 	                          NULL, NULL,
 	                          &wait_dst_stage_mask,
 	                          self->fence) == 0)
@@ -624,7 +606,7 @@ vkk_offscreenRenderer_commandBuffer(vkk_renderer_t* base)
 	vkk_offscreenRenderer_t* self;
 	self = (vkk_offscreenRenderer_t*) base;
 
-	return self->cb;
+	return vkk_commandBuffer_get(self->cmd_buffer, 0);
 }
 
 uint32_t
