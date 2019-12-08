@@ -39,7 +39,7 @@ ifeq ($(VKK_USE_VKUI),1)
 		vkui/vkui_key.h \
 		vkui/vkui.h
 endif
-OPT     = -O2 -Wall
+OPT     = -O2 -Wall -Wno-format-truncation
 CFLAGS   = $(OPT) -I$(VULKAN_SDK)/include `sdl2-config --cflags`
 LDFLAGS  = -L$(VULKAN_SDK)/lib -lvulkan `sdl2-config --libs` -lm
 AR      = ar
