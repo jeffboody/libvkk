@@ -218,17 +218,26 @@ vkk_engine_newInstance(vkk_engine_t* self,
 		.apiVersion         = self->version
 	};
 
-	#if defined(DEBUG_LAYERS)
+	#if defined(DEBUG_LAYERS1)
 		uint32_t layer_count = 1;
 		const char* layer_names[] =
 		{
 			"VK_LAYER_KHRONOS_validation"
 		};
-	#elif defined(DEBUG_DUMP)
-		uint32_t layer_count = 2;
+	#elif defined(DEBUG_LAYERS5)
+		uint32_t layer_count = 5;
 		const char* layer_names[] =
 		{
-			"VK_LAYER_LUNARG_standard_validation",
+			"VK_LAYER_LUNARG_core_validation",
+			"VK_LAYER_GOOGLE_unique_objects",
+			"VK_LAYER_LUNARG_object_tracker",
+			"VK_LAYER_LUNARG_parameter_validation",
+			"VK_LAYER_GOOGLE_threading"
+		};
+	#elif defined(DEBUG_DUMP)
+		uint32_t layer_count = 1;
+		const char* layer_names[] =
+		{
 			"VK_LAYER_LUNARG_api_dump"
 		};
 	#else
