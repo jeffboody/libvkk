@@ -89,8 +89,8 @@ vkui_checkbox_new(vkui_screen_t* screen, size_t wsize,
 
 	const char* sprite_array[] =
 	{
-		"vkui/ic_check_box_outline_blank_white_24dp.texz",
-		"vkui/ic_check_box_white_24dp.texz",
+		"vkui/icons/ic_check_box_outline_blank_white_24dp.texz",
+		"vkui/icons/ic_check_box_white_24dp.texz",
 		NULL
 	};
 

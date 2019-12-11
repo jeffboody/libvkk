@@ -544,8 +544,8 @@ vkui_screen_new(vkk_engine_t* engine,
 	{
 		.renderer          = self->renderer,
 		.pl                = self->pl,
-		.vs                = "vkui/default_vert.spv",
-		.fs                = "vkui/color_frag.spv",
+		.vs                = "vkui/shaders/default_vert.spv",
+		.fs                = "vkui/shaders/color_frag.spv",
 		.vb_count          = 1,
 		.vbi               = &vbi,
 		.primitive         = VKK_PRIMITIVE_TRIANGLE_FAN,
@@ -567,8 +567,8 @@ vkui_screen_new(vkk_engine_t* engine,
 	{
 		.renderer          = self->renderer,
 		.pl                = self->pl,
-		.vs                = "vkui/default_vert.spv",
-		.fs                = "vkui/image_frag.spv",
+		.vs                = "vkui/shaders/default_vert.spv",
+		.fs                = "vkui/shaders/image_frag.spv",
 		.vb_count          = 1,
 		.vbi               = &vbi,
 		.primitive         = VKK_PRIMITIVE_TRIANGLE_FAN,
@@ -599,8 +599,8 @@ vkui_screen_new(vkk_engine_t* engine,
 	{
 		.renderer          = self->renderer,
 		.pl                = self->pl,
-		.vs                = "vkui/default_vert.spv",
-		.fs                = "vkui/tricolor_frag.spv",
+		.vs                = "vkui/shaders/default_vert.spv",
+		.fs                = "vkui/shaders/tricolor_frag.spv",
 		.vb_count          = 1,
 		.vbi               = &vbi,
 		.primitive         = VKK_PRIMITIVE_TRIANGLE_FAN,
@@ -652,16 +652,16 @@ vkui_screen_new(vkk_engine_t* engine,
 	}
 
 	self->font_array[0] = vkui_font_new(self, resource,
-	                                    "vkui/BarlowSemiCondensed-Regular-64.texz",
-	                                    "vkui/BarlowSemiCondensed-Regular-64.xml");
+	                                    "vkui/fonts/BarlowSemiCondensed-Regular-64.texz",
+	                                    "vkui/fonts/BarlowSemiCondensed-Regular-64.xml");
 	if(self->font_array[0] == NULL)
 	{
 		goto fail_font_array0;
 	}
 
 	self->font_array[1] = vkui_font_new(self, resource,
-	                                    "vkui/BarlowSemiCondensed-Bold-64.texz",
-	                                    "vkui/BarlowSemiCondensed-Bold-64.xml");
+	                                    "vkui/fonts/BarlowSemiCondensed-Bold-64.texz",
+	                                    "vkui/fonts/BarlowSemiCondensed-Bold-64.xml");
 	if(self->font_array[1] == NULL)
 	{
 		goto fail_font_array1;
