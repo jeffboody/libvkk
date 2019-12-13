@@ -218,12 +218,17 @@ void vkui_tricolor_drawBuffer(vkui_tricolor_t* self,
 	                          (const void*) &ab);
 
 	vkui_screen_bind(screen, VKUI_SCREEN_BIND_TRICOLOR);
+
+	vkk_uniformSet_t* us_tri[] =
+	{
+		screen->us0_mvp,
+		screen->us1_color,
+		screen->us2_multiplyImage,
+		self->us,
+	};
 	vkk_renderer_bindUniformSets(screen->renderer,
-	                             screen->pl, 1,
-	                             &screen->us0_mvp);
-	vkk_renderer_bindUniformSets(screen->renderer,
-	                             screen->pl, 1,
-	                             &self->us);
+	                             screen->pl, 4,
+	                             us_tri);
 	vkk_renderer_draw(screen->renderer, vc, 1, &vb);
 }
 
@@ -263,11 +268,15 @@ void vkui_tricolor_drawRect(vkui_tricolor_t* self)
 	                          (const void*) xyuv);
 
 	vkui_screen_bind(screen, VKUI_SCREEN_BIND_TRICOLOR);
+	vkk_uniformSet_t* us_tri[] =
+	{
+		screen->us0_mvp,
+		screen->us1_color,
+		screen->us2_multiplyImage,
+		self->us,
+	};
 	vkk_renderer_bindUniformSets(screen->renderer,
-	                             screen->pl, 1,
-	                             &screen->us0_mvp);
-	vkk_renderer_bindUniformSets(screen->renderer,
-	                             screen->pl, 1,
-	                             &self->us);
+	                             screen->pl, 4,
+	                             us_tri);
 	vkk_renderer_draw(screen->renderer, 4, 1, &self->vb_xyuv);
 }

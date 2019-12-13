@@ -99,15 +99,16 @@ static void vkui_sprite_draw(vkui_widget_t* widget)
 	                                  self->us2_multiplyImage,
 	                                  1, &ua);
 
-	vkk_uniformSet_t* us_array[3] =
+	vkk_uniformSet_t* us_array[] =
 	{
 		self->us0_mvp,
 		self->us1_color,
 		self->us2_multiplyImage,
+		screen->us3_tricolor,
 	};
 
 	vkk_renderer_bindUniformSets(screen->renderer,
-	                             screen->pl, 3,
+	                             screen->pl, 4,
 	                             us_array);
 	vkk_renderer_draw(screen->renderer, 4,
 	                  1, &self->vb_color_xyuv);

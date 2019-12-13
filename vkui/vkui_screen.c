@@ -29,6 +29,7 @@
 
 #define LOG_TAG "vkui"
 #include "../../libcc/math/cc_mat4f.h"
+#include "../../libcc/math/cc_vec2f.h"
 #include "../../libcc/cc_memory.h"
 #include "../../libcc/cc_log.h"
 #include "../../libpak/pak_file.h"
@@ -627,7 +628,81 @@ vkui_screen_new(vkk_engine_t* engine,
 		goto fail_ub00_mvp;
 	}
 
-	vkk_uniformAttachment_t ua_array_mvp[1] =
+	cc_vec4f_t clear = { .r=0.0f, .g=0.0f, .b=0.0f, .a=0.0f };
+	self->ub10_color = vkk_buffer_new(engine,
+	                                  VKK_UPDATE_MODE_STATIC,
+	                                  VKK_BUFFER_USAGE_UNIFORM,
+	                                  sizeof(cc_vec4f_t),
+	                                  &clear);
+	if(self->ub10_color == NULL)
+	{
+		goto fail_ub10_color;
+	}
+
+	int multiply = 0;
+	self->ub20_multiply = vkk_buffer_new(engine,
+	                                     VKK_UPDATE_MODE_STATIC,
+	                                     VKK_BUFFER_USAGE_UNIFORM,
+	                                     sizeof(int),
+	                                     &multiply);
+	if(self->ub20_multiply == NULL)
+	{
+		goto fail_ub20_multiply;
+	}
+
+	unsigned char pixel21[] = { 0, 0, 0, 255 };
+	self->img21 = vkk_image_new(engine,
+	                            1, 1,
+	                            VKK_IMAGE_FORMAT_RGBA8888,
+	                            1, VKK_STAGE_FS,
+	                            (const void*) pixel21);
+	if(self->img21 == NULL)
+	{
+		goto fail_img21;
+	}
+
+	self->ub30_color0 = vkk_buffer_new(engine,
+	                                   VKK_UPDATE_MODE_STATIC,
+	                                   VKK_BUFFER_USAGE_UNIFORM,
+	                                   sizeof(cc_vec4f_t),
+	                                   &clear);
+	if(self->ub30_color0 == NULL)
+	{
+		goto fail_ub30_color0;
+	}
+
+	self->ub31_color1 = vkk_buffer_new(engine,
+	                                   VKK_UPDATE_MODE_STATIC,
+	                                   VKK_BUFFER_USAGE_UNIFORM,
+	                                   sizeof(cc_vec4f_t),
+	                                   &clear);
+	if(self->ub31_color1 == NULL)
+	{
+		goto fail_ub31_color1;
+	}
+
+	self->ub32_color2 = vkk_buffer_new(engine,
+	                                   VKK_UPDATE_MODE_STATIC,
+	                                   VKK_BUFFER_USAGE_UNIFORM,
+	                                   sizeof(cc_vec4f_t),
+	                                   &clear);
+	if(self->ub32_color2 == NULL)
+	{
+		goto fail_ub32_color2;
+	}
+
+	cc_vec2f_t ab = { .x=0.0f, .y=0.0f };
+	self->ub33_ab = vkk_buffer_new(engine,
+	                               VKK_UPDATE_MODE_STATIC,
+	                               VKK_BUFFER_USAGE_UNIFORM,
+	                               sizeof(cc_vec2f_t),
+	                               &ab);
+	if(self->ub33_ab == NULL)
+	{
+		goto fail_ub33_ab;
+	}
+
+	vkk_uniformAttachment_t ua_array0[] =
 	{
 		// layout(std140, set=0, binding=0) uniform uniformMvp
 		{
@@ -638,11 +713,83 @@ vkui_screen_new(vkk_engine_t* engine,
 	};
 
 	self->us0_mvp = vkk_uniformSet_new(engine, 0, 1,
-	                                   ua_array_mvp,
+	                                   ua_array0,
 	                                   self->usf0_mvp);
 	if(self->us0_mvp == NULL)
 	{
 		goto fail_us0_mvp;
+	}
+
+	vkk_uniformAttachment_t ua_array1[] =
+	{
+		// layout(std140, set=1, binding=0) uniform uniformColor
+		{
+			.binding = 0,
+			.type    = VKK_UNIFORM_TYPE_BUFFER,
+			.buffer  = self->ub10_color
+		}
+	};
+
+	self->us1_color = vkk_uniformSet_new(engine, 1, 1,
+	                                     ua_array1,
+	                                     self->usf1_color);
+	if(self->us1_color == NULL)
+	{
+		goto fail_us1_color;
+	}
+
+	vkk_uniformAttachment_t ua_array2[] =
+	{
+		// layout(std140, set=2, binding=0) uniform uniformMultiply
+		{
+			.binding = 0,
+			.type    = VKK_UNIFORM_TYPE_BUFFER,
+			.buffer  = self->ub20_multiply
+		},
+	};
+
+	self->us2_multiplyImage = vkk_uniformSet_new(engine, 2, 1,
+	                                             ua_array2,
+	                                             self->usf2_multiplyImage);
+	if(self->us2_multiplyImage == NULL)
+	{
+		goto fail_us2_multiplyImage;
+	}
+
+	vkk_uniformAttachment_t ua_array3[] =
+	{
+		// layout(std140, set=3, binding=0) uniform uniformColor0
+		{
+			.binding = 0,
+			.type    = VKK_UNIFORM_TYPE_BUFFER,
+			.buffer  = self->ub30_color0
+		},
+		// layout(std140, set=3, binding=1) uniform uniformColor1
+		{
+			.binding = 1,
+			.type    = VKK_UNIFORM_TYPE_BUFFER,
+			.buffer  = self->ub31_color1
+		},
+		// layout(std140, set=3, binding=2) uniform uniformColor2
+		{
+			.binding = 2,
+			.type    = VKK_UNIFORM_TYPE_BUFFER,
+			.buffer  = self->ub32_color2
+		},
+		// layout(std140, set=3, binding=3) uniform uniformAb
+		{
+			.binding = 3,
+			.type    = VKK_UNIFORM_TYPE_BUFFER,
+			.buffer  = self->ub33_ab
+		},
+	};
+
+	self->us3_tricolor = vkk_uniformSet_new(engine, 3, 4,
+	                                        ua_array3,
+	                                        self->usf3_tricolor);
+	if(self->us3_tricolor == NULL)
+	{
+		goto fail_us3_tricolor;
 	}
 
 	self->sprite_map = cc_map_new();
@@ -684,8 +831,28 @@ vkui_screen_new(vkk_engine_t* engine,
 	fail_font_array0:
 		cc_map_delete(&self->sprite_map);
 	fail_sprite_map:
+		vkk_uniformSet_delete(&self->us3_tricolor);
+	fail_us3_tricolor:
+		vkk_uniformSet_delete(&self->us2_multiplyImage);
+	fail_us2_multiplyImage:
+		vkk_uniformSet_delete(&self->us1_color);
+	fail_us1_color:
 		vkk_uniformSet_delete(&self->us0_mvp);
 	fail_us0_mvp:
+		vkk_buffer_delete(&self->ub33_ab);
+	fail_ub33_ab:
+		vkk_buffer_delete(&self->ub32_color2);
+	fail_ub32_color2:
+		vkk_buffer_delete(&self->ub31_color1);
+	fail_ub31_color1:
+		vkk_buffer_delete(&self->ub30_color0);
+	fail_ub30_color0:
+		vkk_image_delete(&self->img21);
+	fail_img21:
+		vkk_buffer_delete(&self->ub20_multiply);
+	fail_ub20_multiply:
+		vkk_buffer_delete(&self->ub10_color);
+	fail_ub10_color:
 		vkk_buffer_delete(&self->ub00_mvp);
 	fail_ub00_mvp:
 		vkk_graphicsPipeline_delete(&self->gp_tricolor);
@@ -746,7 +913,17 @@ void vkui_screen_delete(vkui_screen_t** _self)
 		}
 		cc_map_delete(&self->sprite_map);
 
+		vkk_uniformSet_delete(&self->us3_tricolor);
+		vkk_uniformSet_delete(&self->us2_multiplyImage);
+		vkk_uniformSet_delete(&self->us1_color);
 		vkk_uniformSet_delete(&self->us0_mvp);
+		vkk_buffer_delete(&self->ub33_ab);
+		vkk_buffer_delete(&self->ub32_color2);
+		vkk_buffer_delete(&self->ub31_color1);
+		vkk_buffer_delete(&self->ub30_color0);
+		vkk_image_delete(&self->img21);
+		vkk_buffer_delete(&self->ub20_multiply);
+		vkk_buffer_delete(&self->ub10_color);
 		vkk_buffer_delete(&self->ub00_mvp);
 		vkk_graphicsPipeline_delete(&self->gp_tricolor);
 		vkk_graphicsPipeline_delete(&self->gp_text);

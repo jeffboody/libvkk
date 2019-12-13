@@ -713,13 +713,15 @@ void vkui_widget_draw(vkui_widget_t* self)
 
 		vkui_screen_scissor(screen, &rect_border_clip);
 		vkui_screen_bind(screen, VKUI_SCREEN_BIND_COLOR);
-		vkk_uniformSet_t* us_array[2] =
+		vkk_uniformSet_t* us_array[] =
 		{
 			screen->us0_mvp,
 			self->us1_color,
+			screen->us2_multiplyImage,
+			screen->us3_tricolor,
 		};
 		vkk_renderer_bindUniformSets(screen->renderer,
-		                             screen->pl, 2,
+		                             screen->pl, 4,
 		                             us_array);
 		vkk_renderer_draw(screen->renderer, 4*VKUI_WIDGET_BEZEL,
 		                  1, &self->vb_xyuv);

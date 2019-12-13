@@ -208,15 +208,16 @@ static void vkui_text_draw(vkui_widget_t* widget)
 
 		vkui_screen_bind(screen, VKUI_SCREEN_BIND_TEXT);
 
-		vkk_uniformSet_t* us_font[3] =
+		vkk_uniformSet_t* us_font[] =
 		{
 			self->us0_mvp,
 			self->us1_color,
 			self->us2_multiplyImage,
+			screen->us3_tricolor,
 		};
 
 		vkk_renderer_bindUniformSets(screen->renderer,
-		                             screen->pl, 3,
+		                             screen->pl, 4,
 		                             us_font);
 
 		vkk_renderer_draw(screen->renderer, 2*3*len,
