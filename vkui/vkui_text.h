@@ -42,12 +42,12 @@ typedef struct vkui_text_s
 
 	// shader data
 	vkk_buffer_t*     vb_xyuv;
-	vkk_buffer_t*     ub_mvp;
-	vkk_uniformSet_t* us_mvp;
-	vkk_buffer_t*     ub_multiply;
-	vkk_uniformSet_t* us_multiplyImage;
-	vkk_buffer_t*     ub_color;
-	vkk_uniformSet_t* us_color;
+	vkk_buffer_t*     ub00_mvp;
+	vkk_uniformSet_t* us0_mvp;
+	vkk_buffer_t*     ub20_multiply;
+	vkk_uniformSet_t* us2_multiplyImage;
+	vkk_buffer_t*     ub10_color;
+	vkk_uniformSet_t* us1_color;
 } vkui_text_t;
 
 int vkui_text_width(vkui_text_t* self, int cursor);

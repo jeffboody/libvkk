@@ -40,10 +40,10 @@ typedef struct vkui_tricolor_s
 
 	// shader data
 	vkk_buffer_t*     vb_xyuv;
-	vkk_buffer_t*     ub_color0;
-	vkk_buffer_t*     ub_color1;
-	vkk_buffer_t*     ub_color2;
-	vkk_buffer_t*     ub_ab;
+	vkk_buffer_t*     ub30_color0;
+	vkk_buffer_t*     ub31_color1;
+	vkk_buffer_t*     ub32_color2;
+	vkk_buffer_t*     ub33_ab;
 	vkk_uniformSet_t* us;
 } vkui_tricolor_t;
 

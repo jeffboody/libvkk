@@ -38,14 +38,14 @@ typedef struct vkui_sprite_s
 	float    theta;
 
 	// shader data
-	vkk_image_t**     image_array;
+	vkk_image_t**     img21_array;
 	vkk_buffer_t*     vb_color_xyuv;
-	vkk_buffer_t*     ub_mvp;
-	vkk_buffer_t*     ub_color;
-	vkk_buffer_t*     ub_multiply;
-	vkk_uniformSet_t* us_mvp;
-	vkk_uniformSet_t* us_color;
-	vkk_uniformSet_t* us_multiplyImage;
+	vkk_buffer_t*     ub00_mvp;
+	vkk_buffer_t*     ub10_color;
+	vkk_buffer_t*     ub20_multiply;
+	vkk_uniformSet_t* us0_mvp;
+	vkk_uniformSet_t* us1_color;
+	vkk_uniformSet_t* us2_multiplyImage;
 } vkui_sprite_t;
 
 #endif

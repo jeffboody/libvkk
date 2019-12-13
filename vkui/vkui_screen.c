@@ -618,13 +618,13 @@ vkui_screen_new(vkk_engine_t* engine,
 		goto fail_gp_tricolor;
 	}
 
-	self->ub_mvp = vkk_buffer_new(engine,
-	                              VKK_UPDATE_MODE_DEFAULT,
-	                              VKK_BUFFER_USAGE_UNIFORM,
-	                              sizeof(cc_mat4f_t), NULL);
-	if(self->ub_mvp == NULL)
+	self->ub00_mvp = vkk_buffer_new(engine,
+	                                VKK_UPDATE_MODE_DEFAULT,
+	                                VKK_BUFFER_USAGE_UNIFORM,
+	                                sizeof(cc_mat4f_t), NULL);
+	if(self->ub00_mvp == NULL)
 	{
-		goto fail_ub_mvp;
+		goto fail_ub00_mvp;
 	}
 
 	vkk_uniformAttachment_t ua_array_mvp[1] =
@@ -633,16 +633,16 @@ vkui_screen_new(vkk_engine_t* engine,
 		{
 			.binding = 0,
 			.type    = VKK_UNIFORM_TYPE_BUFFER,
-			.buffer  = self->ub_mvp
+			.buffer  = self->ub00_mvp
 		}
 	};
 
-	self->us_mvp = vkk_uniformSet_new(engine, 0, 1,
-	                                  ua_array_mvp,
-	                                  self->usf0_mvp);
-	if(self->us_mvp == NULL)
+	self->us0_mvp = vkk_uniformSet_new(engine, 0, 1,
+	                                   ua_array_mvp,
+	                                   self->usf0_mvp);
+	if(self->us0_mvp == NULL)
 	{
-		goto fail_us_mvp;
+		goto fail_us0_mvp;
 	}
 
 	self->sprite_map = cc_map_new();
@@ -684,10 +684,10 @@ vkui_screen_new(vkk_engine_t* engine,
 	fail_font_array0:
 		cc_map_delete(&self->sprite_map);
 	fail_sprite_map:
-		vkk_uniformSet_delete(&self->us_mvp);
-	fail_us_mvp:
-		vkk_buffer_delete(&self->ub_mvp);
-	fail_ub_mvp:
+		vkk_uniformSet_delete(&self->us0_mvp);
+	fail_us0_mvp:
+		vkk_buffer_delete(&self->ub00_mvp);
+	fail_ub00_mvp:
 		vkk_graphicsPipeline_delete(&self->gp_tricolor);
 	fail_gp_tricolor:
 		vkk_graphicsPipeline_delete(&self->gp_text);
@@ -746,8 +746,8 @@ void vkui_screen_delete(vkui_screen_t** _self)
 		}
 		cc_map_delete(&self->sprite_map);
 
-		vkk_uniformSet_delete(&self->us_mvp);
-		vkk_buffer_delete(&self->ub_mvp);
+		vkk_uniformSet_delete(&self->us0_mvp);
+		vkk_buffer_delete(&self->ub00_mvp);
 		vkk_graphicsPipeline_delete(&self->gp_tricolor);
 		vkk_graphicsPipeline_delete(&self->gp_text);
 		vkk_graphicsPipeline_delete(&self->gp_image);
@@ -1031,7 +1031,7 @@ void vkui_screen_draw(vkui_screen_t* self)
 
 	cc_mat4f_t mvp;
 	cc_mat4f_orthoVK(&mvp, 1, 0.0f, w, h, 0.0f, 0.0f, 2.0f);
-	vkk_renderer_updateBuffer(self->renderer, self->ub_mvp,
+	vkk_renderer_updateBuffer(self->renderer, self->ub00_mvp,
 	                          sizeof(cc_mat4f_t),
 	                          (const void*) &mvp);
 

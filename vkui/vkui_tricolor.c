@@ -68,43 +68,43 @@ vkui_tricolor_t* vkui_tricolor_new(vkui_screen_t* screen,
 		goto fail_vb_xyuv;
 	}
 
-	self->ub_color0 = vkk_buffer_new(screen->engine,
-	                                 VKK_UPDATE_MODE_STATIC,
-	                                 VKK_BUFFER_USAGE_UNIFORM,
-	                                 sizeof(cc_vec4f_t),
-	                                 color0);
-	if(self->ub_color0 == NULL)
+	self->ub30_color0 = vkk_buffer_new(screen->engine,
+	                                   VKK_UPDATE_MODE_STATIC,
+	                                   VKK_BUFFER_USAGE_UNIFORM,
+	                                   sizeof(cc_vec4f_t),
+	                                   color0);
+	if(self->ub30_color0 == NULL)
 	{
-		goto fail_ub_color0;
+		goto fail_ub30_color0;
 	}
 
-	self->ub_color1 = vkk_buffer_new(screen->engine,
-	                                 VKK_UPDATE_MODE_STATIC,
-	                                 VKK_BUFFER_USAGE_UNIFORM,
-	                                 sizeof(cc_vec4f_t),
-	                                 color1);
-	if(self->ub_color1 == NULL)
+	self->ub31_color1 = vkk_buffer_new(screen->engine,
+	                                   VKK_UPDATE_MODE_STATIC,
+	                                   VKK_BUFFER_USAGE_UNIFORM,
+	                                   sizeof(cc_vec4f_t),
+	                                   color1);
+	if(self->ub31_color1 == NULL)
 	{
-		goto fail_ub_color1;
+		goto fail_ub31_color1;
 	}
 
-	self->ub_color2 = vkk_buffer_new(screen->engine,
-	                                 VKK_UPDATE_MODE_STATIC,
-	                                 VKK_BUFFER_USAGE_UNIFORM,
-	                                 sizeof(cc_vec4f_t),
-	                                 color2);
-	if(self->ub_color2 == NULL)
+	self->ub32_color2 = vkk_buffer_new(screen->engine,
+	                                   VKK_UPDATE_MODE_STATIC,
+	                                   VKK_BUFFER_USAGE_UNIFORM,
+	                                   sizeof(cc_vec4f_t),
+	                                   color2);
+	if(self->ub32_color2 == NULL)
 	{
-		goto fail_ub_color2;
+		goto fail_ub32_color2;
 	}
 
-	self->ub_ab = vkk_buffer_new(screen->engine,
-	                             VKK_UPDATE_MODE_DEFAULT,
-	                             VKK_BUFFER_USAGE_UNIFORM,
-	                             sizeof(cc_vec2f_t), NULL);
-	if(self->ub_ab == NULL)
+	self->ub33_ab = vkk_buffer_new(screen->engine,
+	                               VKK_UPDATE_MODE_DEFAULT,
+	                               VKK_BUFFER_USAGE_UNIFORM,
+	                               sizeof(cc_vec2f_t), NULL);
+	if(self->ub33_ab == NULL)
 	{
-		goto fail_ub_ab;
+		goto fail_ub33_ab;
 	}
 
 	vkk_uniformAttachment_t ua_array[4] =
@@ -113,25 +113,25 @@ vkui_tricolor_t* vkui_tricolor_new(vkui_screen_t* screen,
 		{
 			.binding = 0,
 			.type    = VKK_UNIFORM_TYPE_BUFFER,
-			.buffer  = self->ub_color0
+			.buffer  = self->ub30_color0
 		},
 		// layout(std140, set=3, binding=1) uniform uniformColor1
 		{
 			.binding = 1,
 			.type    = VKK_UNIFORM_TYPE_BUFFER,
-			.buffer  = self->ub_color1
+			.buffer  = self->ub31_color1
 		},
 		// layout(std140, set=3, binding=2) uniform uniformColor2
 		{
 			.binding = 2,
 			.type    = VKK_UNIFORM_TYPE_BUFFER,
-			.buffer  = self->ub_color2
+			.buffer  = self->ub32_color2
 		},
 		// layout(std140, set=3, binding=3) uniform uniformAb
 		{
 			.binding = 3,
 			.type    = VKK_UNIFORM_TYPE_BUFFER,
-			.buffer  = self->ub_ab
+			.buffer  = self->ub33_ab
 		},
 	};
 
@@ -148,14 +148,14 @@ vkui_tricolor_t* vkui_tricolor_new(vkui_screen_t* screen,
 
 	// failure
 	fail_us:
-		vkk_buffer_delete(&self->ub_ab);
-	fail_ub_ab:
-		vkk_buffer_delete(&self->ub_color2);
-	fail_ub_color2:
-		vkk_buffer_delete(&self->ub_color1);
-	fail_ub_color1:
-		vkk_buffer_delete(&self->ub_color0);
-	fail_ub_color0:
+		vkk_buffer_delete(&self->ub33_ab);
+	fail_ub33_ab:
+		vkk_buffer_delete(&self->ub32_color2);
+	fail_ub32_color2:
+		vkk_buffer_delete(&self->ub31_color1);
+	fail_ub31_color1:
+		vkk_buffer_delete(&self->ub30_color0);
+	fail_ub30_color0:
 		vkk_buffer_delete(&self->vb_xyuv);
 	fail_vb_xyuv:
 		FREE(self);
@@ -170,10 +170,10 @@ void vkui_tricolor_delete(vkui_tricolor_t** _self)
 	if(self)
 	{
 		vkk_uniformSet_delete(&self->us);
-		vkk_buffer_delete(&self->ub_ab);
-		vkk_buffer_delete(&self->ub_color2);
-		vkk_buffer_delete(&self->ub_color1);
-		vkk_buffer_delete(&self->ub_color0);
+		vkk_buffer_delete(&self->ub33_ab);
+		vkk_buffer_delete(&self->ub32_color2);
+		vkk_buffer_delete(&self->ub31_color1);
+		vkk_buffer_delete(&self->ub30_color0);
 		vkk_buffer_delete(&self->vb_xyuv);
 		FREE(self);
 	}
@@ -213,14 +213,14 @@ void vkui_tricolor_drawBuffer(vkui_tricolor_t* self,
 	};
 
 	vkk_renderer_updateBuffer(screen->renderer,
-	                          self->ub_ab,
+	                          self->ub33_ab,
 	                          sizeof(cc_vec2f_t),
 	                          (const void*) &ab);
 
 	vkui_screen_bind(screen, VKUI_SCREEN_BIND_TRICOLOR);
 	vkk_renderer_bindUniformSets(screen->renderer,
 	                             screen->pl, 1,
-	                             &screen->us_mvp);
+	                             &screen->us0_mvp);
 	vkk_renderer_bindUniformSets(screen->renderer,
 	                             screen->pl, 1,
 	                             &self->us);
@@ -241,7 +241,7 @@ void vkui_tricolor_drawRect(vkui_tricolor_t* self)
 	};
 
 	vkk_renderer_updateBuffer(screen->renderer,
-	                          self->ub_ab,
+	                          self->ub33_ab,
 	                          sizeof(cc_vec2f_t),
 	                          (const void*) &ab);
 
@@ -265,7 +265,7 @@ void vkui_tricolor_drawRect(vkui_tricolor_t* self)
 	vkui_screen_bind(screen, VKUI_SCREEN_BIND_TRICOLOR);
 	vkk_renderer_bindUniformSets(screen->renderer,
 	                             screen->pl, 1,
-	                             &screen->us_mvp);
+	                             &screen->us0_mvp);
 	vkk_renderer_bindUniformSets(screen->renderer,
 	                             screen->pl, 1,
 	                             &self->us);

@@ -184,12 +184,12 @@ static void vkui_text_draw(vkui_widget_t* widget)
 		cc_mat4f_translate(&mvp, 0, x, y, 0.0f);
 		cc_mat4f_scale(&mvp, 0, size, size, 1.0f);
 		vkk_renderer_updateBuffer(screen->renderer,
-		                          self->ub_mvp, sizeof(cc_mat4f_t),
+		                          self->ub00_mvp, sizeof(cc_mat4f_t),
 		                          (const void*) &mvp);
 
 		int multiply = 0;
 		vkk_renderer_updateBuffer(screen->renderer,
-		                          self->ub_multiply,
+		                          self->ub20_multiply,
 		                          sizeof(int),
 		                          (const void*) &multiply);
 
@@ -199,20 +199,20 @@ static void vkui_text_draw(vkui_widget_t* widget)
 		{
 			.binding = 1,
 			.type    = VKK_UNIFORM_TYPE_SAMPLER_REF,
-			.image   = font->image
+			.image   = font->img21
 		};
 
 		vkk_renderer_updateUniformSetRefs(screen->renderer,
-		                                  self->us_multiplyImage,
+		                                  self->us2_multiplyImage,
 		                                  1, &ua);
 
 		vkui_screen_bind(screen, VKUI_SCREEN_BIND_TEXT);
 
 		vkk_uniformSet_t* us_font[3] =
 		{
-			self->us_mvp,
-			self->us_color,
-			self->us_multiplyImage,
+			self->us0_mvp,
+			self->us1_color,
+			self->us2_multiplyImage,
 		};
 
 		vkk_renderer_bindUniformSets(screen->renderer,
@@ -407,13 +407,13 @@ vkui_text_new(vkui_screen_t* screen, size_t wsize,
 	self->enter_fn = text_fn->enter_fn;
 	memcpy(&self->style, text_style, sizeof(vkui_textStyle_t));
 
-	self->ub_mvp = vkk_buffer_new(screen->engine,
-	                              VKK_UPDATE_MODE_DEFAULT,
-	                              VKK_BUFFER_USAGE_UNIFORM,
-	                              sizeof(cc_mat4f_t), NULL);
-	if(self->ub_mvp == NULL)
+	self->ub00_mvp = vkk_buffer_new(screen->engine,
+	                                VKK_UPDATE_MODE_DEFAULT,
+	                                VKK_BUFFER_USAGE_UNIFORM,
+	                                sizeof(cc_mat4f_t), NULL);
+	if(self->ub00_mvp == NULL)
 	{
-		goto fail_ub_mvp;
+		goto fail_ub00_mvp;
 	}
 
 	vkk_uniformAttachment_t ua_mvp =
@@ -421,25 +421,25 @@ vkui_text_new(vkui_screen_t* screen, size_t wsize,
 		// layout(std140, set=0, binding=0) uniform uniformMvp
 		.binding = 0,
 		.type    = VKK_UNIFORM_TYPE_BUFFER,
-		.buffer  = self->ub_mvp
+		.buffer  = self->ub00_mvp
 	};
 
-	self->us_mvp = vkk_uniformSet_new(screen->engine,
+	self->us0_mvp = vkk_uniformSet_new(screen->engine,
 	                                  0, 1, &ua_mvp,
 	                                  screen->usf0_mvp);
-	if(self->us_mvp == NULL)
+	if(self->us0_mvp == NULL)
 	{
-		goto fail_us_mvp;
+		goto fail_us0_mvp;
 	}
 
-	self->ub_color = vkk_buffer_new(screen->engine,
-	                                VKK_UPDATE_MODE_STATIC,
-	                                VKK_BUFFER_USAGE_UNIFORM,
-	                                sizeof(cc_vec4f_t),
-	                                &text_style->color);
-	if(self->ub_color == NULL)
+	self->ub10_color = vkk_buffer_new(screen->engine,
+	                                  VKK_UPDATE_MODE_STATIC,
+	                                  VKK_BUFFER_USAGE_UNIFORM,
+	                                  sizeof(cc_vec4f_t),
+	                                  &text_style->color);
+	if(self->ub10_color == NULL)
 	{
-		goto fail_ub_color;
+		goto fail_ub10_color;
 	}
 
 	vkk_uniformAttachment_t ua_color =
@@ -447,25 +447,25 @@ vkui_text_new(vkui_screen_t* screen, size_t wsize,
 		// layout(std140, set=1, binding=0) uniform uniformColor
 		.binding = 0,
 		.type    = VKK_UNIFORM_TYPE_BUFFER,
-		.buffer  = self->ub_color
+		.buffer  = self->ub10_color
 	};
 
-	self->us_color = vkk_uniformSet_new(screen->engine,
-	                                    1, 1, &ua_color,
-	                                    screen->usf1_color);
-	if(self->us_color == NULL)
+	self->us1_color = vkk_uniformSet_new(screen->engine,
+	                                     1, 1, &ua_color,
+	                                     screen->usf1_color);
+	if(self->us1_color == NULL)
 	{
-		goto fail_us_color;
+		goto fail_us1_color;
 	}
 
-	self->ub_multiply = vkk_buffer_new(screen->engine,
-	                                   VKK_UPDATE_MODE_DEFAULT,
-	                                   VKK_BUFFER_USAGE_UNIFORM,
-	                                   sizeof(int),
-	                                   NULL);
-	if(self->ub_multiply == NULL)
+	self->ub20_multiply = vkk_buffer_new(screen->engine,
+	                                     VKK_UPDATE_MODE_DEFAULT,
+	                                     VKK_BUFFER_USAGE_UNIFORM,
+	                                     sizeof(int),
+	                                     NULL);
+	if(self->ub20_multiply == NULL)
 	{
-		goto fail_ub_multiply;
+		goto fail_ub20_multiply;
 	}
 
 	vkk_uniformAttachment_t ua_multiply =
@@ -473,15 +473,15 @@ vkui_text_new(vkui_screen_t* screen, size_t wsize,
 		// layout(std140, set=2, binding=0) uniform uniformMultiply
 		.binding = 0,
 		.type    = VKK_UNIFORM_TYPE_BUFFER,
-		.buffer  = self->ub_multiply
+		.buffer  = self->ub20_multiply
 	};
 
-	self->us_multiplyImage = vkk_uniformSet_new(screen->engine,
-	                                            2, 1, &ua_multiply,
-	                                            screen->usf2_multiplyImage);
-	if(self->us_multiplyImage == NULL)
+	self->us2_multiplyImage = vkk_uniformSet_new(screen->engine,
+	                                             2, 1, &ua_multiply,
+	                                             screen->usf2_multiplyImage);
+	if(self->us2_multiplyImage == NULL)
 	{
-		goto fail_us_multiplyImage;
+		goto fail_us2_multiplyImage;
 	}
 
 	// initialize string and cursor
@@ -491,17 +491,17 @@ vkui_text_new(vkui_screen_t* screen, size_t wsize,
 	return self;
 
 	// failure
-	fail_us_multiplyImage:
-		vkk_buffer_delete(&self->ub_multiply);
-	fail_ub_multiply:
-		vkk_uniformSet_delete(&self->us_color);
-	fail_us_color:
-		vkk_buffer_delete(&self->ub_color);
-	fail_ub_color:
-		vkk_uniformSet_delete(&self->us_mvp);
-	fail_us_mvp:
-		vkk_buffer_delete(&self->ub_mvp);
-	fail_ub_mvp:
+	fail_us2_multiplyImage:
+		vkk_buffer_delete(&self->ub20_multiply);
+	fail_ub20_multiply:
+		vkk_uniformSet_delete(&self->us1_color);
+	fail_us1_color:
+		vkk_buffer_delete(&self->ub10_color);
+	fail_ub10_color:
+		vkk_uniformSet_delete(&self->us0_mvp);
+	fail_us0_mvp:
+		vkk_buffer_delete(&self->ub00_mvp);
+	fail_ub00_mvp:
 		vkui_widget_delete((vkui_widget_t**) &self);
 	return NULL;
 }
@@ -516,12 +516,12 @@ void vkui_text_delete(vkui_text_t** _self)
 		vkui_widget_t* widget = (vkui_widget_t*) self;
 		vkui_screen_t* screen = widget->screen;
 
-		vkk_uniformSet_delete(&self->us_multiplyImage);
-		vkk_buffer_delete(&self->ub_multiply);
-		vkk_uniformSet_delete(&self->us_color);
-		vkk_buffer_delete(&self->ub_color);
-		vkk_uniformSet_delete(&self->us_mvp);
-		vkk_buffer_delete(&self->ub_mvp);
+		vkk_uniformSet_delete(&self->us2_multiplyImage);
+		vkk_buffer_delete(&self->ub20_multiply);
+		vkk_uniformSet_delete(&self->us1_color);
+		vkk_buffer_delete(&self->ub10_color);
+		vkk_uniformSet_delete(&self->us0_mvp);
+		vkk_buffer_delete(&self->ub00_mvp);
 		vkui_screen_textVb(screen, 0, self->vb_xyuv);
 
 		free(self->xyuv);

@@ -159,14 +159,14 @@ vkui_widget_new(vkui_screen_t* screen, size_t wsize,
 		goto fail_vb_xyuv;
 	}
 
-	self->ub_color = vkk_buffer_new(screen->engine,
+	self->ub10_color = vkk_buffer_new(screen->engine,
 	                                VKK_UPDATE_MODE_DEFAULT,
 	                                VKK_BUFFER_USAGE_UNIFORM,
 	                                sizeof(cc_vec4f_t),
 	                                color);
-	if(self->ub_color == NULL)
+	if(self->ub10_color == NULL)
 	{
-		goto fail_ub_color;
+		goto fail_ub10_color;
 	}
 
 	vkk_uniformAttachment_t ua_array_color[1] =
@@ -175,16 +175,16 @@ vkui_widget_new(vkui_screen_t* screen, size_t wsize,
 		{
 			.binding = 0,
 			.type    = VKK_UNIFORM_TYPE_BUFFER,
-			.buffer  = self->ub_color
+			.buffer  = self->ub10_color
 		},
 	};
 
-	self->us_color = vkk_uniformSet_new(screen->engine, 1, 1,
-	                                    ua_array_color,
-	                                    screen->usf1_color);
-	if(self->us_color == NULL)
+	self->us1_color = vkk_uniformSet_new(screen->engine, 1, 1,
+	                                     ua_array_color,
+	                                     screen->usf1_color);
+	if(self->us1_color == NULL)
 	{
-		goto fail_us_color;
+		goto fail_us1_color;
 	}
 
 	// add the optional scrollbar
@@ -205,10 +205,10 @@ vkui_widget_new(vkui_screen_t* screen, size_t wsize,
 
 	// failure
 	fail_tricolor:
-		vkk_uniformSet_delete(&self->us_color);
-	fail_us_color:
-		vkk_buffer_delete(&self->ub_color);
-	fail_ub_color:
+		vkk_uniformSet_delete(&self->us1_color);
+	fail_us1_color:
+		vkk_buffer_delete(&self->ub10_color);
+	fail_ub10_color:
 		vkk_buffer_delete(&self->vb_xyuv);
 	fail_vb_xyuv:
 		FREE(self);
@@ -231,8 +231,8 @@ void vkui_widget_delete(vkui_widget_t** _self)
 		}
 
 		vkui_tricolor_delete(&self->tricolor);
-		vkk_uniformSet_delete(&self->us_color);
-		vkk_buffer_delete(&self->ub_color);
+		vkk_uniformSet_delete(&self->us1_color);
+		vkk_buffer_delete(&self->ub10_color);
 		vkk_buffer_delete(&self->vb_xyuv);
 		FREE(self);
 		*_self = NULL;
@@ -707,7 +707,7 @@ void vkui_widget_draw(vkui_widget_t* self)
 	if(color->a > 0.0f)
 	{
 		vkk_renderer_updateBuffer(screen->renderer,
-		                          self->ub_color,
+		                          self->ub10_color,
 		                          sizeof(cc_vec4f_t),
 		                          (const void*) &self->color);
 
@@ -715,8 +715,8 @@ void vkui_widget_draw(vkui_widget_t* self)
 		vkui_screen_bind(screen, VKUI_SCREEN_BIND_COLOR);
 		vkk_uniformSet_t* us_array[2] =
 		{
-			screen->us_mvp,
-			self->us_color,
+			screen->us0_mvp,
+			self->us1_color,
 		};
 		vkk_renderer_bindUniformSets(screen->renderer,
 		                             screen->pl, 2,

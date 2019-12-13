@@ -125,8 +125,8 @@ typedef struct vkui_widget_s
 
 	// shader data
 	vkk_buffer_t*     vb_xyuv;
-	vkk_buffer_t*     ub_color;
-	vkk_uniformSet_t* us_color;
+	vkk_buffer_t*     ub10_color;
+	vkk_uniformSet_t* us1_color;
 
 	// optional tricolor shader
 	// used by scroll bars and viewbox

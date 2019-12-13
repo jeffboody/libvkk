@@ -176,7 +176,7 @@ vkui_font_loadXml(vkui_font_t* self,
 
 	uint32_t W;
 	uint32_t H;
-	vkk_image_size(self->image, &W, &H);
+	vkk_image_size(self->img21, &W, &H);
 
 	// validate xml
 	// check height
@@ -240,11 +240,11 @@ vkui_font_new(vkui_screen_t* screen, const char* resource,
 		return NULL;
 	}
 
-	self->image = vkui_screen_spriteImage(screen, texname,
+	self->img21 = vkui_screen_spriteImage(screen, texname,
 	                                      &self->tex);
-	if(self->image == NULL)
+	if(self->img21 == NULL)
 	{
-		goto fail_image;
+		goto fail_img21;
 	}
 
 	if(vkui_font_loadXml(self, resource, xmlname) == 0)
@@ -268,7 +268,7 @@ vkui_font_new(vkui_screen_t* screen, const char* resource,
 
 	// failure
 	fail_coords:
-	fail_image:
+	fail_img21:
 		FREE(self);
 	return NULL;
 }
@@ -309,7 +309,7 @@ void vkui_font_request(vkui_font_t* self,
 
 	uint32_t W;
 	uint32_t H;
-	vkk_image_size(self->image, &W, &H);
+	vkk_image_size(self->img21, &W, &H);
 
 	// fill in the pixel coords
 	pc->t = (float) self->coords[(int) c].y;

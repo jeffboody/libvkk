@@ -51,8 +51,8 @@ typedef struct vkui_screen_s
 	vkk_graphicsPipeline_t*  gp_image;
 	vkk_graphicsPipeline_t*  gp_text;
 	vkk_graphicsPipeline_t*  gp_tricolor;
-	vkk_buffer_t*            ub_mvp;
-	vkk_uniformSet_t*        us_mvp;
+	vkk_buffer_t*            ub00_mvp;
+	vkk_uniformSet_t*        us0_mvp;
 
 	// graphics pipeline bound
 	int gp_bound;
