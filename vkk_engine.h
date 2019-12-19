@@ -38,6 +38,7 @@
 #include "../libcc/cc_map.h"
 #include "../libcc/cc_workq.h"
 #include "vkk.h"
+#include "vkk_memory.h"
 
 #define VKK_DESCRIPTOR_POOL_SIZE 64
 
@@ -120,6 +121,9 @@ typedef struct vkk_engine_s
 	VkDevice device;
 	uint32_t queue_family_index;
 	VkQueue  queue;
+
+	// memory manager
+	vkk_memoryManager_t* mm;
 
 	VkPipelineCache pipeline_cache;
 

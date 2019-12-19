@@ -36,6 +36,7 @@
 #include "vkk_engine.h"
 #include "vkk_graphicsPipeline.h"
 #include "vkk_image.h"
+#include "vkk_memoryManager.h"
 #include "vkk_offscreenRenderer.h"
 #include "vkk_pipelineLayout.h"
 #include "vkk_sampler.h"
@@ -808,9 +809,7 @@ vkk_engine_destructBuffer(vkk_engine_t* self, int wait,
 		int i;
 		for(i = 0; i < count; ++i)
 		{
-			vkFreeMemory(self->device,
-			             buffer->memory[i],
-			             NULL);
+			vkk_memoryManager_free(self->mm, &buffer->memory[i]);
 			vkDestroyBuffer(self->device,
 			                buffer->buffer[i],
 			                NULL);
@@ -839,7 +838,7 @@ vkk_engine_destructImage(vkk_engine_t* self, int wait,
 
 		vkDestroyImageView(self->device, image->image_view,
 		                   NULL);
-		vkFreeMemory(self->device, image->memory, NULL);
+		vkk_memoryManager_free(self->mm, &image->memory);
 		vkDestroyImage(self->device, image->image, NULL);
 		FREE(image->layout_array);
 		FREE(image);
@@ -1088,7 +1087,7 @@ vkk_engine_t* vkk_engine_new(void* app,
 		}
 	#endif
 
-	self->version = VK_MAKE_VERSION(1,1,0);
+	self->version = VK_MAKE_VERSION(1,1,1);
 
 	snprintf(self->resource, 256, "%s", resource);
 	snprintf(self->cache, 256, "%s", cache);
@@ -1144,6 +1143,12 @@ vkk_engine_t* vkk_engine_new(void* app,
 		goto fail_device;
 	}
 
+	self->mm = vkk_memoryManager_new(self);
+	if(self->mm == NULL)
+	{
+		goto fail_mm;
+	}
+
 	if(vkk_engine_newPipelineCache(self) == 0)
 	{
 		goto fail_pipeline_cache;
@@ -1183,6 +1188,8 @@ vkk_engine_t* vkk_engine_new(void* app,
 		vkDestroyPipelineCache(self->device,
 		                       self->pipeline_cache, NULL);
 	fail_pipeline_cache:
+		vkk_memoryManager_delete(&self->mm);
+	fail_mm:
 		vkDestroyDevice(self->device, NULL);
 	fail_device:
 	fail_physical_device:
@@ -1239,6 +1246,7 @@ void vkk_engine_delete(vkk_engine_t** _self)
 		vkk_engine_exportPipelineCache(self);
 		vkDestroyPipelineCache(self->device,
 		                       self->pipeline_cache, NULL);
+		vkk_memoryManager_delete(&self->mm);
 		vkDestroyDevice(self->device, NULL);
 		vkDestroySurfaceKHR(self->instance,
 		                    self->surface, NULL);
@@ -1265,6 +1273,7 @@ void vkk_engine_shutdown(vkk_engine_t* self)
 		vkDeviceWaitIdle(self->device);
 		self->shutdown = 1;
 		vkk_engine_rendererSignal(self);
+		vkk_memoryManager_shutdown(self->mm);
 	}
 	vkk_engine_rendererUnlock(self);
 }
@@ -1453,53 +1462,12 @@ vkk_engine_uploadImage(vkk_engine_t* self,
 		goto fail_buffer;
 	}
 
-	// allocate memory for the transfer buffer
-	VkMemoryRequirements mr;
-	vkGetBufferMemoryRequirements(self->device, buffer, &mr);
-
-	VkFlags mp_flags = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT |
-	                   VK_MEMORY_PROPERTY_HOST_COHERENT_BIT;
-	uint32_t mt_index;
-	if(vkk_engine_getMemoryTypeIndex(self,
-	                                 mr.memoryTypeBits,
-	                                 mp_flags,
-	                                 &mt_index) == 0)
+	vkk_memory_t* memory;
+	memory = vkk_memoryManager_allocBuffer(self->mm, buffer,
+	                                       size, pixels);
+	if(memory == NULL)
 	{
-		goto fail_memory_type;
-	}
-
-	VkMemoryAllocateInfo ma_info =
-	{
-		.sType           = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO,
-		.pNext           = NULL,
-		.allocationSize  = mr.size,
-		.memoryTypeIndex = mt_index
-	};
-
-	VkDeviceMemory memory;
-	if(vkAllocateMemory(self->device, &ma_info, NULL,
-	                    &memory) != VK_SUCCESS)
-	{
-		LOGE("vkAllocateMemory failed");
-		goto fail_allocate_memory;
-	}
-
-	// copy pixels into transfer buffer memory
-	void* data;
-	if(vkMapMemory(self->device, memory, 0, mr.size, 0,
-	               &data) != VK_SUCCESS)
-	{
-		LOGE("vkMapMemory failed");
-		goto fail_map;
-	}
-	memcpy(data, pixels, size);
-	vkUnmapMemory(self->device, memory);
-
-	if(vkBindBufferMemory(self->device, buffer, memory,
-	                      0) != VK_SUCCESS)
-	{
-		LOGE("vkBindBufferMemory failed");
-		goto fail_bind;
+		goto fail_alloc;
 	}
 
 	// allocate a transfer command buffer
@@ -1613,7 +1581,7 @@ vkk_engine_uploadImage(vkk_engine_t* self,
 
 	// release temporary objects
 	vkk_commandBuffer_delete(&cmd_buffer);
-	vkFreeMemory(self->device, memory, NULL);
+	vkk_memoryManager_free(self->mm, &memory);
 	vkDestroyBuffer(self->device, buffer, NULL);
 	vkDestroyFence(self->device, fence, NULL);
 
@@ -1625,11 +1593,8 @@ vkk_engine_uploadImage(vkk_engine_t* self,
 	fail_begin_cb:
 		vkk_commandBuffer_delete(&cmd_buffer);
 	fail_cmd_buffer:
-	fail_bind:
-	fail_map:
-		vkFreeMemory(self->device, memory, NULL);
-	fail_allocate_memory:
-	fail_memory_type:
+		vkk_memoryManager_free(self->mm, &memory);
+	fail_alloc:
 		vkDestroyBuffer(self->device, buffer, NULL);
 	fail_buffer:
 		vkDestroyFence(self->device, fence, NULL);

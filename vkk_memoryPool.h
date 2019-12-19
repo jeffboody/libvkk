@@ -21,30 +21,31 @@
  *
  */
 
-#ifndef vkk_image_H
-#define vkk_image_H
+#ifndef vkk_memoryPool_H
+#define vkk_memoryPool_H
 
-#ifdef ANDROID
-	#include <vulkan_wrapper.h>
-#else
-	#include <vulkan/vulkan.h>
-#endif
+#include "vkk_memory.h"
 
-#include "vkk.h"
-
-typedef struct vkk_image_s
+typedef struct vkk_memoryPool_s
 {
-	vkk_engine_t*  engine;
-	double         ts;
-	uint32_t       width;
-	uint32_t       height;
-	int            format;
-	int            stage;
-	uint32_t       mip_levels;
-	VkImageLayout* layout_array;
-	VkImage        image;
-	vkk_memory_t*  memory;
-	VkImageView    image_view;
-} vkk_image_t;
+	vkk_memoryManager_t* mm;
+
+	uint32_t     count;
+	VkDeviceSize stride;
+	uint32_t     mt_index;
+
+	// memory chunks
+	cc_list_t* chunks;
+} vkk_memoryPool_t;
+
+vkk_memoryPool_t* vkk_memoryPool_new(vkk_memoryManager_t* mm,
+                                     uint32_t count,
+                                     VkDeviceSize stride,
+                                     uint32_t mt_index);
+void              vkk_memoryPool_delete(vkk_memoryPool_t** _self);
+vkk_memory_t*     vkk_memoryPool_alloc(vkk_memoryPool_t* self);
+int               vkk_memoryPool_free(vkk_memoryPool_t* self,
+                                      int shutdown,
+                                      vkk_memory_t** _memory);
 
 #endif

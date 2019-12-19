@@ -6,6 +6,10 @@ CLASSES = \
 	vkk_engine            \
 	vkk_graphicsPipeline  \
 	vkk_image             \
+	vkk_memory            \
+	vkk_memoryChunk       \
+	vkk_memoryManager     \
+	vkk_memoryPool        \
 	vkk_offscreenRenderer \
 	vkk_pipelineLayout    \
 	vkk_renderer          \

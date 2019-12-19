@@ -21,30 +21,49 @@
  *
  */
 
-#ifndef vkk_image_H
-#define vkk_image_H
+#include <assert.h>
+#include <stdlib.h>
 
-#ifdef ANDROID
-	#include <vulkan_wrapper.h>
-#else
-	#include <vulkan/vulkan.h>
-#endif
+#define LOG_TAG "vkk"
+#include "../libcc/cc_log.h"
+#include "../libcc/cc_memory.h"
+#include "vkk_memory.h"
+#include "vkk_memoryChunk.h"
+#include "vkk_memoryPool.h"
 
-#include "vkk.h"
+/***********************************************************
+* public                                                   *
+***********************************************************/
 
-typedef struct vkk_image_s
+vkk_memory_t*
+vkk_memory_new(vkk_memoryChunk_t* chunk,
+               VkDeviceSize offset)
 {
-	vkk_engine_t*  engine;
-	double         ts;
-	uint32_t       width;
-	uint32_t       height;
-	int            format;
-	int            stage;
-	uint32_t       mip_levels;
-	VkImageLayout* layout_array;
-	VkImage        image;
-	vkk_memory_t*  memory;
-	VkImageView    image_view;
-} vkk_image_t;
+	assert(chunk);
 
-#endif
+	vkk_memory_t* self;
+	self = (vkk_memory_t*)
+	       CALLOC(1, sizeof(vkk_memory_t));
+	if(self == NULL)
+	{
+		LOGE("CALLOC failed");
+		return NULL;
+	}
+
+	self->chunk  = chunk;
+	self->offset = offset;
+
+	return self;
+}
+
+void vkk_memory_delete(vkk_memory_t** _self)
+{
+	assert(_self);
+
+	vkk_memory_t* self = *_self;
+	if(self)
+	{
+		FREE(self);
+		*_self = NULL;
+	}
+}

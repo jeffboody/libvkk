@@ -30,6 +30,7 @@
 #include "../libcc/cc_memory.h"
 #include "vkk_buffer.h"
 #include "vkk_engine.h"
+#include "vkk_memoryManager.h"
 
 /***********************************************************
 * public                                                   *
@@ -75,8 +76,8 @@ vkk_buffer_new(vkk_engine_t* engine, int update,
 		goto fail_buffer;
 	}
 
-	self->memory = (VkDeviceMemory*)
-	               CALLOC(count, sizeof(VkDeviceMemory));
+	self->memory = (vkk_memory_t**)
+	               CALLOC(count, sizeof(vkk_memory_t*));
 	if(self->memory == NULL)
 	{
 		LOGE("CALLOC failed");
@@ -105,56 +106,13 @@ vkk_buffer_new(vkk_engine_t* engine, int update,
 			goto fail_create_buffer;
 		}
 
-		VkMemoryRequirements mr;
-		vkGetBufferMemoryRequirements(engine->device,
-		                              self->buffer[i],
-		                              &mr);
-
-		VkFlags mp_flags = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT |
-		                   VK_MEMORY_PROPERTY_HOST_COHERENT_BIT;
-		uint32_t mt_index;
-		if(vkk_engine_getMemoryTypeIndex(engine,
-		                                 mr.memoryTypeBits,
-		                                 mp_flags,
-		                                 &mt_index) == 0)
+		self->memory[i] = vkk_memoryManager_allocBuffer(engine->mm,
+		                                                self->buffer[i],
+		                                                size,
+		                                                buf);
+		if(self->memory[i] == NULL)
 		{
-			goto fail_memory_type;
-		}
-
-		VkMemoryAllocateInfo ma_info =
-		{
-			.sType           = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO,
-			.pNext           = NULL,
-			.allocationSize  = mr.size,
-			.memoryTypeIndex = mt_index
-		};
-
-		if(vkAllocateMemory(engine->device, &ma_info, NULL,
-		                    &self->memory[i]) != VK_SUCCESS)
-		{
-			LOGE("vkAllocateMemory failed");
-			goto fail_allocate;
-		}
-
-		if(buf)
-		{
-			void* data;
-			if(vkMapMemory(engine->device, self->memory[i],
-			               0, mr.size, 0, &data) != VK_SUCCESS)
-			{
-				LOGE("vkMapMemory failed");
-				goto fail_map;
-			}
-			memcpy(data, buf, size);
-			vkUnmapMemory(engine->device, self->memory[i]);
-		}
-
-		if(vkBindBufferMemory(engine->device,
-		                      self->buffer[i],
-		                      self->memory[i], 0) != VK_SUCCESS)
-		{
-			LOGE("vkBindBufferMemory failed");
-			goto fail_bind;
+			goto fail_alloc;
 		}
 	}
 
@@ -162,18 +120,13 @@ vkk_buffer_new(vkk_engine_t* engine, int update,
 	return self;
 
 	// failure
-	fail_bind:
-	fail_map:
-	fail_allocate:
-	fail_memory_type:
+	fail_alloc:
 	fail_create_buffer:
 	{
 		int j;
 		for(j = 0; j <= i; ++j)
 		{
-			vkFreeMemory(engine->device,
-			             self->memory[j],
-			             NULL);
+			vkk_memoryManager_free(engine->mm, &self->memory[j]);
 			vkDestroyBuffer(engine->device,
 			                self->buffer[j],
 			                NULL);

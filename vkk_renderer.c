@@ -32,6 +32,7 @@
 #include "vkk_engine.h"
 #include "vkk_graphicsPipeline.h"
 #include "vkk_image.h"
+#include "vkk_memoryManager.h"
 #include "vkk_offscreenRenderer.h"
 #include "vkk_pipelineLayout.h"
 #include "vkk_renderer.h"
@@ -291,6 +292,9 @@ void vkk_renderer_updateBuffer(vkk_renderer_t* self,
                                const void* buf)
 {
 	assert(self);
+	assert(buffer);
+	assert(size > 0);
+	assert(buf);
 
 	vkk_engine_t* engine = self->engine;
 
@@ -341,17 +345,8 @@ void vkk_renderer_updateBuffer(vkk_renderer_t* self,
 		}
 	}
 
-	void* data;
-	if(vkMapMemory(engine->device, buffer->memory[idx],
-	               0, size, 0, &data) == VK_SUCCESS)
-	{
-		memcpy(data, buf, size);
-		vkUnmapMemory(engine->device, buffer->memory[idx]);
-	}
-	else
-	{
-		LOGW("vkMapMemory failed");
-	}
+	vkk_memoryManager_update(engine->mm, buffer->memory[idx],
+	                         size, buf);
 }
 
 void

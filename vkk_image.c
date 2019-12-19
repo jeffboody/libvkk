@@ -29,6 +29,7 @@
 #include "../libcc/cc_memory.h"
 #include "vkk_engine.h"
 #include "vkk_image.h"
+#include "vkk_memoryManager.h"
 #include "vkk_util.h"
 
 /***********************************************************
@@ -168,41 +169,11 @@ vkk_image_t* vkk_image_new(vkk_engine_t* engine,
 		goto fail_create_image;
 	}
 
-	VkMemoryRequirements mr;
-	vkGetImageMemoryRequirements(engine->device,
-	                             self->image,
-	                             &mr);
-
-	VkFlags  mp_flags = 0;
-	uint32_t mt_index;
-	if(vkk_engine_getMemoryTypeIndex(engine,
-	                                 mr.memoryTypeBits,
-	                                 mp_flags,
-	                                 &mt_index) == 0)
+	self->memory = vkk_memoryManager_allocImage(engine->mm,
+	                                            self->image);
+	if(self->memory == NULL)
 	{
-		goto fail_memory_type;
-	}
-
-	VkMemoryAllocateInfo ma_info =
-	{
-		.sType           = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO,
-		.pNext           = NULL,
-		.allocationSize  = mr.size,
-		.memoryTypeIndex = mt_index
-	};
-
-	if(vkAllocateMemory(engine->device, &ma_info, NULL,
-	                    &self->memory) != VK_SUCCESS)
-	{
-		LOGE("vkAllocateMemory failed");
-		goto fail_allocate;
-	}
-
-	if(vkBindImageMemory(engine->device, self->image,
-	                     self->memory, 0) != VK_SUCCESS)
-	{
-		LOGE("vkBindBufferMemory failed");
-		goto fail_bind;
+		goto fail_alloc;
 	}
 
 	VkImageViewCreateInfo iv_info =
@@ -254,11 +225,8 @@ vkk_image_t* vkk_image_new(vkk_engine_t* engine,
 		vkDestroyImageView(engine->device, self->image_view,
 		                   NULL);
 	fail_image_view:
-	fail_bind:
-		vkFreeMemory(engine->device,
-		             self->memory, NULL);
-	fail_allocate:
-	fail_memory_type:
+		vkk_memoryManager_free(engine->mm, &self->memory);
+	fail_alloc:
 		vkDestroyImage(engine->device,
 		               self->image, NULL);
 	fail_create_image:

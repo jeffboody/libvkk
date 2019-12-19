@@ -31,17 +31,18 @@
 #endif
 
 #include "vkk.h"
+#include "vkk_memory.h"
 
 typedef struct vkk_buffer_s
 {
-	vkk_engine_t*   engine;
-	double          ts;
-	int             update;
-	int             usage;
-	uint32_t        vbib_index;
-	size_t          size;
-	VkBuffer*       buffer;
-	VkDeviceMemory* memory;
+	vkk_engine_t*  engine;
+	double         ts;
+	int            update;
+	int            usage;
+	uint32_t       vbib_index;
+	size_t         size;
+	VkBuffer*      buffer;
+	vkk_memory_t** memory;
 } vkk_buffer_t;
 
 #endif
