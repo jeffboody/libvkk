@@ -34,9 +34,9 @@
 	#include <vulkan/vulkan.h>
 #endif
 
+#include "../libcc/cc_jobq.h"
 #include "../libcc/cc_list.h"
 #include "../libcc/cc_map.h"
-#include "../libcc/cc_workq.h"
 #include "vkk.h"
 #include "vkk_memory.h"
 
@@ -137,8 +137,8 @@ typedef struct vkk_engine_s
 	int             shutdown;
 	vkk_renderer_t* renderer;
 
-	// workqs
-	cc_workq_t* workq_destruct;
+	// jobq(s)
+	cc_jobq_t* jobq_destruct;
 } vkk_engine_t;
 
 /*

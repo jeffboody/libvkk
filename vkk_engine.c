@@ -978,7 +978,7 @@ vkk_engine_destructGraphicsPipeline(vkk_engine_t* self, int wait,
 	}
 }
 
-static int
+static void
 vkk_engine_runDestructFn(int tid, void* owner, void* task)
 {
 	assert(owner);
@@ -1034,18 +1034,6 @@ vkk_engine_runDestructFn(int tid, void* owner, void* task)
 		LOGE("invalid type=%i", object->type);
 	}
 
-	return 1;
-}
-
-static void
-vkk_engine_finishDestructFn(void* owner, void* task,
-                            int status)
-{
-	assert(owner);
-	assert(task);
-
-	vkk_object_t* object;
-	object = (vkk_object_t*) task;
 	vkk_object_delete(&object);
 }
 
@@ -1168,19 +1156,18 @@ vkk_engine_t* vkk_engine_new(void* app,
 		goto fail_renderer;
 	}
 
-	self->workq_destruct = cc_workq_new((void*) self, 1,
-	                                    vkk_engine_runDestructFn,
-	                                    vkk_engine_finishDestructFn);
-	if(self->workq_destruct == NULL)
+	self->jobq_destruct = cc_jobq_new((void*) self, 1,
+	                                  vkk_engine_runDestructFn);
+	if(self->jobq_destruct == NULL)
 	{
-		goto fail_workq_destruct;
+		goto fail_jobq_destruct;
 	}
 
 	// success
 	return self;
 
 	// failure
-	fail_workq_destruct:
+	fail_jobq_destruct:
 		vkk_defaultRenderer_delete(&self->renderer);
 	fail_renderer:
 		cc_map_delete(&self->shader_modules);
@@ -1226,11 +1213,11 @@ void vkk_engine_delete(vkk_engine_t** _self)
 	{
 		assert(self->shutdown);
 
-		// finish destruction workq
-		// objects in workq may depend on default renderer
-		cc_workq_finish(self->workq_destruct);
+		// finish destruction jobq
+		// objects in jobq may depend on default renderer
+		cc_jobq_finish(self->jobq_destruct);
 		vkk_defaultRenderer_delete(&self->renderer);
-		cc_workq_delete(&self->workq_destruct);
+		cc_jobq_delete(&self->jobq_destruct);
 
 		cc_mapIter_t  miterator;
 		cc_mapIter_t* miter;
@@ -2100,9 +2087,7 @@ vkk_engine_deleteObject(vkk_engine_t* self, int type,
 		goto fail_object;
 	}
 
-	int status = cc_workq_run(self->workq_destruct,
-	                          (void*) object, 0);
-	if(status == CC_WORKQ_STATUS_ERROR)
+	if(cc_jobq_run(self->jobq_destruct, (void*) object) == 0)
 	{
 		goto fail_run;
 	}

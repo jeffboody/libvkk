@@ -216,9 +216,6 @@ int vkk_renderer_beginDefault(vkk_renderer_t* self,
 	}
 	vkk_engine_rendererUnlock(engine);
 
-	// flush the destruct workq
-	cc_workq_flush(engine->workq_destruct);
-
 	return vkk_defaultRenderer_begin(self, clear_color);
 }
 
