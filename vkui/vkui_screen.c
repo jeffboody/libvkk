@@ -374,6 +374,7 @@ void vkui_screen_playClick(vkui_screen_t* self)
 
 vkui_screen_t*
 vkui_screen_new(vkk_engine_t* engine,
+                vkk_renderer_t* renderer,
                 const char* resource,
                 void* sound_fx,
                 vkui_screen_playClickFn playClick)
@@ -401,7 +402,7 @@ vkui_screen_new(vkk_engine_t* engine,
 
 	snprintf(self->resource, 256, "%s", resource);
 
-	self->renderer = vkk_engine_renderer(engine);
+	self->renderer = renderer;
 
 	self->sampler = vkk_sampler_new(engine,
 	                                VKK_SAMPLER_FILTER_LINEAR,

@@ -30,6 +30,7 @@
 #include "../libcc/cc_memory.h"
 #include "vkk_commandBuffer.h"
 #include "vkk_engine.h"
+#include "vkk_renderer.h"
 
 /***********************************************************
 * public                                                   *
@@ -37,7 +38,8 @@
 
 vkk_commandBuffer_t*
 vkk_commandBuffer_new(vkk_engine_t* engine,
-                      uint32_t cb_count)
+                      uint32_t cb_count,
+                      int renderer_type)
 {
 	assert(engine);
 
@@ -77,12 +79,18 @@ vkk_commandBuffer_new(vkk_engine_t* engine,
 		goto fail_command_pool;
 	}
 
+	VkCommandBufferLevel level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
+	if(renderer_type == VKK_RENDERER_TYPE_SECONDARY)
+	{
+		level = VK_COMMAND_BUFFER_LEVEL_SECONDARY;
+	}
+
 	VkCommandBufferAllocateInfo cba_info =
 	{
 		.sType              = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO,
 		.pNext              = NULL,
 		.commandPool        = self->command_pool,
-		.level              = VK_COMMAND_BUFFER_LEVEL_PRIMARY,
+		.level              = level,
 		.commandBufferCount = cb_count
 	};
 

@@ -41,6 +41,7 @@ add_library(vkk
             vkk_pipelineLayout.c
             vkk_renderer.c
             vkk_sampler.c
+            vkk_secondaryRenderer.c
             vkk_uniformSet.c
             vkk_uniformSetFactory.c
             vkk_util.c

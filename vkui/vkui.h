@@ -206,6 +206,7 @@ typedef struct vkui_viewboxStyle_s
  */
 
 vkui_screen_t* vkui_screen_new(vkk_engine_t* engine,
+                               vkk_renderer_t* renderer,
                                const char* resource,
                                void* sound_fx,
                                vkui_screen_playClickFn playClick);

@@ -43,7 +43,8 @@ typedef struct vkk_commandBuffer_s
 } vkk_commandBuffer_t;
 
 vkk_commandBuffer_t* vkk_commandBuffer_new(vkk_engine_t* engine,
-                                           uint32_t cb_count);
+                                           uint32_t cb_count,
+                                           int renderer_type);
 void                 vkk_commandBuffer_delete(vkk_commandBuffer_t** _self);
 VkCommandBuffer      vkk_commandBuffer_get(vkk_commandBuffer_t* self,
                                            uint32_t index);

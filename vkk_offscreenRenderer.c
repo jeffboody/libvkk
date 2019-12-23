@@ -287,7 +287,8 @@ vkk_offscreenRenderer_new(vkk_engine_t* engine,
 	self->image  = NULL;
 
 	vkk_renderer_t* base = &(self->base);
-	vkk_renderer_init(base, engine);
+	vkk_renderer_init(base, VKK_RENDERER_TYPE_OFFSCREEN,
+	                  engine);
 
 	VkFenceCreateInfo f_info =
 	{
@@ -316,7 +317,8 @@ vkk_offscreenRenderer_new(vkk_engine_t* engine,
 	self->framebuffer_image_view = VK_NULL_HANDLE;
 	self->framebuffer            = VK_NULL_HANDLE;
 
-	self->cmd_buffer = vkk_commandBuffer_new(engine, 1);
+	self->cmd_buffer = vkk_commandBuffer_new(engine, 1,
+	                                         base->type);
 	if(self->cmd_buffer == NULL)
 	{
 		goto fail_cmd_buffer;
@@ -363,6 +365,7 @@ void vkk_offscreenRenderer_delete(vkk_renderer_t** _base)
 
 int
 vkk_offscreenRenderer_begin(vkk_renderer_t* base,
+                            int mode,
                             vkk_image_t* image,
                             float* clear_color)
 {
@@ -437,32 +440,36 @@ vkk_offscreenRenderer_begin(vkk_renderer_t* base,
 	                            VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL,
 	                            0, 1);
 
-
-	VkViewport viewport =
+	// the secondary renderers also initialize
+	// viewport and scissor in beginSecondary
+	if(mode == VKK_RENDERER_MODE_PRIMARY)
 	{
-		.x        = 0.0f,
-		.y        = 0.0f,
-		.width    = (float) self->width,
-		.height   = (float) self->height,
-		.minDepth = 0.0f,
-		.maxDepth = 1.0f
-	};
-	vkCmdSetViewport(cb, 0, 1, &viewport);
+		VkViewport viewport =
+		{
+			.x        = 0.0f,
+			.y        = 0.0f,
+			.width    = (float) self->width,
+			.height   = (float) self->height,
+			.minDepth = 0.0f,
+			.maxDepth = 1.0f
+		};
+		vkCmdSetViewport(cb, 0, 1, &viewport);
 
-	VkRect2D scissor =
-	{
-		.offset =
+		VkRect2D scissor =
 		{
-			.x = 0,
-			.y = 0
-		},
-		.extent =
-		{
-			.width  = self->width,
-			.height = self->height,
-		}
-	};
-	vkCmdSetScissor(cb, 0, 1, &scissor);
+			.offset =
+			{
+				.x = 0,
+				.y = 0
+			},
+			.extent =
+			{
+				.width  = self->width,
+				.height = self->height,
+			}
+		};
+		vkCmdSetScissor(cb, 0, 1, &scissor);
+	}
 
 	VkClearValue cv[2] =
 	{
@@ -500,9 +507,13 @@ vkk_offscreenRenderer_begin(vkk_renderer_t* base,
 		.pClearValues    = cv
 	};
 
-	vkCmdBeginRenderPass(cb,
-	                     &rp_info,
-	                     VK_SUBPASS_CONTENTS_INLINE);
+	VkSubpassContents contents = VK_SUBPASS_CONTENTS_INLINE;
+	if(mode == VKK_RENDERER_MODE_SECONDARY)
+	{
+		contents = VK_SUBPASS_CONTENTS_SECONDARY_COMMAND_BUFFERS;
+	}
+
+	vkCmdBeginRenderPass(cb, &rp_info, contents);
 
 	// success
 	return 1;
@@ -596,6 +607,17 @@ vkk_offscreenRenderer_renderPass(vkk_renderer_t* base)
 	self = (vkk_offscreenRenderer_t*) base;
 
 	return self->render_pass;
+}
+
+VkFramebuffer
+vkk_offscreenRenderer_framebuffer(vkk_renderer_t* base)
+{
+	assert(base);
+
+	vkk_offscreenRenderer_t* self;
+	self = (vkk_offscreenRenderer_t*) base;
+
+	return self->framebuffer;
 }
 
 VkCommandBuffer

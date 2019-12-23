@@ -741,7 +741,8 @@ vkk_defaultRenderer_new(vkk_engine_t* engine)
 	}
 
 	vkk_renderer_t* base = &(self->base);
-	vkk_renderer_init(base, engine);
+	vkk_renderer_init(base, VKK_RENDERER_TYPE_DEFAULT,
+	                  engine);
 
 	if(vkk_defaultRenderer_newSwapchain(base) == 0)
 	{
@@ -764,7 +765,8 @@ vkk_defaultRenderer_new(vkk_engine_t* engine)
 	}
 
 	self->cmd_buffers = vkk_commandBuffer_new(engine,
-	                                          self->swapchain_image_count);
+	                                          self->swapchain_image_count,
+	                                          base->type);
 	if(self->cmd_buffers == NULL)
 	{
 		goto fail_cmd_buffers;
@@ -915,7 +917,7 @@ vkk_defaultRenderer_tsExpiredLocked(vkk_renderer_t* base)
 
 int
 vkk_defaultRenderer_begin(vkk_renderer_t* base,
-                          float* clear_color)
+                          int mode, float* clear_color)
 {
 	assert(base);
 	assert(clear_color);
@@ -1014,32 +1016,36 @@ vkk_defaultRenderer_begin(vkk_renderer_t* base,
 	                            VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL,
 	                            0, 1);
 
-
-	VkViewport viewport =
+	// the secondary renderers also initialize
+	// viewport and scissor in beginSecondary
+	if(mode == VKK_RENDERER_MODE_PRIMARY)
 	{
-		.x        = 0.0f,
-		.y        = 0.0f,
-		.width    = (float) self->swapchain_extent.width,
-		.height   = (float) self->swapchain_extent.height,
-		.minDepth = 0.0f,
-		.maxDepth = 1.0f
-	};
-	vkCmdSetViewport(cb, 0, 1, &viewport);
+		VkViewport viewport =
+		{
+			.x        = 0.0f,
+			.y        = 0.0f,
+			.width    = (float) self->swapchain_extent.width,
+			.height   = (float) self->swapchain_extent.height,
+			.minDepth = 0.0f,
+			.maxDepth = 1.0f
+		};
+		vkCmdSetViewport(cb, 0, 1, &viewport);
 
-	VkRect2D scissor =
-	{
-		.offset =
+		VkRect2D scissor =
 		{
-			.x = 0,
-			.y = 0
-		},
-		.extent =
-		{
-			.width  = (uint32_t) self->swapchain_extent.width,
-			.height = (uint32_t) self->swapchain_extent.height,
-		}
-	};
-	vkCmdSetScissor(cb, 0, 1, &scissor);
+			.offset =
+			{
+				.x = 0,
+				.y = 0
+			},
+			.extent =
+			{
+				.width  = (uint32_t) self->swapchain_extent.width,
+				.height = (uint32_t) self->swapchain_extent.height,
+			}
+		};
+		vkCmdSetScissor(cb, 0, 1, &scissor);
+	}
 
 	VkClearValue cv[2] =
 	{
@@ -1079,9 +1085,13 @@ vkk_defaultRenderer_begin(vkk_renderer_t* base,
 		.pClearValues    = cv
 	};
 
-	vkCmdBeginRenderPass(cb,
-	                     &rp_info,
-	                     VK_SUBPASS_CONTENTS_INLINE);
+	VkSubpassContents contents = VK_SUBPASS_CONTENTS_INLINE;
+	if(mode == VKK_RENDERER_MODE_SECONDARY)
+	{
+		contents = VK_SUBPASS_CONTENTS_SECONDARY_COMMAND_BUFFERS;
+	}
+
+	vkCmdBeginRenderPass(cb, &rp_info, contents);
 
 	return 1;
 }
@@ -1167,6 +1177,17 @@ vkk_defaultRenderer_renderPass(vkk_renderer_t* base)
 	self = (vkk_defaultRenderer_t*) base;
 
 	return self->render_pass;
+}
+
+VkFramebuffer
+vkk_defaultRenderer_framebuffer(vkk_renderer_t* base)
+{
+	assert(base);
+
+	vkk_defaultRenderer_t* self;
+	self = (vkk_defaultRenderer_t*) base;
+
+	return self->framebuffers[self->swapchain_frame];
 }
 
 VkCommandBuffer

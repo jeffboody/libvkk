@@ -37,6 +37,7 @@
 #include "vkk_pipelineLayout.h"
 #include "vkk_renderer.h"
 #include "vkk_sampler.h"
+#include "vkk_secondaryRenderer.h"
 #include "vkk_uniformSet.h"
 #include "vkk_uniformSetFactory.h"
 
@@ -156,19 +157,158 @@ vkk_renderer_updateUniformSamplerRef(vkk_renderer_t* self,
 	                       0, NULL);
 }
 
+static vkk_renderer_t*
+vkk_renderer_getPrimary(vkk_renderer_t* self)
+{
+	assert(self);
+
+	if(self->type == VKK_RENDERER_TYPE_SECONDARY)
+	{
+		vkk_secondaryRenderer_t* sec;
+		sec = (vkk_secondaryRenderer_t*) self;
+		return sec->primary;
+	}
+
+	return self;
+}
+
+/***********************************************************
+* protected                                                *
+***********************************************************/
+
+void vkk_renderer_init(vkk_renderer_t* self,
+                       int type,
+                       vkk_engine_t* engine)
+{
+	assert(self);
+	assert(engine);
+
+	self->engine = engine;
+	self->type   = type;
+	self->mode   = VKK_RENDERER_MODE_PRIMARY;
+}
+
+VkRenderPass
+vkk_renderer_renderPass(vkk_renderer_t* self)
+{
+	assert(self);
+
+	if(self->type == VKK_RENDERER_TYPE_DEFAULT)
+	{
+		return vkk_defaultRenderer_renderPass(self);
+	}
+	else if(self->type == VKK_RENDERER_TYPE_OFFSCREEN)
+	{
+		return vkk_offscreenRenderer_renderPass(self);
+	}
+	else
+	{
+		return vkk_secondaryRenderer_renderPass(self);
+	}
+}
+
+VkFramebuffer
+vkk_renderer_framebuffer(vkk_renderer_t* self)
+{
+	assert(self);
+
+	if(self->type == VKK_RENDERER_TYPE_DEFAULT)
+	{
+		return vkk_defaultRenderer_framebuffer(self);
+	}
+	else if(self->type == VKK_RENDERER_TYPE_OFFSCREEN)
+	{
+		return vkk_offscreenRenderer_framebuffer(self);
+	}
+	else
+	{
+		return vkk_secondaryRenderer_framebuffer(self);
+	}
+}
+
+uint32_t
+vkk_renderer_swapchainFrame(vkk_renderer_t* self)
+{
+	assert(self);
+
+	if(self->type == VKK_RENDERER_TYPE_DEFAULT)
+	{
+		return vkk_defaultRenderer_swapchainFrame(self);
+	}
+	else if(self->type == VKK_RENDERER_TYPE_OFFSCREEN)
+	{
+		return vkk_offscreenRenderer_swapchainFrame(self);
+	}
+	else
+	{
+		return vkk_secondaryRenderer_swapchainFrame(self);
+	}
+}
+
+VkCommandBuffer
+vkk_renderer_commandBuffer(vkk_renderer_t* self)
+{
+	assert(self);
+
+	if(self->type == VKK_RENDERER_TYPE_DEFAULT)
+	{
+		return vkk_defaultRenderer_commandBuffer(self);
+	}
+	else if(self->type == VKK_RENDERER_TYPE_OFFSCREEN)
+	{
+		return vkk_offscreenRenderer_commandBuffer(self);
+	}
+	else
+	{
+		return vkk_secondaryRenderer_commandBuffer(self);
+	}
+}
+
+double
+vkk_renderer_tsCurrent(vkk_renderer_t* self)
+{
+	assert(self);
+
+	double ts = 0.0;
+	if(self->type == VKK_RENDERER_TYPE_DEFAULT)
+	{
+		ts = vkk_defaultRenderer_tsCurrent(self);
+	}
+	else if(self->type == VKK_RENDERER_TYPE_SECONDARY)
+	{
+		vkk_secondaryRenderer_t* sec;
+		sec = (vkk_secondaryRenderer_t*) self;
+
+		if(sec->primary->type == VKK_RENDERER_TYPE_DEFAULT)
+		{
+			ts = vkk_defaultRenderer_tsCurrent(sec->primary);
+		}
+	}
+
+	return ts;
+}
+
 /***********************************************************
 * public                                                   *
 ***********************************************************/
 
 vkk_renderer_t*
-vkk_renderer_new(vkk_engine_t* engine,
-                 uint32_t width, uint32_t height,
-                 int format)
+vkk_renderer_newOffscreen(vkk_engine_t* engine,
+                          uint32_t width, uint32_t height,
+                          int format)
 {
 	assert(engine);
 
 	return vkk_offscreenRenderer_new(engine, width, height,
 	                                 format);
+}
+
+vkk_renderer_t*
+vkk_renderer_newSecondary(vkk_renderer_t* primary)
+{
+	assert(primary);
+
+	return vkk_secondaryRenderer_new(primary);
 }
 
 void vkk_renderer_delete(vkk_renderer_t** _self)
@@ -181,7 +321,7 @@ void vkk_renderer_delete(vkk_renderer_t** _self)
 		vkk_engine_t* engine = self->engine;
 
 		// do not delete default renderer
-		if(engine->renderer == self)
+		if(self->type == VKK_RENDERER_TYPE_DEFAULT)
 		{
 			return;
 		}
@@ -193,19 +333,16 @@ void vkk_renderer_delete(vkk_renderer_t** _self)
 }
 
 int vkk_renderer_beginDefault(vkk_renderer_t* self,
+                              int mode,
                               float* clear_color)
 {
 	assert(self);
+	assert((mode == VKK_RENDERER_MODE_PRIMARY) ||
+	       (mode == VKK_RENDERER_MODE_SECONDARY));
 	assert(clear_color);
+	assert(self->type == VKK_RENDERER_TYPE_DEFAULT);
 
 	vkk_engine_t* engine = self->engine;
-
-	// check for the default renderer
-	if(self != engine->renderer)
-	{
-		LOGE("invalid");
-		return 0;
-	}
 
 	vkk_engine_rendererLock(engine);
 	if(engine->shutdown)
@@ -216,25 +353,29 @@ int vkk_renderer_beginDefault(vkk_renderer_t* self,
 	}
 	vkk_engine_rendererUnlock(engine);
 
-	return vkk_defaultRenderer_begin(self, clear_color);
+	if(vkk_defaultRenderer_begin(self, mode,
+	                             clear_color) == 0)
+	{
+		return 0;
+	}
+
+	self->mode = mode;
+	return 1;
 }
 
 int vkk_renderer_beginOffscreen(vkk_renderer_t* self,
+                                int mode,
                                 vkk_image_t* image,
                                 float* clear_color)
 {
 	assert(self);
+	assert((mode == VKK_RENDERER_MODE_PRIMARY) ||
+	       (mode == VKK_RENDERER_MODE_SECONDARY));
 	assert(image);
 	assert(clear_color);
+	assert(self->type == VKK_RENDERER_TYPE_OFFSCREEN);
 
 	vkk_engine_t* engine = self->engine;
-
-	// check for an offscreen renderer
-	if(self == engine->renderer)
-	{
-		LOGE("invalid");
-		return 0;
-	}
 
 	vkk_engine_rendererLock(engine);
 	if(engine->shutdown)
@@ -245,24 +386,53 @@ int vkk_renderer_beginOffscreen(vkk_renderer_t* self,
 	}
 	vkk_engine_rendererUnlock(engine);
 
-	return vkk_offscreenRenderer_begin(self, image,
-	                                   clear_color);
+	if(vkk_offscreenRenderer_begin(self, mode, image,
+	                               clear_color) == 0)
+	{
+		return 0;
+	}
+
+	self->mode = mode;
+	return 1;
+}
+
+int vkk_renderer_beginSecondary(vkk_renderer_t* self)
+{
+	assert(self);
+	assert(self->type == VKK_RENDERER_TYPE_SECONDARY);
+
+	vkk_engine_t* engine = self->engine;
+
+	vkk_engine_rendererLock(engine);
+	if(engine->shutdown)
+	{
+		LOGE("invalid");
+		vkk_engine_rendererUnlock(engine);
+		return 0;
+	}
+	vkk_engine_rendererUnlock(engine);
+
+	return vkk_secondaryRenderer_begin(self);
 }
 
 void vkk_renderer_end(vkk_renderer_t* self)
 {
 	assert(self);
 
-	vkk_engine_t* engine = self->engine;
-
-	if(self == engine->renderer)
+	if(self->type == VKK_RENDERER_TYPE_DEFAULT)
 	{
 		vkk_defaultRenderer_end(self);
 	}
-	else
+	else if(self->type == VKK_RENDERER_TYPE_OFFSCREEN)
 	{
 		vkk_offscreenRenderer_end(self);
 	}
+	else
+	{
+		vkk_secondaryRenderer_end(self);
+	}
+
+	self->mode = VKK_RENDERER_MODE_PRIMARY;
 }
 
 void vkk_renderer_surfaceSize(vkk_renderer_t* self,
@@ -271,15 +441,17 @@ void vkk_renderer_surfaceSize(vkk_renderer_t* self,
 {
 	assert(self);
 
-	vkk_engine_t* engine = self->engine;
-
-	if(self == engine->renderer)
+	if(self->type == VKK_RENDERER_TYPE_DEFAULT)
 	{
 		vkk_defaultRenderer_surfaceSize(self, _width, _height);
 	}
-	else
+	else if(self->type == VKK_RENDERER_TYPE_OFFSCREEN)
 	{
 		vkk_offscreenRenderer_surfaceSize(self, _width, _height);
+	}
+	else
+	{
+		vkk_secondaryRenderer_surfaceSize(self, _width, _height);
 	}
 }
 
@@ -292,6 +464,7 @@ void vkk_renderer_updateBuffer(vkk_renderer_t* self,
 	assert(buffer);
 	assert(size > 0);
 	assert(buf);
+	assert(self->mode == VKK_RENDERER_MODE_PRIMARY);
 
 	vkk_engine_t* engine = self->engine;
 
@@ -302,21 +475,27 @@ void vkk_renderer_updateBuffer(vkk_renderer_t* self,
 		return;
 	}
 
+	// 1) update may NOT be STATIC
+	// 2) update may NOT be DEFAULT if the primary renderer
+	//    is not the default renderer
+	// 3) update may NOT be OFFSCREEN if the primary renderer
+	//    is not the offscreen renderer
+	vkk_renderer_t* primary = vkk_renderer_getPrimary(self);
 	if(buffer->update == VKK_UPDATE_MODE_STATIC)
 	{
 		LOGW("invalid static update mode");
 		return;
 	}
 	else if((buffer->update == VKK_UPDATE_MODE_DEFAULT) &&
-	        (self != engine->renderer))
+	        (primary->type != VKK_RENDERER_TYPE_DEFAULT))
 	{
-		LOGW("invalid offscreen renderer");
+		LOGW("invalid type=%i", primary->type);
 		return;
 	}
 	else if((buffer->update == VKK_UPDATE_MODE_OFFSCREEN) &&
-	        (self == engine->renderer))
+	        (primary->type != VKK_RENDERER_TYPE_OFFSCREEN))
 	{
-		LOGW("invalid default renderer");
+		LOGW("invalid type=%i", primary->type);
 		return;
 	}
 
@@ -332,13 +511,9 @@ void vkk_renderer_updateBuffer(vkk_renderer_t* self,
 			buffer->vbib_index = (buffer->vbib_index + 1)%count;
 			idx = buffer->vbib_index;
 		}
-		else if(self == engine->renderer)
-		{
-			idx = vkk_defaultRenderer_swapchainFrame(self);
-		}
 		else
 		{
-			idx = vkk_offscreenRenderer_swapchainFrame(self);
+			idx = vkk_renderer_swapchainFrame(self);
 		}
 	}
 
@@ -355,22 +530,15 @@ vkk_renderer_updateUniformSetRefs(vkk_renderer_t* self,
 	assert(self);
 	assert(us);
 	assert(ua_array);
+	assert(self->mode == VKK_RENDERER_MODE_PRIMARY);
 
-	vkk_engine_t*            engine = self->engine;
-	vkk_uniformSetFactory_t* usf    = us->usf;
+	vkk_uniformSetFactory_t* usf = us->usf;
 
 	vkk_fillUniformAttachmentArray(us->ua_array, ua_count,
 	                               ua_array, usf);
 
 	uint32_t swapchain_frame;
-	if(self == engine->renderer)
-	{
-		swapchain_frame = vkk_defaultRenderer_swapchainFrame(self);
-	}
-	else
-	{
-		swapchain_frame = vkk_offscreenRenderer_swapchainFrame(self);
-	}
+	swapchain_frame = vkk_renderer_swapchainFrame(self);
 
 	// attach buffers and images
 	uint32_t i;
@@ -399,28 +567,16 @@ void vkk_renderer_bindGraphicsPipeline(vkk_renderer_t* self,
                                        vkk_graphicsPipeline_t* gp)
 {
 	assert(self);
+	assert(self->mode == VKK_RENDERER_MODE_PRIMARY);
 
-	vkk_engine_t* engine = self->engine;
-
-	VkCommandBuffer cb;
-	if(self == engine->renderer)
-	{
-		cb = vkk_defaultRenderer_commandBuffer(self);
-	}
-	else
-	{
-		cb = vkk_offscreenRenderer_commandBuffer(self);
-	}
+	VkCommandBuffer cb = vkk_renderer_commandBuffer(self);
 
 	vkCmdBindPipeline(cb,
 	                  VK_PIPELINE_BIND_POINT_GRAPHICS,
 	                  gp->pipeline);
 
 	// update timestamp
-	if(self == engine->renderer)
-	{
-		gp->ts = vkk_defaultRenderer_tsCurrent(self);
-	}
+	gp->ts = vkk_renderer_tsCurrent(self);
 }
 
 void vkk_renderer_bindUniformSets(vkk_renderer_t* self,
@@ -431,14 +587,9 @@ void vkk_renderer_bindUniformSets(vkk_renderer_t* self,
 	assert(self);
 	assert(pl);
 	assert(us_array);
+	assert(self->mode == VKK_RENDERER_MODE_PRIMARY);
 
-	vkk_engine_t* engine = self->engine;
-
-	double ts = 0.0;
-	if(self == engine->renderer)
-	{
-		ts = vkk_defaultRenderer_tsCurrent(self);
-	}
+	double ts = vkk_renderer_tsCurrent(self);
 
 	if(us_count > VKK_ENGINE_MAX_USF_COUNT)
 	{
@@ -451,14 +602,7 @@ void vkk_renderer_bindUniformSets(vkk_renderer_t* self,
 	uint32_t        idx;
 	VkDescriptorSet ds[VKK_ENGINE_MAX_USF_COUNT];
 	uint32_t        swapchain_frame;
-	if(self == engine->renderer)
-	{
-		swapchain_frame = vkk_defaultRenderer_swapchainFrame(self);
-	}
-	else
-	{
-		swapchain_frame = vkk_offscreenRenderer_swapchainFrame(self);
-	}
+	swapchain_frame = vkk_renderer_swapchainFrame(self);
 
 	for(i = 0; i < us_count; ++i)
 	{
@@ -467,7 +611,7 @@ void vkk_renderer_bindUniformSets(vkk_renderer_t* self,
 		ds[i] = us_array[i]->ds_array[idx];
 
 		// update timestamps
-		if(self == engine->renderer)
+		if(self->type == VKK_RENDERER_TYPE_DEFAULT)
 		{
 			int j;
 			for(j = 0; j < us_array[i]->ua_count; ++j)
@@ -492,16 +636,7 @@ void vkk_renderer_bindUniformSets(vkk_renderer_t* self,
 
 	uint32_t first = us_array[0]->set;
 
-	VkCommandBuffer cb;
-	if(self == engine->renderer)
-	{
-		cb = vkk_defaultRenderer_commandBuffer(self);
-	}
-	else
-	{
-		cb = vkk_offscreenRenderer_commandBuffer(self);
-	}
-
+	VkCommandBuffer cb = vkk_renderer_commandBuffer(self);
 	vkCmdBindDescriptorSets(cb,
 	                        VK_PIPELINE_BIND_POINT_GRAPHICS,
 	                        pl->pl, first, us_count, ds,
@@ -511,8 +646,7 @@ void vkk_renderer_bindUniformSets(vkk_renderer_t* self,
 void vkk_renderer_clearDepth(vkk_renderer_t* self)
 {
 	assert(self);
-
-	vkk_engine_t* engine = self->engine;
+	assert(self->mode == VKK_RENDERER_MODE_PRIMARY);
 
 	uint32_t width;
 	uint32_t height;
@@ -551,16 +685,7 @@ void vkk_renderer_clearDepth(vkk_renderer_t* self)
 		}
 	};
 
-	VkCommandBuffer cb;
-	if(self == engine->renderer)
-	{
-		cb = vkk_defaultRenderer_commandBuffer(self);
-	}
-	else
-	{
-		cb = vkk_offscreenRenderer_commandBuffer(self);
-	}
-
+	VkCommandBuffer cb = vkk_renderer_commandBuffer(self);
 	vkCmdClearAttachments(cb, 1, &ca, 1, &rect);
 }
 
@@ -569,8 +694,7 @@ void vkk_renderer_viewport(vkk_renderer_t* self,
                            float width, float height)
 {
 	assert(self);
-
-	vkk_engine_t* engine = self->engine;
+	assert(self->mode == VKK_RENDERER_MODE_PRIMARY);
 
 	VkViewport viewport =
 	{
@@ -582,16 +706,7 @@ void vkk_renderer_viewport(vkk_renderer_t* self,
 		.maxDepth = 1.0f
 	};
 
-	VkCommandBuffer cb;
-	if(self == engine->renderer)
-	{
-		cb = vkk_defaultRenderer_commandBuffer(self);
-	}
-	else
-	{
-		cb = vkk_offscreenRenderer_commandBuffer(self);
-	}
-
+	VkCommandBuffer cb = vkk_renderer_commandBuffer(self);
 	vkCmdSetViewport(cb, 0, 1, &viewport);
 }
 
@@ -600,8 +715,7 @@ void vkk_renderer_scissor(vkk_renderer_t* self,
                           uint32_t width, uint32_t height)
 {
 	assert(self);
-
-	vkk_engine_t* engine = self->engine;
+	assert(self->mode == VKK_RENDERER_MODE_PRIMARY);
 
 	VkRect2D scissor =
 	{
@@ -617,16 +731,7 @@ void vkk_renderer_scissor(vkk_renderer_t* self,
 		}
 	};
 
-	VkCommandBuffer cb;
-	if(self == engine->renderer)
-	{
-		cb = vkk_defaultRenderer_commandBuffer(self);
-	}
-	else
-	{
-		cb = vkk_offscreenRenderer_commandBuffer(self);
-	}
-
+	VkCommandBuffer cb = vkk_renderer_commandBuffer(self);
 	vkCmdSetScissor(cb, 0, 1, &scissor);
 }
 
@@ -638,8 +743,7 @@ void vkk_renderer_draw(vkk_renderer_t* self,
 {
 	assert(self);
 	assert(vertex_buffer_count <= 16);
-
-	vkk_engine_t* engine = self->engine;
+	assert(self->mode == VKK_RENDERER_MODE_PRIMARY);
 
 	VkDeviceSize vb_offsets[16] =
 	{
@@ -659,24 +763,15 @@ void vkk_renderer_draw(vkk_renderer_t* self,
 		vb_buffers[i] = vertex_buffers[i]->buffer[idx];
 	}
 
-	VkCommandBuffer cb;
-	if(self == engine->renderer)
-	{
-		cb = vkk_defaultRenderer_commandBuffer(self);
-	}
-	else
-	{
-		cb = vkk_offscreenRenderer_commandBuffer(self);
-	}
-
+	VkCommandBuffer cb = vkk_renderer_commandBuffer(self);
 	vkCmdBindVertexBuffers(cb, 0, vertex_buffer_count,
 	                       vb_buffers, vb_offsets);
 	vkCmdDraw(cb, vertex_count, 1, 0, 0);
 
 	// update timestamps
-	if(self == engine->renderer)
+	double ts = vkk_renderer_tsCurrent(self);
+	if(ts != 0.0)
 	{
-		double ts = vkk_defaultRenderer_tsCurrent(self);
 		for(i = 0; i < vertex_buffer_count; ++i)
 		{
 			vertex_buffers[i]->ts = ts;
@@ -693,8 +788,7 @@ void vkk_renderer_drawIndexed(vkk_renderer_t* self,
 {
 	assert(self);
 	assert(vertex_buffer_count <= 16);
-
-	vkk_engine_t* engine = self->engine;
+	assert(self->mode == VKK_RENDERER_MODE_PRIMARY);
 
 	VkDeviceSize vb_offsets[16] =
 	{
@@ -714,16 +808,6 @@ void vkk_renderer_drawIndexed(vkk_renderer_t* self,
 		vb_buffers[i] = vertex_buffers[i]->buffer[idx];
 	}
 
-	VkCommandBuffer cb;
-	if(self == engine->renderer)
-	{
-		cb = vkk_defaultRenderer_commandBuffer(self);
-	}
-	else
-	{
-		cb = vkk_offscreenRenderer_commandBuffer(self);
-	}
-
 	VkIndexType it_map[VKK_INDEX_TYPE_COUNT] =
 	{
 		VK_INDEX_TYPE_UINT16,
@@ -733,6 +817,7 @@ void vkk_renderer_drawIndexed(vkk_renderer_t* self,
 	idx = index_buffer->vbib_index;
 	VkBuffer ib_buffer = index_buffer->buffer[idx];
 
+	VkCommandBuffer cb = vkk_renderer_commandBuffer(self);
 	vkCmdBindIndexBuffer(cb, ib_buffer, 0,
 	                     it_map[index_type]);
 	vkCmdBindVertexBuffers(cb, 0, vertex_buffer_count,
@@ -740,9 +825,9 @@ void vkk_renderer_drawIndexed(vkk_renderer_t* self,
 	vkCmdDrawIndexed(cb, index_count, 1, 0, 0, 0);
 
 	// update timestamps
-	if(self == engine->renderer)
+	double ts = vkk_renderer_tsCurrent(self);
+	if(ts != 0.0)
 	{
-		double ts = vkk_defaultRenderer_tsCurrent(self);
 		for(i = 0; i < vertex_buffer_count; ++i)
 		{
 			vertex_buffers[i]->ts = ts;
@@ -751,59 +836,23 @@ void vkk_renderer_drawIndexed(vkk_renderer_t* self,
 	}
 }
 
-void vkk_renderer_init(vkk_renderer_t* self,
-                       vkk_engine_t* engine)
+void vkk_renderer_drawSecondary(vkk_renderer_t* self,
+                                uint32_t secondary_count,
+                                vkk_renderer_t** secondary_array)
 {
 	assert(self);
-	assert(engine);
+	assert(secondary_array);
+	assert(self->mode == VKK_RENDERER_MODE_SECONDARY);
 
-	self->engine = engine;
-}
+	VkCommandBuffer cb_array[secondary_count];
 
-VkRenderPass vkk_renderer_renderPass(vkk_renderer_t* self)
-{
-	assert(self);
-
-	vkk_engine_t* engine = self->engine;
-
-	if(self == engine->renderer)
+	uint32_t i;
+	for(i = 0; i < secondary_count; ++i)
 	{
-		return vkk_defaultRenderer_renderPass(self);
+		vkk_renderer_t* sec = secondary_array[i];
+		cb_array[i] = vkk_renderer_commandBuffer(sec);
 	}
-	else
-	{
-		return vkk_offscreenRenderer_renderPass(self);
-	}
-}
 
-VkCommandBuffer vkk_renderer_commandBuffer(vkk_renderer_t* self)
-{
-	assert(self);
-
-	vkk_engine_t* engine = self->engine;
-
-	if(self == engine->renderer)
-	{
-		return vkk_defaultRenderer_commandBuffer(self);
-	}
-	else
-	{
-		return vkk_offscreenRenderer_commandBuffer(self);
-	}
-}
-
-uint32_t vkk_renderer_swapchainFrame(vkk_renderer_t* self)
-{
-	assert(self);
-
-	vkk_engine_t* engine = self->engine;
-
-	if(self == engine->renderer)
-	{
-		return vkk_defaultRenderer_swapchainFrame(self);
-	}
-	else
-	{
-		return vkk_offscreenRenderer_swapchainFrame(self);
-	}
+	VkCommandBuffer cb = vkk_renderer_commandBuffer(self);
+	vkCmdExecuteCommands(cb, secondary_count, cb_array);
 }

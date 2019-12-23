@@ -40,6 +40,7 @@
 #include "vkk_offscreenRenderer.h"
 #include "vkk_pipelineLayout.h"
 #include "vkk_sampler.h"
+#include "vkk_secondaryRenderer.h"
 #include "vkk_uniformSet.h"
 #include "vkk_uniformSetFactory.h"
 #include "vkk_util.h"
@@ -779,13 +780,33 @@ vkk_object_delete(vkk_object_t** _self)
 }
 
 static void
-vkk_engine_destructRenderer(vkk_engine_t* self,
+vkk_engine_destructRenderer(vkk_engine_t* self, int wait,
                             vkk_renderer_t** _renderer)
 {
 	assert(self);
 	assert(_renderer);
 
-	vkk_offscreenRenderer_delete(_renderer);
+	vkk_renderer_t* renderer = *_renderer;
+	if(renderer)
+	{
+		// default renderer deleted in vkk_engine_delete
+		if(renderer->type == VKK_RENDERER_TYPE_OFFSCREEN)
+		{
+			vkk_offscreenRenderer_delete(_renderer);
+		}
+		else if(renderer->type == VKK_RENDERER_TYPE_SECONDARY)
+		{
+			if(wait)
+			{
+				vkk_secondaryRenderer_t* sec;
+				sec = (vkk_secondaryRenderer_t*) renderer;
+
+				vkk_engine_rendererWaitForTimestamp(self, sec->ts);
+			}
+
+			vkk_secondaryRenderer_delete(_renderer);
+		}
+	}
 }
 
 static void
@@ -991,7 +1012,7 @@ vkk_engine_runDestructFn(int tid, void* owner, void* task)
 
 	if(object->type == VKK_OBJECT_TYPE_RENDERER)
 	{
-		vkk_engine_destructRenderer(engine,
+		vkk_engine_destructRenderer(engine, 1,
 		                            &object->renderer);
 	}
 	else if(object->type == VKK_OBJECT_TYPE_BUFFER)
@@ -1075,7 +1096,7 @@ vkk_engine_t* vkk_engine_new(void* app,
 		}
 	#endif
 
-	self->version = VK_MAKE_VERSION(1,1,1);
+	self->version = VK_MAKE_VERSION(1,1,2);
 
 	snprintf(self->resource, 256, "%s", resource);
 	snprintf(self->cache, 256, "%s", cache);
@@ -1459,7 +1480,8 @@ vkk_engine_uploadImage(vkk_engine_t* self,
 
 	// allocate a transfer command buffer
 	vkk_commandBuffer_t* cmd_buffer;
-	cmd_buffer = vkk_commandBuffer_new(self, 1);
+	cmd_buffer = vkk_commandBuffer_new(self, 1,
+	                                   VKK_RENDERER_TYPE_DEFAULT);
 	if(cmd_buffer == NULL)
 	{
 		goto fail_cmd_buffer;
@@ -2084,7 +2106,8 @@ vkk_engine_deleteObject(vkk_engine_t* self, int type,
 	{
 		if(type == VKK_OBJECT_TYPE_RENDERER)
 		{
-			vkk_engine_destructRenderer(self,
+			vkk_engine_queueWaitIdle(self);
+			vkk_engine_destructRenderer(self, 0,
 			                            (vkk_renderer_t**) &obj);
 		}
 		else if(type == VKK_OBJECT_TYPE_BUFFER)

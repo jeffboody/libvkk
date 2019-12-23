@@ -86,12 +86,14 @@ double          vkk_defaultRenderer_tsExpiredLocked(vkk_renderer_t* base);
  */
 
 int             vkk_defaultRenderer_begin(vkk_renderer_t* base,
+                                          int mode,
                                           float* clear_color);
 void            vkk_defaultRenderer_end(vkk_renderer_t* base);
 void            vkk_defaultRenderer_surfaceSize(vkk_renderer_t* base,
                                                 uint32_t* _width,
                                                 uint32_t* _height);
 VkRenderPass    vkk_defaultRenderer_renderPass(vkk_renderer_t* base);
+VkFramebuffer   vkk_defaultRenderer_framebuffer(vkk_renderer_t* base);
 VkCommandBuffer vkk_defaultRenderer_commandBuffer(vkk_renderer_t* base);
 uint32_t        vkk_defaultRenderer_swapchainFrame(vkk_renderer_t* base);
 

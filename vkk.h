@@ -98,6 +98,9 @@ uint32_t VKK_MAKE_VERSION(uint32_t major, uint32_t minor,
 #define VKK_VERTEX_FORMAT_USHORT  4
 #define VKK_VERTEX_FORMAT_COUNT   5
 
+#define VKK_RENDERER_MODE_PRIMARY   1
+#define VKK_RENDERER_MODE_SECONDARY 2
+
 /*
  * opaque objects
  */
@@ -302,74 +305,100 @@ vkk_graphicsPipeline_t* vkk_graphicsPipeline_new(vkk_engine_t* engine,
 void                    vkk_graphicsPipeline_delete(vkk_graphicsPipeline_t** _self);
 
 /*
- * offscreen renderer API
- */
-
-vkk_renderer_t* vkk_renderer_new(vkk_engine_t* engine,
-                                 uint32_t width,
-                                 uint32_t height,
-                                 int format);
-void            vkk_renderer_delete(vkk_renderer_t** _self);
-
-/*
  * rendering API
  *
- * 1) call vkk_renderer commands between
- *    begin/end on a single thread
- * 2) if begin succeeds then you must also call end
- * 3) the default renderer completes asynchronously
- *    (e.g. end is non-blocking) and should be called from
- *    the main thread
- * 4) the offscreen renderer completes synchronously
- *    (e.g. end is blocking) and should be called from a
- *    worker thread
- * 5) the depth buffer, viewport and scissor are initialized
- *    automatically by begin
+ *  1) three renderer types exist
+ *     a) the default renderer is created automatically
+ *        by the engine which can be used to render to the
+ *        display
+ *     b) an offscreen renderer may be created which can
+ *        render to texture
+ *     c) secondary renderer(s) may be created to build
+ *        command buffer(s) in parallel which may then
+ *        be submitted to the primary renderer with
+ *        drawSecondary
+ *  2) when the renderer mode is set to PRIMARY then the
+ *     drawSecondary() function is not allowed
+ *  3) when the renderer mode is set to SECONDARY then the
+ *     only vkk_renderer_* functions allowed between
+ *     begin()/end() are surfaceSize() and drawSecondary()
+ *  4) a secondary renderer may only submit its command
+ *     buffer(s) once to the primary renderer before it must
+ *     recreate them for the next frame
+ *  5) the beginSecondary() function should only be called if
+ *     the corresponding primary renderer begin() function
+ *     was successful
+ *  6) call vkk_renderer_* functions between begin()/end()
+ *     on a single thread
+ *  7) if begin() succeeds then you must also call end()
+ *  8) the default renderer completes asynchronously
+ *     (e.g. end() is non-blocking) and should be called
+ *     from the main thread
+ *  9) the offscreen renderer completes synchronously
+ *     (e.g. end() is blocking) and should be called from a
+ *     worker thread
+ * 10) the secondary renderer completes asynchronously
+ *     (e.g. end() is non-blocking) and may be called from
+ *     either the worker thread or the main thread
+ * 11) the depth buffer, viewport and scissor are initialized
+ *     automatically by begin()
  */
 
-int  vkk_renderer_beginDefault(vkk_renderer_t* self,
-                               float* clear_color);
-int  vkk_renderer_beginOffscreen(vkk_renderer_t* self,
-                                 vkk_image_t* image,
-                                 float* clear_color);
-void vkk_renderer_end(vkk_renderer_t* self);
-void vkk_renderer_surfaceSize(vkk_renderer_t* self,
-                              uint32_t* _width,
-                              uint32_t* _height);
-void vkk_renderer_updateBuffer(vkk_renderer_t* self,
-                               vkk_buffer_t* buffer,
-                               size_t size,
-                               const void* buf);
-void vkk_renderer_updateUniformSetRefs(vkk_renderer_t* self,
-                                       vkk_uniformSet_t* us,
-                                       uint32_t ua_count,
-                                       vkk_uniformAttachment_t* ua_array);
-void vkk_renderer_bindGraphicsPipeline(vkk_renderer_t* self,
-                                       vkk_graphicsPipeline_t* gp);
-void vkk_renderer_bindUniformSets(vkk_renderer_t* self,
-                                  vkk_pipelineLayout_t* pl,
-                                  uint32_t us_count,
-                                  vkk_uniformSet_t** us_array);
-void vkk_renderer_clearDepth(vkk_renderer_t* self);
-void vkk_renderer_viewport(vkk_renderer_t* self,
-                           float x,
-                           float y,
-                           float width,
-                           float height);
-void vkk_renderer_scissor(vkk_renderer_t* self,
-                          uint32_t x,
-                          uint32_t y,
-                          uint32_t width,
-                          uint32_t height);
-void vkk_renderer_draw(vkk_renderer_t* self,
-                       uint32_t vertex_count,
-                       uint32_t vertex_buffer_count,
-                       vkk_buffer_t** vertex_buffers);
-void vkk_renderer_drawIndexed(vkk_renderer_t* self,
-                              uint32_t index_count,
-                              uint32_t vertex_buffer_count,
-                              int index_type,
-                              vkk_buffer_t* index_buffer,
-                              vkk_buffer_t** vertex_buffers);
+vkk_renderer_t* vkk_renderer_newOffscreen(vkk_engine_t* engine,
+                                          uint32_t width,
+                                          uint32_t height,
+                                          int format);
+vkk_renderer_t* vkk_renderer_newSecondary(vkk_renderer_t* primary);
+void            vkk_renderer_delete(vkk_renderer_t** _self);
+int             vkk_renderer_beginDefault(vkk_renderer_t* self,
+                                          int mode,
+                                          float* clear_color);
+int             vkk_renderer_beginOffscreen(vkk_renderer_t* self,
+                                            int mode,
+                                            vkk_image_t* image,
+                                            float* clear_color);
+int             vkk_renderer_beginSecondary(vkk_renderer_t* self);
+void            vkk_renderer_end(vkk_renderer_t* self);
+void            vkk_renderer_surfaceSize(vkk_renderer_t* self,
+                                         uint32_t* _width,
+                                         uint32_t* _height);
+void            vkk_renderer_updateBuffer(vkk_renderer_t* self,
+                                          vkk_buffer_t* buffer,
+                                          size_t size,
+                                          const void* buf);
+void            vkk_renderer_updateUniformSetRefs(vkk_renderer_t* self,
+                                                  vkk_uniformSet_t* us,
+                                                  uint32_t ua_count,
+                                                  vkk_uniformAttachment_t* ua_array);
+void            vkk_renderer_bindGraphicsPipeline(vkk_renderer_t* self,
+                                                  vkk_graphicsPipeline_t* gp);
+void            vkk_renderer_bindUniformSets(vkk_renderer_t* self,
+                                             vkk_pipelineLayout_t* pl,
+                                             uint32_t us_count,
+                                             vkk_uniformSet_t** us_array);
+void            vkk_renderer_clearDepth(vkk_renderer_t* self);
+void            vkk_renderer_viewport(vkk_renderer_t* self,
+                                      float x,
+                                      float y,
+                                      float width,
+                                      float height);
+void            vkk_renderer_scissor(vkk_renderer_t* self,
+                                     uint32_t x,
+                                     uint32_t y,
+                                     uint32_t width,
+                                     uint32_t height);
+void            vkk_renderer_draw(vkk_renderer_t* self,
+                                  uint32_t vertex_count,
+                                  uint32_t vertex_buffer_count,
+                                  vkk_buffer_t** vertex_buffers);
+void            vkk_renderer_drawIndexed(vkk_renderer_t* self,
+                                         uint32_t index_count,
+                                         uint32_t vertex_buffer_count,
+                                         int index_type,
+                                         vkk_buffer_t* index_buffer,
+                                         vkk_buffer_t** vertex_buffers);
+void            vkk_renderer_drawSecondary(vkk_renderer_t* self,
+                                           uint32_t secondary_count,
+                                           vkk_renderer_t** secondary_array);
 
 #endif

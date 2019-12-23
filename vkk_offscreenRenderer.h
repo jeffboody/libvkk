@@ -57,12 +57,22 @@ typedef struct
 	vkk_commandBuffer_t* cmd_buffer;
 } vkk_offscreenRenderer_t;
 
+/*
+ * offscreen renderer API
+ */
+
 vkk_renderer_t* vkk_offscreenRenderer_new(vkk_engine_t* engine,
                                           uint32_t width,
                                           uint32_t height,
                                           int format);
 void            vkk_offscreenRenderer_delete(vkk_renderer_t** _base);
+
+/*
+ * renderer callback API
+ */
+
 int             vkk_offscreenRenderer_begin(vkk_renderer_t* base,
+                                            int mode,
                                             vkk_image_t* image,
                                             float* clear_color);
 void            vkk_offscreenRenderer_end(vkk_renderer_t* base);
@@ -70,6 +80,7 @@ void            vkk_offscreenRenderer_surfaceSize(vkk_renderer_t* base,
                                                   uint32_t* _width,
                                                   uint32_t* _height);
 VkRenderPass    vkk_offscreenRenderer_renderPass(vkk_renderer_t* base);
+VkFramebuffer   vkk_offscreenRenderer_framebuffer(vkk_renderer_t* base);
 VkCommandBuffer vkk_offscreenRenderer_commandBuffer(vkk_renderer_t* base);
 uint32_t        vkk_offscreenRenderer_swapchainFrame(vkk_renderer_t* base);
 
