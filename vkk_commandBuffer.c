@@ -86,15 +86,12 @@ vkk_commandBuffer_new(vkk_engine_t* engine,
 		.commandBufferCount = cb_count
 	};
 
-	vkk_engine_cmdLock(engine);
 	if(vkAllocateCommandBuffers(engine->device, &cba_info,
 	                            self->cb_array) != VK_SUCCESS)
 	{
 		LOGE("vkAllocateCommandBuffers failed");
-		vkk_engine_cmdUnlock(engine);
 		goto fail_allocate;
 	}
-	vkk_engine_cmdUnlock(engine);
 
 	// success
 	return self;
@@ -119,12 +116,10 @@ void vkk_commandBuffer_delete(vkk_commandBuffer_t** _self)
 	{
 		vkk_engine_t* engine = self->engine;
 
-		vkk_engine_cmdLock(engine);
 		vkFreeCommandBuffers(engine->device,
 		                     self->command_pool,
 		                     self->cb_count,
 		                     self->cb_array);
-		vkk_engine_cmdUnlock(engine);
 		vkDestroyCommandPool(engine->device,
 		                     self->command_pool, NULL);
 		FREE(self->cb_array);

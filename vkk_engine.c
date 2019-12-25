@@ -1489,11 +1489,9 @@ vkk_engine_uploadImage(vkk_engine_t* self,
 		.pInheritanceInfo = &cbi_info
 	};
 
-	vkk_engine_cmdLock(self);
 	if(vkBeginCommandBuffer(cb, &cb_info) != VK_SUCCESS)
 	{
 		LOGE("vkBeginCommandBuffer failed");
-		vkk_engine_cmdUnlock(self);
 		goto fail_begin_cb;
 	}
 
@@ -1548,7 +1546,6 @@ vkk_engine_uploadImage(vkk_engine_t* self,
 
 	// end the transfer commands
 	vkEndCommandBuffer(cb);
-	vkk_engine_cmdUnlock(self);
 
 	// submit the commands
 	if(vkk_engine_queueSubmit(self, &cb,
@@ -1953,22 +1950,6 @@ vkk_engine_getShaderModule(vkk_engine_t* self,
 	fail_create:
 		FREE(code);
 	return VK_NULL_HANDLE;
-}
-
-void vkk_engine_cmdLock(vkk_engine_t* self)
-{
-	assert(self);
-
-	pthread_mutex_lock(&self->cmd_mutex);
-	TRACE_BEGIN();
-}
-
-void vkk_engine_cmdUnlock(vkk_engine_t* self)
-{
-	assert(self);
-
-	TRACE_END();
-	pthread_mutex_unlock(&self->cmd_mutex);
 }
 
 void vkk_engine_usfLock(vkk_engine_t* self)
