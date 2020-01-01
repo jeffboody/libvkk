@@ -248,29 +248,33 @@ vkk_memoryManager_allocBuffer(vkk_memoryManager_t* self,
 	const int KB    = 1024;
 	const int MB    = 1024*KB;
 	uint32_t  count = 1;
-	if(stride >= 4*MB)
+	if(stride >= 16*MB)
 	{
 		count = 1;
 	}
-	else if(stride >= MB)
+	else if(stride >= 4*MB)
 	{
-		count = 16;
+		count = 4;
 	}
-	else if(stride >= 256*KB)
+	else if(stride >= MB)
 	{
 		count = 64;
 	}
-	else if(stride >= 64*KB)
+	else if(stride >= 256*KB)
 	{
 		count = 256;
 	}
-	else if(stride >= 16*KB)
+	else if(stride >= 64*KB)
 	{
 		count = 1024;
 	}
-	else
+	else if(stride >= 16*KB)
 	{
 		count = 4096;
+	}
+	else
+	{
+		count = 16384;
 	}
 
 	// find an existing pool
