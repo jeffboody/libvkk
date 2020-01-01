@@ -35,6 +35,7 @@
 #include "vkk_defaultRenderer.h"
 #include "vkk_engine.h"
 #include "vkk_graphicsPipeline.h"
+#include "vkk_imageUploader.h"
 #include "vkk_image.h"
 #include "vkk_memoryManager.h"
 #include "vkk_offscreenRenderer.h"
@@ -1158,6 +1159,12 @@ vkk_engine_t* vkk_engine_new(void* app,
 		goto fail_mm;
 	}
 
+	self->img_uploader = vkk_imageUploader_new(self);
+	if(self->img_uploader == NULL)
+	{
+		goto fail_img_uploader;
+	}
+
 	if(vkk_engine_newPipelineCache(self) == 0)
 	{
 		goto fail_pipeline_cache;
@@ -1196,6 +1203,8 @@ vkk_engine_t* vkk_engine_new(void* app,
 		vkDestroyPipelineCache(self->device,
 		                       self->pipeline_cache, NULL);
 	fail_pipeline_cache:
+		vkk_imageUploader_delete(&self->img_uploader);
+	fail_img_uploader:
 		vkk_memoryManager_delete(&self->mm);
 	fail_mm:
 		vkDestroyDevice(self->device, NULL);
@@ -1254,6 +1263,7 @@ void vkk_engine_delete(vkk_engine_t** _self)
 		vkk_engine_exportPipelineCache(self);
 		vkDestroyPipelineCache(self->device,
 		                       self->pipeline_cache, NULL);
+		vkk_imageUploader_delete(&self->img_uploader);
 		vkk_memoryManager_delete(&self->mm);
 		vkDestroyDevice(self->device, NULL);
 		vkDestroySurfaceKHR(self->instance,
@@ -1282,6 +1292,7 @@ void vkk_engine_shutdown(vkk_engine_t* self)
 		self->shutdown = 1;
 		vkk_engine_rendererSignal(self);
 		vkk_memoryManager_shutdown(self->mm);
+		vkk_imageUploader_shutdown(self->img_uploader);
 	}
 	vkk_engine_rendererUnlock(self);
 }
@@ -1431,180 +1442,8 @@ vkk_engine_uploadImage(vkk_engine_t* self,
 	assert(image);
 	assert(pixels);
 
-	VkFenceCreateInfo f_info =
-	{
-		.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO,
-		.pNext = NULL,
-		.flags = 0
-	};
-
-	VkFence fence;
-	if(vkCreateFence(self->device, &f_info, NULL,
-	                 &fence) != VK_SUCCESS)
-	{
-		LOGE("vkCreateFence failed");
-		return 0;
-	}
-
-	// create a transfer buffer
-	uint32_t width;
-	uint32_t height;
-	size_t size = vkk_image_size(image, &width, &height);
-	VkBufferCreateInfo b_info =
-	{
-		.sType                 = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,
-		.pNext                 = NULL,
-		.flags                 = 0,
-		.size                  = size,
-		.usage                 = VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
-		.sharingMode           = VK_SHARING_MODE_EXCLUSIVE,
-		.queueFamilyIndexCount = 1,
-		.pQueueFamilyIndices   = &self->queue_family_index
-	};
-
-	VkBuffer buffer;
-	if(vkCreateBuffer(self->device, &b_info, NULL,
-	                  &buffer) != VK_SUCCESS)
-	{
-		LOGE("vkCreateBuffer failed");
-		goto fail_buffer;
-	}
-
-	vkk_memory_t* memory;
-	memory = vkk_memoryManager_allocBuffer(self->mm, buffer,
-	                                       size, pixels);
-	if(memory == NULL)
-	{
-		goto fail_alloc;
-	}
-
-	// allocate a transfer command buffer
-	vkk_commandBuffer_t* cmd_buffer;
-	cmd_buffer = vkk_commandBuffer_new(self, 1,
-	                                   VKK_RENDERER_TYPE_DEFAULT);
-	if(cmd_buffer == NULL)
-	{
-		goto fail_cmd_buffer;
-	}
-
-	VkCommandBuffer cb;
-	cb = vkk_commandBuffer_get(cmd_buffer, 0);
-
-	// begin the transfer commands
-	VkCommandBufferInheritanceInfo cbi_info =
-	{
-		.sType                = VK_STRUCTURE_TYPE_COMMAND_BUFFER_INHERITANCE_INFO,
-		.pNext                = NULL,
-		.renderPass           = VK_NULL_HANDLE,
-		.subpass              = 0,
-		.framebuffer          = VK_NULL_HANDLE,
-		.occlusionQueryEnable = VK_FALSE,
-		.queryFlags           = 0,
-		.pipelineStatistics   = 0
-	};
-
-	VkCommandBufferBeginInfo cb_info =
-	{
-		.sType            = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,
-		.pNext            = NULL,
-		.flags            = 0,
-		.pInheritanceInfo = &cbi_info
-	};
-
-	if(vkBeginCommandBuffer(cb, &cb_info) != VK_SUCCESS)
-	{
-		LOGE("vkBeginCommandBuffer failed");
-		goto fail_begin_cb;
-	}
-
-	// transition the image to copy the transfer buffer to
-	// the image and generate mip levels if needed
-	vkk_util_imageMemoryBarrier(image, cb,
-	                            VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
-	                            0, image->mip_levels);
-
-	// copy the transfer buffer to the image
-	VkBufferImageCopy bic =
-	{
-		.bufferOffset      = 0,
-		.bufferRowLength   = 0,
-		.bufferImageHeight = 0,
-		.imageSubresource  =
-		{
-			.aspectMask     = VK_IMAGE_ASPECT_COLOR_BIT,
-			.mipLevel       = 0,
-			.baseArrayLayer = 0,
-			.layerCount     = 1
-		},
-		.imageOffset =
-		{
-			.x = 0,
-			.y = 0,
-			.z = 0,
-		},
-		.imageExtent =
-		{
-			.width  = image->width,
-			.height = image->height,
-			.depth  = 1
-		}
-	};
-
-	vkCmdCopyBufferToImage(cb, buffer, image->image,
-	                       VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
-	                       1, &bic);
-
-	// at this point we may need to generate mip_levels if
-	// mipmapping was enabled
-	if(image->mip_levels > 1)
-	{
-		vkk_engine_mipmapImage(self, image, cb);
-	}
-
-	// transition the image from transfer mode to shading mode
-	vkk_util_imageMemoryBarrier(image, cb,
-	                            VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
-	                            0, image->mip_levels);
-
-	// end the transfer commands
-	vkEndCommandBuffer(cb);
-
-	// submit the commands
-	if(vkk_engine_queueSubmit(self, &cb,
-	                          NULL, NULL, NULL,
-	                          fence) == 0)
-	{
-		goto fail_submit;
-	}
-
-	uint64_t timeout = UINT64_MAX;
-	if(vkWaitForFences(self->device, 1, &fence, VK_TRUE,
-	                   timeout) != VK_SUCCESS)
-	{
-		LOGW("vkWaitForFences failed");
-		vkk_engine_queueWaitIdle(self);
-	}
-
-	// release temporary objects
-	vkk_commandBuffer_delete(&cmd_buffer);
-	vkk_memoryManager_free(self->mm, &memory);
-	vkDestroyBuffer(self->device, buffer, NULL);
-	vkDestroyFence(self->device, fence, NULL);
-
-	// success
-	return 1;
-
-	// failure
-	fail_submit:
-	fail_begin_cb:
-		vkk_commandBuffer_delete(&cmd_buffer);
-	fail_cmd_buffer:
-		vkk_memoryManager_free(self->mm, &memory);
-	fail_alloc:
-		vkDestroyBuffer(self->device, buffer, NULL);
-	fail_buffer:
-		vkDestroyFence(self->device, fence, NULL);
-	return 0;
+	return vkk_imageUploader_upload(self->img_uploader,
+	                                image, pixels);
 }
 
 uint32_t vkk_engine_swapchainImageCount(vkk_engine_t* self)

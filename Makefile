@@ -6,6 +6,7 @@ CLASSES = \
 	vkk_engine            \
 	vkk_graphicsPipeline  \
 	vkk_image             \
+	vkk_imageUploader     \
 	vkk_memory            \
 	vkk_memoryChunk       \
 	vkk_memoryManager     \
