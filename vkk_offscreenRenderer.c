@@ -38,7 +38,8 @@
 ***********************************************************/
 
 static int
-vkk_offscreenRenderer_newRenderpass(vkk_renderer_t* base)
+vkk_offscreenRenderer_newRenderpass(vkk_renderer_t* base,
+                                    int format)
 {
 	assert(base);
 
@@ -51,7 +52,7 @@ vkk_offscreenRenderer_newRenderpass(vkk_renderer_t* base)
 	{
 		{
 			.flags          = 0,
-			.format         = vkk_util_imageFormat(self->format),
+			.format         = vkk_util_imageFormat(format),
 			.samples        = VK_SAMPLE_COUNT_1_BIT,
 			.loadOp         = VK_ATTACHMENT_LOAD_OP_CLEAR,
 			.storeOp        = VK_ATTACHMENT_STORE_OP_STORE,
@@ -123,7 +124,9 @@ vkk_offscreenRenderer_newRenderpass(vkk_renderer_t* base)
 }
 
 static int
-vkk_offscreenRenderer_newDepth(vkk_renderer_t* base)
+vkk_offscreenRenderer_newDepth(vkk_renderer_t* base,
+                               uint32_t width,
+                               uint32_t height)
 {
 	assert(base);
 
@@ -132,9 +135,7 @@ vkk_offscreenRenderer_newDepth(vkk_renderer_t* base)
 
 	vkk_engine_t* engine = base->engine;
 
-	self->depth_image = vkk_image_new(engine,
-	                                  self->width,
-	                                  self->height,
+	self->depth_image = vkk_image_new(engine, width, height,
 	                                  VKK_IMAGE_FORMAT_DEPTH,
 	                                  0, VKK_STAGE_DEPTH, NULL);
 	if(self->depth_image == NULL)
@@ -158,51 +159,28 @@ vkk_offscreenRenderer_deleteDepth(vkk_renderer_t* base)
 
 static int
 vkk_offscreenRenderer_newFramebuffer(vkk_renderer_t* base,
-                                     vkk_image_t* image)
+                                     uint32_t width,
+                                     uint32_t height,
+                                     int format)
 {
 	assert(base);
-	assert(image);
 
 	vkk_offscreenRenderer_t* self;
 	self = (vkk_offscreenRenderer_t*) base;
 
 	vkk_engine_t* engine = base->engine;
 
-	VkImageViewCreateInfo iv_info =
+	self->src_image = vkk_image_new(engine, width, height,
+	                                format, 0, VKK_STAGE_FS,
+	                                NULL);
+	if(self->src_image == NULL)
 	{
-		.sType      = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO,
-		.pNext      = NULL,
-		.flags      = 0,
-		.image      = image->image,
-		.viewType   = VK_IMAGE_VIEW_TYPE_2D,
-		.format     = vkk_util_imageFormat(self->format),
-		.components =
-		{
-			.r = VK_COMPONENT_SWIZZLE_IDENTITY,
-			.g = VK_COMPONENT_SWIZZLE_IDENTITY,
-			.b = VK_COMPONENT_SWIZZLE_IDENTITY,
-			.a = VK_COMPONENT_SWIZZLE_IDENTITY
-		},
-		.subresourceRange =
-		{
-			.aspectMask     = VK_IMAGE_ASPECT_COLOR_BIT,
-			.baseMipLevel   = 0,
-			.levelCount     = 1,
-			.baseArrayLayer = 0,
-			.layerCount     = 1
-		}
-	};
-
-	if(vkCreateImageView(engine->device, &iv_info, NULL,
-	                     &self->framebuffer_image_view) != VK_SUCCESS)
-	{
-		LOGE("vkCreateImageView failed");
 		return 0;
 	}
 
 	VkImageView attachments[2] =
 	{
-		self->framebuffer_image_view,
+		self->src_image->image_view,
 		self->depth_image->image_view,
 	};
 
@@ -214,8 +192,8 @@ vkk_offscreenRenderer_newFramebuffer(vkk_renderer_t* base,
 		.renderPass      = self->render_pass,
 		.attachmentCount = 2,
 		.pAttachments    = attachments,
-		.width           = self->width,
-		.height          = self->height,
+		.width           = width,
+		.height          = height,
 		.layers          = 1,
 	};
 
@@ -226,16 +204,12 @@ vkk_offscreenRenderer_newFramebuffer(vkk_renderer_t* base,
 		goto fail_framebuffer;
 	}
 
-	self->image = image;
-
 	// success
 	return 1;
 
 	// failure
 	fail_framebuffer:
-		vkDestroyImageView(engine->device,
-		                   self->framebuffer_image_view,
-		                   NULL);
+		vkk_image_delete(&self->src_image);
 	return 0;
 }
 
@@ -249,15 +223,10 @@ vkk_offscreenRenderer_deleteFramebuffer(vkk_renderer_t* base)
 
 	vkk_engine_t* engine = base->engine;
 
-	vkDestroyFramebuffer(engine->device,
-	                     self->framebuffer,
+	vkDestroyFramebuffer(engine->device, self->framebuffer,
 	                     NULL);
-	vkDestroyImageView(engine->device,
-	                   self->framebuffer_image_view,
-	                   NULL);
-	self->framebuffer            = VK_NULL_HANDLE;
-	self->framebuffer_image_view = VK_NULL_HANDLE;
-	self->image                  = NULL;
+	self->framebuffer = VK_NULL_HANDLE;
+	vkk_image_delete(&self->src_image);
 }
 
 /***********************************************************
@@ -266,8 +235,7 @@ vkk_offscreenRenderer_deleteFramebuffer(vkk_renderer_t* base)
 
 vkk_renderer_t*
 vkk_offscreenRenderer_new(vkk_engine_t* engine,
-                          uint32_t width,
-                          uint32_t height,
+                          uint32_t width, uint32_t height,
                           int format)
 {
 	assert(engine);
@@ -280,11 +248,6 @@ vkk_offscreenRenderer_new(vkk_engine_t* engine,
 		LOGE("CALLOC failed");
 		return NULL;
 	}
-
-	self->width  = width;
-	self->height = height;
-	self->format = format;
-	self->image  = NULL;
 
 	vkk_renderer_t* base = &(self->base);
 	vkk_renderer_init(base, VKK_RENDERER_TYPE_OFFSCREEN,
@@ -303,19 +266,23 @@ vkk_offscreenRenderer_new(vkk_engine_t* engine,
 		goto fail_create_fence;
 	}
 
-	if(vkk_offscreenRenderer_newRenderpass(base) == 0)
+	if(vkk_offscreenRenderer_newRenderpass(base, format) == 0)
 	{
 		goto fail_renderpass;
 	}
 
-	if(vkk_offscreenRenderer_newDepth(base) == 0)
+	if(vkk_offscreenRenderer_newDepth(base, width,
+	                                  height) == 0)
 	{
 		goto fail_depth;
 	}
 
-	// framebuffer is created in begin
-	self->framebuffer_image_view = VK_NULL_HANDLE;
-	self->framebuffer            = VK_NULL_HANDLE;
+	if(vkk_offscreenRenderer_newFramebuffer(base,
+	                                        width, height,
+	                                        format) == 0)
+	{
+		goto fail_framebuffer;
+	}
 
 	self->cmd_buffer = vkk_commandBuffer_new(engine, 1,
 	                                         base->type);
@@ -329,6 +296,8 @@ vkk_offscreenRenderer_new(vkk_engine_t* engine,
 
 	// failure
 	fail_cmd_buffer:
+		vkk_offscreenRenderer_deleteFramebuffer(base);
+	fail_framebuffer:
 		vkk_offscreenRenderer_deleteDepth(base);
 	fail_depth:
 		vkDestroyRenderPass(engine->device,
@@ -352,8 +321,8 @@ void vkk_offscreenRenderer_delete(vkk_renderer_t** _base)
 
 		vkk_engine_t* engine = base->engine;
 
-		// framebuffer is deleted by end function
 		vkk_commandBuffer_delete(&self->cmd_buffer);
+		vkk_offscreenRenderer_deleteFramebuffer(base);
 		vkk_offscreenRenderer_deleteDepth(base);
 		vkDestroyRenderPass(engine->device,
 		                    self->render_pass, NULL);
@@ -376,35 +345,18 @@ vkk_offscreenRenderer_begin(vkk_renderer_t* base,
 	vkk_offscreenRenderer_t* self;
 	self = (vkk_offscreenRenderer_t*) base;
 
-	vkk_engine_t* engine = base->engine;
+	vkk_image_t* src_image = self->src_image;
 
-	// check if renderer and image are compatible
-	if((self->width  != image->width)  ||
-	   (self->height != image->height) ||
-	   (self->format != image->format))
-	{
-		LOGE("invalid width=%u:%u, height=%u:%u, format=%i:%i",
-		     self->width, image->width,
-		     self->height, image->height,
-		     self->format, image->format);
-		return 0;
-	}
-
-	// check if image is in use
-	vkk_engine_rendererWaitForTimestamp(engine, image->ts);
-
-	if(vkk_offscreenRenderer_newFramebuffer(base, image) == 0)
-	{
-		self->image = NULL;
-		return 0;
-	}
+	assert((image->width  == src_image->width)  &&
+	       (image->height == src_image->height) &&
+	       (image->format == src_image->format));
 
 	VkCommandBuffer cb;
 	cb = vkk_commandBuffer_get(self->cmd_buffer, 0);
 	if(vkResetCommandBuffer(cb, 0) != VK_SUCCESS)
 	{
 		LOGE("vkResetCommandBuffer failed");
-		goto fail_reset;
+		return 0;
 	}
 
 	VkCommandBufferInheritanceInfo cbi_info =
@@ -430,10 +382,10 @@ vkk_offscreenRenderer_begin(vkk_renderer_t* base,
 	if(vkBeginCommandBuffer(cb, &cb_info) != VK_SUCCESS)
 	{
 		LOGE("vkBeginCommandBuffer failed");
-		goto fail_begin_command_buffer;
+		return 0;
 	}
 
-	vkk_util_imageMemoryBarrier(image, cb,
+	vkk_util_imageMemoryBarrier(src_image, cb,
 	                            VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
 	                            0, 1);
 	vkk_util_imageMemoryBarrier(self->depth_image, cb,
@@ -448,8 +400,8 @@ vkk_offscreenRenderer_begin(vkk_renderer_t* base,
 		{
 			.x        = 0.0f,
 			.y        = 0.0f,
-			.width    = (float) self->width,
-			.height   = (float) self->height,
+			.width    = (float) src_image->width,
+			.height   = (float) src_image->height,
 			.minDepth = 0.0f,
 			.maxDepth = 1.0f
 		};
@@ -464,8 +416,8 @@ vkk_offscreenRenderer_begin(vkk_renderer_t* base,
 			},
 			.extent =
 			{
-				.width  = self->width,
-				.height = self->height,
+				.width  = src_image->width,
+				.height = src_image->height,
 			}
 		};
 		vkCmdSetScissor(cb, 0, 1, &scissor);
@@ -501,8 +453,8 @@ vkk_offscreenRenderer_begin(vkk_renderer_t* base,
 		.renderPass      = self->render_pass,
 		.framebuffer     = self->framebuffer,
 		.renderArea      = { { .x=0, .y=0 },
-		                     { .width=self->width,
-		                       .height=self->height } },
+		                     { .width=src_image->width,
+		                       .height=src_image->height } },
 		.clearValueCount = 2,
 		.pClearValues    = cv
 	};
@@ -515,14 +467,9 @@ vkk_offscreenRenderer_begin(vkk_renderer_t* base,
 
 	vkCmdBeginRenderPass(cb, &rp_info, contents);
 
-	// success
-	return 1;
+	self->dst_image = image;
 
-	// failure
-	fail_begin_command_buffer:
-	fail_reset:
-		vkk_offscreenRenderer_deleteFramebuffer(base);
-	return 0;
+	return 1;
 }
 
 void vkk_offscreenRenderer_end(vkk_renderer_t* base)
@@ -532,29 +479,90 @@ void vkk_offscreenRenderer_end(vkk_renderer_t* base)
 	vkk_offscreenRenderer_t* self;
 	self = (vkk_offscreenRenderer_t*) base;
 
-	vkk_engine_t* engine = base->engine;
-	vkk_image_t*  image  = self->image;
+	vkk_engine_t* engine    = base->engine;
+	vkk_image_t*  src_image = self->src_image;
+	vkk_image_t*  dst_image = self->dst_image;
 
 	VkCommandBuffer cb;
 	cb = vkk_commandBuffer_get(self->cmd_buffer, 0);
 	vkCmdEndRenderPass(cb);
 
+	// check if dst_image is in use
+	vkk_engine_rendererWaitForTimestamp(engine, dst_image->ts);
+
+	vkk_util_imageMemoryBarrier(src_image, cb,
+	                            VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
+	                            0, 1);
+	vkk_util_imageMemoryBarrier(dst_image, cb,
+	                            VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+	                            0, 1);
+
+	VkImageBlit ib =
+	{
+		.srcSubresource =
+		{
+			.aspectMask     = VK_IMAGE_ASPECT_COLOR_BIT,
+			.mipLevel       = 0,
+			.baseArrayLayer = 0,
+			.layerCount     = 1
+		},
+		.srcOffsets =
+		{
+			{
+				.x = 0,
+				.y = 0,
+				.z = 0,
+			},
+			{
+				.x = src_image->width,
+				.y = src_image->height,
+				.z = 1,
+			}
+		},
+		.dstSubresource =
+		{
+			.aspectMask     = VK_IMAGE_ASPECT_COLOR_BIT,
+			.mipLevel       = 0,
+			.baseArrayLayer = 0,
+			.layerCount     = 1
+		},
+		.dstOffsets =
+		{
+			{
+				.x = 0,
+				.y = 0,
+				.z = 0,
+			},
+			{
+				.x = dst_image->width,
+				.y = dst_image->height,
+				.z = 1,
+			}
+		}
+	};
+
+	vkCmdBlitImage(cb, src_image->image,
+	               VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
+	               dst_image->image,
+	               VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+	               1, &ib, VK_FILTER_NEAREST);
+
 	// at this point we may need to generate mip_levels if
 	// mipmapping was enabled
-	if(image->mip_levels > 1)
+	if(dst_image->mip_levels > 1)
 	{
-		vkk_engine_mipmapImage(engine, image, cb);
+		vkk_engine_mipmapImage(engine, dst_image, cb);
 	}
 
-	// transition the image to shading mode
+	// transition the dst_image to shading mode
 	// note: we do not use the render pass to transition to the
 	// finalLayout since the image might be mipmapped which
 	// requires further processing after the render pass
 	// completes and would cause the image->layout_array to
 	// become inconsistent
-	vkk_util_imageMemoryBarrier(image, cb,
+	vkk_util_imageMemoryBarrier(dst_image, cb,
 	                            VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
-	                            0, image->mip_levels);
+	                            0, dst_image->mip_levels);
 
 	vkEndCommandBuffer(cb);
 
@@ -567,7 +575,8 @@ void vkk_offscreenRenderer_end(vkk_renderer_t* base)
 	                          &wait_dst_stage_mask,
 	                          self->fence) == 0)
 	{
-		vkk_offscreenRenderer_deleteFramebuffer(base);
+		LOGW("vkk_engine_queueSubmit failed");
+		self->dst_image = NULL;
 		return;
 	}
 
@@ -579,7 +588,7 @@ void vkk_offscreenRenderer_end(vkk_renderer_t* base)
 		vkk_engine_queueWaitIdle(engine);
 	}
 
-	vkk_offscreenRenderer_deleteFramebuffer(base);
+	self->dst_image = NULL;
 }
 
 void
@@ -594,8 +603,8 @@ vkk_offscreenRenderer_surfaceSize(vkk_renderer_t* base,
 	vkk_offscreenRenderer_t* self;
 	self = (vkk_offscreenRenderer_t*) base;
 
-	*_width  = self->width;
-	*_height = self->height;
+	*_width  = self->src_image->width;
+	*_height = self->src_image->height;
 }
 
 VkRenderPass

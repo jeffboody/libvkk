@@ -114,7 +114,8 @@ vkk_image_t* vkk_image_new(vkk_engine_t* engine,
 		self->layout_array[i] = VK_IMAGE_LAYOUT_UNDEFINED;
 	}
 
-	VkImageUsageFlags  usage      = VK_IMAGE_USAGE_TRANSFER_DST_BIT |
+	VkImageUsageFlags  usage      = VK_IMAGE_USAGE_TRANSFER_SRC_BIT |
+	                                VK_IMAGE_USAGE_TRANSFER_DST_BIT |
 	                                VK_IMAGE_USAGE_SAMPLED_BIT;
 	VkImageAspectFlags aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
 	if(format == VKK_IMAGE_FORMAT_DEPTH)
@@ -125,12 +126,6 @@ vkk_image_t* vkk_image_new(vkk_engine_t* engine,
 	}
 	else
 	{
-		if(mip_levels > 1)
-		{
-			// mip levels are generated iteratively by blitting
-			usage |= VK_IMAGE_USAGE_TRANSFER_SRC_BIT;
-		}
-
 		if(pixels == NULL)
 		{
 			// enable render-to-texture

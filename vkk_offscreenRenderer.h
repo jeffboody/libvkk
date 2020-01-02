@@ -32,13 +32,8 @@ typedef struct
 {
 	vkk_renderer_t base;
 
-	// image properties
-	uint32_t     width;
-	uint32_t     height;
-	int          format;
-
-	// bound image
-	vkk_image_t* image;
+	// target image
+	vkk_image_t* dst_image;
 
 	// queue fence
 	VkFence fence;
@@ -50,7 +45,7 @@ typedef struct
 	vkk_image_t* depth_image;
 
 	// framebuffer state
-	VkImageView   framebuffer_image_view;
+	vkk_image_t*  src_image;
 	VkFramebuffer framebuffer;
 
 	// command buffer
