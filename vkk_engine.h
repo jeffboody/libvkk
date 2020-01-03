@@ -71,6 +71,10 @@ typedef struct vkk_object_s
 	};
 } vkk_object_t;
 
+#define VKK_QUEUE_DEFAULT 0
+#define VKK_QUEUE_OFFLINE 1
+#define VKK_QUEUE_COUNT   2
+
 typedef struct vkk_engine_s
 {
 	// window state
@@ -121,7 +125,7 @@ typedef struct vkk_engine_s
 	// device state
 	VkDevice device;
 	uint32_t queue_family_index;
-	VkQueue  queue;
+	VkQueue  queue[VKK_QUEUE_COUNT];
 
 	// memory manager
 	vkk_memoryManager_t* mm;
@@ -157,12 +161,14 @@ int              vkk_engine_uploadImage(vkk_engine_t* self,
                                         const void* pixels);
 uint32_t         vkk_engine_swapchainImageCount(vkk_engine_t* self);
 int              vkk_engine_queueSubmit(vkk_engine_t* self,
+                                        uint32_t queue,
                                         VkCommandBuffer* cb,
                                         VkSemaphore* semaphore_acquire,
                                         VkSemaphore* semaphore_submit,
                                         VkPipelineStageFlags* wait_dst_stage_mask,
                                         VkFence fence);
-void             vkk_engine_queueWaitIdle(vkk_engine_t* self);
+void             vkk_engine_queueWaitIdle(vkk_engine_t* self,
+                                          uint32_t queue);
 int              vkk_engine_allocateDescriptorSetsLocked(vkk_engine_t* self,
                                                          VkDescriptorPool dp,
                                                          const VkDescriptorSetLayout* dsl_array,

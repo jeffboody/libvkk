@@ -1123,7 +1123,7 @@ void vkk_defaultRenderer_end(vkk_renderer_t* base)
 	VkFence sc_fence;
 	sc_fence = self->swapchain_fences[self->swapchain_frame];
 
-	if(vkk_engine_queueSubmit(engine, &cb,
+	if(vkk_engine_queueSubmit(engine, VKK_QUEUE_DEFAULT, &cb,
 	                          &semaphore_acquire,
 	                          &semaphore_submit,
 	                          &wait_dst_stage_mask,
@@ -1144,7 +1144,7 @@ void vkk_defaultRenderer_end(vkk_renderer_t* base)
 		.pResults           = NULL
 	};
 
-	if(vkQueuePresentKHR(engine->queue,
+	if(vkQueuePresentKHR(engine->queue[VKK_QUEUE_DEFAULT],
 	                     &p_info) != VK_SUCCESS)
 	{
 		// failure typically caused by resizes

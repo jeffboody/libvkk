@@ -455,7 +455,7 @@ int vkk_imageUploader_upload(vkk_imageUploader_t* self,
 	vkEndCommandBuffer(cb);
 
 	// submit the commands
-	if(vkk_engine_queueSubmit(engine, &cb,
+	if(vkk_engine_queueSubmit(engine, VKK_QUEUE_OFFLINE, &cb,
 	                          NULL, NULL, NULL,
 	                          ui->fence) == 0)
 	{
@@ -467,7 +467,7 @@ int vkk_imageUploader_upload(vkk_imageUploader_t* self,
 	                   timeout) != VK_SUCCESS)
 	{
 		LOGW("vkWaitForFences failed");
-		vkk_engine_queueWaitIdle(engine);
+		vkk_engine_queueWaitIdle(engine, VKK_QUEUE_OFFLINE);
 	}
 
 	vkk_imageUploader_lock(self);

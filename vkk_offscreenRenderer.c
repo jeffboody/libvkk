@@ -570,7 +570,7 @@ void vkk_offscreenRenderer_end(vkk_renderer_t* base)
 	wait_dst_stage_mask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
 
 	vkResetFences(engine->device, 1, &self->fence);
-	if(vkk_engine_queueSubmit(engine, &cb,
+	if(vkk_engine_queueSubmit(engine, VKK_QUEUE_OFFLINE, &cb,
 	                          NULL, NULL,
 	                          &wait_dst_stage_mask,
 	                          self->fence) == 0)
@@ -585,7 +585,7 @@ void vkk_offscreenRenderer_end(vkk_renderer_t* base)
 	                   timeout) != VK_SUCCESS)
 	{
 		LOGW("vkWaitForFences failed");
-		vkk_engine_queueWaitIdle(engine);
+		vkk_engine_queueWaitIdle(engine, VKK_QUEUE_OFFLINE);
 	}
 
 	self->dst_image = NULL;
