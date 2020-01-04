@@ -1216,6 +1216,7 @@ vkk_engine_t* vkk_engine_new(void* app,
 	}
 
 	self->jobq_destruct = cc_jobq_new((void*) self, 1,
+	                                  CC_JOBQ_THREAD_PRIORITY_DEFAULT,
 	                                  vkk_engine_runDestructFn);
 	if(self->jobq_destruct == NULL)
 	{
