@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.4.1)
 
 # Compiler options
-add_compile_options(-Wall)
+add_compile_options(-Wall -DVK_USE_PLATFORM_ANDROID_KHR)
 
 if(VKK_USE_VKUI)
     set(SOURCE_VKUI
@@ -22,11 +22,20 @@ if(VKK_USE_VKUI)
         vkui/vkui_widget.c)
 endif()
 
+# native_app_glue
+add_library(native_app_glue
+            STATIC
+
+            # Source
+            ${ANDROID_NDK}/sources/third_party/vulkan/src/common/vulkan_wrapper.cpp
+            ${ANDROID_NDK}/sources/android/native_app_glue/android_native_app_glue.c)
+
 # Submodule library
 add_library(vkk
             STATIC
 
             # Source
+            vkk_android.c
             vkk_buffer.c
             vkk_commandBuffer.c
             vkk_defaultRenderer.c
@@ -68,4 +77,5 @@ target_link_libraries(vkk
 
                       # NDK libraries
                       log
+                      native_app_glue
                       z)

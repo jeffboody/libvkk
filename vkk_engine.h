@@ -77,10 +77,10 @@ typedef struct vkk_object_s
 
 typedef struct vkk_engine_s
 {
-	// window state
-	#ifdef ANDROID
-		struct android_app* app;
-	#else
+	vkk_platform_t* platform;
+
+	// SDL window state
+	#ifndef ANDROID
 		SDL_Window* window;
 	#endif
 

@@ -35,7 +35,6 @@
 #include "../../libcc/cc_log.h"
 #include "../../libcc/cc_timestamp.h"
 #include "vkui_font.h"
-#include "vkui_key.h"
 #include "vkui_screen.h"
 #include "vkui_text.h"
 
@@ -292,15 +291,15 @@ vkui_text_keyPress(vkui_widget_t* widget, void* priv,
 
 	size_t len  = strlen(self->string);
 	size_t size = len + 1;
-	if(keycode == VKUI_KEY_ENTER)
+	if(keycode == VKK_KEYCODE_ENTER)
 	{
 		(*enter_fn)(widget, priv, self->string);
 	}
-	else if(keycode == VKUI_KEY_ESCAPE)
+	else if(keycode == VKK_KEYCODE_ESCAPE)
 	{
 		return 0;
 	}
-	else if(keycode == VKUI_KEY_BACKSPACE)
+	else if(keycode == VKK_KEYCODE_BACKSPACE)
 	{
 		if(len > 0)
 		{

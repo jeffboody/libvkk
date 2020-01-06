@@ -7,6 +7,7 @@ CLASSES = \
 	vkk_graphicsPipeline  \
 	vkk_image             \
 	vkk_imageUploader     \
+	vkk_linux             \
 	vkk_memory            \
 	vkk_memoryChunk       \
 	vkk_memoryManager     \
@@ -42,7 +43,6 @@ OBJECTS = $(SOURCE:.c=.o)
 HFILES  = vkk.h $(CLASSES:%=%.h)
 ifeq ($(VKK_USE_VKUI),1)
 	HFILES += \
-		vkui/vkui_key.h \
 		vkui/vkui.h
 endif
 OPT     = -O2 -Wall -Wno-format-truncation

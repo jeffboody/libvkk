@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016 Jeff Boody
+ * Copyright (c) 2020 Jeff Boody
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
  * copy of this software and associated documentation files (the "Software"),
@@ -21,34 +21,22 @@
  *
  */
 
-#ifndef vkui_key_H
-#define vkui_key_H
+#ifndef vkk_android_H
+#define vkk_android_H
 
-// meta key mask
-#define VKUI_KEY_ALT     0x00000032
-#define VKUI_KEY_ALT_L   0x00000010
-#define VKUI_KEY_ALT_R   0x00000020
-#define VKUI_KEY_CTRL    0x00007000
-#define VKUI_KEY_CTRL_L  0x00002000
-#define VKUI_KEY_CTRL_R  0x00004000
-#define VKUI_KEY_SHIFT   0x000000C1
-#define VKUI_KEY_SHIFT_L 0x00000040
-#define VKUI_KEY_SHIFT_R 0x00000080
-#define VKUI_KEY_CAPS    0x00100000
+#include <android_native_app_glue.h>
 
-// special keys
-#define VKUI_KEY_ENTER     0x00D
-#define VKUI_KEY_ESCAPE    0x01B
-#define VKUI_KEY_BACKSPACE 0x008
-#define VKUI_KEY_DELETE    0x07F
-#define VKUI_KEY_UP        0x100
-#define VKUI_KEY_DOWN      0x101
-#define VKUI_KEY_LEFT      0x102
-#define VKUI_KEY_RIGHT     0x103
-#define VKUI_KEY_HOME      0x104
-#define VKUI_KEY_END       0x105
-#define VKUI_KEY_PGUP      0x106
-#define VKUI_KEY_PGDOWN    0x107
-#define VKUI_KEY_INSERT    0x108
+#include "vkk_platform.h"
+
+typedef struct vkk_platform_s
+{
+	struct android_app* app;
+
+	int   running;
+	int   has_window;
+	int   resize;
+	float density;
+	void* priv;
+} vkk_platform_t;
 
 #endif

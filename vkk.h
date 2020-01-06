@@ -26,6 +26,8 @@
 
 #include <stdint.h>
 
+#include "vkk_platform.h"
+
 uint32_t VKK_MAKE_VERSION(uint32_t major, uint32_t minor,
                           uint32_t patch);
 
@@ -203,7 +205,7 @@ typedef struct
  *     events
  */
 
-vkk_engine_t* vkk_engine_new(void* app,
+vkk_engine_t* vkk_engine_new(vkk_platform_t* platform,
                              const char* app_name,
                              uint32_t app_version,
                              const char* resource,

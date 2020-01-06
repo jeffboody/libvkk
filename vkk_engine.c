@@ -30,6 +30,11 @@
 #include "../libcc/cc_log.h"
 #include "../libcc/cc_memory.h"
 #include "../libpak/pak_file.h"
+#ifdef ANDROID
+	#include "vkk_android.h"
+#else
+	#include "vkk_linux.h"
+#endif
 #include "vkk_buffer.h"
 #include "vkk_commandBuffer.h"
 #include "vkk_defaultRenderer.h"
@@ -45,6 +50,7 @@
 #include "vkk_uniformSet.h"
 #include "vkk_uniformSetFactory.h"
 #include "vkk_util.h"
+#include "vkk.h"
 
 /***********************************************************
 * private                                                  *
@@ -279,7 +285,7 @@ static int vkk_engine_newSurface(vkk_engine_t* self)
 			.sType  = VK_STRUCTURE_TYPE_ANDROID_SURFACE_CREATE_INFO_KHR,
 			.pNext  = NULL,
 			.flags  = 0,
-			.window = self->app->window
+			.window = self->platform->app->window
 		};
 
 		if(vkCreateAndroidSurfaceKHR(self->instance,
@@ -1094,17 +1100,13 @@ vkk_engine_runDestructFn(int tid, void* owner, void* task)
 * public                                                   *
 ***********************************************************/
 
-vkk_engine_t* vkk_engine_new(void* app,
+vkk_engine_t* vkk_engine_new(vkk_platform_t* platform,
                              const char* app_name,
                              uint32_t app_version,
                              const char* resource,
                              const char* cache)
 {
-	#ifdef ANDROID
-		assert(app);
-	#else
-		assert(app == NULL);
-	#endif
+	assert(platform);
 	assert(app_name);
 	assert(resource);
 	assert(cache);
@@ -1118,9 +1120,9 @@ vkk_engine_t* vkk_engine_new(void* app,
 		return NULL;
 	}
 
-	#ifdef ANDROID
-		self->app = (struct android_app*) app;
-	#else
+	self->platform = platform;
+
+	#ifndef ANDROID
 		if(vkk_engine_initSDL(self, app_name) == 0)
 		{
 			FREE(self);
@@ -1128,7 +1130,7 @@ vkk_engine_t* vkk_engine_new(void* app,
 		}
 	#endif
 
-	self->version = VK_MAKE_VERSION(1,1,3);
+	self->version = VK_MAKE_VERSION(1,1,4);
 
 	snprintf(self->resource, 256, "%s", resource);
 	snprintf(self->cache, 256, "%s", cache);
