@@ -77,6 +77,7 @@ typedef struct
 vkk_renderer_t* vkk_defaultRenderer_new(vkk_engine_t* engine);
 void            vkk_defaultRenderer_delete(vkk_renderer_t** _base);
 int             vkk_defaultRenderer_resize(vkk_renderer_t* base);
+int             vkk_defaultRenderer_recreate(vkk_renderer_t* base);
 uint32_t        vkk_defaultRenderer_swapchainImageCount(vkk_renderer_t* base);
 double          vkk_defaultRenderer_tsCurrent(vkk_renderer_t* base);
 double          vkk_defaultRenderer_tsExpiredLocked(vkk_renderer_t* base);

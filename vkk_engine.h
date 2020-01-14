@@ -203,6 +203,8 @@ void             vkk_engine_rendererSignal(vkk_engine_t* self);
 void             vkk_engine_rendererWait(vkk_engine_t* self);
 void             vkk_engine_rendererWaitForTimestamp(vkk_engine_t* self,
                                                      double ts);
+int              vkk_engine_newSurface(vkk_engine_t* self);
+void             vkk_engine_deleteSurface(vkk_engine_t* self);
 void             vkk_engine_deleteDefaultDepthImage(vkk_engine_t* self,
                                                     vkk_image_t** _image);
 

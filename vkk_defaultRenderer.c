@@ -883,6 +883,52 @@ int vkk_defaultRenderer_resize(vkk_renderer_t* base)
 	return 0;
 }
 
+int vkk_defaultRenderer_recreate(vkk_renderer_t* base)
+{
+	assert(base);
+
+	vkk_engine_t* engine = base->engine;
+
+	vkDeviceWaitIdle(engine->device);
+
+	vkk_defaultRenderer_deleteDepth(base);
+	vkk_defaultRenderer_deleteFramebuffer(base);
+	vkk_defaultRenderer_deleteSwapchain(base);
+	vkk_engine_deleteSurface(engine);
+
+	if(vkk_engine_newSurface(engine) == 0)
+	{
+		return 0;
+	}
+
+	if(vkk_defaultRenderer_newSwapchain(base) == 0)
+	{
+		goto fail_swapchain;
+	}
+
+	if(vkk_defaultRenderer_newDepth(base) == 0)
+	{
+		goto fail_depth;
+	}
+
+	if(vkk_defaultRenderer_newFramebuffer(base) == 0)
+	{
+		goto fail_framebuffer;
+	}
+
+	// success
+	return 1;
+
+	// failure
+	fail_framebuffer:
+		vkk_defaultRenderer_deleteDepth(base);
+	fail_depth:
+		vkk_defaultRenderer_deleteSwapchain(base);
+	fail_swapchain:
+		vkk_engine_deleteSurface(engine);
+	return 0;
+}
+
 uint32_t
 vkk_defaultRenderer_swapchainImageCount(vkk_renderer_t* base)
 {

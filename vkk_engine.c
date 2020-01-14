@@ -275,38 +275,6 @@ vkk_engine_newInstance(vkk_engine_t* self,
 	return 1;
 }
 
-static int vkk_engine_newSurface(vkk_engine_t* self)
-{
-	assert(self);
-
-	#ifdef ANDROID
-		VkAndroidSurfaceCreateInfoKHR as_info =
-		{
-			.sType  = VK_STRUCTURE_TYPE_ANDROID_SURFACE_CREATE_INFO_KHR,
-			.pNext  = NULL,
-			.flags  = 0,
-			.window = self->platform->app->window
-		};
-
-		if(vkCreateAndroidSurfaceKHR(self->instance,
-		                             &as_info, NULL,
-		                             &self->surface) != VK_SUCCESS)
-		{
-			LOGE("vkCreateAndroidSurfaceKHR failed");
-			return 0;
-		}
-	#else
-		if(SDL_Vulkan_CreateSurface(self->window, self->instance,
-		                            &self->surface) == SDL_FALSE)
-		{
-			LOGE("SDL_Vulkan_CreateSurface failed: %s", SDL_GetError());
-			return 0;
-		}
-	#endif
-
-	return 1;
-}
-
 static int vkk_engine_getPhysicalDevice(vkk_engine_t* self)
 {
 	assert(self);
@@ -1352,6 +1320,13 @@ int vkk_engine_resize(vkk_engine_t* self)
 	return vkk_defaultRenderer_resize(self->renderer);
 }
 
+int vkk_engine_recreate(vkk_engine_t* self)
+{
+	assert(self);
+
+	return vkk_defaultRenderer_recreate(self->renderer);
+}
+
 vkk_renderer_t* vkk_engine_renderer(vkk_engine_t* self)
 {
 	assert(self);
@@ -1941,6 +1916,77 @@ void vkk_engine_rendererWaitForTimestamp(vkk_engine_t* self,
 		vkk_engine_rendererWait(self);
 	}
 	vkk_engine_rendererUnlock(self);
+}
+
+int vkk_engine_newSurface(vkk_engine_t* self)
+{
+	assert(self);
+
+	#ifdef ANDROID
+		ANativeWindow* window = self->platform->app->window;
+		if(window == NULL)
+		{
+			// ignore since window may be NULL when terminated
+			return 0;
+		}
+
+		VkAndroidSurfaceCreateInfoKHR as_info =
+		{
+			.sType  = VK_STRUCTURE_TYPE_ANDROID_SURFACE_CREATE_INFO_KHR,
+			.pNext  = NULL,
+			.flags  = 0,
+			.window = window
+		};
+
+		if(vkCreateAndroidSurfaceKHR(self->instance,
+		                             &as_info, NULL,
+		                             &self->surface) != VK_SUCCESS)
+		{
+			LOGE("vkCreateAndroidSurfaceKHR failed");
+			return 0;
+		}
+
+		// check if surface is still supported by the device
+		// when recreated
+		if(self->device != VK_NULL_HANDLE)
+		{
+			VkBool32 supported = VK_FALSE;
+			if(vkGetPhysicalDeviceSurfaceSupportKHR(self->physical_device,
+			                                        self->queue_family_index,
+			                                        self->surface,
+			                                        &supported) != VK_SUCCESS)
+			{
+				LOGE("vkGetPhysicalDeviceSurfaceSupportKHR failed");
+				vkk_engine_deleteSurface(self);
+				return 0;
+			}
+
+			if(supported == VK_FALSE)
+			{
+				LOGE("surface is unsupported");
+				vkk_engine_deleteSurface(self);
+				return 0;
+			}
+		}
+	#else
+		if(SDL_Vulkan_CreateSurface(self->window, self->instance,
+		                            &self->surface) == SDL_FALSE)
+		{
+			LOGE("SDL_Vulkan_CreateSurface failed: %s", SDL_GetError());
+			return 0;
+		}
+	#endif
+
+	return 1;
+}
+
+void vkk_engine_deleteSurface(vkk_engine_t* self)
+{
+	assert(self);
+
+	vkDestroySurfaceKHR(self->instance,
+	                    self->surface, NULL);
+	self->surface = VK_NULL_HANDLE;
 }
 
 void

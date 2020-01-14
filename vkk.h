@@ -224,9 +224,12 @@ uint32_t      vkk_engine_version(vkk_engine_t* self);
  *    automatically by the engine
  * 3) the resize event triggered by native window system
  *    causes the default renderer surfaceSize to be updated
+ * 4) the recreate event triggered by native window system
+ *    causes the default renderer surface to be recreated
  */
 
 int             vkk_engine_resize(vkk_engine_t* self);
+int             vkk_engine_recreate(vkk_engine_t* self);
 vkk_renderer_t* vkk_engine_renderer(vkk_engine_t* self);
 
 /*

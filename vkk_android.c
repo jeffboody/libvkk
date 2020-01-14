@@ -546,14 +546,37 @@ onAppCmd(struct android_app* app, int32_t cmd)
 	if(cmd == APP_CMD_INIT_WINDOW)
 	{
 		LOGI("APP_CMD_INIT_WINDOW");
+
+		// recreate the window surface
+		if(platform->priv)
+		{
+			vkk_event_t ve =
+			{
+				.type = VKK_EVENT_TYPE_RECREATE,
+				.ts   = cc_timestamp(),
+			};
+			if((*onEvent)(platform->priv, &ve) == 0)
+			{
+				// recreate renderer on failure
+				(*onDestroy)(&platform->priv);
+			}
+		}
 		platform->has_window = 1;
 	}
 	else if(cmd == APP_CMD_TERM_WINDOW)
 	{
 		LOGI("APP_CMD_TERM_WINDOW");
 
-		// TODO - handle recreation of window
-		(*onDestroy)(&platform->priv);
+		// destroy the existing window surface
+		if(platform->priv)
+		{
+			vkk_event_t ve =
+			{
+				.type = VKK_EVENT_TYPE_RECREATE,
+				.ts   = cc_timestamp(),
+			};
+			(*onEvent)(platform->priv, &ve);
+		}
 		platform->has_window = 0;
 	}
 	else if(cmd == APP_CMD_RESUME)
@@ -564,7 +587,7 @@ onAppCmd(struct android_app* app, int32_t cmd)
 	else if((cmd == APP_CMD_PAUSE) ||
 	        (cmd == APP_CMD_STOP))
 	{
-		LOGI("APP_CMD_PAUSE/APP_CMD_STOP");
+		LOGI("APP_CMD_PAUSE");
 
 		if(platform->running && platform->priv)
 		{
@@ -814,7 +837,7 @@ static void vkk_platform_draw(vkk_platform_t* self)
 			};
 			if((*onEvent)(self->priv, &ve) == 0)
 			{
-				// recreate renderer if resize failed
+				// recreate renderer on failure
 				(*onDestroy)(&self->priv);
 				return;
 			}
