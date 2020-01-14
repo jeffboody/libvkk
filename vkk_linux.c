@@ -466,16 +466,24 @@ int main(int argc, char** argv)
 					.type = VKK_EVENT_TYPE_RESIZE,
 					.ts   = cc_timestamp()
 				};
-				(*onEvent)(platform->priv, &ve);
+				if((*onEvent)(platform->priv, &ve) == 0)
+				{
+					platform->running = 0;
+					break;
+				}
 			}
 			else if(se.type == SDL_QUIT)
 			{
 				platform->running = 0;
+				break;
 			}
 		}
 
 		// draw event
-		(*onDraw)(platform->priv);
+		if(platform->running)
+		{
+			(*onDraw)(platform->priv);
+		}
 	}
 
 	vkk_platform_delete(&platform);

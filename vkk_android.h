@@ -34,7 +34,8 @@ typedef struct vkk_platform_s
 
 	int   running;
 	int   has_window;
-	int   resize;
+	int   width;
+	int   height;
 	float density;
 	void* priv;
 } vkk_platform_t;

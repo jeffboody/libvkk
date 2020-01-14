@@ -766,12 +766,14 @@ static void vkk_platform_draw(vkk_platform_t* self)
 {
 	assert(self);
 
-	vkk_platformOnCreate_fn onCreate;
-	vkk_platformOnDraw_fn   onDraw;
-	vkk_platformOnEvent_fn  onEvent;
-	onCreate = VKK_PLATFORM_CALLBACKS.onCreate;
-	onDraw   = VKK_PLATFORM_CALLBACKS.onDraw;
-	onEvent  = VKK_PLATFORM_CALLBACKS.onEvent;
+	vkk_platformOnCreate_fn  onCreate;
+	vkk_platformOnDestroy_fn onDestroy;
+	vkk_platformOnDraw_fn    onDraw;
+	vkk_platformOnEvent_fn   onEvent;
+	onCreate  = VKK_PLATFORM_CALLBACKS.onCreate;
+	onDestroy = VKK_PLATFORM_CALLBACKS.onDestroy;
+	onDraw    = VKK_PLATFORM_CALLBACKS.onDraw;
+	onEvent   = VKK_PLATFORM_CALLBACKS.onEvent;
 
 	if(vkk_platform_rendering(self) == 0)
 	{
@@ -789,24 +791,33 @@ static void vkk_platform_draw(vkk_platform_t* self)
 		}
 
 		self->density = 1.0f;
-
-		self->resize  = (int) ANativeWindow_getWidth(window);
+		self->width   = (int) ANativeWindow_getWidth(window);
+		self->height  = (int) ANativeWindow_getHeight(window);
 	}
 	else
 	{
 		// check if the native window was resized
-		int resize;
-		resize = (int) ANativeWindow_getWidth(window);
-		if(self->resize != resize)
+		int width;
+		int height;
+		width  = (int) ANativeWindow_getWidth(window);
+		height = (int) ANativeWindow_getHeight(window);
+		if((self->width  != width) ||
+		   (self->height != height))
 		{
-			self->resize = resize;
+			self->width  = width;
+			self->height = height;
 
 			vkk_event_t ve =
 			{
 				.type = VKK_EVENT_TYPE_RESIZE,
 				.ts   = cc_timestamp()
 			};
-			(*onEvent)(self->priv, &ve);
+			if((*onEvent)(self->priv, &ve) == 0)
+			{
+				// recreate renderer if resize failed
+				(*onDestroy)(&self->priv);
+				return;
+			}
 		}
 	}
 
