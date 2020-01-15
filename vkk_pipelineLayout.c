@@ -21,7 +21,6 @@
  *
  */
 
-#include <assert.h>
 #include <stdlib.h>
 
 #define LOG_TAG "vkk"
@@ -40,8 +39,8 @@ vkk_pipelineLayout_new(vkk_engine_t* engine,
                        uint32_t usf_count,
                        vkk_uniformSetFactory_t** usf_array)
 {
-	assert(engine);
-	assert(usf_array);
+	ASSERT(engine);
+	ASSERT(usf_array);
 
 	if(usf_count > VKK_ENGINE_MAX_USF_COUNT)
 	{
@@ -108,7 +107,7 @@ vkk_pipelineLayout_new(vkk_engine_t* engine,
 
 void vkk_pipelineLayout_delete(vkk_pipelineLayout_t** _self)
 {
-	assert(_self);
+	ASSERT(_self);
 
 	vkk_pipelineLayout_t* self = *_self;
 	if(self)

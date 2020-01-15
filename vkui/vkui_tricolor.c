@@ -22,7 +22,6 @@
  */
 
 #include <stdlib.h>
-#include <assert.h>
 
 #define LOG_TAG "vkui"
 #include "../../libcc/math/cc_vec2f.h"
@@ -42,10 +41,10 @@ vkui_tricolor_t* vkui_tricolor_new(vkui_screen_t* screen,
                                    cc_vec4f_t* color1,
                                    cc_vec4f_t* color2)
 {
-	assert(screen);
-	assert(color0);
-	assert(color1);
-	assert(color2);
+	ASSERT(screen);
+	ASSERT(color0);
+	ASSERT(color1);
+	ASSERT(color2);
 
 	vkui_tricolor_t* self;
 	self = (vkui_tricolor_t*)
@@ -164,7 +163,7 @@ vkui_tricolor_t* vkui_tricolor_new(vkui_screen_t* screen,
 
 void vkui_tricolor_delete(vkui_tricolor_t** _self)
 {
-	assert(_self);
+	ASSERT(_self);
 
 	vkui_tricolor_t* self = *_self;
 	if(self)
@@ -182,7 +181,7 @@ void vkui_tricolor_delete(vkui_tricolor_t** _self)
 void vkui_tricolor_ab(vkui_tricolor_t* self,
                       float a, float b)
 {
-	assert(self);
+	ASSERT(self);
 
 	self->a = a;
 	self->b = b;
@@ -191,8 +190,8 @@ void vkui_tricolor_ab(vkui_tricolor_t* self,
 void vkui_tricolor_rect(vkui_tricolor_t* self,
                         cc_rect1f_t* rect)
 {
-	assert(self);
-	assert(rect);
+	ASSERT(self);
+	ASSERT(rect);
 
 	cc_rect1f_copy(rect, &self->rect);
 }
@@ -201,8 +200,8 @@ void vkui_tricolor_drawBuffer(vkui_tricolor_t* self,
                               uint32_t vc,
                               vkk_buffer_t* vb)
 {
-	assert(self);
-	assert(vb);
+	ASSERT(self);
+	ASSERT(vb);
 
 	vkui_screen_t* screen = self->screen;
 
@@ -234,7 +233,7 @@ void vkui_tricolor_drawBuffer(vkui_tricolor_t* self,
 
 void vkui_tricolor_drawRect(vkui_tricolor_t* self)
 {
-	assert(self);
+	ASSERT(self);
 
 	vkui_screen_t* screen = self->screen;
 	cc_rect1f_t*   rect   = &self->rect;

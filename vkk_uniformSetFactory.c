@@ -21,7 +21,6 @@
  *
  */
 
-#include <assert.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -42,8 +41,8 @@ vkk_uniformSetFactory_new(vkk_engine_t* engine,
                           uint32_t ub_count,
                           vkk_uniformBinding_t* ub_array)
 {
-	assert(engine);
-	assert(ub_array);
+	ASSERT(engine);
+	ASSERT(ub_array);
 
 	VkDescriptorType dt_map[VKK_UNIFORM_TYPE_COUNT] =
 	{
@@ -168,7 +167,7 @@ vkk_uniformSetFactory_new(vkk_engine_t* engine,
 void
 vkk_uniformSetFactory_delete(vkk_uniformSetFactory_t** _self)
 {
-	assert(_self);
+	ASSERT(_self);
 
 	vkk_uniformSetFactory_t* self = *_self;
 	if(self)

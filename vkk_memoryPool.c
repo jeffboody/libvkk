@@ -21,7 +21,6 @@
  *
  */
 
-#include <assert.h>
 #include <stdlib.h>
 
 #define LOG_TAG "vkk"
@@ -42,7 +41,7 @@ vkk_memoryPool_new(vkk_memoryManager_t* mm,
                    VkDeviceSize stride,
                    uint32_t mt_index)
 {
-	assert(mm);
+	ASSERT(mm);
 
 	vkk_memoryPool_t* self;
 	self = (vkk_memoryPool_t*)
@@ -75,12 +74,12 @@ vkk_memoryPool_new(vkk_memoryManager_t* mm,
 
 void vkk_memoryPool_delete(vkk_memoryPool_t** _self)
 {
-	assert(_self);
+	ASSERT(_self);
 
 	vkk_memoryPool_t* self = *_self;
 	if(self)
 	{
-		assert(cc_list_size(self->chunks) == 0);
+		ASSERT(cc_list_size(self->chunks) == 0);
 
 		cc_list_delete(&self->chunks);
 		FREE(self);
@@ -91,7 +90,7 @@ void vkk_memoryPool_delete(vkk_memoryPool_t** _self)
 vkk_memory_t*
 vkk_memoryPool_alloc(vkk_memoryPool_t* self)
 {
-	assert(self);
+	ASSERT(self);
 
 	// try to allocate from an existing slot
 	vkk_memoryChunk_t* chunk;
@@ -146,8 +145,8 @@ int vkk_memoryPool_free(vkk_memoryPool_t* self,
                         int shutdown,
                         vkk_memory_t** _memory)
 {
-	assert(self);
-	assert(_memory);
+	ASSERT(self);
+	ASSERT(_memory);
 
 	vkk_memory_t* memory = *_memory;
 	if(memory)

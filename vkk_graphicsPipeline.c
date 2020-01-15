@@ -21,7 +21,6 @@
  *
  */
 
-#include <assert.h>
 #include <stdlib.h>
 
 #define LOG_TAG "vkk"
@@ -40,8 +39,8 @@ vkk_graphicsPipeline_t*
 vkk_graphicsPipeline_new(vkk_engine_t* engine,
                          vkk_graphicsPipelineInfo_t* gpi)
 {
-	assert(engine);
-	assert(gpi);
+	ASSERT(engine);
+	ASSERT(gpi);
 
 	VkShaderModule vs;
 	VkShaderModule fs;
@@ -373,7 +372,7 @@ vkk_graphicsPipeline_new(vkk_engine_t* engine,
 
 void vkk_graphicsPipeline_delete(vkk_graphicsPipeline_t** _self)
 {
-	assert(_self);
+	ASSERT(_self);
 
 	vkk_graphicsPipeline_t* self = *_self;
 	if(self)

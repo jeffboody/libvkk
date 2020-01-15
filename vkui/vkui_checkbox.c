@@ -21,7 +21,6 @@
  *
  */
 
-#include <assert.h>
 #include <stdarg.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -42,7 +41,7 @@ vkui_checkbox_click(vkui_widget_t* widget, void* priv,
                     int state, float x, float y)
 {
 	// priv may be NULL
-	assert(widget);
+	ASSERT(widget);
 
 	vkui_checkbox_t* self = (vkui_checkbox_t*) widget;
 	if(state == VKUI_WIDGET_POINTER_UP)
@@ -56,7 +55,7 @@ static void
 vkui_checkbox_refresh(vkui_widget_t* widget, void* priv)
 {
 	// priv may be NULL
-	assert(widget);
+	ASSERT(widget);
 
 	vkui_checkbox_t*  self   = (vkui_checkbox_t*) widget;
 	vkui_bulletbox_t* bullet = &(self->bullet);
@@ -72,9 +71,9 @@ vkui_checkbox_new(vkui_screen_t* screen, size_t wsize,
                   vkui_bulletboxStyle_t* bulletbox_style,
                   int* pvalue)
 {
-	assert(screen);
-	assert(bulletbox_style);
-	assert(pvalue);
+	ASSERT(screen);
+	ASSERT(bulletbox_style);
+	ASSERT(pvalue);
 
 	if(wsize == 0)
 	{
@@ -112,7 +111,7 @@ vkui_checkbox_new(vkui_screen_t* screen, size_t wsize,
 
 void vkui_checkbox_delete(vkui_checkbox_t** _self)
 {
-	assert(_self);
+	ASSERT(_self);
 
 	vkui_checkbox_t* self = *_self;
 	if(self)
@@ -125,8 +124,8 @@ void vkui_checkbox_delete(vkui_checkbox_t** _self)
 void vkui_checkbox_label(vkui_checkbox_t* self,
                          const char* fmt, ...)
 {
-	assert(self);
-	assert(fmt);
+	ASSERT(self);
+	ASSERT(fmt);
 
 	// decode string
 	char    string[256];

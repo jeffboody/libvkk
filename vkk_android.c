@@ -22,7 +22,6 @@
  */
 
 #include <android_native_app_glue.h>
-#include <assert.h>
 #include <jni.h>
 #include <stdlib.h>
 #include <unistd.h>
@@ -250,7 +249,7 @@ static vkk_eventq_t* vkk_eventq_new(void)
 
 static void vkk_eventq_delete(vkk_eventq_t** _self)
 {
-	assert(_self);
+	ASSERT(_self);
 
 	vkk_eventq_t* self = *_self;
 	if(self)
@@ -265,8 +264,8 @@ static void vkk_eventq_delete(vkk_eventq_t** _self)
 static int
 vkk_eventq_poll(vkk_eventq_t* self, vkk_event_t* e)
 {
-	assert(self);
-	assert(e);
+	ASSERT(self);
+	ASSERT(e);
 
 	pthread_mutex_lock(&self->event_mutex);
 
@@ -291,14 +290,14 @@ vkk_eventq_poll(vkk_eventq_t* self, vkk_event_t* e)
 
 static vkk_event_t* vkk_eventq_dequeue(vkk_eventq_t* self)
 {
-	assert(self);
+	ASSERT(self);
 
 	return &self->event_buffer[self->event_tail];
 }
 
 static void vkk_eventq_enqueue(vkk_eventq_t* self)
 {
-	assert(self);
+	ASSERT(self);
 
 	pthread_mutex_lock(&self->event_mutex);
 
@@ -327,7 +326,7 @@ Java_com_jeffboody_vkk_VKKNativeActivity_NativeAccelerometer(JNIEnv* env,
                                                              jint rotation,
                                                              jdouble ts)
 {
-	assert(env);
+	ASSERT(env);
 
 	if(eventq)
 	{
@@ -350,7 +349,7 @@ Java_com_jeffboody_vkk_VKKNativeActivity_NativeAxisMove(JNIEnv* env,
                                                         jfloat value,
                                                         jdouble ts)
 {
-	assert(env);
+	ASSERT(env);
 
 	if(eventq)
 	{
@@ -371,7 +370,7 @@ Java_com_jeffboody_vkk_VKKNativeActivity_NativeButtonDown(JNIEnv* env,
                                                           jint button,
                                                           jdouble ts)
 {
-	assert(env);
+	ASSERT(env);
 
 	if(eventq)
 	{
@@ -391,7 +390,7 @@ Java_com_jeffboody_vkk_VKKNativeActivity_NativeButtonUp(JNIEnv* env,
                                                         jint button,
                                                         jdouble ts)
 {
-	assert(env);
+	ASSERT(env);
 
 	if(eventq)
 	{
@@ -409,7 +408,7 @@ Java_com_jeffboody_vkk_VKKNativeActivity_NativeDensity(JNIEnv* env,
                                                        jobject obj,
                                                        jfloat density)
 {
-	assert(env);
+	ASSERT(env);
 
 	if(eventq)
 	{
@@ -426,7 +425,7 @@ Java_com_jeffboody_vkk_VKKNativeActivity_NativeGrantPermission(JNIEnv* env,
                                                                jobject obj,
                                                                jint permission)
 {
-	assert(env);
+	ASSERT(env);
 
 	if(eventq)
 	{
@@ -446,7 +445,7 @@ Java_com_jeffboody_vkk_VKKNativeActivity_NativeGyroscope(JNIEnv* env,
                                                          jfloat az,
                                                          jdouble ts)
 {
-	assert(env);
+	ASSERT(env);
 
 	if(eventq)
 	{
@@ -467,7 +466,7 @@ Java_com_jeffboody_vkk_VKKNativeActivity_NativeKeyDown(JNIEnv* env,
                                                        jint meta,
                                                        jdouble ts)
 {
-	assert(env);
+	ASSERT(env);
 
 	if(eventq)
 	{
@@ -487,7 +486,7 @@ Java_com_jeffboody_vkk_VKKNativeActivity_NativeKeyUp(JNIEnv* env,
                                                      jint meta,
                                                      jdouble ts)
 {
-	assert(env);
+	ASSERT(env);
 
 	if(eventq)
 	{
@@ -511,7 +510,7 @@ Java_com_jeffboody_vkk_VKKNativeActivity_NativeMagnetometer(JNIEnv* env,
                                                             jfloat gfy,
                                                             jfloat gfz)
 {
-	assert(env);
+	ASSERT(env);
 
 	if(eventq)
 	{
@@ -611,8 +610,8 @@ onAppCmd(struct android_app* app, int32_t cmd)
 static int32_t
 onInputEvent(struct android_app* app, AInputEvent* event)
 {
-	assert(app);
-	assert(event);
+	ASSERT(app);
+	ASSERT(event);
 
 	vkk_platform_t* platform;
 	platform = (vkk_platform_t*) app->userData;
@@ -722,7 +721,7 @@ onInputEvent(struct android_app* app, AInputEvent* event)
 static vkk_platform_t*
 vkk_platform_new(struct android_app* app)
 {
-	assert(app);
+	ASSERT(app);
 
 	vkk_platform_t* self;
 	self = (vkk_platform_t*)
@@ -756,7 +755,7 @@ vkk_platform_new(struct android_app* app)
 
 static void vkk_platform_delete(vkk_platform_t** _self)
 {
-	assert(_self);
+	ASSERT(_self);
 
 	vkk_platformOnDestroy_fn onDestroy;
 	onDestroy = VKK_PLATFORM_CALLBACKS.onDestroy;
@@ -775,7 +774,7 @@ static void vkk_platform_delete(vkk_platform_t** _self)
 
 static int vkk_platform_rendering(vkk_platform_t* self)
 {
-	assert(self);
+	ASSERT(self);
 
 	if(self->running && self->has_window)
 	{
@@ -787,7 +786,7 @@ static int vkk_platform_rendering(vkk_platform_t* self)
 
 static void vkk_platform_draw(vkk_platform_t* self)
 {
-	assert(self);
+	ASSERT(self);
 
 	vkk_platformOnCreate_fn  onCreate;
 	vkk_platformOnDestroy_fn onDestroy;
@@ -850,7 +849,7 @@ static void vkk_platform_draw(vkk_platform_t* self)
 static int
 isTimestampValid(struct android_app* app)
 {
-	assert(app);
+	ASSERT(app);
 
 	// import ts1
 	AAssetManager* am;
@@ -963,9 +962,9 @@ static int
 updateResource(struct android_app* app, const char* src,
                const char* dst)
 {
-	assert(app);
-	assert(src);
-	assert(dst);
+	ASSERT(app);
+	ASSERT(src);
+	ASSERT(dst);
 
 	// remove old resource
 	unlink(dst);
@@ -1043,7 +1042,7 @@ void vkk_platform_cmd(vkk_platform_t* self, int cmd,
                       const char* msg)
 {
 	// msg may be NULL
-	assert(self);
+	ASSERT(self);
 
 	// This doesn't work ... and the JNI workaround still
 	// doesn't work correctly.
@@ -1109,7 +1108,7 @@ void vkk_platform_cmd(vkk_platform_t* self, int cmd,
 
 void android_main(struct android_app* app)
 {
-	assert(app);
+	ASSERT(app);
 
 	vkk_platformOnEvent_fn onEvent;
 	onEvent = VKK_PLATFORM_CALLBACKS.onEvent;

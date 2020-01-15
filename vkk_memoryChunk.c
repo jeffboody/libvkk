@@ -21,7 +21,6 @@
  *
  */
 
-#include <assert.h>
 #include <stdlib.h>
 
 #define LOG_TAG "vkk"
@@ -40,7 +39,7 @@
 vkk_memoryChunk_t*
 vkk_memoryChunk_new(vkk_memoryPool_t* pool)
 {
-	assert(pool);
+	ASSERT(pool);
 
 	vkk_engine_t* engine = pool->mm->engine;
 
@@ -89,12 +88,12 @@ vkk_memoryChunk_new(vkk_memoryPool_t* pool)
 
 void vkk_memoryChunk_delete(vkk_memoryChunk_t** _self)
 {
-	assert(_self);
+	ASSERT(_self);
 
 	vkk_memoryChunk_t* self = *_self;
 	if(self)
 	{
-		assert(self->usecount == 0);
+		ASSERT(self->usecount == 0);
 
 		vkk_memoryPool_t* pool   = self->pool;
 		vkk_engine_t*     engine = pool->mm->engine;
@@ -117,7 +116,7 @@ void vkk_memoryChunk_delete(vkk_memoryChunk_t** _self)
 
 int vkk_memoryChunk_slots(vkk_memoryChunk_t* self)
 {
-	assert(self);
+	ASSERT(self);
 
 	vkk_memoryPool_t* pool = self->pool;
 
@@ -128,7 +127,7 @@ int vkk_memoryChunk_slots(vkk_memoryChunk_t* self)
 vkk_memory_t*
 vkk_memoryChunk_alloc(vkk_memoryChunk_t* self)
 {
-	assert(self);
+	ASSERT(self);
 
 	vkk_memoryPool_t* pool = self->pool;
 
@@ -165,8 +164,8 @@ int vkk_memoryChunk_free(vkk_memoryChunk_t* self,
                          int shutdown,
                          vkk_memory_t** _memory)
 {
-	assert(self);
-	assert(_memory);
+	ASSERT(self);
+	ASSERT(_memory);
 
 	vkk_memory_t* memory = *_memory;
 	if(memory)

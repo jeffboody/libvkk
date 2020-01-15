@@ -21,7 +21,6 @@
  *
  */
 
-#include <assert.h>
 #include <stdarg.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -50,7 +49,7 @@ static const float XYUV[] =
 
 static void vkui_sprite_draw(vkui_widget_t* widget)
 {
-	assert(widget);
+	ASSERT(widget);
 
 	vkui_sprite_t* self   = (vkui_sprite_t*) widget;
 	vkui_screen_t* screen = widget->screen;
@@ -126,11 +125,11 @@ vkui_sprite_new(vkui_screen_t* screen,
                 cc_vec4f_t* color,
                 const char** sprite_array)
 {
-	assert(screen);
-	assert(layout);
-	assert(fn);
-	assert(color);
-	assert(sprite_array);
+	ASSERT(screen);
+	ASSERT(layout);
+	ASSERT(fn);
+	ASSERT(color);
+	ASSERT(sprite_array);
 
 	uint32_t count = 0;
 	while(sprite_array[count])
@@ -330,7 +329,7 @@ vkui_sprite_new(vkui_screen_t* screen,
 
 void vkui_sprite_delete(vkui_sprite_t** _self)
 {
-	assert(_self);
+	ASSERT(_self);
 
 	vkui_sprite_t* self = *_self;
 	if(self)
@@ -350,7 +349,7 @@ void vkui_sprite_delete(vkui_sprite_t** _self)
 void vkui_sprite_select(vkui_sprite_t* self,
                         uint32_t index)
 {
-	assert(self);
+	ASSERT(self);
 
 	// check for invalid index
 	if((index < 0) || (index >= self->count))
@@ -365,7 +364,7 @@ void vkui_sprite_select(vkui_sprite_t* self,
 
 void vkui_sprite_rotate(vkui_sprite_t* self, float theta)
 {
-	assert(self);
+	ASSERT(self);
 
 	self->theta = theta;
 }
@@ -373,8 +372,8 @@ void vkui_sprite_rotate(vkui_sprite_t* self, float theta)
 void vkui_sprite_fill(vkui_sprite_t* self,
                       cc_vec4f_t* color)
 {
-	assert(self);
-	assert(color);
+	ASSERT(self);
+	ASSERT(color);
 
 	vkui_widget_color((vkui_widget_t*) self, color);
 }

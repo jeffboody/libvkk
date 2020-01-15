@@ -21,7 +21,6 @@
  *
  */
 
-#include <assert.h>
 #include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -44,7 +43,7 @@
 
 void vkui_screen_sizei(vkui_screen_t* self, int* w, int* h)
 {
-	assert(self);
+	ASSERT(self);
 
 	*w = self->w;
 	*h = self->h;
@@ -53,7 +52,7 @@ void vkui_screen_sizei(vkui_screen_t* self, int* w, int* h)
 void
 vkui_screen_sizef(vkui_screen_t* self, float* w, float* h)
 {
-	assert(self);
+	ASSERT(self);
 
 	*w = (float) self->w;
 	*h = (float) self->h;
@@ -61,14 +60,14 @@ vkui_screen_sizef(vkui_screen_t* self, float* w, float* h)
 
 int vkui_screen_scalei(vkui_screen_t* self)
 {
-	assert(self);
+	ASSERT(self);
 
 	return self->scale;
 }
 
 float vkui_screen_scalef(vkui_screen_t* self)
 {
-	assert(self);
+	ASSERT(self);
 
 	if(self->scale == VKUI_SCREEN_SCALE_XSMALL)
 	{
@@ -91,7 +90,7 @@ float vkui_screen_scalef(vkui_screen_t* self)
 
 void vkui_screen_dirty(vkui_screen_t* self)
 {
-	assert(self);
+	ASSERT(self);
 
 	self->dirty = 1;
 }
@@ -100,9 +99,9 @@ void
 vkui_screen_layoutBorder(vkui_screen_t* self, int border,
                          float* hborder, float* vborder)
 {
-	assert(self);
-	assert(hborder);
-	assert(vborder);
+	ASSERT(self);
+	ASSERT(hborder);
+	ASSERT(vborder);
 
 	*hborder = 0.0f;
 	*vborder = 0.0f;
@@ -141,7 +140,7 @@ vkui_screen_layoutBorder(vkui_screen_t* self, int border,
 
 float vkui_screen_layoutText(vkui_screen_t* self, int size)
 {
-	assert(self);
+	ASSERT(self);
 
 	// default size is 24 px at density 1.0
 	float sizef = 24.0f*self->density*vkui_screen_scalef(self);
@@ -158,7 +157,7 @@ float vkui_screen_layoutText(vkui_screen_t* self, int size)
 
 void vkui_screen_bind(vkui_screen_t* self, int bind)
 {
-	assert(self);
+	ASSERT(self);
 
 	if(bind == self->gp_bound)
 	{
@@ -192,8 +191,8 @@ void vkui_screen_bind(vkui_screen_t* self, int bind)
 void
 vkui_screen_scissor(vkui_screen_t* self, cc_rect1f_t* rect)
 {
-	assert(self);
-	assert(rect);
+	ASSERT(self);
+	ASSERT(rect);
 
 	vkk_renderer_scissor(self->renderer,
 	                     (uint32_t) (rect->l + 0.5f),
@@ -204,7 +203,7 @@ vkui_screen_scissor(vkui_screen_t* self, cc_rect1f_t* rect)
 
 void vkui_screen_playClick(vkui_screen_t* self)
 {
-	assert(self);
+	ASSERT(self);
 
 	self->clicked = 1;
 }
@@ -220,10 +219,10 @@ vkui_screen_new(vkk_engine_t* engine,
                 void* sound_fx,
                 vkui_screen_playClickFn playClick)
 {
-	assert(engine);
-	assert(resource);
-	assert(sound_fx);
-	assert(playClick);
+	ASSERT(engine);
+	ASSERT(resource);
+	ASSERT(sound_fx);
+	ASSERT(playClick);
 
 	vkui_screen_t* self;
 	self = (vkui_screen_t*) CALLOC(1, sizeof(vkui_screen_t));
@@ -723,7 +722,7 @@ vkui_screen_new(vkk_engine_t* engine,
 
 void vkui_screen_delete(vkui_screen_t** _self)
 {
-	assert(_self);
+	ASSERT(_self);
 
 	vkui_screen_t* self = *_self;
 	if(self)
@@ -785,7 +784,7 @@ void vkui_screen_delete(vkui_screen_t** _self)
 vkui_widget_t*
 vkui_screen_top(vkui_screen_t* self, vkui_widget_t* top)
 {
-	assert(self);
+	ASSERT(self);
 
 	if(self->top_widget == top)
 	{
@@ -802,14 +801,14 @@ void
 vkui_screen_focus(vkui_screen_t* self, vkui_widget_t* focus)
 {
 	// focus may be NULL
-	assert(self);
+	ASSERT(self);
 
 	self->focus_widget = focus;
 }
 
 void vkui_screen_resize(vkui_screen_t* self, int w, int h)
 {
-	assert(self);
+	ASSERT(self);
 
 	if((self->w == w) && (self->h == h))
 	{
@@ -823,7 +822,7 @@ void vkui_screen_resize(vkui_screen_t* self, int w, int h)
 
 void vkui_screen_density(vkui_screen_t* self, float density)
 {
-	assert(self);
+	ASSERT(self);
 
 	if(self->density == density)
 	{
@@ -836,7 +835,7 @@ void vkui_screen_density(vkui_screen_t* self, float density)
 
 void vkui_screen_rescale(vkui_screen_t* self, int scale)
 {
-	assert(self);
+	ASSERT(self);
 
 	if(self->scale == scale)
 	{
@@ -854,7 +853,7 @@ void vkui_screen_rescale(vkui_screen_t* self, int scale)
 int vkui_screen_pointerDown(vkui_screen_t* self,
                             float x, float y, double t0)
 {
-	assert(self);
+	ASSERT(self);
 
 	if((self->top_widget == NULL) ||
 	   (self->pointer_state != VKUI_WIDGET_POINTER_UP))
@@ -881,7 +880,7 @@ int vkui_screen_pointerDown(vkui_screen_t* self,
 int vkui_screen_pointerUp(vkui_screen_t* self,
                           float x, float y, double t0)
 {
-	assert(self);
+	ASSERT(self);
 
 	int touch = self->pointer_state != VKUI_WIDGET_POINTER_UP;
 	if(self->top_widget &&
@@ -898,7 +897,7 @@ int vkui_screen_pointerUp(vkui_screen_t* self,
 int vkui_screen_pointerMove(vkui_screen_t* self,
                             float x, float y, double t0)
 {
-	assert(self);
+	ASSERT(self);
 
 	if((self->top_widget == NULL) ||
 	   (self->pointer_state == VKUI_WIDGET_POINTER_UP))
@@ -950,7 +949,7 @@ int vkui_screen_pointerMove(vkui_screen_t* self,
 int vkui_screen_keyPress(vkui_screen_t* self,
                          int keycode, int meta)
 {
-	assert(self);
+	ASSERT(self);
 
 	if(self->focus_widget == NULL)
 	{
@@ -963,7 +962,7 @@ int vkui_screen_keyPress(vkui_screen_t* self,
 
 void vkui_screen_draw(vkui_screen_t* self)
 {
-	assert(self);
+	ASSERT(self);
 
 	uint32_t uw;
 	uint32_t uh;
@@ -1070,7 +1069,7 @@ void vkui_screen_draw(vkui_screen_t* self)
 vkui_font_t*
 vkui_screen_font(vkui_screen_t* self, int font_type)
 {
-	assert(self);
+	ASSERT(self);
 
 	return self->font_array[font_type];
 }
@@ -1080,7 +1079,7 @@ vkui_screen_textVb(vkui_screen_t* self, uint32_t size,
                    vkk_buffer_t* vb)
 {
 	// vb may be NULL
-	assert(self);
+	ASSERT(self);
 
 	// return vb to the pool
 	if(vb)
@@ -1125,8 +1124,8 @@ vkui_screen_spriteImage(vkui_screen_t* self,
                         texgz_tex_t** _tex)
 {
 	// _tex may be NULL
-	assert(self);
-	assert(name);
+	ASSERT(self);
+	ASSERT(name);
 
 	vkk_image_t* image;
 	cc_mapIter_t miter;

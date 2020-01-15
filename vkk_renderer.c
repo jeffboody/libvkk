@@ -21,7 +21,6 @@
  *
  */
 
-#include <assert.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -51,9 +50,9 @@ vkk_fillUniformAttachmentArray(vkk_uniformAttachment_t* dst,
                                vkk_uniformAttachment_t* src,
                                vkk_uniformSetFactory_t* usf)
 {
-	assert(dst);
-	assert(src);
-	assert(usf);
+	ASSERT(dst);
+	ASSERT(src);
+	ASSERT(usf);
 
 	// dst binding/type already filled in
 	// validate and fill buffer/image union
@@ -61,11 +60,11 @@ vkk_fillUniformAttachmentArray(vkk_uniformAttachment_t* dst,
 	for(i = 0; i < src_ua_count; ++i)
 	{
 		uint32_t b = src[i].binding;
-		assert(b < usf->ub_count);
-		assert(b == dst[b].binding);
-		assert((src[i].type == VKK_UNIFORM_TYPE_BUFFER_REF) ||
+		ASSERT(b < usf->ub_count);
+		ASSERT(b == dst[b].binding);
+		ASSERT((src[i].type == VKK_UNIFORM_TYPE_BUFFER_REF) ||
 		       (src[i].type == VKK_UNIFORM_TYPE_SAMPLER_REF));
-		assert(src[i].type == dst[b].type);
+		ASSERT(src[i].type == dst[b].type);
 
 		dst[b].buffer = src[i].buffer;
 	}
@@ -78,9 +77,9 @@ vkk_renderer_updateUniformBufferRef(vkk_renderer_t* self,
                                     vkk_buffer_t* buffer,
                                     uint32_t binding)
 {
-	assert(self);
-	assert(us);
-	assert(buffer);
+	ASSERT(self);
+	ASSERT(us);
+	ASSERT(buffer);
 
 	vkk_engine_t* engine = self->engine;
 
@@ -122,10 +121,10 @@ vkk_renderer_updateUniformSamplerRef(vkk_renderer_t* self,
                                      vkk_image_t* image,
                                      uint32_t binding)
 {
-	assert(self);
-	assert(us);
-	assert(sampler);
-	assert(image);
+	ASSERT(self);
+	ASSERT(us);
+	ASSERT(sampler);
+	ASSERT(image);
 
 	vkk_engine_t* engine = self->engine;
 
@@ -160,7 +159,7 @@ vkk_renderer_updateUniformSamplerRef(vkk_renderer_t* self,
 static vkk_renderer_t*
 vkk_renderer_getPrimary(vkk_renderer_t* self)
 {
-	assert(self);
+	ASSERT(self);
 
 	if(self->type == VKK_RENDERER_TYPE_SECONDARY)
 	{
@@ -180,8 +179,8 @@ void vkk_renderer_init(vkk_renderer_t* self,
                        int type,
                        vkk_engine_t* engine)
 {
-	assert(self);
-	assert(engine);
+	ASSERT(self);
+	ASSERT(engine);
 
 	self->engine = engine;
 	self->type   = type;
@@ -191,7 +190,7 @@ void vkk_renderer_init(vkk_renderer_t* self,
 VkRenderPass
 vkk_renderer_renderPass(vkk_renderer_t* self)
 {
-	assert(self);
+	ASSERT(self);
 
 	if(self->type == VKK_RENDERER_TYPE_DEFAULT)
 	{
@@ -210,7 +209,7 @@ vkk_renderer_renderPass(vkk_renderer_t* self)
 VkFramebuffer
 vkk_renderer_framebuffer(vkk_renderer_t* self)
 {
-	assert(self);
+	ASSERT(self);
 
 	if(self->type == VKK_RENDERER_TYPE_DEFAULT)
 	{
@@ -229,7 +228,7 @@ vkk_renderer_framebuffer(vkk_renderer_t* self)
 uint32_t
 vkk_renderer_swapchainFrame(vkk_renderer_t* self)
 {
-	assert(self);
+	ASSERT(self);
 
 	if(self->type == VKK_RENDERER_TYPE_DEFAULT)
 	{
@@ -248,7 +247,7 @@ vkk_renderer_swapchainFrame(vkk_renderer_t* self)
 VkCommandBuffer
 vkk_renderer_commandBuffer(vkk_renderer_t* self)
 {
-	assert(self);
+	ASSERT(self);
 
 	if(self->type == VKK_RENDERER_TYPE_DEFAULT)
 	{
@@ -267,7 +266,7 @@ vkk_renderer_commandBuffer(vkk_renderer_t* self)
 double
 vkk_renderer_tsCurrent(vkk_renderer_t* self)
 {
-	assert(self);
+	ASSERT(self);
 
 	double ts = 0.0;
 	if(self->type == VKK_RENDERER_TYPE_DEFAULT)
@@ -297,7 +296,7 @@ vkk_renderer_newOffscreen(vkk_engine_t* engine,
                           uint32_t width, uint32_t height,
                           int format)
 {
-	assert(engine);
+	ASSERT(engine);
 
 	return vkk_offscreenRenderer_new(engine, width, height,
 	                                 format);
@@ -306,14 +305,14 @@ vkk_renderer_newOffscreen(vkk_engine_t* engine,
 vkk_renderer_t*
 vkk_renderer_newSecondary(vkk_renderer_t* primary)
 {
-	assert(primary);
+	ASSERT(primary);
 
 	return vkk_secondaryRenderer_new(primary);
 }
 
 void vkk_renderer_delete(vkk_renderer_t** _self)
 {
-	assert(_self);
+	ASSERT(_self);
 
 	vkk_renderer_t* self = *_self;
 	if(self)
@@ -336,11 +335,11 @@ int vkk_renderer_beginDefault(vkk_renderer_t* self,
                               int mode,
                               float* clear_color)
 {
-	assert(self);
-	assert((mode == VKK_RENDERER_MODE_PRIMARY) ||
+	ASSERT(self);
+	ASSERT((mode == VKK_RENDERER_MODE_PRIMARY) ||
 	       (mode == VKK_RENDERER_MODE_SECONDARY));
-	assert(clear_color);
-	assert(self->type == VKK_RENDERER_TYPE_DEFAULT);
+	ASSERT(clear_color);
+	ASSERT(self->type == VKK_RENDERER_TYPE_DEFAULT);
 
 	vkk_engine_t* engine = self->engine;
 
@@ -368,12 +367,12 @@ int vkk_renderer_beginOffscreen(vkk_renderer_t* self,
                                 vkk_image_t* image,
                                 float* clear_color)
 {
-	assert(self);
-	assert((mode == VKK_RENDERER_MODE_PRIMARY) ||
+	ASSERT(self);
+	ASSERT((mode == VKK_RENDERER_MODE_PRIMARY) ||
 	       (mode == VKK_RENDERER_MODE_SECONDARY));
-	assert(image);
-	assert(clear_color);
-	assert(self->type == VKK_RENDERER_TYPE_OFFSCREEN);
+	ASSERT(image);
+	ASSERT(clear_color);
+	ASSERT(self->type == VKK_RENDERER_TYPE_OFFSCREEN);
 
 	vkk_engine_t* engine = self->engine;
 
@@ -398,8 +397,8 @@ int vkk_renderer_beginOffscreen(vkk_renderer_t* self,
 
 int vkk_renderer_beginSecondary(vkk_renderer_t* self)
 {
-	assert(self);
-	assert(self->type == VKK_RENDERER_TYPE_SECONDARY);
+	ASSERT(self);
+	ASSERT(self->type == VKK_RENDERER_TYPE_SECONDARY);
 
 	vkk_engine_t* engine = self->engine;
 
@@ -417,7 +416,7 @@ int vkk_renderer_beginSecondary(vkk_renderer_t* self)
 
 void vkk_renderer_end(vkk_renderer_t* self)
 {
-	assert(self);
+	ASSERT(self);
 
 	if(self->type == VKK_RENDERER_TYPE_DEFAULT)
 	{
@@ -439,7 +438,7 @@ void vkk_renderer_surfaceSize(vkk_renderer_t* self,
                               uint32_t* _width,
                               uint32_t* _height)
 {
-	assert(self);
+	ASSERT(self);
 
 	if(self->type == VKK_RENDERER_TYPE_DEFAULT)
 	{
@@ -460,11 +459,11 @@ void vkk_renderer_updateBuffer(vkk_renderer_t* self,
                                size_t size,
                                const void* buf)
 {
-	assert(self);
-	assert(buffer);
-	assert(size > 0);
-	assert(buf);
-	assert(self->mode == VKK_RENDERER_MODE_PRIMARY);
+	ASSERT(self);
+	ASSERT(buffer);
+	ASSERT(size > 0);
+	ASSERT(buf);
+	ASSERT(self->mode == VKK_RENDERER_MODE_PRIMARY);
 
 	vkk_engine_t* engine = self->engine;
 
@@ -527,10 +526,10 @@ vkk_renderer_updateUniformSetRefs(vkk_renderer_t* self,
                                   uint32_t ua_count,
                                   vkk_uniformAttachment_t* ua_array)
 {
-	assert(self);
-	assert(us);
-	assert(ua_array);
-	assert(self->mode == VKK_RENDERER_MODE_PRIMARY);
+	ASSERT(self);
+	ASSERT(us);
+	ASSERT(ua_array);
+	ASSERT(self->mode == VKK_RENDERER_MODE_PRIMARY);
 
 	vkk_uniformSetFactory_t* usf = us->usf;
 
@@ -566,8 +565,8 @@ vkk_renderer_updateUniformSetRefs(vkk_renderer_t* self,
 void vkk_renderer_bindGraphicsPipeline(vkk_renderer_t* self,
                                        vkk_graphicsPipeline_t* gp)
 {
-	assert(self);
-	assert(self->mode == VKK_RENDERER_MODE_PRIMARY);
+	ASSERT(self);
+	ASSERT(self->mode == VKK_RENDERER_MODE_PRIMARY);
 
 	VkCommandBuffer cb = vkk_renderer_commandBuffer(self);
 
@@ -584,10 +583,10 @@ void vkk_renderer_bindUniformSets(vkk_renderer_t* self,
                                   uint32_t us_count,
                                   vkk_uniformSet_t** us_array)
 {
-	assert(self);
-	assert(pl);
-	assert(us_array);
-	assert(self->mode == VKK_RENDERER_MODE_PRIMARY);
+	ASSERT(self);
+	ASSERT(pl);
+	ASSERT(us_array);
+	ASSERT(self->mode == VKK_RENDERER_MODE_PRIMARY);
 
 	double ts = vkk_renderer_tsCurrent(self);
 
@@ -645,8 +644,8 @@ void vkk_renderer_bindUniformSets(vkk_renderer_t* self,
 
 void vkk_renderer_clearDepth(vkk_renderer_t* self)
 {
-	assert(self);
-	assert(self->mode == VKK_RENDERER_MODE_PRIMARY);
+	ASSERT(self);
+	ASSERT(self->mode == VKK_RENDERER_MODE_PRIMARY);
 
 	uint32_t width;
 	uint32_t height;
@@ -693,8 +692,8 @@ void vkk_renderer_viewport(vkk_renderer_t* self,
                            float x, float y,
                            float width, float height)
 {
-	assert(self);
-	assert(self->mode == VKK_RENDERER_MODE_PRIMARY);
+	ASSERT(self);
+	ASSERT(self->mode == VKK_RENDERER_MODE_PRIMARY);
 
 	VkViewport viewport =
 	{
@@ -714,8 +713,8 @@ void vkk_renderer_scissor(vkk_renderer_t* self,
                           uint32_t x, uint32_t y,
                           uint32_t width, uint32_t height)
 {
-	assert(self);
-	assert(self->mode == VKK_RENDERER_MODE_PRIMARY);
+	ASSERT(self);
+	ASSERT(self->mode == VKK_RENDERER_MODE_PRIMARY);
 
 	VkRect2D scissor =
 	{
@@ -741,9 +740,9 @@ void vkk_renderer_draw(vkk_renderer_t* self,
                        uint32_t vertex_buffer_count,
                        vkk_buffer_t** vertex_buffers)
 {
-	assert(self);
-	assert(vertex_buffer_count <= 16);
-	assert(self->mode == VKK_RENDERER_MODE_PRIMARY);
+	ASSERT(self);
+	ASSERT(vertex_buffer_count <= 16);
+	ASSERT(self->mode == VKK_RENDERER_MODE_PRIMARY);
 
 	VkDeviceSize vb_offsets[16] =
 	{
@@ -786,9 +785,9 @@ void vkk_renderer_drawIndexed(vkk_renderer_t* self,
                               vkk_buffer_t* index_buffer,
                               vkk_buffer_t** vertex_buffers)
 {
-	assert(self);
-	assert(vertex_buffer_count <= 16);
-	assert(self->mode == VKK_RENDERER_MODE_PRIMARY);
+	ASSERT(self);
+	ASSERT(vertex_buffer_count <= 16);
+	ASSERT(self->mode == VKK_RENDERER_MODE_PRIMARY);
 
 	VkDeviceSize vb_offsets[16] =
 	{
@@ -840,9 +839,9 @@ void vkk_renderer_drawSecondary(vkk_renderer_t* self,
                                 uint32_t secondary_count,
                                 vkk_renderer_t** secondary_array)
 {
-	assert(self);
-	assert(secondary_array);
-	assert(self->mode == VKK_RENDERER_MODE_SECONDARY);
+	ASSERT(self);
+	ASSERT(secondary_array);
+	ASSERT(self->mode == VKK_RENDERER_MODE_SECONDARY);
 
 	VkCommandBuffer cb_array[secondary_count];
 

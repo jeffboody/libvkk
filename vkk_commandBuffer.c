@@ -21,7 +21,6 @@
  *
  */
 
-#include <assert.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -41,7 +40,7 @@ vkk_commandBuffer_new(vkk_engine_t* engine,
                       uint32_t cb_count,
                       int renderer_type)
 {
-	assert(engine);
+	ASSERT(engine);
 
 	vkk_commandBuffer_t* self;
 	self = (vkk_commandBuffer_t*)
@@ -117,7 +116,7 @@ vkk_commandBuffer_new(vkk_engine_t* engine,
 
 void vkk_commandBuffer_delete(vkk_commandBuffer_t** _self)
 {
-	assert(_self);
+	ASSERT(_self);
 
 	vkk_commandBuffer_t* self = *_self;
 	if(self)
@@ -140,8 +139,8 @@ VkCommandBuffer
 vkk_commandBuffer_get(vkk_commandBuffer_t* self,
                       uint32_t index)
 {
-	assert(self);
-	assert(index < self->cb_count);
+	ASSERT(self);
+	ASSERT(index < self->cb_count);
 
 	return self->cb_array[index];
 }

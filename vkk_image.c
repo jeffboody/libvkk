@@ -21,7 +21,6 @@
  *
  */
 
-#include <assert.h>
 #include <stdlib.h>
 
 #define LOG_TAG "vkk"
@@ -46,7 +45,7 @@ vkk_image_t* vkk_image_new(vkk_engine_t* engine,
 {
 	// pixels may be NULL for depth image or
 	// offscreen rendering
-	assert(engine);
+	ASSERT(engine);
 
 	// check if mipmapped images are a power-of-two
 	// and compute the mip_levels
@@ -54,7 +53,7 @@ vkk_image_t* vkk_image_new(vkk_engine_t* engine,
 	if(mipmap)
 	{
 		// mipmap does not apply to the depth image
-		assert(format != VKK_IMAGE_FORMAT_DEPTH);
+		ASSERT(format != VKK_IMAGE_FORMAT_DEPTH);
 
 		uint32_t w = 1;
 		uint32_t h = 1;
@@ -233,7 +232,7 @@ vkk_image_t* vkk_image_new(vkk_engine_t* engine,
 
 void vkk_image_delete(vkk_image_t** _self)
 {
-	assert(_self);
+	ASSERT(_self);
 
 	vkk_image_t* self = *_self;
 	if(self)
@@ -247,7 +246,7 @@ void vkk_image_delete(vkk_image_t** _self)
 
 int vkk_image_format(vkk_image_t* self)
 {
-	assert(self);
+	ASSERT(self);
 
 	return self->format;
 }
@@ -255,9 +254,9 @@ int vkk_image_format(vkk_image_t* self)
 size_t vkk_image_size(vkk_image_t* self,
                       uint32_t* _width, uint32_t* _height)
 {
-	assert(self);
-	assert(_width);
-	assert(_height);
+	ASSERT(self);
+	ASSERT(_width);
+	ASSERT(_height);
 
 	size_t bpp[VKK_IMAGE_FORMAT_COUNT] =
 	{

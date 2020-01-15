@@ -21,7 +21,6 @@
  *
  */
 
-#include <assert.h>
 #include <stdlib.h>
 #include <string.h>
 #include <pthread.h>
@@ -42,7 +41,7 @@
 static void
 vkk_memoryManager_lock(vkk_memoryManager_t* self)
 {
-	assert(self);
+	ASSERT(self);
 
 	pthread_mutex_lock(&self->manager_mutex);
 	TRACE_BEGIN();
@@ -51,7 +50,7 @@ vkk_memoryManager_lock(vkk_memoryManager_t* self)
 static void
 vkk_memoryManager_unlock(vkk_memoryManager_t* self)
 {
-	assert(self);
+	ASSERT(self);
 
 	TRACE_END();
 	pthread_mutex_unlock(&self->manager_mutex);
@@ -61,8 +60,8 @@ static void
 vkk_memoryManager_chunkLock(vkk_memoryManager_t* self,
                             vkk_memoryChunk_t* chunk)
 {
-	assert(self);
-	assert(chunk);
+	ASSERT(self);
+	ASSERT(chunk);
 
 	pthread_mutex_lock(&self->chunk_mutex);
 	TRACE_BEGIN();
@@ -82,8 +81,8 @@ static void
 vkk_memoryManager_chunkUnlock(vkk_memoryManager_t* self,
                               vkk_memoryChunk_t* chunk)
 {
-	assert(self);
-	assert(chunk);
+	ASSERT(self);
+	ASSERT(chunk);
 
 	chunk->locked = 0;
 
@@ -96,8 +95,8 @@ static void
 vkk_memoryManager_freeLocked(vkk_memoryManager_t* self,
                              vkk_memory_t** _memory)
 {
-	assert(self);
-	assert(_memory);
+	ASSERT(self);
+	ASSERT(_memory);
 
 	vkk_memory_t* memory = *_memory;
 	if(memory)
@@ -130,7 +129,7 @@ vkk_memoryManager_freeLocked(vkk_memoryManager_t* self,
 vkk_memoryManager_t*
 vkk_memoryManager_new(vkk_engine_t* engine)
 {
-	assert(engine);
+	ASSERT(engine);
 
 	vkk_memoryManager_t* self;
 	self = (vkk_memoryManager_t*)
@@ -184,12 +183,12 @@ vkk_memoryManager_new(vkk_engine_t* engine)
 
 void vkk_memoryManager_delete(vkk_memoryManager_t** _self)
 {
-	assert(_self);
+	ASSERT(_self);
 
 	vkk_memoryManager_t* self = *_self;
 	if(self)
 	{
-		assert(cc_map_size(self->pools) == 0);
+		ASSERT(cc_map_size(self->pools) == 0);
 
 		pthread_cond_destroy(&self->chunk_cond);
 		pthread_mutex_destroy(&self->chunk_mutex);
@@ -202,7 +201,7 @@ void vkk_memoryManager_delete(vkk_memoryManager_t** _self)
 
 void vkk_memoryManager_shutdown(vkk_memoryManager_t* self)
 {
-	assert(self);
+	ASSERT(self);
 
 	vkk_memoryManager_lock(self);
 	self->shutdown = 1;
@@ -215,7 +214,7 @@ vkk_memoryManager_allocBuffer(vkk_memoryManager_t* self,
                               size_t size,
                               const void* buf)
 {
-	assert(self);
+	ASSERT(self);
 
 	vkk_memoryManager_lock(self);
 
@@ -383,7 +382,7 @@ vkk_memory_t*
 vkk_memoryManager_allocImage(vkk_memoryManager_t* self,
                              VkImage image)
 {
-	assert(self);
+	ASSERT(self);
 
 	vkk_memoryManager_lock(self);
 
@@ -520,8 +519,8 @@ vkk_memoryManager_allocImage(vkk_memoryManager_t* self,
 void vkk_memoryManager_free(vkk_memoryManager_t* self,
                             vkk_memory_t** _memory)
 {
-	assert(self);
-	assert(_memory);
+	ASSERT(self);
+	ASSERT(_memory);
 
 	vkk_memoryManager_lock(self);
 	vkk_memoryManager_freeLocked(self, _memory);
@@ -533,10 +532,10 @@ void vkk_memoryManager_update(vkk_memoryManager_t* self,
                               size_t size,
                               const void* buf)
 {
-	assert(self);
-	assert(memory);
-	assert(size > 0);
-	assert(buf);
+	ASSERT(self);
+	ASSERT(memory);
+	ASSERT(size > 0);
+	ASSERT(buf);
 
 	vkk_memoryChunk_t*   chunk  = memory->chunk;
 	vkk_memoryPool_t*    pool   = chunk->pool;

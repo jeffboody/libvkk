@@ -21,7 +21,6 @@
  *
  */
 
-#include <assert.h>
 #include <stdlib.h>
 
 #define LOG_TAG "vkk"
@@ -58,8 +57,8 @@ static vkk_uploaderBuffer_t*
 vkk_uploaderBuffer_new(vkk_engine_t* engine, size_t size,
                        const void* pixels)
 {
-	assert(engine);
-	assert(pixels);
+	ASSERT(engine);
+	ASSERT(pixels);
 
 	vkk_uploaderBuffer_t* self;
 	self = (vkk_uploaderBuffer_t*)
@@ -112,7 +111,7 @@ vkk_uploaderBuffer_new(vkk_engine_t* engine, size_t size,
 static void
 vkk_uploaderBuffer_delete(vkk_uploaderBuffer_t** _self)
 {
-	assert(_self);
+	ASSERT(_self);
 
 	vkk_uploaderBuffer_t* self = *_self;
 	if(self)
@@ -130,7 +129,7 @@ vkk_uploaderBuffer_delete(vkk_uploaderBuffer_t** _self)
 static vkk_uploaderInstance_t*
 vkk_uploaderInstance_new(vkk_engine_t* engine)
 {
-	assert(engine);
+	ASSERT(engine);
 
 	vkk_uploaderInstance_t* self;
 	self = (vkk_uploaderInstance_t*)
@@ -177,7 +176,7 @@ vkk_uploaderInstance_new(vkk_engine_t* engine)
 static void
 vkk_uploaderInstance_delete(vkk_uploaderInstance_t** _self)
 {
-	assert(_self);
+	ASSERT(_self);
 
 	vkk_uploaderInstance_t* self = *_self;
 	if(self)
@@ -195,7 +194,7 @@ vkk_uploaderInstance_delete(vkk_uploaderInstance_t** _self)
 static void
 vkk_imageUploader_lock(vkk_imageUploader_t* self)
 {
-	assert(self);
+	ASSERT(self);
 
 	pthread_mutex_lock(&self->mutex);
 	TRACE_BEGIN();
@@ -204,7 +203,7 @@ vkk_imageUploader_lock(vkk_imageUploader_t* self)
 static void
 vkk_imageUploader_unlock(vkk_imageUploader_t* self)
 {
-	assert(self);
+	ASSERT(self);
 
 	TRACE_END();
 	pthread_mutex_unlock(&self->mutex);
@@ -217,7 +216,7 @@ vkk_imageUploader_unlock(vkk_imageUploader_t* self)
 vkk_imageUploader_t*
 vkk_imageUploader_new(vkk_engine_t* engine)
 {
-	assert(engine);
+	ASSERT(engine);
 
 	vkk_imageUploader_t* self;
 	self = (vkk_imageUploader_t*)
@@ -263,7 +262,7 @@ vkk_imageUploader_new(vkk_engine_t* engine)
 
 void vkk_imageUploader_delete(vkk_imageUploader_t** _self)
 {
-	assert(_self);
+	ASSERT(_self);
 
 	vkk_imageUploader_t* self = *_self;
 	if(self)
@@ -298,7 +297,7 @@ void vkk_imageUploader_delete(vkk_imageUploader_t** _self)
 
 void vkk_imageUploader_shutdown(vkk_imageUploader_t* self)
 {
-	assert(self);
+	ASSERT(self);
 
 	vkk_imageUploader_lock(self);
 	self->shutdown = 1;
@@ -309,9 +308,9 @@ int vkk_imageUploader_upload(vkk_imageUploader_t* self,
                              vkk_image_t* image,
                              const void* pixels)
 {
-	assert(self);
-	assert(image);
-	assert(pixels);
+	ASSERT(self);
+	ASSERT(image);
+	ASSERT(pixels);
 
 	vkk_engine_t* engine = self->engine;
 

@@ -21,7 +21,6 @@
  *
  */
 
-#include <assert.h>
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
@@ -61,9 +60,9 @@ vkk_engine_hasDeviceExtensions(vkk_engine_t* self,
                                uint32_t count,
                                const char** names)
 {
-	assert(self);
-	assert(count > 0);
-	assert(names);
+	ASSERT(self);
+	ASSERT(count > 0);
+	ASSERT(names);
 
 	uint32_t pCount = 0;
 	if(vkEnumerateDeviceExtensionProperties(self->physical_device, NULL,
@@ -128,8 +127,8 @@ vkk_engine_hasDeviceExtensions(vkk_engine_t* self,
 static int
 vkk_engine_initSDL(vkk_engine_t* self, const char* app_name)
 {
-	assert(self);
-	assert(app_name);
+	ASSERT(self);
+	ASSERT(app_name);
 
 	SDL_version version;
 	SDL_VERSION(&version);
@@ -202,8 +201,8 @@ vkk_engine_newInstance(vkk_engine_t* self,
                        const char* app_name,
                        uint32_t app_version)
 {
-	assert(self);
-	assert(app_name);
+	ASSERT(self);
+	ASSERT(app_name);
 
 	uint32_t    extension_count   = 2;
 	const char* extension_names[] =
@@ -277,7 +276,7 @@ vkk_engine_newInstance(vkk_engine_t* self,
 
 static int vkk_engine_getPhysicalDevice(vkk_engine_t* self)
 {
-	assert(self);
+	ASSERT(self);
 
 	uint32_t physical_device_count;
 	if(vkEnumeratePhysicalDevices(self->instance,
@@ -353,7 +352,7 @@ static int vkk_engine_getPhysicalDevice(vkk_engine_t* self)
 
 static int vkk_engine_newDevice(vkk_engine_t* self)
 {
-	assert(self);
+	ASSERT(self);
 
 	uint32_t    extension_count   = 1;
 	const char* extension_names[] =
@@ -479,7 +478,7 @@ vkk_engine_importPipelineCache(vkk_engine_t* self,
                                int* _size,
                                void** _data)
 {
-	assert(self);
+	ASSERT(self);
 
 	*_size = 0;
 	*_data = NULL;
@@ -536,7 +535,7 @@ vkk_engine_importPipelineCache(vkk_engine_t* self,
 static void
 vkk_engine_exportPipelineCache(vkk_engine_t* self)
 {
-	assert(self);
+	ASSERT(self);
 
 	size_t size = 0;
 	if(vkGetPipelineCacheData(self->device,
@@ -597,7 +596,7 @@ vkk_engine_exportPipelineCache(vkk_engine_t* self)
 
 static int vkk_engine_newPipelineCache(vkk_engine_t* self)
 {
-	assert(self);
+	ASSERT(self);
 
 	// import the pipeline cache
 	int   size = 0;
@@ -634,9 +633,9 @@ vkk_engine_importShaderModule(vkk_engine_t* self,
                               const char* fname,
                               size_t* _size)
 {
-	assert(self);
-	assert(fname);
-	assert(_size);
+	ASSERT(self);
+	ASSERT(fname);
+	ASSERT(_size);
 
 	pak_file_t* pak;
 	pak = pak_file_open(self->resource, PAK_FLAG_READ);
@@ -685,7 +684,7 @@ vkk_engine_importShaderModule(vkk_engine_t* self,
 
 static void vkk_engine_initImageUsage(vkk_engine_t* self)
 {
-	assert(self);
+	ASSERT(self);
 
 	int i;
 	VkFormatProperties fp;
@@ -734,7 +733,7 @@ static void vkk_engine_initImageUsage(vkk_engine_t* self)
 static vkk_object_t*
 vkk_object_new(int type, void* obj)
 {
-	assert(obj);
+	ASSERT(obj);
 
 	vkk_object_t* self;
 	self = (vkk_object_t*) CALLOC(1, sizeof(vkk_object_t));
@@ -752,7 +751,7 @@ vkk_object_new(int type, void* obj)
 static void
 vkk_object_delete(vkk_object_t** _self)
 {
-	assert(_self);
+	ASSERT(_self);
 
 	vkk_object_t* self = *_self;
 	if(self)
@@ -766,8 +765,8 @@ static void
 vkk_engine_destructRenderer(vkk_engine_t* self, int wait,
                             vkk_renderer_t** _renderer)
 {
-	assert(self);
-	assert(_renderer);
+	ASSERT(self);
+	ASSERT(_renderer);
 
 	vkk_renderer_t* renderer = *_renderer;
 	if(renderer)
@@ -799,8 +798,8 @@ static void
 vkk_engine_destructBuffer(vkk_engine_t* self, int wait,
                           vkk_buffer_t** _buffer)
 {
-	assert(self);
-	assert(_buffer);
+	ASSERT(self);
+	ASSERT(_buffer);
 
 	vkk_buffer_t* buffer = *_buffer;
 	if(buffer)
@@ -836,8 +835,8 @@ static void
 vkk_engine_destructImage(vkk_engine_t* self, int wait,
                          vkk_image_t** _image)
 {
-	assert(self);
-	assert(_image);
+	ASSERT(self);
+	ASSERT(_image);
 
 	vkk_image_t* image = *_image;
 	if(image)
@@ -865,8 +864,8 @@ static void
 vkk_engine_destructSampler(vkk_engine_t* self, int wait,
                            vkk_sampler_t** _sampler)
 {
-	assert(self);
-	assert(_sampler);
+	ASSERT(self);
+	ASSERT(_sampler);
 
 	vkk_sampler_t* sampler = *_sampler;
 	if(sampler)
@@ -890,8 +889,8 @@ static void
 vkk_engine_destructUniformSetFactory(vkk_engine_t* self,
                                      vkk_uniformSetFactory_t** _usf)
 {
-	assert(self);
-	assert(_usf);
+	ASSERT(self);
+	ASSERT(_usf);
 
 	vkk_uniformSetFactory_t* usf = *_usf;
 	if(usf)
@@ -930,8 +929,8 @@ static void
 vkk_engine_destructUniformSet(vkk_engine_t* self, int wait,
                               vkk_uniformSet_t** _us)
 {
-	assert(self);
-	assert(_us);
+	ASSERT(self);
+	ASSERT(_us);
 
 	vkk_uniformSet_t* us = *_us;
 	if(us)
@@ -966,8 +965,8 @@ static void
 vkk_engine_destructPipelineLayout(vkk_engine_t* self,
                                   vkk_pipelineLayout_t** _pl)
 {
-	assert(self);
-	assert(_pl);
+	ASSERT(self);
+	ASSERT(_pl);
 
 	vkk_pipelineLayout_t* pl = *_pl;
 	if(pl)
@@ -983,8 +982,8 @@ static void
 vkk_engine_destructGraphicsPipeline(vkk_engine_t* self, int wait,
                                     vkk_graphicsPipeline_t** _gp)
 {
-	assert(self);
-	assert(_gp);
+	ASSERT(self);
+	ASSERT(_gp);
 
 	vkk_graphicsPipeline_t* gp = *_gp;
 	if(gp)
@@ -1008,8 +1007,8 @@ vkk_engine_destructGraphicsPipeline(vkk_engine_t* self, int wait,
 static void
 vkk_engine_runDestructFn(int tid, void* owner, void* task)
 {
-	assert(owner);
-	assert(task);
+	ASSERT(owner);
+	ASSERT(task);
 
 	vkk_engine_t* engine;
 	vkk_object_t* object;
@@ -1074,10 +1073,10 @@ vkk_engine_t* vkk_engine_new(vkk_platform_t* platform,
                              const char* resource,
                              const char* cache)
 {
-	assert(platform);
-	assert(app_name);
-	assert(resource);
-	assert(cache);
+	ASSERT(platform);
+	ASSERT(app_name);
+	ASSERT(resource);
+	ASSERT(cache);
 
 	vkk_engine_t* self;
 	self = (vkk_engine_t*)
@@ -1238,12 +1237,12 @@ vkk_engine_t* vkk_engine_new(vkk_platform_t* platform,
 void vkk_engine_delete(vkk_engine_t** _self)
 {
 	// *_self can be null
-	assert(_self);
+	ASSERT(_self);
 
 	vkk_engine_t* self = *_self;
 	if(self)
 	{
-		assert(self->shutdown);
+		ASSERT(self->shutdown);
 
 		// finish destruction jobq
 		// objects in jobq may depend on default renderer
@@ -1285,7 +1284,7 @@ void vkk_engine_delete(vkk_engine_t** _self)
 
 void vkk_engine_shutdown(vkk_engine_t* self)
 {
-	assert(self);
+	ASSERT(self);
 
 	vkk_engine_rendererLock(self);
 	if(self->shutdown == 0)
@@ -1301,35 +1300,35 @@ void vkk_engine_shutdown(vkk_engine_t* self)
 
 int vkk_engine_imageCaps(vkk_engine_t* self, int format)
 {
-	assert(self);
+	ASSERT(self);
 
 	return self->image_caps_array[format];
 }
 
 uint32_t vkk_engine_version(vkk_engine_t* self)
 {
-	assert(self);
+	ASSERT(self);
 
 	return self->version;
 }
 
 int vkk_engine_resize(vkk_engine_t* self)
 {
-	assert(self);
+	ASSERT(self);
 
 	return vkk_defaultRenderer_resize(self->renderer);
 }
 
 int vkk_engine_recreate(vkk_engine_t* self)
 {
-	assert(self);
+	ASSERT(self);
 
 	return vkk_defaultRenderer_recreate(self->renderer);
 }
 
 vkk_renderer_t* vkk_engine_renderer(vkk_engine_t* self)
 {
-	assert(self);
+	ASSERT(self);
 
 	return self->renderer;
 }
@@ -1342,9 +1341,9 @@ void vkk_engine_mipmapImage(vkk_engine_t* self,
                             vkk_image_t* image,
                             VkCommandBuffer cb)
 {
-	assert(self);
-	assert(image);
-	assert(cb != VK_NULL_HANDLE);
+	ASSERT(self);
+	ASSERT(image);
+	ASSERT(cb != VK_NULL_HANDLE);
 
 	// transition the base mip level to a src for blitting
 	vkk_util_imageMemoryBarrier(image, cb,
@@ -1447,9 +1446,9 @@ vkk_engine_uploadImage(vkk_engine_t* self,
                        vkk_image_t* image,
                        const void* pixels)
 {
-	assert(self);
-	assert(image);
-	assert(pixels);
+	ASSERT(self);
+	ASSERT(image);
+	ASSERT(pixels);
 
 	return vkk_imageUploader_upload(self->img_uploader,
 	                                image, pixels);
@@ -1457,7 +1456,7 @@ vkk_engine_uploadImage(vkk_engine_t* self,
 
 uint32_t vkk_engine_swapchainImageCount(vkk_engine_t* self)
 {
-	assert(self);
+	ASSERT(self);
 
 	return vkk_defaultRenderer_swapchainImageCount(self->renderer);
 }
@@ -1472,9 +1471,9 @@ int vkk_engine_queueSubmit(vkk_engine_t* self,
 {
 	// semaphore_acquire, semaphore_submit and
 	// wait_dst_stage_mask may be NULL
-	assert(self);
-	assert(queue < VKK_QUEUE_COUNT);
-	assert(cb);
+	ASSERT(self);
+	ASSERT(queue < VKK_QUEUE_COUNT);
+	ASSERT(cb);
 
 	VkSubmitInfo s_info =
 	{
@@ -1511,8 +1510,8 @@ int vkk_engine_queueSubmit(vkk_engine_t* self,
 void vkk_engine_queueWaitIdle(vkk_engine_t* self,
                               uint32_t queue)
 {
-	assert(self);
-	assert(queue < VKK_QUEUE_COUNT);
+	ASSERT(self);
+	ASSERT(queue < VKK_QUEUE_COUNT);
 
 	vkk_engine_rendererLock(self);
 	if(self->shutdown == 0)
@@ -1529,11 +1528,11 @@ vkk_engine_allocateDescriptorSetsLocked(vkk_engine_t* self,
                                         uint32_t ds_count,
                                         VkDescriptorSet* ds_array)
 {
-	assert(self);
-	assert(dp != VK_NULL_HANDLE);
-	assert(dsl_array);
-	assert(ds_count > 0);
-	assert(ds_array);
+	ASSERT(self);
+	ASSERT(dp != VK_NULL_HANDLE);
+	ASSERT(dsl_array);
+	ASSERT(ds_count > 0);
+	ASSERT(ds_array);
 
 	VkDescriptorSetAllocateInfo ds_info =
 	{
@@ -1558,8 +1557,8 @@ VkDescriptorPool
 vkk_engine_newDescriptorPoolLocked(vkk_engine_t* self,
                                    vkk_uniformSetFactory_t* usf)
 {
-	assert(self);
-	assert(usf);
+	ASSERT(self);
+	ASSERT(usf);
 
 	VkDescriptorType dt_map[VKK_UNIFORM_TYPE_COUNT] =
 	{
@@ -1641,9 +1640,9 @@ vkk_engine_attachUniformBuffer(vkk_engine_t* self,
                                vkk_buffer_t* buffer,
                                uint32_t binding)
 {
-	assert(self);
-	assert(us);
-	assert(buffer);
+	ASSERT(self);
+	ASSERT(us);
+	ASSERT(buffer);
 
 	uint32_t count;
 	count = (us->usf->update == VKK_UPDATE_MODE_DEFAULT) ?
@@ -1687,10 +1686,10 @@ vkk_engine_attachUniformSampler(vkk_engine_t* self,
                                 vkk_image_t* image,
                                 uint32_t binding)
 {
-	assert(self);
-	assert(us);
-	assert(sampler);
-	assert(image);
+	ASSERT(self);
+	ASSERT(us);
+	ASSERT(sampler);
+	ASSERT(image);
 
 	uint32_t count;
 	count = (us->usf->update == VKK_UPDATE_MODE_DEFAULT) ?
@@ -1731,8 +1730,8 @@ vkk_engine_getMemoryTypeIndex(vkk_engine_t* self,
                               VkFlags mp_flags,
                               uint32_t* mt_index)
 {
-	assert(self);
-	assert(mt_index);
+	ASSERT(self);
+	ASSERT(mt_index);
 
 	VkPhysicalDeviceMemoryProperties mp;
 	vkGetPhysicalDeviceMemoryProperties(self->physical_device,
@@ -1763,8 +1762,8 @@ VkShaderModule
 vkk_engine_getShaderModule(vkk_engine_t* self,
                            const char* fname)
 {
-	assert(self);
-	assert(fname);
+	ASSERT(self);
+	ASSERT(fname);
 
 	vkk_engine_smLock(self);
 
@@ -1828,7 +1827,7 @@ vkk_engine_getShaderModule(vkk_engine_t* self,
 
 void vkk_engine_usfLock(vkk_engine_t* self)
 {
-	assert(self);
+	ASSERT(self);
 
 	pthread_mutex_lock(&self->usf_mutex);
 	TRACE_BEGIN();
@@ -1836,7 +1835,7 @@ void vkk_engine_usfLock(vkk_engine_t* self)
 
 void vkk_engine_usfUnlock(vkk_engine_t* self)
 {
-	assert(self);
+	ASSERT(self);
 
 	TRACE_END();
 	pthread_mutex_unlock(&self->usf_mutex);
@@ -1844,7 +1843,7 @@ void vkk_engine_usfUnlock(vkk_engine_t* self)
 
 void vkk_engine_smLock(vkk_engine_t* self)
 {
-	assert(self);
+	ASSERT(self);
 
 	pthread_mutex_lock(&self->sm_mutex);
 	TRACE_BEGIN();
@@ -1852,7 +1851,7 @@ void vkk_engine_smLock(vkk_engine_t* self)
 
 void vkk_engine_smUnlock(vkk_engine_t* self)
 {
-	assert(self);
+	ASSERT(self);
 
 	TRACE_END();
 	pthread_mutex_unlock(&self->sm_mutex);
@@ -1860,7 +1859,7 @@ void vkk_engine_smUnlock(vkk_engine_t* self)
 
 void vkk_engine_rendererLock(vkk_engine_t* self)
 {
-	assert(self);
+	ASSERT(self);
 
 	pthread_mutex_lock(&self->renderer_mutex);
 	TRACE_BEGIN();
@@ -1868,7 +1867,7 @@ void vkk_engine_rendererLock(vkk_engine_t* self)
 
 void vkk_engine_rendererUnlock(vkk_engine_t* self)
 {
-	assert(self);
+	ASSERT(self);
 
 	TRACE_END();
 	pthread_mutex_unlock(&self->renderer_mutex);
@@ -1876,14 +1875,14 @@ void vkk_engine_rendererUnlock(vkk_engine_t* self)
 
 void vkk_engine_rendererSignal(vkk_engine_t* self)
 {
-	assert(self);
+	ASSERT(self);
 
 	pthread_cond_broadcast(&self->renderer_cond);
 }
 
 void vkk_engine_rendererWait(vkk_engine_t* self)
 {
-	assert(self);
+	ASSERT(self);
 
 	TRACE_END();
 	pthread_cond_wait(&self->renderer_cond,
@@ -1894,7 +1893,7 @@ void vkk_engine_rendererWait(vkk_engine_t* self)
 void vkk_engine_rendererWaitForTimestamp(vkk_engine_t* self,
                                          double ts)
 {
-	assert(self);
+	ASSERT(self);
 
 	vkk_renderer_t* renderer = self->renderer;
 
@@ -1920,7 +1919,7 @@ void vkk_engine_rendererWaitForTimestamp(vkk_engine_t* self,
 
 int vkk_engine_newSurface(vkk_engine_t* self)
 {
-	assert(self);
+	ASSERT(self);
 
 	#ifdef ANDROID
 		ANativeWindow* window = self->platform->app->window;
@@ -1982,7 +1981,7 @@ int vkk_engine_newSurface(vkk_engine_t* self)
 
 void vkk_engine_deleteSurface(vkk_engine_t* self)
 {
-	assert(self);
+	ASSERT(self);
 
 	vkDestroySurfaceKHR(self->instance,
 	                    self->surface, NULL);
@@ -1993,8 +1992,8 @@ void
 vkk_engine_deleteDefaultDepthImage(vkk_engine_t* self,
                                    vkk_image_t** _image)
 {
-	assert(self);
-	assert(_image);
+	ASSERT(self);
+	ASSERT(_image);
 
 	vkk_engine_destructImage(self, 0, _image);
 }
@@ -2003,8 +2002,8 @@ void
 vkk_engine_deleteObject(vkk_engine_t* self, int type,
                         void* obj)
 {
-	assert(self);
-	assert(obj);
+	ASSERT(self);
+	ASSERT(obj);
 
 	vkk_object_t* object;
 	object = vkk_object_new(type, obj);

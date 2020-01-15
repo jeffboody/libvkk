@@ -21,7 +21,6 @@
  *
  */
 
-#include <assert.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -48,8 +47,8 @@
 vkk_renderer_t*
 vkk_secondaryRenderer_new(vkk_renderer_t* primary)
 {
-	assert(primary);
-	assert(primary->type != VKK_RENDERER_TYPE_SECONDARY);
+	ASSERT(primary);
+	ASSERT(primary->type != VKK_RENDERER_TYPE_SECONDARY);
 
 	vkk_engine_t* engine = primary->engine;
 
@@ -95,7 +94,7 @@ vkk_secondaryRenderer_new(vkk_renderer_t* primary)
 
 void vkk_secondaryRenderer_delete(vkk_renderer_t** _base)
 {
-	assert(_base);
+	ASSERT(_base);
 
 	vkk_renderer_t* base = *_base;
 	if(base)
@@ -111,7 +110,7 @@ void vkk_secondaryRenderer_delete(vkk_renderer_t** _base)
 
 int vkk_secondaryRenderer_begin(vkk_renderer_t* base)
 {
-	assert(base);
+	ASSERT(base);
 
 	vkk_secondaryRenderer_t* self;
 	self = (vkk_secondaryRenderer_t*) base;
@@ -196,7 +195,7 @@ int vkk_secondaryRenderer_begin(vkk_renderer_t* base)
 
 void vkk_secondaryRenderer_end(vkk_renderer_t* base)
 {
-	assert(base);
+	ASSERT(base);
 
 	VkCommandBuffer cb;
 	cb = vkk_secondaryRenderer_commandBuffer(base);
@@ -207,9 +206,9 @@ void vkk_secondaryRenderer_surfaceSize(vkk_renderer_t* base,
                                        uint32_t* _width,
                                        uint32_t* _height)
 {
-	assert(base);
-	assert(_width);
-	assert(_height);
+	ASSERT(base);
+	ASSERT(_width);
+	ASSERT(_height);
 
 	vkk_secondaryRenderer_t* self;
 	self = (vkk_secondaryRenderer_t*) base;
@@ -220,7 +219,7 @@ void vkk_secondaryRenderer_surfaceSize(vkk_renderer_t* base,
 VkRenderPass
 vkk_secondaryRenderer_renderPass(vkk_renderer_t* base)
 {
-	assert(base);
+	ASSERT(base);
 
 	vkk_secondaryRenderer_t* self;
 	self = (vkk_secondaryRenderer_t*) base;
@@ -231,7 +230,7 @@ vkk_secondaryRenderer_renderPass(vkk_renderer_t* base)
 VkFramebuffer
 vkk_secondaryRenderer_framebuffer(vkk_renderer_t* base)
 {
-	assert(base);
+	ASSERT(base);
 
 	vkk_secondaryRenderer_t* self;
 	self = (vkk_secondaryRenderer_t*) base;
@@ -242,7 +241,7 @@ vkk_secondaryRenderer_framebuffer(vkk_renderer_t* base)
 VkCommandBuffer
 vkk_secondaryRenderer_commandBuffer(vkk_renderer_t* base)
 {
-	assert(base);
+	ASSERT(base);
 
 	vkk_secondaryRenderer_t* self;
 	self = (vkk_secondaryRenderer_t*) base;
@@ -256,7 +255,7 @@ vkk_secondaryRenderer_commandBuffer(vkk_renderer_t* base)
 uint32_t
 vkk_secondaryRenderer_swapchainFrame(vkk_renderer_t* base)
 {
-	assert(base);
+	ASSERT(base);
 
 	vkk_secondaryRenderer_t* self;
 	self = (vkk_secondaryRenderer_t*) base;

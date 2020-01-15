@@ -21,7 +21,6 @@
  *
  */
 
-#include <assert.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -38,9 +37,9 @@
 static void
 vkui_listbox_size(vkui_widget_t* widget, float* w, float* h)
 {
-	assert(widget);
-	assert(w);
-	assert(h);
+	ASSERT(widget);
+	ASSERT(w);
+	ASSERT(h);
 
 	vkui_listbox_t*      self   = (vkui_listbox_t*) widget;
 	cc_listIter_t*       iter   = cc_list_head(self->list);
@@ -178,7 +177,7 @@ vkui_listbox_click(vkui_widget_t* widget, void* priv,
                    int state, float x, float y)
 {
 	// priv may be NULL
-	assert(widget);
+	ASSERT(widget);
 
 	vkui_listbox_t* self = (vkui_listbox_t*) widget;
 	cc_listIter_t*  iter = cc_list_head(self->list);
@@ -202,7 +201,7 @@ static void
 vkui_listbox_layoutVerticalShrink(vkui_listbox_t* self,
                                   int dragx, int dragy)
 {
-	assert(self);
+	ASSERT(self);
 
 	// initialize the layout
 	float x = 0.0f;
@@ -242,7 +241,7 @@ static void
 vkui_listbox_layoutVerticalStretch(vkui_listbox_t* self,
                                    int dragx, int dragy)
 {
-	assert(self);
+	ASSERT(self);
 
 	// initialize the layout
 	float x   = 0.0f;
@@ -283,7 +282,7 @@ static void
 vkui_listbox_layoutHorizontalShrink(vkui_listbox_t* self,
                                     int dragx, int dragy)
 {
-	assert(self);
+	ASSERT(self);
 
 	// initialize the layout
 	float x = 0.0f;
@@ -323,7 +322,7 @@ static void
 vkui_listbox_layoutHorizontalStretch(vkui_listbox_t* self,
                                      int dragx, int dragy)
 {
-	assert(self);
+	ASSERT(self);
 
 	// initialize the layout
 	float x   = 0.0f;
@@ -364,7 +363,7 @@ static void
 vkui_listbox_layout(vkui_widget_t* widget,
                     int dragx, int dragy)
 {
-	assert(widget);
+	ASSERT(widget);
 
 	vkui_widgetLayout_t* layout = &widget->layout;
 
@@ -402,7 +401,7 @@ static void
 vkui_listbox_drag(vkui_widget_t* widget,
                   float x, float y, float dx, float dy)
 {
-	assert(widget);
+	ASSERT(widget);
 
 	vkui_listbox_t* self = (vkui_listbox_t*) widget;
 	cc_listIter_t*  iter = cc_list_head(self->list);
@@ -417,7 +416,7 @@ vkui_listbox_drag(vkui_widget_t* widget,
 
 static void vkui_listbox_draw(vkui_widget_t* widget)
 {
-	assert(widget);
+	ASSERT(widget);
 
 	vkui_listbox_t* self = (vkui_listbox_t*) widget;
 	cc_listIter_t*  iter = cc_list_head(self->list);
@@ -434,7 +433,7 @@ static void
 vkui_listbox_refresh(vkui_widget_t* widget, void* priv)
 {
 	// priv may be NULL
-	assert(widget);
+	ASSERT(widget);
 
 	vkui_listbox_t* self = (vkui_listbox_t*) widget;
 	cc_listIter_t*  iter = cc_list_head(self->list);
@@ -458,11 +457,11 @@ vkui_listbox_new(vkui_screen_t* screen, size_t wsize,
                  vkui_widgetFn_t* fn, int orientation,
                  cc_vec4f_t* color)
 {
-	assert(screen);
-	assert(layout);
-	assert(scroll);
-	assert(fn);
-	assert(color);
+	ASSERT(screen);
+	ASSERT(layout);
+	ASSERT(scroll);
+	ASSERT(fn);
+	ASSERT(color);
 
 	if(wsize == 0)
 	{
@@ -518,7 +517,7 @@ vkui_listbox_new(vkui_screen_t* screen, size_t wsize,
 
 void vkui_listbox_delete(vkui_listbox_t** _self)
 {
-	assert(_self);
+	ASSERT(_self);
 
 	vkui_listbox_t* self = *_self;
 	if(self)
@@ -530,7 +529,7 @@ void vkui_listbox_delete(vkui_listbox_t** _self)
 
 void vkui_listbox_clear(vkui_listbox_t* self)
 {
-	assert(self);
+	ASSERT(self);
 
 	vkui_widget_t* widget = (vkui_widget_t*) self;
 
@@ -541,8 +540,8 @@ void vkui_listbox_clear(vkui_listbox_t* self)
 int vkui_listbox_add(vkui_listbox_t* self,
                      vkui_widget_t* widget)
 {
-	assert(self);
-	assert(widget);
+	ASSERT(self);
+	ASSERT(widget);
 
 	if(cc_list_append(self->list, NULL,
 	                  (const void*) widget) == 0)
@@ -557,7 +556,7 @@ int vkui_listbox_add(vkui_listbox_t* self,
 
 vkui_widget_t* vkui_listbox_remove(vkui_listbox_t* self)
 {
-	assert(self);
+	ASSERT(self);
 
 	vkui_widget_t* widget = (vkui_widget_t*) self;
 	vkui_screen_dirty(widget->screen);

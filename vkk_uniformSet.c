@@ -21,7 +21,6 @@
  *
  */
 
-#include <assert.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -45,9 +44,9 @@ vkk_uniformSet_new(vkk_engine_t* engine,
                    vkk_uniformAttachment_t* ua_array,
                    vkk_uniformSetFactory_t* usf)
 {
-	assert(engine);
-	assert(ua_array);
-	assert(usf);
+	ASSERT(engine);
+	ASSERT(ua_array);
+	ASSERT(usf);
 
 	vkk_renderer_t* renderer = engine->renderer;
 
@@ -205,7 +204,7 @@ vkk_uniformSet_new(vkk_engine_t* engine,
 
 void vkk_uniformSet_delete(vkk_uniformSet_t** _self)
 {
-	assert(_self);
+	ASSERT(_self);
 
 	vkk_uniformSet_t* self = *_self;
 	if(self)

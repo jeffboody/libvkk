@@ -21,7 +21,6 @@
  *
  */
 
-#include <assert.h>
 #include <stdlib.h>
 
 #define LOG_TAG "vkk"
@@ -38,7 +37,7 @@ vkk_sampler_t*
 vkk_sampler_new(vkk_engine_t* engine, int min_filter,
                 int mag_filter, int mipmap_mode)
 {
-	assert(engine);
+	ASSERT(engine);
 
 	vkk_sampler_t* self;
 	self = (vkk_sampler_t*)
@@ -108,7 +107,7 @@ vkk_sampler_new(vkk_engine_t* engine, int min_filter,
 
 void vkk_sampler_delete(vkk_sampler_t** _self)
 {
-	assert(_self);
+	ASSERT(_self);
 
 	vkk_sampler_t* self = *_self;
 	if(self)

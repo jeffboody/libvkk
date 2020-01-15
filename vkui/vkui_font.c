@@ -21,7 +21,6 @@
  *
  */
 
-#include <assert.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -42,9 +41,9 @@ static int
 vkui_font_parseStart(void* priv, int line,
                      const char* name, const char** atts)
 {
-	assert(priv);
-	assert(name);
-	assert(atts);
+	ASSERT(priv);
+	ASSERT(name);
+	ASSERT(atts);
 
 	vkui_font_t* self = (vkui_font_t*) priv;
 
@@ -113,8 +112,8 @@ vkui_font_parseEnd(void* priv, int line,
                    const char* name, const char* content)
 {
 	// content may be NULL
-	assert(priv);
-	assert(name);
+	ASSERT(priv);
+	ASSERT(name);
 
 	// ignore
 	return 1;
@@ -124,9 +123,9 @@ static int
 vkui_font_parseXml(vkui_font_t* self, const char* resource,
                    const char* key)
 {
-	assert(self);
-	assert(resource);
-	assert(key);
+	ASSERT(self);
+	ASSERT(resource);
+	ASSERT(key);
 
 	pak_file_t* pak = pak_file_open(resource, PAK_FLAG_READ);
 	if(pak == NULL)
@@ -165,9 +164,9 @@ vkui_font_loadXml(vkui_font_t* self,
                   const char* resource,
                   const char* xmlname)
 {
-	assert(self);
-	assert(resource);
-	assert(xmlname);
+	ASSERT(self);
+	ASSERT(resource);
+	ASSERT(xmlname);
 
 	if(vkui_font_parseXml(self, resource, xmlname) == 0)
 	{
@@ -227,10 +226,10 @@ vkui_font_t*
 vkui_font_new(vkui_screen_t* screen, const char* resource,
               const char* texname, const char* xmlname)
 {
-	assert(screen);
-	assert(resource);
-	assert(texname);
-	assert(xmlname);
+	ASSERT(screen);
+	ASSERT(resource);
+	ASSERT(texname);
+	ASSERT(xmlname);
 
 	vkui_font_t* self;
 	self = (vkui_font_t*) MALLOC(sizeof(vkui_font_t));
@@ -275,7 +274,7 @@ vkui_font_new(vkui_screen_t* screen, const char* resource,
 
 void vkui_font_delete(vkui_font_t** _self)
 {
-	assert(_self);
+	ASSERT(_self);
 
 	vkui_font_t* self = *_self;
 	if(self)
@@ -293,10 +292,10 @@ void vkui_font_request(vkui_font_t* self,
                        cc_rect2f_t* tc,
                        cc_rect2f_t* vc)
 {
-	assert(self);
-	assert(pc);
-	assert(tc);
-	assert(vc);
+	ASSERT(self);
+	ASSERT(pc);
+	ASSERT(tc);
+	ASSERT(vc);
 
 	// check for a ascii/cursor character
 	if((c < 31) || (c > 126))
@@ -334,14 +333,14 @@ void vkui_font_request(vkui_font_t* self,
 
 float vkui_font_aspectRatioAvg(vkui_font_t* self)
 {
-	assert(self);
+	ASSERT(self);
 
 	return self->aspect_ratio_avg;
 }
 
 int vkui_font_width(vkui_font_t* self, char c)
 {
-	assert(self);
+	ASSERT(self);
 
 	// check for a ascii/cursor character
 	if((c >= 31) && (c <= 126))
@@ -353,15 +352,15 @@ int vkui_font_width(vkui_font_t* self, char c)
 
 int vkui_font_height(vkui_font_t* self)
 {
-	assert(self);
+	ASSERT(self);
 
 	return self->h;
 }
 
 int vkui_font_measure(vkui_font_t* self, const char* s)
 {
-	assert(self);
-	assert(s);
+	ASSERT(self);
+	ASSERT(s);
 
 	int width = 0;
 	while(s[0] != '\0')
@@ -375,8 +374,8 @@ int vkui_font_measure(vkui_font_t* self, const char* s)
 texgz_tex_t*
 vkui_font_render(vkui_font_t* self, const char* s)
 {
-	assert(self);
-	assert(s);
+	ASSERT(self);
+	ASSERT(s);
 
 	int width  = vkui_font_measure(self, s);
 	int height = vkui_font_height(self);

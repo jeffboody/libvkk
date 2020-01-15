@@ -21,7 +21,6 @@
  *
  */
 
-#include <assert.h>
 #include <stdlib.h>
 
 #define LOG_TAG "vkui"
@@ -37,9 +36,9 @@
 static void
 vkui_layer_size(vkui_widget_t* widget, float* w, float* h)
 {
-	assert(widget);
-	assert(w);
-	assert(h);
+	ASSERT(widget);
+	ASSERT(w);
+	ASSERT(h);
 
 	vkui_layer_t*  self = (vkui_layer_t*) widget;
 	cc_listIter_t* iter = cc_list_head(self->list);
@@ -76,8 +75,8 @@ static int
 vkui_layer_click(vkui_widget_t* widget, void* priv,
                  int state, float x, float y)
 {
-	assert(widget);
-	assert(priv == NULL);
+	ASSERT(widget);
+	ASSERT(priv == NULL);
 
 	// send events front-to-back
 	vkui_layer_t*  self = (vkui_layer_t*) widget;
@@ -101,7 +100,7 @@ static void
 vkui_layer_layout(vkui_widget_t* widget,
                   int dragx, int dragy)
 {
-	assert(widget);
+	ASSERT(widget);
 
 	// the rect_clip is constant across all layers
 	cc_rect1f_t rect_clip;
@@ -132,7 +131,7 @@ static void
 vkui_layer_drag(vkui_widget_t* widget,
                 float x, float y, float dx, float dy)
 {
-	assert(widget);
+	ASSERT(widget);
 
 	vkui_layer_t*  self = (vkui_layer_t*) widget;
 	cc_listIter_t* iter = cc_list_head(self->list);
@@ -147,7 +146,7 @@ vkui_layer_drag(vkui_widget_t* widget,
 
 static void vkui_layer_draw(vkui_widget_t* widget)
 {
-	assert(widget);
+	ASSERT(widget);
 
 	// draw back-to-front
 	vkui_layer_t*  self = (vkui_layer_t*) widget;
@@ -164,8 +163,8 @@ static void vkui_layer_draw(vkui_widget_t* widget)
 static void
 vkui_layer_refresh(vkui_widget_t* widget, void* priv)
 {
-	assert(widget);
-	assert(priv == NULL);
+	ASSERT(widget);
+	ASSERT(priv == NULL);
 
 	vkui_layer_t*  self = (vkui_layer_t*) widget;
 	cc_listIter_t* iter = cc_list_head(self->list);
@@ -187,9 +186,9 @@ vkui_layer_new(vkui_screen_t* screen, size_t wsize,
                vkui_widgetLayout_t* layout,
                cc_vec4f_t* color)
 {
-	assert(screen);
-	assert(layout);
-	assert(color);
+	ASSERT(screen);
+	ASSERT(layout);
+	ASSERT(color);
 
 	if(wsize == 0)
 	{
@@ -242,7 +241,7 @@ vkui_layer_new(vkui_screen_t* screen, size_t wsize,
 
 void vkui_layer_delete(vkui_layer_t** _self)
 {
-	assert(_self);
+	ASSERT(_self);
 
 	vkui_layer_t* self = *_self;
 	if(self)
@@ -254,7 +253,7 @@ void vkui_layer_delete(vkui_layer_t** _self)
 
 void vkui_layer_clear(vkui_layer_t* self)
 {
-	assert(self);
+	ASSERT(self);
 
 	vkui_widget_t* widget = (vkui_widget_t*) self;
 	cc_list_discard(self->list);
@@ -264,8 +263,8 @@ void vkui_layer_clear(vkui_layer_t* self)
 int vkui_layer_add(vkui_layer_t* self,
                    vkui_widget_t* widget)
 {
-	assert(self);
-	assert(widget);
+	ASSERT(self);
+	ASSERT(widget);
 
 	if(cc_list_append(self->list, NULL,
 	                  (const void*) widget) == 0)
@@ -281,7 +280,7 @@ int vkui_layer_add(vkui_layer_t* self,
 
 vkui_widget_t* vkui_layer_remove(vkui_layer_t* self)
 {
-	assert(self);
+	ASSERT(self);
 
 	vkui_widget_t* widget = (vkui_widget_t*) self;
 	vkui_screen_dirty(widget->screen);

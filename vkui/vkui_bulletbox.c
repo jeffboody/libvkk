@@ -21,7 +21,6 @@
  *
  */
 
-#include <assert.h>
 #include <stdarg.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -45,9 +44,9 @@ static void
 vkui_bulletbox_size(vkui_widget_t* widget,
                     float* w, float* h)
 {
-	assert(widget);
-	assert(w);
-	assert(h);
+	ASSERT(widget);
+	ASSERT(w);
+	ASSERT(h);
 
 	vkui_bulletbox_t* self = (vkui_bulletbox_t*) widget;
 	vkui_widget_t*    icon = (vkui_widget_t*) self->icon;
@@ -69,7 +68,7 @@ static void
 vkui_bulletbox_layout(vkui_widget_t* widget,
                       int dragx, int dragy)
 {
-	assert(widget);
+	ASSERT(widget);
 
 	vkui_bulletbox_t* self = (vkui_bulletbox_t*) widget;
 	vkui_widget_t*    icon = (vkui_widget_t*) self->icon;
@@ -116,7 +115,7 @@ vkui_bulletbox_drag(vkui_widget_t* widget,
                     float x, float y,
                     float dx, float dy)
 {
-	assert(widget);
+	ASSERT(widget);
 
 	vkui_bulletbox_t* self = (vkui_bulletbox_t*) widget;
 	vkui_widget_drag((vkui_widget_t*) self->icon,
@@ -127,7 +126,7 @@ vkui_bulletbox_drag(vkui_widget_t* widget,
 
 static void vkui_bulletbox_draw(vkui_widget_t* widget)
 {
-	assert(widget);
+	ASSERT(widget);
 
 	vkui_bulletbox_t* self = (vkui_bulletbox_t*) widget;
 	vkui_widget_draw((vkui_widget_t*) self->icon);
@@ -145,10 +144,10 @@ vkui_bulletbox_new(vkui_screen_t* screen, size_t wsize,
                    vkui_bulletboxStyle_t* bulletbox_style,
                    const char** sprite_array)
 {
-	assert(screen);
-	assert(fn);
-	assert(bulletbox_style);
-	assert(sprite_array);
+	ASSERT(screen);
+	ASSERT(fn);
+	ASSERT(bulletbox_style);
+	ASSERT(sprite_array);
 
 	vkui_textStyle_t* text_style;
 	text_style = &bulletbox_style->text_style;
@@ -259,7 +258,7 @@ vkui_bulletbox_new(vkui_screen_t* screen, size_t wsize,
 
 void vkui_bulletbox_delete(vkui_bulletbox_t** _self)
 {
-	assert(_self);
+	ASSERT(_self);
 
 	vkui_bulletbox_t* self = *_self;
 	if(self)
@@ -273,7 +272,7 @@ void vkui_bulletbox_delete(vkui_bulletbox_t** _self)
 void vkui_bulletbox_select(vkui_bulletbox_t* self,
                            uint32_t index)
 {
-	assert(self);
+	ASSERT(self);
 
 	vkui_sprite_select(self->icon, index);
 }
@@ -281,8 +280,8 @@ void vkui_bulletbox_select(vkui_bulletbox_t* self,
 void vkui_bulletbox_label(vkui_bulletbox_t* self,
                           const char* fmt, ...)
 {
-	assert(self);
-	assert(fmt);
+	ASSERT(self);
+	ASSERT(fmt);
 
 	// decode string
 	char    string[256];

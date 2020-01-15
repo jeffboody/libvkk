@@ -21,7 +21,6 @@
  *
  */
 
-#include <assert.h>
 #include <stdarg.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -42,8 +41,8 @@
 static void
 vkui_textbox_print(vkui_textbox_t* self, const char* string)
 {
-	assert(self);
-	assert(string);
+	ASSERT(self);
+	ASSERT(string);
 
 	vkui_widget_t*  widget  = (vkui_widget_t*) self;
 	vkui_listbox_t* listbox = (vkui_listbox_t*) self;
@@ -91,10 +90,10 @@ vkui_textbox_print(vkui_textbox_t* self, const char* string)
 static int
 getToken(const char* src, char* tok, int* _srci, int* _toki)
 {
-	assert(src);
-	assert(tok);
-	assert(_srci);
-	assert(_toki);
+	ASSERT(src);
+	ASSERT(tok);
+	ASSERT(_srci);
+	ASSERT(_toki);
 
 	int srci = *_srci;
 	int toki = 0;
@@ -135,7 +134,7 @@ getToken(const char* src, char* tok, int* _srci, int* _toki)
 static void
 vkui_textbox_reflow(vkui_widget_t* widget, float w, float h)
 {
-	assert(widget);
+	ASSERT(widget);
 
 	vkui_textbox_t*   self       = (vkui_textbox_t*) widget;
 	vkui_listbox_t*   listbox    = (vkui_listbox_t*) self;
@@ -272,11 +271,11 @@ vkui_textbox_new(vkui_screen_t* screen, size_t wsize,
                  vkui_widgetFn_t* fn,
                  vkui_textStyle_t* text_style)
 {
-	assert(screen);
-	assert(layout);
-	assert(scroll);
-	assert(fn);
-	assert(text_style);
+	ASSERT(screen);
+	ASSERT(layout);
+	ASSERT(scroll);
+	ASSERT(fn);
+	ASSERT(text_style);
 
 	if(wsize == 0)
 	{
@@ -334,7 +333,7 @@ vkui_textbox_new(vkui_screen_t* screen, size_t wsize,
 
 void vkui_textbox_delete(vkui_textbox_t** _self)
 {
-	assert(_self);
+	ASSERT(_self);
 
 	vkui_textbox_t* self = *_self;
 	if(self)
@@ -347,7 +346,7 @@ void vkui_textbox_delete(vkui_textbox_t** _self)
 
 void vkui_textbox_clear(vkui_textbox_t* self)
 {
-	assert(self);
+	ASSERT(self);
 
 	vkui_listbox_t* listbox = (vkui_listbox_t*) self;
 
@@ -375,8 +374,8 @@ void vkui_textbox_clear(vkui_textbox_t* self)
 void vkui_textbox_printf(vkui_textbox_t* self,
                          const char* fmt, ...)
 {
-	assert(self);
-	assert(fmt);
+	ASSERT(self);
+	ASSERT(fmt);
 
 	// decode string
 	char s[256];

@@ -21,7 +21,6 @@
  *
  */
 
-#include <assert.h>
 #include <stdlib.h>
 
 #define LOG_TAG "vkk"
@@ -39,7 +38,7 @@ vkk_memory_t*
 vkk_memory_new(vkk_memoryChunk_t* chunk,
                VkDeviceSize offset)
 {
-	assert(chunk);
+	ASSERT(chunk);
 
 	vkk_memory_t* self;
 	self = (vkk_memory_t*)
@@ -58,7 +57,7 @@ vkk_memory_new(vkk_memoryChunk_t* chunk,
 
 void vkk_memory_delete(vkk_memory_t** _self)
 {
-	assert(_self);
+	ASSERT(_self);
 
 	vkk_memory_t* self = *_self;
 	if(self)

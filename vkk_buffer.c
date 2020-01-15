@@ -21,7 +21,6 @@
  *
  */
 
-#include <assert.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -42,7 +41,7 @@ vkk_buffer_new(vkk_engine_t* engine, int update,
                const void* buf)
 {
 	// buf may be NULL
-	assert(engine);
+	ASSERT(engine);
 
 	uint32_t count;
 	count = (update == VKK_UPDATE_MODE_DEFAULT) ?
@@ -142,7 +141,7 @@ vkk_buffer_new(vkk_engine_t* engine, int update,
 
 void vkk_buffer_delete(vkk_buffer_t** _self)
 {
-	assert(_self);
+	ASSERT(_self);
 
 	vkk_buffer_t* self = *_self;
 	if(self)
@@ -156,7 +155,7 @@ void vkk_buffer_delete(vkk_buffer_t** _self)
 
 size_t vkk_buffer_size(vkk_buffer_t* self)
 {
-	assert(self);
+	ASSERT(self);
 
 	return self->size;
 }

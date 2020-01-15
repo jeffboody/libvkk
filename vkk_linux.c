@@ -21,7 +21,6 @@
  */
 
 #include <SDL2/SDL.h>
-#include <assert.h>
 #include <stdio.h>
 #include <stdlib.h>
 
@@ -39,9 +38,9 @@
 static int keyPress(SDL_Keysym* keysym,
                     int* keycode, int* meta)
 {
-	assert(keysym);
-	assert(keycode);
-	assert(meta);
+	ASSERT(keysym);
+	ASSERT(keycode);
+	ASSERT(meta);
 
 	// convert the keycode
 	*keycode = 0;
@@ -369,7 +368,7 @@ void vkk_platform_cmd(vkk_platform_t* self, int cmd,
                  const char* msg)
 {
 	// msg may be NULL
-	assert(self);
+	ASSERT(self);
 
 	if(cmd == VKK_PLATFORM_CMD_EXIT)
 	{

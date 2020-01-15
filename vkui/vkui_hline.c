@@ -23,7 +23,6 @@
 
 #include <stdlib.h>
 #include <string.h>
-#include <assert.h>
 
 #define LOG_TAG "vkui"
 #include "../../libcc/cc_log.h"
@@ -38,9 +37,9 @@
 static void
 vkui_hline_size(vkui_widget_t* widget, float* w, float* h)
 {
-	assert(widget);
-	assert(w);
-	assert(h);
+	ASSERT(widget);
+	ASSERT(w);
+	ASSERT(h);
 
 	vkui_hline_t * self = (vkui_hline_t*) widget;
 
@@ -64,7 +63,7 @@ static void
 vkui_hline_layout(vkui_widget_t* widget,
                   int dragx, int dragy)
 {
-	assert(widget);
+	ASSERT(widget);
 
 	vkui_hline_t*  self = (vkui_hline_t*) widget;
 	vkui_widget_t* line = self->line;
@@ -98,7 +97,7 @@ static void
 vkui_hline_drag(vkui_widget_t* widget,
                 float x, float y, float dx, float dy)
 {
-	assert(widget);
+	ASSERT(widget);
 
 	vkui_hline_t* self = (vkui_hline_t*) widget;
 	vkui_widget_drag(self->line, x, y, dx, dy);
@@ -106,7 +105,7 @@ vkui_hline_drag(vkui_widget_t* widget,
 
 static void vkui_hline_draw(struct vkui_widget_s* widget)
 {
-	assert(widget);
+	ASSERT(widget);
 
 	vkui_hline_t* self = (vkui_hline_t*) widget;
 	vkui_widget_draw(self->line);
@@ -120,8 +119,8 @@ vkui_hline_t*
 vkui_hline_new(vkui_screen_t* screen, size_t wsize, int size,
                cc_vec4f_t* color)
 {
-	assert(screen);
-	assert(color);
+	ASSERT(screen);
+	ASSERT(color);
 
 	if(wsize == 0)
 	{
@@ -193,7 +192,7 @@ vkui_hline_new(vkui_screen_t* screen, size_t wsize, int size,
 
 void vkui_hline_delete(vkui_hline_t** _self)
 {
-	assert(_self);
+	ASSERT(_self);
 
 	vkui_hline_t* self = *_self;
 	if(self)

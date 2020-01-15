@@ -21,7 +21,6 @@
  *
  */
 
-#include <assert.h>
 #include <stdarg.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -42,8 +41,8 @@
 static void
 vkui_radiolist_refresh(vkui_widget_t* widget, void* priv)
 {
-	assert(widget);
-	assert(priv == NULL);
+	ASSERT(widget);
+	ASSERT(priv == NULL);
 
 	vkui_radiolist_t* self    = (vkui_radiolist_t*) widget;
 	vkui_listbox_t*   listbox = (vkui_listbox_t*) self;
@@ -74,11 +73,11 @@ vkui_radiolist_new(vkui_screen_t* screen, size_t wsize,
                    vkui_bulletboxStyle_t* bulletbox_style,
                    int* pvalue)
 {
-	assert(screen);
-	assert(layout);
-	assert(scroll);
-	assert(bulletbox_style);
-	assert(pvalue);
+	ASSERT(screen);
+	ASSERT(layout);
+	ASSERT(scroll);
+	ASSERT(bulletbox_style);
+	ASSERT(pvalue);
 
 	if(wsize == 0)
 	{
@@ -116,7 +115,7 @@ vkui_radiolist_new(vkui_screen_t* screen, size_t wsize,
 
 void vkui_radiolist_delete(vkui_radiolist_t** _self)
 {
-	assert(_self);
+	ASSERT(_self);
 
 	vkui_radiolist_t* self = *_self;
 	if(self)
@@ -129,7 +128,7 @@ void vkui_radiolist_delete(vkui_radiolist_t** _self)
 
 void vkui_radiolist_clear(vkui_radiolist_t* self)
 {
-	assert(self);
+	ASSERT(self);
 
 	vkui_listbox_t* listbox = (vkui_listbox_t*) self;
 
@@ -145,8 +144,8 @@ void vkui_radiolist_clear(vkui_radiolist_t* self)
 void vkui_radiolist_add(vkui_radiolist_t* self, int value,
                         const char* fmt, ...)
 {
-	assert(self);
-	assert(fmt);
+	ASSERT(self);
+	ASSERT(fmt);
 
 	// decode string
 	char string[256];
@@ -184,7 +183,7 @@ void vkui_radiolist_add(vkui_radiolist_t* self, int value,
 void vkui_radiolist_value(vkui_radiolist_t* self,
                           int value)
 {
-	assert(self);
+	ASSERT(self);
 
 	*(self->pvalue) = value;
 }

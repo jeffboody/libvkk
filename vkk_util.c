@@ -21,7 +21,6 @@
  *
  */
 
-#include <assert.h>
 #include <stdlib.h>
 
 #define LOG_TAG "vkk"
@@ -47,8 +46,8 @@ void vkk_util_imageMemoryBarrier(vkk_image_t* image,
                                  uint32_t baseMipLevel,
                                  uint32_t levelCount)
 {
-	assert(image);
-	assert(cb != VK_NULL_HANDLE);
+	ASSERT(image);
+	ASSERT(cb != VK_NULL_HANDLE);
 
 	// add the memory barrier
 	VkImageLayout oldLayout;
@@ -77,8 +76,8 @@ void vkk_util_imageMemoryBarrierRaw(VkImage image,
                                     uint32_t baseMipLevel,
                                     uint32_t levelCount)
 {
-	assert(image != VK_NULL_HANDLE);
-	assert(cb != VK_NULL_HANDLE);
+	ASSERT(image != VK_NULL_HANDLE);
+	ASSERT(cb != VK_NULL_HANDLE);
 
 	// check for desired layout
 	if(newLayout == oldLayout)
@@ -216,9 +215,9 @@ vkk_util_copyUniformAttachmentArray(vkk_uniformAttachment_t* dst,
                                     vkk_uniformAttachment_t* src,
                                     vkk_uniformSetFactory_t* usf)
 {
-	assert(dst);
-	assert(src);
-	assert(usf);
+	ASSERT(dst);
+	ASSERT(src);
+	ASSERT(usf);
 
 	// fill binding/type
 	uint32_t i;
@@ -232,11 +231,11 @@ vkk_util_copyUniformAttachmentArray(vkk_uniformAttachment_t* dst,
 	for(i = 0; i < src_ua_count; ++i)
 	{
 		uint32_t b = src[i].binding;
-		assert(b < usf->ub_count);
-		assert(b == dst[b].binding);
-		assert((src[i].type == VKK_UNIFORM_TYPE_BUFFER) ||
+		ASSERT(b < usf->ub_count);
+		ASSERT(b == dst[b].binding);
+		ASSERT((src[i].type == VKK_UNIFORM_TYPE_BUFFER) ||
 		       (src[i].type == VKK_UNIFORM_TYPE_SAMPLER));
-		assert(src[i].type == dst[b].type);
+		ASSERT(src[i].type == dst[b].type);
 
 		dst[b].buffer = src[i].buffer;
 	}

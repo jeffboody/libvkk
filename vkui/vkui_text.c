@@ -21,7 +21,6 @@
  *
  */
 
-#include <assert.h>
 #include <math.h>
 #include <stdarg.h>
 #include <stdio.h>
@@ -45,7 +44,7 @@
 static int
 vkui_text_resize(vkui_text_t* self, size_t size)
 {
-	assert(self);
+	ASSERT(self);
 
 	vkui_widget_t* widget = (vkui_widget_t*) self;
 	vkui_screen_t* screen = widget->screen;
@@ -118,9 +117,9 @@ vkui_text_resize(vkui_text_t* self, size_t size)
 static void
 vkui_text_size(vkui_widget_t* widget, float* w, float* h)
 {
-	assert(widget);
-	assert(w);
-	assert(h);
+	ASSERT(widget);
+	ASSERT(w);
+	ASSERT(h);
 
 	vkui_text_t*      self  = (vkui_text_t*) widget;
 	vkui_textStyle_t* style = &self->style;
@@ -146,7 +145,7 @@ vkui_text_size(vkui_widget_t* widget, float* w, float* h)
 
 static void vkui_text_draw(vkui_widget_t* widget)
 {
-	assert(widget);
+	ASSERT(widget);
 
 	vkui_text_t*      self   = (vkui_text_t*) widget;
 	vkui_textStyle_t* style  = &self->style;
@@ -228,7 +227,7 @@ static void
 vkui_text_addc(vkui_text_t* self, char c, int i,
                float* _offset)
 {
-	assert(self);
+	ASSERT(self);
 
 	float             offset = *_offset;
 	vkui_widget_t*    widget = (vkui_widget_t*) self;
@@ -277,7 +276,7 @@ vkui_text_keyPress(vkui_widget_t* widget, void* priv,
                    int keycode, int meta)
 {
 	// priv may be NULL
-	assert(widget);
+	ASSERT(widget);
 
 	vkui_text_t*   self   = (vkui_text_t*) widget;
 	vkui_screen_t* screen = widget->screen;
@@ -362,11 +361,11 @@ vkui_text_new(vkui_screen_t* screen, size_t wsize,
               vkui_textFn_t* text_fn,
               cc_vec4f_t* color_fill)
 {
-	assert(screen);
-	assert(text_layout);
-	assert(text_style);
-	assert(text_fn);
-	assert(color_fill);
+	ASSERT(screen);
+	ASSERT(text_layout);
+	ASSERT(text_style);
+	ASSERT(text_fn);
+	ASSERT(color_fill);
 
 	if(wsize == 0)
 	{
@@ -508,7 +507,7 @@ vkui_text_new(vkui_screen_t* screen, size_t wsize,
 
 void vkui_text_delete(vkui_text_t** _self)
 {
-	assert(_self);
+	ASSERT(_self);
 
 	vkui_text_t* self = *_self;
 	if(self)
@@ -533,7 +532,7 @@ void vkui_text_delete(vkui_text_t** _self)
 
 int vkui_text_width(vkui_text_t* self, int cursor)
 {
-	assert(self);
+	ASSERT(self);
 
 	vkui_widget_t*    widget = (vkui_widget_t*) self;
 	vkui_textStyle_t* style  = &self->style;
@@ -559,7 +558,7 @@ int vkui_text_width(vkui_text_t* self, int cursor)
 
 int vkui_text_height(vkui_text_t* self)
 {
-	assert(self);
+	ASSERT(self);
 
 	vkui_widget_t*    widget = (vkui_widget_t*) self;
 	vkui_textStyle_t* style  = &self->style;
@@ -572,8 +571,8 @@ int vkui_text_height(vkui_text_t* self)
 void
 vkui_text_label(vkui_text_t* self, const char* fmt, ...)
 {
-	assert(self);
-	assert(fmt);
+	ASSERT(self);
+	ASSERT(fmt);
 
 	vkui_widget_t* widget = (vkui_widget_t*) self;
 	vkui_screen_t* screen = widget->screen;

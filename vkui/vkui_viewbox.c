@@ -21,7 +21,6 @@
  *
  */
 
-#include <assert.h>
 #include <stdarg.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -40,9 +39,9 @@
 static void
 vkui_viewbox_size(vkui_widget_t* widget, float* w, float* h)
 {
-	assert(widget);
-	assert(w);
-	assert(h);
+	ASSERT(widget);
+	ASSERT(w);
+	ASSERT(h);
 
 	vkui_viewbox_t* self   = (vkui_viewbox_t*) widget;
 	vkui_widget_t*  bullet = (vkui_widget_t*) self->bullet;
@@ -102,7 +101,7 @@ vkui_viewbox_click(vkui_widget_t* widget, void* priv,
                    int state, float x, float y)
 {
 	// priv may be NULL
-	assert(widget);
+	ASSERT(widget);
 
 	vkui_viewbox_t* self = (vkui_viewbox_t*) widget;
 	vkui_widget_t*  bullet = (vkui_widget_t*) self->bullet;
@@ -123,7 +122,7 @@ static void
 vkui_viewbox_layout(vkui_widget_t* widget,
                     int dragx, int dragy)
 {
-	assert(widget);
+	ASSERT(widget);
 
 	vkui_widgetLayout_t* layout = &widget->layout;
 	vkui_viewbox_t*      self   = (vkui_viewbox_t*) widget;
@@ -213,7 +212,7 @@ static void
 vkui_viewbox_drag(vkui_widget_t* widget, float x, float y,
                   float dx, float dy)
 {
-	assert(widget);
+	ASSERT(widget);
 
 	vkui_viewbox_t* self = (vkui_viewbox_t*) widget;
 	vkui_widget_drag((vkui_widget_t*) self->bullet,
@@ -228,7 +227,7 @@ vkui_viewbox_drag(vkui_widget_t* widget, float x, float y,
 static void
 vkui_viewbox_scrollTop(vkui_widget_t* widget)
 {
-	assert(widget);
+	ASSERT(widget);
 
 	vkui_viewbox_t* self = (vkui_viewbox_t*) widget;
 
@@ -238,7 +237,7 @@ vkui_viewbox_scrollTop(vkui_widget_t* widget)
 static void
 vkui_viewbox_draw(vkui_widget_t* widget)
 {
-	assert(widget);
+	ASSERT(widget);
 
 	vkui_viewbox_t* self = (vkui_viewbox_t*) widget;
 
@@ -254,7 +253,7 @@ static void
 vkui_viewbox_refresh(vkui_widget_t* widget, void* priv)
 {
 	// priv may be NULL
-	assert(widget);
+	ASSERT(widget);
 
 	vkui_viewbox_t* self = (vkui_viewbox_t*) widget;
 	vkui_widget_refresh((vkui_widget_t*) self->bullet);
@@ -279,12 +278,12 @@ vkui_viewbox_new(vkui_screen_t* screen, size_t wsize,
                  vkui_widget_t* footer)
 {
 	// footer may be NULL
-	assert(screen);
-	assert(layout);
-	assert(fn);
-	assert(style);
-	assert(sprite_array);
-	assert(body);
+	ASSERT(screen);
+	ASSERT(layout);
+	ASSERT(fn);
+	ASSERT(style);
+	ASSERT(sprite_array);
+	ASSERT(body);
 
 	if(wsize == 0)
 	{
@@ -360,7 +359,7 @@ vkui_viewbox_new(vkui_screen_t* screen, size_t wsize,
 
 void vkui_viewbox_delete(vkui_viewbox_t** _self)
 {
-	assert(_self);
+	ASSERT(_self);
 
 	vkui_viewbox_t* self = *_self;
 	if(self)
@@ -373,7 +372,7 @@ void vkui_viewbox_delete(vkui_viewbox_t** _self)
 void vkui_viewbox_select(vkui_viewbox_t* self,
                          uint32_t index)
 {
-	assert(self);
+	ASSERT(self);
 
 	vkui_bulletbox_select(self->bullet, index);
 }
@@ -381,8 +380,8 @@ void vkui_viewbox_select(vkui_viewbox_t* self,
 void vkui_viewbox_label(vkui_viewbox_t* self,
                         const char* fmt, ...)
 {
-	assert(self);
-	assert(fmt);
+	ASSERT(self);
+	ASSERT(fmt);
 
 	// decode string
 	char    string[256];

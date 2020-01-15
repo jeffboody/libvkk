@@ -21,7 +21,6 @@
  *
  */
 
-#include <assert.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -44,9 +43,9 @@ vkk_defaultRenderer_beginSemaphore(vkk_renderer_t* base,
                                    VkSemaphore* semaphore_acquire,
                                    VkSemaphore* semaphore_submit)
 {
-	assert(base);
-	assert(semaphore_acquire);
-	assert(semaphore_submit);
+	ASSERT(base);
+	ASSERT(semaphore_acquire);
+	ASSERT(semaphore_submit);
 
 	vkk_defaultRenderer_t* self;
 	self = (vkk_defaultRenderer_t*) base;
@@ -61,9 +60,9 @@ vkk_defaultRenderer_endSemaphore(vkk_renderer_t* base,
                                  VkSemaphore* semaphore_acquire,
                                  VkSemaphore* semaphore_submit)
 {
-	assert(base);
-	assert(semaphore_acquire);
-	assert(semaphore_submit);
+	ASSERT(base);
+	ASSERT(semaphore_acquire);
+	ASSERT(semaphore_submit);
 
 	vkk_defaultRenderer_t* self;
 	self = (vkk_defaultRenderer_t*) base;
@@ -79,7 +78,7 @@ vkk_defaultRenderer_endSemaphore(vkk_renderer_t* base,
 static int
 vkk_defaultRenderer_newSwapchain(vkk_renderer_t* base)
 {
-	assert(base);
+	ASSERT(base);
 
 	vkk_defaultRenderer_t* self;
 	self = (vkk_defaultRenderer_t*) base;
@@ -329,7 +328,7 @@ vkk_defaultRenderer_newSwapchain(vkk_renderer_t* base)
 static void
 vkk_defaultRenderer_deleteSwapchain(vkk_renderer_t* base)
 {
-	assert(base);
+	ASSERT(base);
 
 	vkk_defaultRenderer_t* self;
 	self = (vkk_defaultRenderer_t*) base;
@@ -359,7 +358,7 @@ vkk_defaultRenderer_deleteSwapchain(vkk_renderer_t* base)
 static int
 vkk_defaultRenderer_newDepth(vkk_renderer_t* base)
 {
-	assert(base);
+	ASSERT(base);
 
 	vkk_defaultRenderer_t* self;
 	self = (vkk_defaultRenderer_t*) base;
@@ -382,7 +381,7 @@ vkk_defaultRenderer_newDepth(vkk_renderer_t* base)
 static void
 vkk_defaultRenderer_deleteDepth(vkk_renderer_t* base)
 {
-	assert(base);
+	ASSERT(base);
 
 	vkk_defaultRenderer_t* self;
 	self = (vkk_defaultRenderer_t*) base;
@@ -396,7 +395,7 @@ vkk_defaultRenderer_deleteDepth(vkk_renderer_t* base)
 static int
 vkk_defaultRenderer_newFramebuffer(vkk_renderer_t* base)
 {
-	assert(base);
+	ASSERT(base);
 
 	vkk_defaultRenderer_t* self;
 	self = (vkk_defaultRenderer_t*) base;
@@ -519,7 +518,7 @@ vkk_defaultRenderer_newFramebuffer(vkk_renderer_t* base)
 static void
 vkk_defaultRenderer_deleteFramebuffer(vkk_renderer_t* base)
 {
-	assert(base);
+	ASSERT(base);
 
 	vkk_defaultRenderer_t* self;
 	self = (vkk_defaultRenderer_t*) base;
@@ -552,7 +551,7 @@ vkk_defaultRenderer_deleteFramebuffer(vkk_renderer_t* base)
 static int
 vkk_defaultRenderer_newRenderpass(vkk_renderer_t* base)
 {
-	assert(base);
+	ASSERT(base);
 
 	vkk_defaultRenderer_t* self;
 	self = (vkk_defaultRenderer_t*) base;
@@ -637,7 +636,7 @@ vkk_defaultRenderer_newRenderpass(vkk_renderer_t* base)
 static int
 vkk_defaultRenderer_newSemaphores(vkk_renderer_t* base)
 {
-	assert(base);
+	ASSERT(base);
 
 	vkk_defaultRenderer_t* self;
 	self = (vkk_defaultRenderer_t*) base;
@@ -729,7 +728,7 @@ vkk_defaultRenderer_newSemaphores(vkk_renderer_t* base)
 vkk_renderer_t*
 vkk_defaultRenderer_new(vkk_engine_t* engine)
 {
-	assert(engine);
+	ASSERT(engine);
 
 	vkk_defaultRenderer_t* self;
 	self = (vkk_defaultRenderer_t*)
@@ -809,7 +808,7 @@ vkk_defaultRenderer_new(vkk_engine_t* engine)
 
 void vkk_defaultRenderer_delete(vkk_renderer_t** _base)
 {
-	assert(_base);
+	ASSERT(_base);
 
 	vkk_renderer_t* base = *_base;
 	if(base)
@@ -847,7 +846,7 @@ void vkk_defaultRenderer_delete(vkk_renderer_t** _base)
 
 int vkk_defaultRenderer_resize(vkk_renderer_t* base)
 {
-	assert(base);
+	ASSERT(base);
 
 	vkk_engine_t* engine = base->engine;
 
@@ -885,7 +884,7 @@ int vkk_defaultRenderer_resize(vkk_renderer_t* base)
 
 int vkk_defaultRenderer_recreate(vkk_renderer_t* base)
 {
-	assert(base);
+	ASSERT(base);
 
 	vkk_engine_t* engine = base->engine;
 
@@ -932,7 +931,7 @@ int vkk_defaultRenderer_recreate(vkk_renderer_t* base)
 uint32_t
 vkk_defaultRenderer_swapchainImageCount(vkk_renderer_t* base)
 {
-	assert(base);
+	ASSERT(base);
 
 	vkk_defaultRenderer_t* self;
 	self = (vkk_defaultRenderer_t*) base;
@@ -942,7 +941,7 @@ vkk_defaultRenderer_swapchainImageCount(vkk_renderer_t* base)
 
 double vkk_defaultRenderer_tsCurrent(vkk_renderer_t* base)
 {
-	assert(base);
+	ASSERT(base);
 
 	vkk_defaultRenderer_t* self;
 	self = (vkk_defaultRenderer_t*) base;
@@ -953,7 +952,7 @@ double vkk_defaultRenderer_tsCurrent(vkk_renderer_t* base)
 double
 vkk_defaultRenderer_tsExpiredLocked(vkk_renderer_t* base)
 {
-	assert(base);
+	ASSERT(base);
 
 	vkk_defaultRenderer_t* self;
 	self = (vkk_defaultRenderer_t*) base;
@@ -965,8 +964,8 @@ int
 vkk_defaultRenderer_begin(vkk_renderer_t* base,
                           int mode, float* clear_color)
 {
-	assert(base);
-	assert(clear_color);
+	ASSERT(base);
+	ASSERT(clear_color);
 
 	vkk_defaultRenderer_t* self;
 	self = (vkk_defaultRenderer_t*) base;
@@ -1144,7 +1143,7 @@ vkk_defaultRenderer_begin(vkk_renderer_t* base,
 
 void vkk_defaultRenderer_end(vkk_renderer_t* base)
 {
-	assert(base);
+	ASSERT(base);
 
 	vkk_defaultRenderer_t* self;
 	self = (vkk_defaultRenderer_t*) base;
@@ -1203,9 +1202,9 @@ vkk_defaultRenderer_surfaceSize(vkk_renderer_t* base,
                                 uint32_t* _width,
                                 uint32_t* _height)
 {
-	assert(base);
-	assert(_width);
-	assert(_height);
+	ASSERT(base);
+	ASSERT(_width);
+	ASSERT(_height);
 
 	vkk_defaultRenderer_t* self;
 	self = (vkk_defaultRenderer_t*) base;
@@ -1217,7 +1216,7 @@ vkk_defaultRenderer_surfaceSize(vkk_renderer_t* base,
 VkRenderPass
 vkk_defaultRenderer_renderPass(vkk_renderer_t* base)
 {
-	assert(base);
+	ASSERT(base);
 
 	vkk_defaultRenderer_t* self;
 	self = (vkk_defaultRenderer_t*) base;
@@ -1228,7 +1227,7 @@ vkk_defaultRenderer_renderPass(vkk_renderer_t* base)
 VkFramebuffer
 vkk_defaultRenderer_framebuffer(vkk_renderer_t* base)
 {
-	assert(base);
+	ASSERT(base);
 
 	vkk_defaultRenderer_t* self;
 	self = (vkk_defaultRenderer_t*) base;
@@ -1239,7 +1238,7 @@ vkk_defaultRenderer_framebuffer(vkk_renderer_t* base)
 VkCommandBuffer
 vkk_defaultRenderer_commandBuffer(vkk_renderer_t* base)
 {
-	assert(base);
+	ASSERT(base);
 
 	vkk_defaultRenderer_t* self;
 	self = (vkk_defaultRenderer_t*) base;
@@ -1251,7 +1250,7 @@ vkk_defaultRenderer_commandBuffer(vkk_renderer_t* base)
 uint32_t
 vkk_defaultRenderer_swapchainFrame(vkk_renderer_t* base)
 {
-	assert(base);
+	ASSERT(base);
 
 	vkk_defaultRenderer_t* self;
 	self = (vkk_defaultRenderer_t*) base;

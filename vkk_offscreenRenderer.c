@@ -21,7 +21,6 @@
  *
  */
 
-#include <assert.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -41,7 +40,7 @@ static int
 vkk_offscreenRenderer_newRenderpass(vkk_renderer_t* base,
                                     int format)
 {
-	assert(base);
+	ASSERT(base);
 
 	vkk_offscreenRenderer_t* self;
 	self = (vkk_offscreenRenderer_t*) base;
@@ -128,7 +127,7 @@ vkk_offscreenRenderer_newDepth(vkk_renderer_t* base,
                                uint32_t width,
                                uint32_t height)
 {
-	assert(base);
+	ASSERT(base);
 
 	vkk_offscreenRenderer_t* self;
 	self = (vkk_offscreenRenderer_t*) base;
@@ -149,7 +148,7 @@ vkk_offscreenRenderer_newDepth(vkk_renderer_t* base,
 static void
 vkk_offscreenRenderer_deleteDepth(vkk_renderer_t* base)
 {
-	assert(base);
+	ASSERT(base);
 
 	vkk_offscreenRenderer_t* self;
 	self = (vkk_offscreenRenderer_t*) base;
@@ -163,7 +162,7 @@ vkk_offscreenRenderer_newFramebuffer(vkk_renderer_t* base,
                                      uint32_t height,
                                      int format)
 {
-	assert(base);
+	ASSERT(base);
 
 	vkk_offscreenRenderer_t* self;
 	self = (vkk_offscreenRenderer_t*) base;
@@ -216,7 +215,7 @@ vkk_offscreenRenderer_newFramebuffer(vkk_renderer_t* base,
 static void
 vkk_offscreenRenderer_deleteFramebuffer(vkk_renderer_t* base)
 {
-	assert(base);
+	ASSERT(base);
 
 	vkk_offscreenRenderer_t* self;
 	self = (vkk_offscreenRenderer_t*) base;
@@ -238,7 +237,7 @@ vkk_offscreenRenderer_new(vkk_engine_t* engine,
                           uint32_t width, uint32_t height,
                           int format)
 {
-	assert(engine);
+	ASSERT(engine);
 
 	vkk_offscreenRenderer_t* self;
 	self = (vkk_offscreenRenderer_t*)
@@ -311,7 +310,7 @@ vkk_offscreenRenderer_new(vkk_engine_t* engine,
 
 void vkk_offscreenRenderer_delete(vkk_renderer_t** _base)
 {
-	assert(_base);
+	ASSERT(_base);
 
 	vkk_renderer_t* base = *_base;
 	if(base)
@@ -338,16 +337,16 @@ vkk_offscreenRenderer_begin(vkk_renderer_t* base,
                             vkk_image_t* image,
                             float* clear_color)
 {
-	assert(base);
-	assert(image);
-	assert(clear_color);
+	ASSERT(base);
+	ASSERT(image);
+	ASSERT(clear_color);
 
 	vkk_offscreenRenderer_t* self;
 	self = (vkk_offscreenRenderer_t*) base;
 
 	vkk_image_t* src_image = self->src_image;
 
-	assert((image->width  == src_image->width)  &&
+	ASSERT((image->width  == src_image->width)  &&
 	       (image->height == src_image->height) &&
 	       (image->format == src_image->format));
 
@@ -474,7 +473,7 @@ vkk_offscreenRenderer_begin(vkk_renderer_t* base,
 
 void vkk_offscreenRenderer_end(vkk_renderer_t* base)
 {
-	assert(base);
+	ASSERT(base);
 
 	vkk_offscreenRenderer_t* self;
 	self = (vkk_offscreenRenderer_t*) base;
@@ -596,9 +595,9 @@ vkk_offscreenRenderer_surfaceSize(vkk_renderer_t* base,
                                   uint32_t* _width,
                                   uint32_t* _height)
 {
-	assert(base);
-	assert(_width);
-	assert(_height);
+	ASSERT(base);
+	ASSERT(_width);
+	ASSERT(_height);
 
 	vkk_offscreenRenderer_t* self;
 	self = (vkk_offscreenRenderer_t*) base;
@@ -610,7 +609,7 @@ vkk_offscreenRenderer_surfaceSize(vkk_renderer_t* base,
 VkRenderPass
 vkk_offscreenRenderer_renderPass(vkk_renderer_t* base)
 {
-	assert(base);
+	ASSERT(base);
 
 	vkk_offscreenRenderer_t* self;
 	self = (vkk_offscreenRenderer_t*) base;
@@ -621,7 +620,7 @@ vkk_offscreenRenderer_renderPass(vkk_renderer_t* base)
 VkFramebuffer
 vkk_offscreenRenderer_framebuffer(vkk_renderer_t* base)
 {
-	assert(base);
+	ASSERT(base);
 
 	vkk_offscreenRenderer_t* self;
 	self = (vkk_offscreenRenderer_t*) base;
@@ -632,7 +631,7 @@ vkk_offscreenRenderer_framebuffer(vkk_renderer_t* base)
 VkCommandBuffer
 vkk_offscreenRenderer_commandBuffer(vkk_renderer_t* base)
 {
-	assert(base);
+	ASSERT(base);
 
 	vkk_offscreenRenderer_t* self;
 	self = (vkk_offscreenRenderer_t*) base;
@@ -643,7 +642,7 @@ vkk_offscreenRenderer_commandBuffer(vkk_renderer_t* base)
 uint32_t
 vkk_offscreenRenderer_swapchainFrame(vkk_renderer_t* base)
 {
-	assert(base);
+	ASSERT(base);
 
 	return 0;
 }

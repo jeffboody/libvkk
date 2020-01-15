@@ -21,7 +21,6 @@
  *
  */
 
-#include <assert.h>
 #include <math.h>
 #include <stdlib.h>
 #include <string.h>
@@ -44,7 +43,7 @@ vkui_widget_makeRoundRect(cc_vec4f_t* xyuv, int steps,
                           float b, float r,
                           float radius)
 {
-	assert(xyuv);
+	ASSERT(xyuv);
 
 	float h = b - t;
 	float w = r - l;
@@ -109,12 +108,12 @@ vkui_widget_new(vkui_screen_t* screen, size_t wsize,
                 vkui_widgetFn_t* fn,
                 vkui_widgetPrivFn_t* priv_fn)
 {
-	assert(screen);
-	assert(color);
-	assert(layout);
-	assert(scroll);
-	assert(fn);
-	assert(priv_fn);
+	ASSERT(screen);
+	ASSERT(color);
+	ASSERT(layout);
+	ASSERT(scroll);
+	ASSERT(fn);
+	ASSERT(priv_fn);
 
 	if(wsize == 0)
 	{
@@ -140,12 +139,12 @@ vkui_widget_new(vkui_screen_t* screen, size_t wsize,
 	// check for invalid layouts
 	if(layout->wrapx == VKUI_WIDGET_WRAP_SHRINK)
 	{
-		assert(layout->stretchx == 0.0f);
+		ASSERT(layout->stretchx == 0.0f);
 	}
 
 	if(layout->wrapy == VKUI_WIDGET_WRAP_SHRINK)
 	{
-		assert(layout->stretchy == 0.0f);
+		ASSERT(layout->stretchy == 0.0f);
 	}
 
 	// shader data
@@ -217,13 +216,13 @@ vkui_widget_new(vkui_screen_t* screen, size_t wsize,
 
 void vkui_widget_delete(vkui_widget_t** _self)
 {
-	assert(_self);
+	ASSERT(_self);
 
 	vkui_widget_t* self = *_self;
 	if(self)
 	{
 		vkui_screen_t* screen = self->screen;
-		assert(self != screen->top_widget);
+		ASSERT(self != screen->top_widget);
 
 		if(vkui_widget_hasFocus(self))
 		{
@@ -244,8 +243,8 @@ void vkui_widget_layoutXYClip(vkui_widget_t* self,
                               cc_rect1f_t* clip,
                               int dragx, int dragy)
 {
-	assert(self);
-	assert(clip);
+	ASSERT(self);
+	ASSERT(clip);
 
 	vkui_screen_t* screen = self->screen;
 
@@ -403,9 +402,9 @@ void vkui_widget_layoutXYClip(vkui_widget_t* self,
 void vkui_widget_layoutSize(vkui_widget_t* self,
                             float* w, float* h)
 {
-	assert(self);
-	assert(w);
-	assert(h);
+	ASSERT(self);
+	ASSERT(w);
+	ASSERT(h);
 
 	vkui_widgetLayout_t* layout  = &self->layout;
 	vkui_widgetPrivFn_t* priv_fn = &self->priv_fn;
@@ -539,10 +538,10 @@ void vkui_widget_layoutAnchor(vkui_widget_t* self,
                               cc_rect1f_t* rect,
                               float* x, float * y)
 {
-	assert(self);
-	assert(rect);
-	assert(x);
-	assert(y);
+	ASSERT(self);
+	ASSERT(rect);
+	ASSERT(x);
+	ASSERT(y);
 
 	vkui_widgetLayout_t* layout = &self->layout;
 
@@ -595,7 +594,7 @@ void vkui_widget_layoutAnchor(vkui_widget_t* self,
 int vkui_widget_click(vkui_widget_t* self, int state,
                       float x, float y)
 {
-	assert(self);
+	ASSERT(self);
 
 	vkui_widgetFn_t* fn = &self->fn;
 
@@ -625,7 +624,7 @@ int vkui_widget_click(vkui_widget_t* self, int state,
 int vkui_widget_keyPress(vkui_widget_t* self,
                          int keycode, int meta)
 {
-	assert(self);
+	ASSERT(self);
 
 	vkui_widgetFn_t*     fn      = &self->fn;
 	vkui_widgetPrivFn_t* priv_fn = &self->priv_fn;
@@ -643,7 +642,7 @@ void vkui_widget_drag(vkui_widget_t* self,
                       float x, float y,
                       float dx, float dy)
 {
-	assert(self);
+	ASSERT(self);
 
 	vkui_widgetLayout_t* layout  = &self->layout;
 	vkui_widgetPrivFn_t* priv_fn = &self->priv_fn;
@@ -680,7 +679,7 @@ void vkui_widget_drag(vkui_widget_t* self,
 
 void vkui_widget_draw(vkui_widget_t* self)
 {
-	assert(self);
+	ASSERT(self);
 
 	vkui_widgetScroll_t* scroll  = &self->scroll;
 	vkui_widgetPrivFn_t* priv_fn = &self->priv_fn;
@@ -777,7 +776,7 @@ void vkui_widget_draw(vkui_widget_t* self)
 
 void vkui_widget_refresh(vkui_widget_t* self)
 {
-	assert(self);
+	ASSERT(self);
 
 	vkui_widgetFn_t* fn = &self->fn;
 
@@ -791,7 +790,7 @@ void vkui_widget_refresh(vkui_widget_t* self)
 void vkui_widget_soundFx(vkui_widget_t* self,
                         int sound_fx)
 {
-	assert(self);
+	ASSERT(self);
 
 	self->sound_fx = sound_fx;
 }
@@ -799,8 +798,8 @@ void vkui_widget_soundFx(vkui_widget_t* self,
 void vkui_widget_color(vkui_widget_t* self,
                        cc_vec4f_t* color)
 {
-	assert(self);
-	assert(color);
+	ASSERT(self);
+	ASSERT(color);
 
 	cc_vec4f_copy(color, &self->color);
 }
@@ -810,10 +809,10 @@ int vkui_widget_tricolor(vkui_widget_t* self,
                          cc_vec4f_t* color1,
                          cc_vec4f_t* color2)
 {
-	assert(self);
-	assert(color0);
-	assert(color1);
-	assert(color2);
+	ASSERT(self);
+	ASSERT(color0);
+	ASSERT(color1);
+	ASSERT(color2);
 
 	if(self->tricolor)
 	{
@@ -834,14 +833,14 @@ int vkui_widget_tricolor(vkui_widget_t* self,
 void vkui_widget_tricolorAB(vkui_widget_t* self,
                            float a, float b)
 {
-	assert(self);
+	ASSERT(self);
 
 	vkui_tricolor_ab(self->tricolor, a, b);
 }
 
 void vkui_widget_scrollTop(vkui_widget_t* self)
 {
-	assert(self);
+	ASSERT(self);
 
 	vkui_widgetPrivFn_t* priv_fn = &self->priv_fn;
 
@@ -857,7 +856,7 @@ void vkui_widget_scrollTop(vkui_widget_t* self)
 
 int vkui_widget_hasFocus(vkui_widget_t* self)
 {
-	assert(self);
+	ASSERT(self);
 
 	vkui_screen_t* screen = self->screen;
 	return self == screen->focus_widget;
@@ -867,11 +866,11 @@ void
 vkui_widget_privReflowFn(vkui_widget_t* self,
                          vkui_widget_reflowFn reflow_fn)
 {
-	assert(self);
-	assert(reflow_fn);
+	ASSERT(self);
+	ASSERT(reflow_fn);
 
 	vkui_widgetPrivFn_t* priv_fn = &self->priv_fn;
-	assert(priv_fn->reflow_fn == NULL);
+	ASSERT(priv_fn->reflow_fn == NULL);
 
 	priv_fn->reflow_fn = reflow_fn;
 }
