@@ -222,8 +222,8 @@ vkk_engine_newInstance(vkk_engine_t* self,
 		.pApplicationName   = app_name,
 		.applicationVersion = app_version,
 		.pEngineName        = app_name,
-		.engineVersion      = app_version,
-		.apiVersion         = self->version
+		.engineVersion      = self->version,
+		.apiVersion         = VK_MAKE_VERSION(1,0,0)
 	};
 
 	#if defined(DEBUG_LAYERS1)
