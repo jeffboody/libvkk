@@ -38,6 +38,16 @@ typedef struct vkk_platform_s
 	int   height;
 	float density;
 	void* priv;
+
+	// axis values
+	float AX1;
+	float AY1;
+	float AX2;
+	float AY2;
+	float AHX;
+	float AHY;
+	float ART;
+	float ALT;
 } vkk_platform_t;
 
 #endif

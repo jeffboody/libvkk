@@ -23,6 +23,7 @@
 
 #include <android_native_app_glue.h>
 #include <jni.h>
+#include <math.h>
 #include <stdlib.h>
 #include <unistd.h>
 #include <vulkan_wrapper.h>
@@ -342,28 +343,6 @@ Java_com_jeffboody_vkk_VKKNativeActivity_NativeAccelerometer(JNIEnv* env,
 }
 
 JNIEXPORT void JNICALL
-Java_com_jeffboody_vkk_VKKNativeActivity_NativeAxisMove(JNIEnv* env,
-                                                        jobject obj,
-                                                        jint id,
-                                                        jint axis,
-                                                        jfloat value,
-                                                        jdouble ts)
-{
-	ASSERT(env);
-
-	if(eventq)
-	{
-		vkk_event_t* e = vkk_eventq_dequeue(eventq);
-		e->type        = VKK_EVENT_TYPE_AXIS_MOVE;
-		e->ts          = ts;
-		e->axis.id     = id;
-		e->axis.axis   = axis;
-		e->axis.value  = value;
-		vkk_eventq_enqueue(eventq);
-	}
-}
-
-JNIEXPORT void JNICALL
 Java_com_jeffboody_vkk_VKKNativeActivity_NativeButtonDown(JNIEnv* env,
                                                           jobject  obj,
                                                           jint id,
@@ -607,17 +586,42 @@ onAppCmd(struct android_app* app, int32_t cmd)
 	}
 }
 
+static float denoiseAxis(float value)
+{
+	if(fabs(value) < 0.05F)
+	{
+		return 0.0f;
+	}
+	return value;
+}
+
+static float
+getAxisValue(AInputEvent* event, size_t idx, int axis)
+{
+	return denoiseAxis(AMotionEvent_getAxisValue(event,
+	                                             axis, idx));
+}
+
 static int32_t
 onInputEvent(struct android_app* app, AInputEvent* event)
 {
 	ASSERT(app);
 	ASSERT(event);
 
-	vkk_platform_t* platform;
-	platform = (vkk_platform_t*) app->userData;
-
 	vkk_platformOnEvent_fn onEvent;
 	onEvent = VKK_PLATFORM_CALLBACKS.onEvent;
+
+	vkk_platform_t* platform;
+	platform = (vkk_platform_t*) app->userData;
+	if(platform == NULL)
+	{
+		return 0;
+	}
+
+	int32_t source = AInputEvent_getSource(event);
+	int32_t action = AMotionEvent_getAction(event) &
+	                 AMOTION_EVENT_ACTION_MASK;
+	int32_t id     = AInputEvent_getDeviceId(event);
 
 	// 1) use JNI to handle key events because the native API
 	//    doesn't seem to provide a complete set of keycodes
@@ -625,7 +629,117 @@ onInputEvent(struct android_app* app, AInputEvent* event)
 	// 2) use native to handle touch events because the native
 	//    window is needed to generate the correct offset
 	int32_t atype = AInputEvent_getType(event);
-	if(platform && (atype == AINPUT_EVENT_TYPE_MOTION))
+	if((source & AINPUT_SOURCE_CLASS_JOYSTICK) &&
+	   (action == AMOTION_EVENT_ACTION_MOVE))
+	{
+		size_t idx;
+		idx = (size_t) (AMotionEvent_getAction(event) &
+		                AMOTION_EVENT_ACTION_POINTER_INDEX_MASK);
+
+		// process the joystick movement...
+		float ax1 = getAxisValue(event, idx,
+		                         AMOTION_EVENT_AXIS_X);
+		float ay1 = getAxisValue(event, idx,
+		                         AMOTION_EVENT_AXIS_Y);
+		float ax2 = getAxisValue(event, idx,
+		                         AMOTION_EVENT_AXIS_Z);
+		float ay2 = getAxisValue(event, idx,
+		                         AMOTION_EVENT_AXIS_RZ);
+		float ahx = getAxisValue(event, idx,
+		                         AMOTION_EVENT_AXIS_HAT_X);
+		float ahy = getAxisValue(event, idx,
+		                         AMOTION_EVENT_AXIS_HAT_Y);
+
+		float art = getAxisValue(event, idx,
+		                         AMOTION_EVENT_AXIS_RTRIGGER);
+		if(art == 0.0f)
+		{
+			art = getAxisValue(event, idx,
+			                   AMOTION_EVENT_AXIS_GAS);
+			if(art == 0.0f)
+			{
+				art = getAxisValue(event, idx,
+				                   AMOTION_EVENT_AXIS_THROTTLE);
+			}
+		}
+
+		float alt = getAxisValue(event, idx,
+		                         AMOTION_EVENT_AXIS_LTRIGGER);
+		if(alt == 0.0f)
+		{
+			alt = getAxisValue(event, idx,
+			                   AMOTION_EVENT_AXIS_BRAKE);
+		}
+
+		vkk_event_t ve =
+		{
+			.type = VKK_EVENT_TYPE_AXIS_MOVE,
+			.ts   = cc_timestamp(),
+			.axis =
+			{
+				.id = id,
+			}
+		};
+
+		if(ax1 != platform->AX1)
+		{
+			ve.axis.axis  = VKK_AXIS_X1;
+			ve.axis.value = ax1;
+			platform->AX1 = ax1;
+			(*onEvent)(platform->priv, &ve);
+		}
+		if(ay1 != platform->AY1)
+		{
+			ve.axis.axis  = VKK_AXIS_Y1;
+			ve.axis.value = ay1;
+			platform->AY1 = ay1;
+			(*onEvent)(platform->priv, &ve);
+		}
+		if(ax2 != platform->AX2)
+		{
+			ve.axis.axis  = VKK_AXIS_X2;
+			ve.axis.value = ax2;
+			platform->AX2 = ax2;
+			(*onEvent)(platform->priv, &ve);
+		}
+		if(ay2 != platform->AY2)
+		{
+			ve.axis.axis  = VKK_AXIS_Y2;
+			ve.axis.value = ay2;
+			platform->AY2 = ay2;
+			(*onEvent)(platform->priv, &ve);
+		}
+		if(ahx != platform->AHX)
+		{
+			ve.axis.axis  = VKK_AXIS_HX;
+			ve.axis.value = ahx;
+			platform->AHX = ahx;
+			(*onEvent)(platform->priv, &ve);
+		}
+		if(ahy != platform->AHY)
+		{
+			ve.axis.axis  = VKK_AXIS_HY;
+			ve.axis.value = ahy;
+			platform->AHY = ahy;
+			(*onEvent)(platform->priv, &ve);
+		}
+		if(art != platform->ART)
+		{
+			ve.axis.axis  = VKK_AXIS_RT;
+			ve.axis.value = art;
+			platform->ART = art;
+			(*onEvent)(platform->priv, &ve);
+		}
+		if(alt != platform->ALT)
+		{
+			ve.axis.axis  = VKK_AXIS_LT;
+			ve.axis.value = alt;
+			platform->ALT = alt;
+			(*onEvent)(platform->priv, &ve);
+		}
+		return 1;
+	}
+	else if(platform && (atype == AINPUT_EVENT_TYPE_MOTION))
 	{
 		int     action = (int) AMotionEvent_getAction(event) &
 		                       AMOTION_EVENT_ACTION_MASK;
