@@ -30,6 +30,8 @@ typedef struct vkk_platform_s
 {
 	int   running;
 	void* priv;
+	float width;
+	float height;
 } vkk_platform_t;
 
 #endif

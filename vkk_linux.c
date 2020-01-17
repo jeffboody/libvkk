@@ -290,6 +290,130 @@ static int keyPress(SDL_Keysym* keysym,
 	return 1;
 }
 
+typedef struct
+{
+	vkk_platform_t* platform;
+
+	int   count;
+	int   type;
+	int   id[4];
+	float x[4];
+	float y[4];
+} vkk_platformTouch_t;
+
+static void
+vkk_platformTouch_init(vkk_platformTouch_t* self,
+                       vkk_platform_t* platform)
+{
+	assert(self);
+	assert(platform);
+
+	self->platform = platform;
+	self->count    = 0;
+	self->type     = -1;
+}
+
+static void
+vkk_platformTouch_event(vkk_platformTouch_t* self)
+{
+	assert(self);
+
+	vkk_platformOnEvent_fn  onEvent;
+	onEvent = VKK_PLATFORM_CALLBACKS.onEvent;
+
+	if(self->type == -1)
+	{
+		return;
+	}
+
+	vkk_event_t ve =
+	{
+		.type    = self->type,
+		.ts      = cc_timestamp(),
+		.action  =
+		{
+			.count = self->count,
+			.coord =
+			{
+				{
+					.x = self->x[0],
+					.y = self->y[0]
+				},
+				{
+					.x = self->x[1],
+					.y = self->y[1]
+				},
+				{
+					.x = self->x[2],
+					.y = self->y[2]
+				},
+				{
+					.x = self->x[3],
+					.y = self->y[3]
+				}
+			}
+		}
+	};
+	(*onEvent)(self->platform->priv, &ve);
+
+	// reset touch state
+	if(self->type == VKK_EVENT_TYPE_ACTION_UP)
+	{
+		self->count = 0;
+	}
+	self->type = -1;
+}
+
+static void
+vkk_platformTouch_action(vkk_platformTouch_t* self,
+                         int type,
+                         int id,
+                         float x, float y)
+{
+	assert(self);
+
+	// init action
+	if((self->type == -1) ||
+	   (type == VKK_EVENT_TYPE_ACTION_UP))
+	{
+		// ignore invalid actions
+		if((self->count == 0) &&
+		   (type != VKK_EVENT_TYPE_ACTION_DOWN))
+		{
+			return;
+		}
+
+		self->type = type;
+	}
+
+	// update event
+	int i;
+	for(i = 0; i < self->count; ++i)
+	{
+		if(id == self->id[i])
+		{
+			self->x[i] = x;
+			self->y[i] = y;
+			vkk_platformTouch_event(self);
+			return;
+		}
+	}
+
+	// too many fingers
+	if(self->count >= 4)
+	{
+		return;
+	}
+
+	// add the event
+	int count = self->count;
+	self->id[count] = id;
+	self->x[count]  = x;
+	self->y[count]  = y;
+	++self->count;
+	vkk_platformTouch_event(self);
+}
+
 /***********************************************************
 * platform                                                 *
 ***********************************************************/
@@ -323,6 +447,11 @@ static vkk_platform_t* vkk_platform_new(void)
 		          &w, &h, &density, &fullscreen) != 4)
 		{
 			LOGW("fscanf failed");
+		}
+		else
+		{
+			self->width  = (float) w;
+			self->height = (float) h;
 		}
 		fclose(f);
 	}
@@ -393,6 +522,8 @@ int main(int argc, char** argv)
 		return EXIT_FAILURE;
 	}
 
+	vkk_platformTouch_t t;
+	vkk_platformTouch_init(&t, platform);
 	while(platform->running)
 	{
 		// translate SDL events to VKK events
@@ -439,6 +570,7 @@ int main(int argc, char** argv)
 				{
 					type = VKK_EVENT_TYPE_ACTION_MOVE;
 				}
+
 				vkk_event_t ve =
 				{
 					.type    = type,
@@ -457,9 +589,30 @@ int main(int argc, char** argv)
 				};
 				(*onEvent)(platform->priv, &ve);
 			}
+			else if((se.type == SDL_FINGERUP)   ||
+			        (se.type == SDL_FINGERDOWN) ||
+			        (se.type == SDL_FINGERMOTION))
+			{
+				int type = VKK_EVENT_TYPE_ACTION_UP;
+				if(se.type == SDL_FINGERDOWN)
+				{
+					type = VKK_EVENT_TYPE_ACTION_DOWN;
+				}
+				else if(se.type == SDL_FINGERMOTION)
+				{
+					type = VKK_EVENT_TYPE_ACTION_MOVE;
+				}
+				vkk_platformTouch_action(&t, type,
+				                         se.tfinger.fingerId,
+				                         platform->width*se.tfinger.x,
+				                         platform->height*se.tfinger.y);
+			}
 			else if((se.type == SDL_WINDOWEVENT) &&
 			        (se.window.event == SDL_WINDOWEVENT_RESIZED))
 			{
+				platform->width  = se.window.data1;
+				platform->height = se.window.data2;
+
 				vkk_event_t ve =
 				{
 					.type = VKK_EVENT_TYPE_RESIZE,
