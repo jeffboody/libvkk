@@ -404,6 +404,36 @@ Java_com_jeffboody_vkk_VKKNativeActivity_NativeDensity(JNIEnv* env,
 }
 
 JNIEXPORT void JNICALL
+Java_com_jeffboody_vkk_VKKGpsService_NativeGps(JNIEnv* env, jobject obj,
+                                               jdouble lat, jdouble lon,
+                                               jfloat accuracy, jfloat altitude,
+                                               jfloat speed, jfloat bearing, jdouble ts)
+{
+	assert(env);
+
+	if(eventq)
+	{
+		// GPS may be enabled when the app is paused
+		// to record GPX tracks
+		// TODO - if(running)
+		{
+			vkk_event_t* e  = vkk_eventq_dequeue(eventq);
+			e->type         = VKK_EVENT_TYPE_GPS;
+			e->ts           = ts;
+			e->gps.lat      = lat;
+			e->gps.lon      = lon;
+			e->gps.accuracy = accuracy;
+			e->gps.altitude = altitude;
+			e->gps.speed    = speed;
+			e->gps.bearing  = bearing;
+			vkk_eventq_enqueue(eventq);
+		}
+
+		// TODO - GPS service
+	}
+}
+
+JNIEXPORT void JNICALL
 Java_com_jeffboody_vkk_VKKNativeActivity_NativeGrantPermission(JNIEnv* env,
                                                                jobject obj,
                                                                jint permission)

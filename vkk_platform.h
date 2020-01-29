@@ -40,16 +40,20 @@ typedef struct vkk_platform_s vkk_platform_t;
 #define VKK_PLATFORM_CMD_ACCELEROMETER_ON  2
 #define VKK_PLATFORM_CMD_CHECK_PERMISSIONS 3
 #define VKK_PLATFORM_CMD_EXIT              4
-#define VKK_PLATFORM_CMD_GYROSCOPE_OFF     5
-#define VKK_PLATFORM_CMD_GYROSCOPE_ON      6
-#define VKK_PLATFORM_CMD_LOADURL           7
-#define VKK_PLATFORM_CMD_MAGNETOMETER_OFF  8
-#define VKK_PLATFORM_CMD_MAGNETOMETER_ON   9
-#define VKK_PLATFORM_CMD_PLAY_CLICK        10
-#define VKK_PLATFORM_CMD_REQ_LOCATION_PERM 11
-#define VKK_PLATFORM_CMD_REQ_STORAGE_PERM  12
-#define VKK_PLATFORM_CMD_SOFTKEY_HIDE      13
-#define VKK_PLATFORM_CMD_SOFTKEY_SHOW      14
+#define VKK_PLATFORM_CMD_GPS_OFF           5
+#define VKK_PLATFORM_CMD_GPS_ON            6
+#define VKK_PLATFORM_CMD_GPS_RECORD        7
+#define VKK_PLATFORM_CMD_GPS_PAUSE         8
+#define VKK_PLATFORM_CMD_GYROSCOPE_OFF     9
+#define VKK_PLATFORM_CMD_GYROSCOPE_ON      10
+#define VKK_PLATFORM_CMD_LOADURL           11
+#define VKK_PLATFORM_CMD_MAGNETOMETER_OFF  12
+#define VKK_PLATFORM_CMD_MAGNETOMETER_ON   13
+#define VKK_PLATFORM_CMD_PLAY_CLICK        14
+#define VKK_PLATFORM_CMD_REQ_LOCATION_PERM 15
+#define VKK_PLATFORM_CMD_REQ_STORAGE_PERM  16
+#define VKK_PLATFORM_CMD_SOFTKEY_HIDE      17
+#define VKK_PLATFORM_CMD_SOFTKEY_SHOW      18
 
 void vkk_platform_cmd(vkk_platform_t* self, int cmd,
                       const char* msg);
@@ -67,14 +71,15 @@ void vkk_platform_cmd(vkk_platform_t* self, int cmd,
 #define VKK_EVENT_TYPE_BUTTON_DOWN        5
 #define VKK_EVENT_TYPE_BUTTON_UP          6
 #define VKK_EVENT_TYPE_DENSITY            7
-#define VKK_EVENT_TYPE_GYROSCOPE          8
-#define VKK_EVENT_TYPE_KEY_DOWN           9
-#define VKK_EVENT_TYPE_KEY_UP             10
-#define VKK_EVENT_TYPE_MAGNETOMETER       11
-#define VKK_EVENT_TYPE_PAUSE              12
-#define VKK_EVENT_TYPE_PERMISSION_GRANTED 13
-#define VKK_EVENT_TYPE_RECREATE           14
-#define VKK_EVENT_TYPE_RESIZE             15
+#define VKK_EVENT_TYPE_GPS                8
+#define VKK_EVENT_TYPE_GYROSCOPE          9
+#define VKK_EVENT_TYPE_KEY_DOWN           10
+#define VKK_EVENT_TYPE_KEY_UP             11
+#define VKK_EVENT_TYPE_MAGNETOMETER       12
+#define VKK_EVENT_TYPE_PAUSE              13
+#define VKK_EVENT_TYPE_PERMISSION_GRANTED 14
+#define VKK_EVENT_TYPE_RECREATE           15
+#define VKK_EVENT_TYPE_RESIZE             16
 
 // max actions supported
 #define VKK_EVENT_ACTION_COUNT 4
@@ -184,6 +189,16 @@ typedef struct
 
 typedef struct
 {
+	double lat;
+	double lon;
+	float  accuracy;
+	float  altitude;
+	float  speed;
+	float  bearing;
+} vkk_eventGps_t;
+
+typedef struct
+{
 	float ax;
 	float ay;
 	float az;
@@ -217,6 +232,7 @@ typedef struct
 		vkk_eventAxis_t          axis;
 		vkk_eventButton_t        button;
 		float                    density;
+		vkk_eventGps_t           gps;
 		vkk_eventGyroscope_t     gyroscope;
 		vkk_eventKey_t           key;
 		vkk_eventMagnetometer_t  magnetometer;
