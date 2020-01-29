@@ -25,6 +25,7 @@
 #include <jni.h>
 #include <math.h>
 #include <stdlib.h>
+#include <string.h>
 #include <unistd.h>
 #include <vulkan_wrapper.h>
 
@@ -293,7 +294,10 @@ static vkk_event_t* vkk_eventq_dequeue(vkk_eventq_t* self)
 {
 	ASSERT(self);
 
-	return &self->event_buffer[self->event_tail];
+	vkk_event_t* event;
+	event = &self->event_buffer[self->event_tail];
+	memset((void*) event, 0, sizeof(vkk_event_t));
+	return event;
 }
 
 static void vkk_eventq_enqueue(vkk_eventq_t* self)
