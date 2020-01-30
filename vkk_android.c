@@ -36,6 +36,8 @@
 #include "vkk_android.h"
 #include "vkk.h"
 
+static vkk_platform_t* platform = NULL;
+
 /***********************************************************
 * apply shift key                                          *
 ***********************************************************/
@@ -195,361 +197,12 @@ static int shiftKeycode(int keycode, int meta)
 }
 
 /***********************************************************
-* eventq interface                                         *
-***********************************************************/
-
-#define VKK_EVENTQ_BUFSIZE 256
-
-typedef struct
-{
-	// event state
-	pthread_mutex_t event_mutex;
-	pthread_cond_t  event_cond;
-	int             event_head;
-	int             event_tail;
-	vkk_event_t     event_buffer[VKK_EVENTQ_BUFSIZE];
-} vkk_eventq_t;
-
-static vkk_eventq_t* eventq = NULL;
-
-static vkk_eventq_t* vkk_eventq_new(void)
-{
-	vkk_eventq_t* self;
-	self = (vkk_eventq_t*) CALLOC(1, sizeof(vkk_eventq_t));
-	if(self == NULL)
-	{
-		LOGE("CALLOC failed");
-		return NULL;
-	}
-
-	// PTHREAD_MUTEX_DEFAULT is not re-entrant
-	if(pthread_mutex_init(&self->event_mutex, NULL) != 0)
-	{
-		LOGE("pthread_mutex_init failed");
-		goto fail_mutex_init;
-	}
-
-	if(pthread_cond_init(&self->event_cond, NULL) != 0)
-	{
-		LOGE("pthread_cond_init failed");
-		goto fail_cond_init;
-	}
-
-	self->event_head = 0;
-	self->event_tail = 0;
-
-	// success
-	return self;
-
-	// failure
-	fail_cond_init:
-		pthread_mutex_destroy(&self->event_mutex);
-	fail_mutex_init:
-		FREE(self);
-	return NULL;
-}
-
-static void vkk_eventq_delete(vkk_eventq_t** _self)
-{
-	ASSERT(_self);
-
-	vkk_eventq_t* self = *_self;
-	if(self)
-	{
-		pthread_cond_destroy(&self->event_cond);
-		pthread_mutex_destroy(&self->event_mutex);
-		FREE(self);
-		*_self = NULL;
-	}
-}
-
-static int
-vkk_eventq_poll(vkk_eventq_t* self, vkk_event_t* e)
-{
-	ASSERT(self);
-	ASSERT(e);
-
-	pthread_mutex_lock(&self->event_mutex);
-
-	int has_event = 0;
-	if(self->event_head == self->event_tail)
-	{
-		// buffer is empty
-	}
-	else
-	{
-		*e = self->event_buffer[self->event_head];
-		self->event_head = (self->event_head + 1) %
-		                   VKK_EVENTQ_BUFSIZE;
-		has_event = 1;
-		pthread_cond_signal(&self->event_cond);
-	}
-
-	pthread_mutex_unlock(&self->event_mutex);
-
-	return has_event;
-}
-
-static vkk_event_t* vkk_eventq_dequeue(vkk_eventq_t* self)
-{
-	ASSERT(self);
-
-	vkk_event_t* event;
-	event = &self->event_buffer[self->event_tail];
-	memset((void*) event, 0, sizeof(vkk_event_t));
-	return event;
-}
-
-static void vkk_eventq_enqueue(vkk_eventq_t* self)
-{
-	ASSERT(self);
-
-	pthread_mutex_lock(&self->event_mutex);
-
-	self->event_tail = (self->event_tail + 1) %
-	                   VKK_EVENTQ_BUFSIZE;
-	if(self->event_tail == self->event_head)
-	{
-		// wait if the buffer is full
-		pthread_cond_wait(&self->event_cond,
-		                  &self->event_mutex);
-	}
-
-	pthread_mutex_unlock(&self->event_mutex);
-}
-
-/***********************************************************
-* JNI interface                                            *
-***********************************************************/
-
-JNIEXPORT void JNICALL
-Java_com_jeffboody_vkk_VKKNativeActivity_NativeAccelerometer(JNIEnv* env,
-                                                             jobject obj,
-                                                             jfloat ax,
-                                                             jfloat ay,
-                                                             jfloat az,
-                                                             jint rotation,
-                                                             jdouble ts)
-{
-	ASSERT(env);
-
-	if(eventq)
-	{
-		vkk_event_t* e            = vkk_eventq_dequeue(eventq);
-		e->type                   = VKK_EVENT_TYPE_ACCELEROMETER;
-		e->ts                     = ts;
-		e->accelerometer.ax       = ax;
-		e->accelerometer.ay       = ay;
-		e->accelerometer.az       = az;
-		e->accelerometer.rotation = rotation;
-		vkk_eventq_enqueue(eventq);
-	}
-}
-
-JNIEXPORT void JNICALL
-Java_com_jeffboody_vkk_VKKNativeActivity_NativeButtonDown(JNIEnv* env,
-                                                          jobject  obj,
-                                                          jint id,
-                                                          jint button,
-                                                          jdouble ts)
-{
-	ASSERT(env);
-
-	if(eventq)
-	{
-		vkk_event_t* e   = vkk_eventq_dequeue(eventq);
-		e->type          = VKK_EVENT_TYPE_BUTTON_DOWN;
-		e->ts            = ts;
-		e->button.id     = id;
-		e->button.button = button;
-		vkk_eventq_enqueue(eventq);
-	}
-}
-
-JNIEXPORT void JNICALL
-Java_com_jeffboody_vkk_VKKNativeActivity_NativeButtonUp(JNIEnv* env,
-                                                        jobject obj,
-                                                        jint id,
-                                                        jint button,
-                                                        jdouble ts)
-{
-	ASSERT(env);
-
-	if(eventq)
-	{
-		vkk_event_t* e   = vkk_eventq_dequeue(eventq);
-		e->type          = VKK_EVENT_TYPE_BUTTON_UP;
-		e->ts            = ts;
-		e->button.id     = id;
-		e->button.button = button;
-		vkk_eventq_enqueue(eventq);
-	}
-}
-
-JNIEXPORT void JNICALL
-Java_com_jeffboody_vkk_VKKNativeActivity_NativeDensity(JNIEnv* env,
-                                                       jobject obj,
-                                                       jfloat density)
-{
-	ASSERT(env);
-
-	if(eventq)
-	{
-		vkk_event_t* e = vkk_eventq_dequeue(eventq);
-		e->type        = VKK_EVENT_TYPE_DENSITY;
-		e->ts          = 0.0;
-		e->density     = density;
-		vkk_eventq_enqueue(eventq);
-	}
-}
-
-JNIEXPORT void JNICALL
-Java_com_jeffboody_vkk_VKKGpsService_NativeGps(JNIEnv* env, jobject obj,
-                                               jdouble lat, jdouble lon,
-                                               jfloat accuracy, jfloat altitude,
-                                               jfloat speed, jfloat bearing, jdouble ts)
-{
-	assert(env);
-
-	if(eventq)
-	{
-		// GPS may be enabled when the app is paused
-		// to record GPX tracks
-		// TODO - if(running)
-		{
-			vkk_event_t* e  = vkk_eventq_dequeue(eventq);
-			e->type         = VKK_EVENT_TYPE_GPS;
-			e->ts           = ts;
-			e->gps.lat      = lat;
-			e->gps.lon      = lon;
-			e->gps.accuracy = accuracy;
-			e->gps.altitude = altitude;
-			e->gps.speed    = speed;
-			e->gps.bearing  = bearing;
-			vkk_eventq_enqueue(eventq);
-		}
-
-		// TODO - GPS service
-	}
-}
-
-JNIEXPORT void JNICALL
-Java_com_jeffboody_vkk_VKKNativeActivity_NativeGrantPermission(JNIEnv* env,
-                                                               jobject obj,
-                                                               jint permission)
-{
-	ASSERT(env);
-
-	if(eventq)
-	{
-		vkk_event_t* e = vkk_eventq_dequeue(eventq);
-		e->type        = VKK_EVENT_TYPE_PERMISSION_GRANTED;
-		e->ts          = cc_timestamp();
-		e->permission  = permission;
-		vkk_eventq_enqueue(eventq);
-	}
-}
-
-JNIEXPORT void JNICALL
-Java_com_jeffboody_vkk_VKKNativeActivity_NativeGyroscope(JNIEnv* env,
-                                                         jobject obj,
-                                                         jfloat ax,
-                                                         jfloat ay,
-                                                         jfloat az,
-                                                         jdouble ts)
-{
-	ASSERT(env);
-
-	if(eventq)
-	{
-		vkk_event_t* e  = vkk_eventq_dequeue(eventq);
-		e->type         = VKK_EVENT_TYPE_GYROSCOPE;
-		e->ts           = ts;
-		e->gyroscope.ax = ax;
-		e->gyroscope.ay = ay;
-		e->gyroscope.az = az;
-		vkk_eventq_enqueue(eventq);
-	}
-}
-
-JNIEXPORT void JNICALL
-Java_com_jeffboody_vkk_VKKNativeActivity_NativeKeyDown(JNIEnv* env,
-                                                       jobject obj,
-                                                       jint keycode,
-                                                       jint meta,
-                                                       jdouble ts)
-{
-	ASSERT(env);
-
-	if(eventq)
-	{
-		vkk_event_t* e = vkk_eventq_dequeue(eventq);
-		e->type        = VKK_EVENT_TYPE_KEY_DOWN;
-		e->ts          = ts;
-		e->key.keycode = shiftKeycode(keycode, meta);
-		e->key.meta    = meta;
-		vkk_eventq_enqueue(eventq);
-	}
-}
-
-JNIEXPORT void JNICALL
-Java_com_jeffboody_vkk_VKKNativeActivity_NativeKeyUp(JNIEnv* env,
-                                                     jobject obj,
-                                                     jint keycode,
-                                                     jint meta,
-                                                     jdouble ts)
-{
-	ASSERT(env);
-
-	if(eventq)
-	{
-		vkk_event_t* e = vkk_eventq_dequeue(eventq);
-		e->type        = VKK_EVENT_TYPE_KEY_UP;
-		e->ts          = ts;
-		e->key.keycode = shiftKeycode(keycode, meta);
-		e->key.meta    = meta;
-		vkk_eventq_enqueue(eventq);
-	}
-}
-
-JNIEXPORT void JNICALL
-Java_com_jeffboody_vkk_VKKNativeActivity_NativeMagnetometer(JNIEnv* env,
-                                                            jobject obj,
-                                                            jfloat mx,
-                                                            jfloat my,
-                                                            jfloat mz,
-                                                            jdouble ts,
-                                                            jfloat gfx,
-                                                            jfloat gfy,
-                                                            jfloat gfz)
-{
-	ASSERT(env);
-
-	if(eventq)
-	{
-		vkk_event_t* e      = vkk_eventq_dequeue(eventq);
-		e->type             = VKK_EVENT_TYPE_MAGNETOMETER;
-		e->ts               = ts;
-		e->magnetometer.mx  = mx;
-		e->magnetometer.my  = my;
-		e->magnetometer.mz  = mz;
-		e->magnetometer.gfx = gfx;
-		e->magnetometer.gfy = gfy;
-		e->magnetometer.gfz = gfz;
-		vkk_eventq_enqueue(eventq);
-	}
-}
-
-/***********************************************************
 * android app interface                                    *
 ***********************************************************/
 
 static void
 onAppCmd(struct android_app* app, int32_t cmd)
 {
-	vkk_platform_t* platform;
-	platform = (vkk_platform_t*) app->userData;
-
 	vkk_platformOnDestroy_fn onDestroy;
 	vkk_platformOnEvent_fn   onEvent;
 	onDestroy = VKK_PLATFORM_CALLBACKS.onDestroy;
@@ -620,20 +273,15 @@ onAppCmd(struct android_app* app, int32_t cmd)
 	}
 }
 
-static float denoiseAxis(float value)
+static float
+getAxisValue(AInputEvent* event, size_t idx, int axis)
 {
+	float value = AMotionEvent_getAxisValue(event, axis, idx);
 	if(fabs(value) < 0.05F)
 	{
 		return 0.0f;
 	}
 	return value;
-}
-
-static float
-getAxisValue(AInputEvent* event, size_t idx, int axis)
-{
-	return denoiseAxis(AMotionEvent_getAxisValue(event,
-	                                             axis, idx));
 }
 
 static int32_t
@@ -644,13 +292,6 @@ onInputEvent(struct android_app* app, AInputEvent* event)
 
 	vkk_platformOnEvent_fn onEvent;
 	onEvent = VKK_PLATFORM_CALLBACKS.onEvent;
-
-	vkk_platform_t* platform;
-	platform = (vkk_platform_t*) app->userData;
-	if(platform == NULL)
-	{
-		return 0;
-	}
 
 	int32_t source = AInputEvent_getSource(event);
 	int32_t action = AMotionEvent_getAction(event) &
@@ -880,12 +521,21 @@ vkk_platform_new(struct android_app* app)
 		return NULL;
 	}
 
-	// create the global eventq
-	eventq = vkk_eventq_new();
-	if(eventq == NULL)
+	// PTHREAD_MUTEX_DEFAULT is not re-entrant
+	if(pthread_mutex_init(&self->event_mutex, NULL) != 0)
 	{
-		goto fail_eventq;
+		LOGE("pthread_mutex_init failed");
+		goto fail_mutex_init;
 	}
+
+	if(pthread_cond_init(&self->event_cond, NULL) != 0)
+	{
+		LOGE("pthread_cond_init failed");
+		goto fail_cond_init;
+	}
+
+	self->event_head = 0;
+	self->event_tail = 0;
 
 	self->app         = app;
 	app->userData     = self;
@@ -896,7 +546,9 @@ vkk_platform_new(struct android_app* app)
 	return self;
 
 	// failure
-	fail_eventq:
+	fail_cond_init:
+		pthread_mutex_destroy(&self->event_mutex);
+	fail_mutex_init:
 		FREE(self);
 	return NULL;
 }
@@ -911,13 +563,68 @@ static void vkk_platform_delete(vkk_platform_t** _self)
 	vkk_platform_t* self = *_self;
 	if(self)
 	{
-		// destroy the global eventq
-		vkk_eventq_delete(&eventq);
+		pthread_cond_destroy(&self->event_cond);
+		pthread_mutex_destroy(&self->event_mutex);
 
 		(*onDestroy)(&self->priv);
 		FREE(self);
 		*_self = NULL;
 	}
+}
+
+static int
+vkk_platform_poll(vkk_platform_t* self, vkk_event_t* e)
+{
+	ASSERT(self);
+	ASSERT(e);
+
+	pthread_mutex_lock(&self->event_mutex);
+
+	int has_event = 0;
+	if(self->event_head == self->event_tail)
+	{
+		// buffer is empty
+	}
+	else
+	{
+		*e = self->event_buffer[self->event_head];
+		self->event_head = (self->event_head + 1) %
+		                   VKK_EVENTQ_BUFSIZE;
+		has_event = 1;
+		pthread_cond_signal(&self->event_cond);
+	}
+
+	pthread_mutex_unlock(&self->event_mutex);
+
+	return has_event;
+}
+
+static vkk_event_t* vkk_platform_dequeue(vkk_platform_t* self)
+{
+	ASSERT(self);
+
+	vkk_event_t* event;
+	event = &self->event_buffer[self->event_tail];
+	memset((void*) event, 0, sizeof(vkk_event_t));
+	return event;
+}
+
+static void vkk_platform_enqueue(vkk_platform_t* self)
+{
+	ASSERT(self);
+
+	pthread_mutex_lock(&self->event_mutex);
+
+	self->event_tail = (self->event_tail + 1) %
+	                   VKK_EVENTQ_BUFSIZE;
+	if(self->event_tail == self->event_head)
+	{
+		// wait if the buffer is full
+		pthread_cond_wait(&self->event_cond,
+		                  &self->event_mutex);
+	}
+
+	pthread_mutex_unlock(&self->event_mutex);
 }
 
 static int vkk_platform_rendering(vkk_platform_t* self)
@@ -993,6 +700,300 @@ static void vkk_platform_draw(vkk_platform_t* self)
 
 	(*onDraw)(self->priv);
 }
+
+/***********************************************************
+* public                                                   *
+***********************************************************/
+
+void vkk_platform_cmd(vkk_platform_t* self, int cmd,
+                      const char* msg)
+{
+	// msg may be NULL
+	ASSERT(self);
+
+	// This doesn't work ... and the JNI workaround still
+	// doesn't work correctly.
+	// See VKKNativeActvity.DrainCommandQueue() for more
+	// details.
+	// if(cmd == VKK_PLATFORM_CMD_SOFTKEY_SHOW)
+	// {
+	// 	ANativeActivity_showSoftInput(self->app->activity,
+	// 	                              ANATIVEACTIVITY_SHOW_SOFT_INPUT_FORCED);
+	// 	return;
+	// }
+	// else if(cmd == VKK_PLATFORM_CMD_SOFTKEY_HIDE)
+	// {
+	// 	ANativeActivity_hideSoftInput(self->app->activity, 0);
+	// 	return;
+	// }
+
+	JavaVM* vm = self->app->activity->vm;
+	if(vm == NULL)
+	{
+		LOGE("vm is NULL");
+		return;
+	}
+
+	JNIEnv* env = NULL;
+	if((*vm)->AttachCurrentThread(vm, &env, NULL) != 0)
+	{
+		LOGE("AttachCurrentThread failed");
+		return;
+	}
+
+	jobject clazz = self->app->activity->clazz;
+	jclass  cls   = (*env)->GetObjectClass(env, clazz);
+	if(cls == NULL)
+	{
+		LOGE("FindClass failed");
+		return;
+	}
+
+	jmethodID mid = (*env)->GetStaticMethodID(env, cls,
+	                                          "CallbackCmd",
+	                                          "(ILjava/lang/String;)V");
+	if(mid == NULL)
+	{
+		LOGE("GetStaticMethodID failed");
+		return;
+	}
+
+	jstring jmsg = (*env)->NewStringUTF(env, msg ? msg : "");
+	if(jmsg == NULL)
+	{
+		LOGE("NewStringUTF failed");
+		return;
+	}
+
+	(*env)->CallStaticVoidMethod(env, cls, mid, cmd, jmsg);
+	(*env)->DeleteLocalRef(env, jmsg);
+}
+
+/***********************************************************
+* JNI interface                                            *
+***********************************************************/
+
+JNIEXPORT void JNICALL
+Java_com_jeffboody_vkk_VKKNativeActivity_NativeAccelerometer(JNIEnv* env,
+                                                             jobject obj,
+                                                             jfloat ax,
+                                                             jfloat ay,
+                                                             jfloat az,
+                                                             jint rotation,
+                                                             jdouble ts)
+{
+	ASSERT(env);
+
+	if(platform)
+	{
+		vkk_event_t* e            = vkk_platform_dequeue(platform);
+		e->type                   = VKK_EVENT_TYPE_ACCELEROMETER;
+		e->ts                     = ts;
+		e->accelerometer.ax       = ax;
+		e->accelerometer.ay       = ay;
+		e->accelerometer.az       = az;
+		e->accelerometer.rotation = rotation;
+		vkk_platform_enqueue(platform);
+	}
+}
+
+JNIEXPORT void JNICALL
+Java_com_jeffboody_vkk_VKKNativeActivity_NativeButtonDown(JNIEnv* env,
+                                                          jobject  obj,
+                                                          jint id,
+                                                          jint button,
+                                                          jdouble ts)
+{
+	ASSERT(env);
+
+	if(platform)
+	{
+		vkk_event_t* e   = vkk_platform_dequeue(platform);
+		e->type          = VKK_EVENT_TYPE_BUTTON_DOWN;
+		e->ts            = ts;
+		e->button.id     = id;
+		e->button.button = button;
+		vkk_platform_enqueue(platform);
+	}
+}
+
+JNIEXPORT void JNICALL
+Java_com_jeffboody_vkk_VKKNativeActivity_NativeButtonUp(JNIEnv* env,
+                                                        jobject obj,
+                                                        jint id,
+                                                        jint button,
+                                                        jdouble ts)
+{
+	ASSERT(env);
+
+	if(platform)
+	{
+		vkk_event_t* e   = vkk_platform_dequeue(platform);
+		e->type          = VKK_EVENT_TYPE_BUTTON_UP;
+		e->ts            = ts;
+		e->button.id     = id;
+		e->button.button = button;
+		vkk_platform_enqueue(platform);
+	}
+}
+
+JNIEXPORT void JNICALL
+Java_com_jeffboody_vkk_VKKNativeActivity_NativeDensity(JNIEnv* env,
+                                                       jobject obj,
+                                                       jfloat density)
+{
+	ASSERT(env);
+
+	if(platform)
+	{
+		vkk_event_t* e = vkk_platform_dequeue(platform);
+		e->type        = VKK_EVENT_TYPE_DENSITY;
+		e->ts          = 0.0;
+		e->density     = density;
+		vkk_platform_enqueue(platform);
+	}
+}
+
+JNIEXPORT void JNICALL
+Java_com_jeffboody_vkk_VKKGpsService_NativeGps(JNIEnv* env, jobject obj,
+                                               jdouble lat, jdouble lon,
+                                               jfloat accuracy, jfloat altitude,
+                                               jfloat speed, jfloat bearing, jdouble ts)
+{
+	assert(env);
+
+	if(platform)
+	{
+		// GPS may be enabled when the app is paused
+		// to record GPX tracks
+		// TODO - if(running)
+		{
+			vkk_event_t* e  = vkk_platform_dequeue(platform);
+			e->type         = VKK_EVENT_TYPE_GPS;
+			e->ts           = ts;
+			e->gps.lat      = lat;
+			e->gps.lon      = lon;
+			e->gps.accuracy = accuracy;
+			e->gps.altitude = altitude;
+			e->gps.speed    = speed;
+			e->gps.bearing  = bearing;
+			vkk_platform_enqueue(platform);
+		}
+
+		// TODO - GPS service
+	}
+}
+
+JNIEXPORT void JNICALL
+Java_com_jeffboody_vkk_VKKNativeActivity_NativeGrantPermission(JNIEnv* env,
+                                                               jobject obj,
+                                                               jint permission)
+{
+	ASSERT(env);
+
+	if(platform)
+	{
+		vkk_event_t* e = vkk_platform_dequeue(platform);
+		e->type        = VKK_EVENT_TYPE_PERMISSION_GRANTED;
+		e->ts          = cc_timestamp();
+		e->permission  = permission;
+		vkk_platform_enqueue(platform);
+	}
+}
+
+JNIEXPORT void JNICALL
+Java_com_jeffboody_vkk_VKKNativeActivity_NativeGyroscope(JNIEnv* env,
+                                                         jobject obj,
+                                                         jfloat ax,
+                                                         jfloat ay,
+                                                         jfloat az,
+                                                         jdouble ts)
+{
+	ASSERT(env);
+
+	if(platform)
+	{
+		vkk_event_t* e  = vkk_platform_dequeue(platform);
+		e->type         = VKK_EVENT_TYPE_GYROSCOPE;
+		e->ts           = ts;
+		e->gyroscope.ax = ax;
+		e->gyroscope.ay = ay;
+		e->gyroscope.az = az;
+		vkk_platform_enqueue(platform);
+	}
+}
+
+JNIEXPORT void JNICALL
+Java_com_jeffboody_vkk_VKKNativeActivity_NativeKeyDown(JNIEnv* env,
+                                                       jobject obj,
+                                                       jint keycode,
+                                                       jint meta,
+                                                       jdouble ts)
+{
+	ASSERT(env);
+
+	if(platform)
+	{
+		vkk_event_t* e = vkk_platform_dequeue(platform);
+		e->type        = VKK_EVENT_TYPE_KEY_DOWN;
+		e->ts          = ts;
+		e->key.keycode = shiftKeycode(keycode, meta);
+		e->key.meta    = meta;
+		vkk_platform_enqueue(platform);
+	}
+}
+
+JNIEXPORT void JNICALL
+Java_com_jeffboody_vkk_VKKNativeActivity_NativeKeyUp(JNIEnv* env,
+                                                     jobject obj,
+                                                     jint keycode,
+                                                     jint meta,
+                                                     jdouble ts)
+{
+	ASSERT(env);
+
+	if(platform)
+	{
+		vkk_event_t* e = vkk_platform_dequeue(platform);
+		e->type        = VKK_EVENT_TYPE_KEY_UP;
+		e->ts          = ts;
+		e->key.keycode = shiftKeycode(keycode, meta);
+		e->key.meta    = meta;
+		vkk_platform_enqueue(platform);
+	}
+}
+
+JNIEXPORT void JNICALL
+Java_com_jeffboody_vkk_VKKNativeActivity_NativeMagnetometer(JNIEnv* env,
+                                                            jobject obj,
+                                                            jfloat mx,
+                                                            jfloat my,
+                                                            jfloat mz,
+                                                            jdouble ts,
+                                                            jfloat gfx,
+                                                            jfloat gfy,
+                                                            jfloat gfz)
+{
+	ASSERT(env);
+
+	if(platform)
+	{
+		vkk_event_t* e      = vkk_platform_dequeue(platform);
+		e->type             = VKK_EVENT_TYPE_MAGNETOMETER;
+		e->ts               = ts;
+		e->magnetometer.mx  = mx;
+		e->magnetometer.my  = my;
+		e->magnetometer.mz  = mz;
+		e->magnetometer.gfx = gfx;
+		e->magnetometer.gfy = gfy;
+		e->magnetometer.gfz = gfz;
+		vkk_platform_enqueue(platform);
+	}
+}
+
+/***********************************************************
+* utility functions                                        *
+***********************************************************/
 
 static int
 isTimestampValid(struct android_app* app)
@@ -1183,74 +1184,6 @@ updateResource(struct android_app* app, const char* src,
 }
 
 /***********************************************************
-* public                                                   *
-***********************************************************/
-
-void vkk_platform_cmd(vkk_platform_t* self, int cmd,
-                      const char* msg)
-{
-	// msg may be NULL
-	ASSERT(self);
-
-	// This doesn't work ... and the JNI workaround still
-	// doesn't work correctly.
-	// See VKKNativeActvity.DrainCommandQueue() for more
-	// details.
-	// if(cmd == VKK_PLATFORM_CMD_SOFTKEY_SHOW)
-	// {
-	// 	ANativeActivity_showSoftInput(self->app->activity,
-	// 	                              ANATIVEACTIVITY_SHOW_SOFT_INPUT_FORCED);
-	// 	return;
-	// }
-	// else if(cmd == VKK_PLATFORM_CMD_SOFTKEY_HIDE)
-	// {
-	// 	ANativeActivity_hideSoftInput(self->app->activity, 0);
-	// 	return;
-	// }
-
-	JavaVM* vm = self->app->activity->vm;
-	if(vm == NULL)
-	{
-		LOGE("vm is NULL");
-		return;
-	}
-
-	JNIEnv* env = NULL;
-	if((*vm)->AttachCurrentThread(vm, &env, NULL) != 0)
-	{
-		LOGE("AttachCurrentThread failed");
-		return;
-	}
-
-	jobject clazz = self->app->activity->clazz;
-	jclass  cls   = (*env)->GetObjectClass(env, clazz);
-	if(cls == NULL)
-	{
-		LOGE("FindClass failed");
-		return;
-	}
-
-	jmethodID mid = (*env)->GetStaticMethodID(env, cls,
-	                                          "CallbackCmd",
-	                                          "(ILjava/lang/String;)V");
-	if(mid == NULL)
-	{
-		LOGE("GetStaticMethodID failed");
-		return;
-	}
-
-	jstring jmsg = (*env)->NewStringUTF(env, msg ? msg : "");
-	if(jmsg == NULL)
-	{
-		LOGE("NewStringUTF failed");
-		return;
-	}
-
-	(*env)->CallStaticVoidMethod(env, cls, mid, cmd, jmsg);
-	(*env)->DeleteLocalRef(env, jmsg);
-}
-
-/***********************************************************
 * android_main                                             *
 ***********************************************************/
 
@@ -1281,7 +1214,7 @@ void android_main(struct android_app* app)
 		}
 	}
 
-	vkk_platform_t* platform = vkk_platform_new(app);
+	platform = vkk_platform_new(app);
 	if(platform == NULL)
 	{
 		LOGE("platform failed");
@@ -1331,7 +1264,7 @@ void android_main(struct android_app* app)
 		if(platform->priv)
 		{
 			vkk_event_t e;
-			while(vkk_eventq_poll(eventq, &e))
+			while(vkk_platform_poll(platform, &e))
 			{
 					(*onEvent)(platform->priv, &e);
 			}

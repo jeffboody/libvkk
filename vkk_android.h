@@ -28,6 +28,8 @@
 
 #include "vkk_platform.h"
 
+#define VKK_EVENTQ_BUFSIZE 256
+
 typedef struct vkk_platform_s
 {
 	struct android_app* app;
@@ -48,6 +50,13 @@ typedef struct vkk_platform_s
 	float AHY;
 	float ART;
 	float ALT;
+
+	// event state
+	pthread_mutex_t event_mutex;
+	pthread_cond_t  event_cond;
+	int             event_head;
+	int             event_tail;
+	vkk_event_t     event_buffer[VKK_EVENTQ_BUFSIZE];
 } vkk_platform_t;
 
 #endif
