@@ -223,7 +223,9 @@ onAppCmd(struct android_app* app, int32_t cmd)
 			if((*onEvent)(platform->priv, &ve) == 0)
 			{
 				// recreate renderer on failure
+				pthread_mutex_lock(&platform->priv_mutex);
 				(*onDestroy)(&platform->priv);
+				pthread_mutex_unlock(&platform->priv_mutex);
 			}
 		}
 		platform->has_window = 1;
@@ -268,7 +270,9 @@ onAppCmd(struct android_app* app, int32_t cmd)
 	else if(cmd == APP_CMD_DESTROY)
 	{
 		LOGI("APP_CMD_DESTROY");
+		pthread_mutex_lock(&platform->priv_mutex);
 		(*onDestroy)(&platform->priv);
+		pthread_mutex_unlock(&platform->priv_mutex);
 		platform->running = 0;
 	}
 }
@@ -522,10 +526,17 @@ vkk_platform_new(struct android_app* app)
 	}
 
 	// PTHREAD_MUTEX_DEFAULT is not re-entrant
+	if(pthread_mutex_init(&self->priv_mutex, NULL) != 0)
+	{
+		LOGE("pthread_mutex_init failed");
+		goto fail_priv_mutex;
+	}
+
+	// PTHREAD_MUTEX_DEFAULT is not re-entrant
 	if(pthread_mutex_init(&self->event_mutex, NULL) != 0)
 	{
 		LOGE("pthread_mutex_init failed");
-		goto fail_mutex_init;
+		goto fail_event_mutex;
 	}
 
 	if(pthread_cond_init(&self->event_cond, NULL) != 0)
@@ -548,7 +559,9 @@ vkk_platform_new(struct android_app* app)
 	// failure
 	fail_cond_init:
 		pthread_mutex_destroy(&self->event_mutex);
-	fail_mutex_init:
+	fail_event_mutex:
+		pthread_mutex_destroy(&self->priv_mutex);
+	fail_priv_mutex:
 		FREE(self);
 	return NULL;
 }
@@ -565,6 +578,7 @@ static void vkk_platform_delete(vkk_platform_t** _self)
 	{
 		pthread_cond_destroy(&self->event_cond);
 		pthread_mutex_destroy(&self->event_mutex);
+		pthread_mutex_destroy(&self->priv_mutex);
 
 		(*onDestroy)(&self->priv);
 		FREE(self);
@@ -661,7 +675,9 @@ static void vkk_platform_draw(vkk_platform_t* self)
 	ANativeWindow* window = self->app->window;
 	if(self->priv == NULL)
 	{
+		pthread_mutex_lock(&platform->priv_mutex);
 		self->priv = (*onCreate)(self);
+		pthread_mutex_unlock(&platform->priv_mutex);
 		if(self->priv == NULL)
 		{
 			return;
@@ -692,7 +708,9 @@ static void vkk_platform_draw(vkk_platform_t* self)
 			if((*onEvent)(self->priv, &ve) == 0)
 			{
 				// recreate renderer on failure
+				pthread_mutex_lock(&platform->priv_mutex);
 				(*onDestroy)(&self->priv);
+				pthread_mutex_unlock(&platform->priv_mutex);
 				return;
 			}
 		}
@@ -862,25 +880,34 @@ Java_com_jeffboody_vkk_VKKGpsService_NativeGps(JNIEnv* env, jobject obj,
 {
 	assert(env);
 
+	vkk_platformOnEvent_fn onEvent;
+	onEvent = VKK_PLATFORM_CALLBACKS.onEvent;
+
 	if(platform)
 	{
-		// GPS may be enabled when the app is paused
-		// to record GPX tracks
-		// TODO - if(running)
+		// trigger GPS events on the UI thread since the main
+		// thread may be paused while the app is recording GPS
+		// events
+		pthread_mutex_lock(&platform->priv_mutex);
+		if(platform->priv)
 		{
-			vkk_event_t* e  = vkk_platform_dequeue(platform);
-			e->type         = VKK_EVENT_TYPE_GPS;
-			e->ts           = ts;
-			e->gps.lat      = lat;
-			e->gps.lon      = lon;
-			e->gps.accuracy = accuracy;
-			e->gps.altitude = altitude;
-			e->gps.speed    = speed;
-			e->gps.bearing  = bearing;
-			vkk_platform_enqueue(platform);
+			vkk_event_t e =
+			{
+				.type = VKK_EVENT_TYPE_GPS,
+				.ts   = ts,
+				.gps  =
+				{
+					.lat      = lat,
+					.lon      = lon,
+					.accuracy = accuracy,
+					.altitude = altitude,
+					.speed    = speed,
+					.bearing  = bearing,
+				}
+			};
+			(*onEvent)(platform->priv, &e);
 		}
-
-		// TODO - GPS service
+		pthread_mutex_unlock(&platform->priv_mutex);
 	}
 }
 

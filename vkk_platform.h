@@ -246,6 +246,11 @@ typedef struct
 
 /*
  * platform API
+ * The platform callback functions are always called from
+ * from the main thread EXCEPT for GPS events which are
+ * called from the UI thread. This is because the app may
+ * have requested GPS recording which can cause events to
+ * be delivered when the app main thread is paused.
  */
 
 typedef void* (*vkk_platformOnCreate_fn)(vkk_platform_t* platform);

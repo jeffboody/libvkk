@@ -41,6 +41,13 @@ typedef struct vkk_platform_s
 	float density;
 	void* priv;
 
+	// priv is typically only accessed by main thread
+	// however GPS events are an exception because they
+	// may be generated when the app/main thread is paused
+	// priv_mutex protects priv from being destroyed while
+	// a GPS event is being processed on the UI thread
+	pthread_mutex_t priv_mutex;
+
 	// axis values
 	float AX1;
 	float AY1;
