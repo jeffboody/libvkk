@@ -387,7 +387,8 @@ static int vkk_engine_newDevice(vkk_engine_t* self)
 	                                         qfp);
 
 	int i;
-	int has_index = 0;
+	int has_index   = 0;
+	int queue_count = 1;
 	self->queue_family_index = 0;
 	for(i = 0; i < qfp_count; ++i)
 	{
@@ -407,6 +408,11 @@ static int vkk_engine_newDevice(vkk_engine_t* self)
 				// select the first supported device queue
 				self->queue_family_index = i;
 				has_index = 1;
+
+				if(qfp[i].queueCount > 1)
+				{
+					queue_count = 2;
+				}
 			}
 		}
 	}
@@ -427,7 +433,7 @@ static int vkk_engine_newDevice(vkk_engine_t* self)
 		.pNext            = NULL,
 		.flags            = 0,
 		.queueFamilyIndex = self->queue_family_index,
-		.queueCount       = 2,
+		.queueCount       = queue_count,
 		.pQueuePriorities = queue_priority
 	};
 
@@ -454,12 +460,22 @@ static int vkk_engine_newDevice(vkk_engine_t* self)
 
 	vkGetDeviceQueue(self->device,
 	                 self->queue_family_index,
-                     VKK_QUEUE_DEFAULT,
+	                 VKK_QUEUE_DEFAULT,
 	                 &(self->queue[VKK_QUEUE_DEFAULT]));
-	vkGetDeviceQueue(self->device,
-	                 self->queue_family_index,
-                     VKK_QUEUE_OFFLINE,
-	                 &(self->queue[VKK_QUEUE_OFFLINE]));
+	if(queue_count == 1)
+	{
+		// multiple queues are desired for priority based
+		// scheduling of rendering tasks
+		LOGW("device only supports a single queue");
+		self->queue[VKK_QUEUE_OFFLINE] = self->queue[VKK_QUEUE_DEFAULT];
+	}
+	else
+	{
+		vkGetDeviceQueue(self->device,
+		                 self->queue_family_index,
+		                 VKK_QUEUE_OFFLINE,
+		                 &(self->queue[VKK_QUEUE_OFFLINE]));
+	}
 
 	FREE(qfp);
 
