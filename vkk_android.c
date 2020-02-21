@@ -1210,6 +1210,17 @@ updateResource(struct android_app* app, const char* src,
 	return 0;
 }
 
+static void check_memory(void)
+{
+	size_t count = MEMCOUNT();
+	size_t size  = MEMSIZE();
+	if(count || size)
+	{
+		LOGW("memory leak: count=%i, size=%i",
+		     (int) count, (int) size);
+	}
+}
+
 /***********************************************************
 * android_main                                             *
 ***********************************************************/
@@ -1230,6 +1241,7 @@ void android_main(struct android_app* app)
 		         app->activity->internalDataPath);
 		if(updateResource(app, "resource.pak", fname) == 0)
 		{
+			check_memory();
 			return;
 		}
 
@@ -1237,6 +1249,7 @@ void android_main(struct android_app* app)
 		         app->activity->internalDataPath);
 		if(updateResource(app, "timestamp.raw", fname) == 0)
 		{
+			check_memory();
 			return;
 		}
 	}
@@ -1245,6 +1258,7 @@ void android_main(struct android_app* app)
 	if(platform == NULL)
 	{
 		LOGE("platform failed");
+		check_memory();
 		return;
 	}
 
@@ -1279,6 +1293,7 @@ void android_main(struct android_app* app)
 			if(app->destroyRequested)
 			{
 				vkk_platform_delete(&platform);
+				check_memory();
 				return;
 			}
 

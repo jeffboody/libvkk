@@ -107,6 +107,7 @@ void vkk_memoryChunk_delete(vkk_memoryChunk_t** _self)
 			         cc_list_remove(self->slots, &iter);
 			vkk_memory_delete(&memory);
 		}
+		cc_list_delete(&self->slots);
 
 		vkFreeMemory(engine->device, self->memory, NULL);
 		FREE(self);

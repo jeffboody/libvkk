@@ -523,8 +523,8 @@ void vkui_text_delete(vkui_text_t** _self)
 		vkk_buffer_delete(&self->ub00_mvp);
 		vkui_screen_textVb(screen, 0, self->vb_xyuv);
 
-		free(self->xyuv);
-		free(self->string);
+		FREE(self->xyuv);
+		FREE(self->string);
 
 		vkui_widget_delete((vkui_widget_t**) _self);
 	}

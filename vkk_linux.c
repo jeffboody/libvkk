@@ -640,6 +640,14 @@ int main(int argc, char** argv)
 
 	vkk_platform_delete(&platform);
 
+	size_t count = MEMCOUNT();
+	size_t size  = MEMSIZE();
+	if(count || size)
+	{
+		LOGW("memory leak: count=%i, size=%i",
+		     (int) count, (int) size);
+	}
+
 	// success
 	return EXIT_SUCCESS;
 }

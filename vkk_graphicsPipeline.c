@@ -357,6 +357,9 @@ vkk_graphicsPipeline_new(vkk_engine_t* engine,
 		goto fail_create;
 	}
 
+	FREE(via);
+	FREE(vib);
+
 	// success
 	return self;
 

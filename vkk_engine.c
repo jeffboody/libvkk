@@ -635,6 +635,8 @@ static int vkk_engine_newPipelineCache(vkk_engine_t* self)
 		goto fail_pipeline_cache;
 	}
 
+	FREE(data);
+
 	// success
 	return 1;
 
@@ -919,6 +921,7 @@ vkk_engine_destructUniformSetFactory(vkk_engine_t* self,
 			us = (vkk_uniformSet_t*)
 			     cc_list_remove(usf->us_list, &iter);
 			FREE(us->ds_array);
+			FREE(us->ua_array);
 			FREE(us);
 		}
 

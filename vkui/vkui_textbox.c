@@ -339,6 +339,7 @@ void vkui_textbox_delete(vkui_textbox_t** _self)
 	if(self)
 	{
 		vkui_textbox_clear(self);
+		cc_list_delete(&self->strings);
 		vkui_listbox_delete((vkui_listbox_t**) _self);
 		*_self = NULL;
 	}
