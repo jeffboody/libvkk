@@ -41,7 +41,8 @@ vkk_memoryChunk_new(vkk_memoryPool_t* pool)
 {
 	ASSERT(pool);
 
-	vkk_engine_t* engine = pool->mm->engine;
+	vkk_memoryManager_t* mm     = pool->mm;
+	vkk_engine_t*        engine = mm->engine;
 
 	vkk_memoryChunk_t* self;
 	self = (vkk_memoryChunk_t*)
@@ -75,6 +76,9 @@ vkk_memoryChunk_new(vkk_memoryPool_t* pool)
 		goto fail_slots;
 	}
 
+	++mm->count_chunks;
+	mm->size_chunks += (size_t) pool->stride*pool->count;
+
 	// success
 	return self;
 
@@ -95,8 +99,12 @@ void vkk_memoryChunk_delete(vkk_memoryChunk_t** _self)
 	{
 		ASSERT(self->usecount == 0);
 
-		vkk_memoryPool_t* pool   = self->pool;
-		vkk_engine_t*     engine = pool->mm->engine;
+		vkk_memoryPool_t*    pool   = self->pool;
+		vkk_memoryManager_t* mm     = pool->mm;
+		vkk_engine_t*        engine = mm->engine;
+
+		--mm->count_chunks;
+		mm->size_chunks -= (size_t) pool->stride*pool->count;
 
 		cc_listIter_t* iter;
 		iter = cc_list_head(self->slots);
@@ -130,7 +138,8 @@ vkk_memoryChunk_alloc(vkk_memoryChunk_t* self)
 {
 	ASSERT(self);
 
-	vkk_memoryPool_t* pool = self->pool;
+	vkk_memoryPool_t*    pool = self->pool;
+	vkk_memoryManager_t* mm   = pool->mm;
 
 	// try to reuse an existing slot
 	vkk_memory_t* memory;
@@ -140,6 +149,8 @@ vkk_memoryChunk_alloc(vkk_memoryChunk_t* self)
 		memory = (vkk_memory_t*)
 		         cc_list_remove(self->slots, &iter);
 		++self->usecount;
+		++mm->count_slots;
+		mm->size_slots += (size_t) pool->stride;
 		return memory;
 	}
 
@@ -157,6 +168,8 @@ vkk_memoryChunk_alloc(vkk_memoryChunk_t* self)
 
 	++self->slot;
 	++self->usecount;
+	++mm->count_slots;
+	mm->size_slots += (size_t) pool->stride;
 
 	return memory;
 }
@@ -171,9 +184,12 @@ int vkk_memoryChunk_free(vkk_memoryChunk_t* self,
 	vkk_memory_t* memory = *_memory;
 	if(memory)
 	{
-		vkk_memoryPool_t* pool = self->pool;
+		vkk_memoryPool_t*    pool = self->pool;
+		vkk_memoryManager_t* mm   = pool->mm;
 
 		--self->usecount;
+		--mm->count_slots;
+		mm->size_slots -= (size_t) pool->stride;
 
 		if(shutdown)
 		{

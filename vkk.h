@@ -214,6 +214,11 @@ void          vkk_engine_delete(vkk_engine_t** _self);
 void          vkk_engine_shutdown(vkk_engine_t* self);
 int           vkk_engine_imageCaps(vkk_engine_t* self,
                                    int format);
+void          vkk_engine_meminfo(vkk_engine_t* self,
+                                 size_t* _count_chunks,
+                                 size_t* _count_slots,
+                                 size_t* _size_chunks,
+                                 size_t* _size_slots);
 uint32_t      vkk_engine_version(vkk_engine_t* self);
 
 /*

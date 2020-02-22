@@ -38,6 +38,11 @@ typedef struct vkk_memoryManager_s
 	// map from mt_index/stride to memory pool
 	cc_map_t* pools;
 
+	size_t count_chunks;
+	size_t count_slots;
+	size_t size_chunks;
+	size_t size_slots;
+
 	pthread_mutex_t manager_mutex;
 	pthread_mutex_t chunk_mutex;
 	pthread_cond_t  chunk_cond;
@@ -58,5 +63,10 @@ void                 vkk_memoryManager_update(vkk_memoryManager_t* self,
                                               vkk_memory_t* memory,
                                               size_t size,
                                               const void* buf);
+void                 vkk_memoryManager_info(vkk_memoryManager_t* self,
+                                            size_t* _count_chunks,
+                                            size_t* _count_slots,
+                                            size_t* _size_chunks,
+                                            size_t* _size_slots);
 
 #endif

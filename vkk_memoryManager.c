@@ -567,3 +567,23 @@ void vkk_memoryManager_update(vkk_memoryManager_t* self,
 
 	vkk_memoryManager_chunkUnlock(self, chunk);
 }
+
+void vkk_memoryManager_info(vkk_memoryManager_t* self,
+                            size_t* _count_chunks,
+                            size_t* _count_slots,
+                            size_t* _size_chunks,
+                            size_t* _size_slots)
+{
+	ASSERT(self);
+	ASSERT(_count_chunks);
+	ASSERT(_count_slots);
+	ASSERT(_size_chunks);
+	ASSERT(_size_slots);
+
+	vkk_memoryManager_lock(self);
+	*_count_chunks = self->count_chunks;
+	*_count_slots  = self->count_slots;
+	*_size_chunks  = self->size_chunks;
+	*_size_slots   = self->size_slots;
+	vkk_memoryManager_unlock(self);
+}

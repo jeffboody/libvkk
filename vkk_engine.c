@@ -1116,7 +1116,7 @@ vkk_engine_t* vkk_engine_new(vkk_platform_t* platform,
 		}
 	#endif
 
-	self->version = VK_MAKE_VERSION(1,1,4);
+	self->version = VK_MAKE_VERSION(1,1,5);
 
 	snprintf(self->resource, 256, "%s", resource);
 	snprintf(self->cache, 256, "%s", cache);
@@ -1322,6 +1322,23 @@ int vkk_engine_imageCaps(vkk_engine_t* self, int format)
 	ASSERT(self);
 
 	return self->image_caps_array[format];
+}
+
+void vkk_engine_meminfo(vkk_engine_t* self,
+                        size_t* _count_chunks,
+                        size_t* _count_slots,
+                        size_t* _size_chunks,
+                        size_t* _size_slots)
+{
+	ASSERT(self);
+	ASSERT(_count_chunks);
+	ASSERT(_count_slots);
+	ASSERT(_size_chunks);
+	ASSERT(_size_slots);
+
+	vkk_memoryManager_info(self->mm,
+	                       _count_chunks, _count_slots,
+	                       _size_chunks, _size_slots);
 }
 
 uint32_t vkk_engine_version(vkk_engine_t* self)
