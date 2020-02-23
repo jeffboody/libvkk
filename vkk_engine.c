@@ -1116,7 +1116,7 @@ vkk_engine_t* vkk_engine_new(vkk_platform_t* platform,
 		}
 	#endif
 
-	self->version = VK_MAKE_VERSION(1,1,5);
+	self->version = VK_MAKE_VERSION(1,1,6);
 
 	snprintf(self->resource, 256, "%s", resource);
 	snprintf(self->cache, 256, "%s", cache);

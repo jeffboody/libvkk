@@ -122,6 +122,34 @@ vkk_memoryManager_freeLocked(vkk_memoryManager_t* self,
 	}
 }
 
+static size_t computePoolCount(size_t stride)
+{
+	ASSERT(stride > 0);
+
+	// enforce allocation size
+	size_t MB    = 1024*1024;
+	size_t count = 256;
+	size_t size  = stride*count;
+	if(size >= 16*MB)
+	{
+		// allocate at most 16MB
+		count = 16*MB/stride;
+	}
+	else if(size < 2*MB)
+	{
+		// allocate at least 2MB
+		count = 2*MB/stride;
+	}
+
+	// enforce minimum count
+	if(count == 0)
+	{
+		count = 1;
+	}
+
+	return count;
+}
+
 /***********************************************************
 * public                                                   *
 ***********************************************************/
@@ -243,39 +271,6 @@ vkk_memoryManager_allocBuffer(vkk_memoryManager_t* self,
 		stride *= 2;
 	}
 
-	// compute the pool count
-	const int KB    = 1024;
-	const int MB    = 1024*KB;
-	uint32_t  count = 1;
-	if(stride >= 16*MB)
-	{
-		count = 1;
-	}
-	else if(stride >= 4*MB)
-	{
-		count = 4;
-	}
-	else if(stride >= MB)
-	{
-		count = 64;
-	}
-	else if(stride >= 256*KB)
-	{
-		count = 256;
-	}
-	else if(stride >= 64*KB)
-	{
-		count = 1024;
-	}
-	else if(stride >= 16*KB)
-	{
-		count = 4096;
-	}
-	else
-	{
-		count = 16384;
-	}
-
 	// find an existing pool
 	int pool_created = 0;
 	cc_mapIter_t      miterator;
@@ -288,6 +283,7 @@ vkk_memoryManager_allocBuffer(vkk_memoryManager_t* self,
 	if(pool == NULL)
 	{
 		// otherwise create a new pool
+		uint32_t count = computePoolCount((size_t) stride);
 		pool = vkk_memoryPool_new(self, count, stride, mt_index);
 		if(pool == NULL)
 		{
@@ -410,39 +406,6 @@ vkk_memoryManager_allocImage(vkk_memoryManager_t* self,
 		stride *= 2;
 	}
 
-	// compute the pool count
-	const int KB    = 1024;
-	const int MB    = 1024*KB;
-	uint32_t  count = 1;
-	if(stride >= 4*MB)
-	{
-		count = 1;
-	}
-	else if(stride >= MB)
-	{
-		count = 16;
-	}
-	else if(stride >= 256*KB)
-	{
-		count = 64;
-	}
-	else if(stride >= 64*KB)
-	{
-		count = 256;
-	}
-	else if(stride >= 16*KB)
-	{
-		count = 1024;
-	}
-	else if(stride >= 4*KB)
-	{
-		count = 4096;
-	}
-	else
-	{
-		count = 16384;
-	}
-
 	// find an existing pool
 	int pool_created = 0;
 	cc_mapIter_t      miterator;
@@ -455,6 +418,7 @@ vkk_memoryManager_allocImage(vkk_memoryManager_t* self,
 	if(pool == NULL)
 	{
 		// otherwise create a new pool
+		uint32_t count = computePoolCount((size_t) stride);
 		pool = vkk_memoryPool_new(self, count, stride, mt_index);
 		if(pool == NULL)
 		{
