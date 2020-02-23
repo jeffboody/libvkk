@@ -47,5 +47,6 @@ vkk_memory_t*     vkk_memoryPool_alloc(vkk_memoryPool_t* self);
 int               vkk_memoryPool_free(vkk_memoryPool_t* self,
                                       int shutdown,
                                       vkk_memory_t** _memory);
+void              vkk_memoryPool_meminfo(vkk_memoryPool_t* self);
 
 #endif

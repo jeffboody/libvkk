@@ -568,11 +568,11 @@ void vkk_memoryManager_update(vkk_memoryManager_t* self,
 	vkk_memoryManager_chunkUnlock(self, chunk);
 }
 
-void vkk_memoryManager_info(vkk_memoryManager_t* self,
-                            size_t* _count_chunks,
-                            size_t* _count_slots,
-                            size_t* _size_chunks,
-                            size_t* _size_slots)
+void vkk_memoryManager_meminfo(vkk_memoryManager_t* self,
+                               size_t* _count_chunks,
+                               size_t* _count_slots,
+                               size_t* _size_chunks,
+                               size_t* _size_slots)
 {
 	ASSERT(self);
 	ASSERT(_count_chunks);
@@ -585,5 +585,23 @@ void vkk_memoryManager_info(vkk_memoryManager_t* self,
 	*_count_slots  = self->count_slots;
 	*_size_chunks  = self->size_chunks;
 	*_size_slots   = self->size_slots;
+
+	// optionally dump debug information
+	#if 0
+		LOGI("MEMINFO: count_chunks=%i, count_slots=%i, size_chunks=%i, size_slots=%i",
+		     (int) self->count_chunks, (int) self->count_slots,
+		     (int) self->size_chunks, (int) self->size_slots);
+
+		cc_mapIter_t  miterator;
+		cc_mapIter_t* miter;
+		miter = cc_map_head(self->pools, &miterator);
+		while(miter)
+		{
+			vkk_memoryPool_t* pool;
+			pool = (vkk_memoryPool_t*) cc_map_val(miter);
+			vkk_memoryPool_meminfo(pool);
+			miter = cc_map_next(miter);
+		}
+	#endif
 	vkk_memoryManager_unlock(self);
 }

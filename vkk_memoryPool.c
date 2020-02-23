@@ -175,3 +175,24 @@ int vkk_memoryPool_free(vkk_memoryPool_t* self,
 
 	return (cc_list_size(self->chunks) == 0) ? 1 : 0;
 }
+
+void vkk_memoryPool_meminfo(vkk_memoryPool_t* self)
+{
+	ASSERT(self);
+
+	int   chunk_count = cc_list_size(self->chunks);
+	float MB          = 1024.0f*1024.0f;
+	float chunk_size  = (float)
+	                    (self->count*self->stride*chunk_count)/MB;
+	LOGI("POOL: count=%i, stride=%i, chunk_count=%i, chunk_size=%0.1f MB",
+	     (int) self->count, (int) self->stride, chunk_count, chunk_size);
+
+	cc_listIter_t* iter = cc_list_head(self->chunks);
+	while(iter)
+	{
+		vkk_memoryChunk_t* chunk;
+		chunk = (vkk_memoryChunk_t*) cc_list_peekIter(iter);
+		vkk_memoryChunk_meminfo(chunk);
+		iter = cc_list_next(iter);
+	}
+}

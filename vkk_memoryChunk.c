@@ -206,3 +206,14 @@ int vkk_memoryChunk_free(vkk_memoryChunk_t* self,
 
 	return (self->usecount == 0) ? 1 : 0;
 }
+
+void vkk_memoryChunk_meminfo(vkk_memoryChunk_t* self)
+{
+	ASSERT(self);
+
+	vkk_memoryPool_t* pool = self->pool;
+
+	float usage = ((float) self->usecount)/
+	              ((float) pool->count);
+	LOGI("CHUNK: usecount=%i, usage=%0.1f", (int) self->usecount, usage);
+}

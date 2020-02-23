@@ -1336,9 +1336,9 @@ void vkk_engine_meminfo(vkk_engine_t* self,
 	ASSERT(_size_chunks);
 	ASSERT(_size_slots);
 
-	vkk_memoryManager_info(self->mm,
-	                       _count_chunks, _count_slots,
-	                       _size_chunks, _size_slots);
+	vkk_memoryManager_meminfo(self->mm,
+	                          _count_chunks, _count_slots,
+	                          _size_chunks, _size_slots);
 }
 
 uint32_t vkk_engine_version(vkk_engine_t* self)

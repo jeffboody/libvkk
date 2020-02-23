@@ -63,10 +63,10 @@ void                 vkk_memoryManager_update(vkk_memoryManager_t* self,
                                               vkk_memory_t* memory,
                                               size_t size,
                                               const void* buf);
-void                 vkk_memoryManager_info(vkk_memoryManager_t* self,
-                                            size_t* _count_chunks,
-                                            size_t* _count_slots,
-                                            size_t* _size_chunks,
-                                            size_t* _size_slots);
+void                 vkk_memoryManager_meminfo(vkk_memoryManager_t* self,
+                                               size_t* _count_chunks,
+                                               size_t* _count_slots,
+                                               size_t* _size_chunks,
+                                               size_t* _size_slots);
 
 #endif

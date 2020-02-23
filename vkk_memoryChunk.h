@@ -46,5 +46,6 @@ vkk_memory_t*      vkk_memoryChunk_alloc(vkk_memoryChunk_t* self);
 int                vkk_memoryChunk_free(vkk_memoryChunk_t* self,
                                         int shutdown,
                                         vkk_memory_t** _memory);
+void               vkk_memoryChunk_meminfo(vkk_memoryChunk_t* self);
 
 #endif
