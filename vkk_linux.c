@@ -305,8 +305,8 @@ static void
 vkk_platformTouch_init(vkk_platformTouch_t* self,
                        vkk_platform_t* platform)
 {
-	assert(self);
-	assert(platform);
+	ASSERT(self);
+	ASSERT(platform);
 
 	self->platform = platform;
 	self->count    = 0;
@@ -316,7 +316,7 @@ vkk_platformTouch_init(vkk_platformTouch_t* self,
 static void
 vkk_platformTouch_event(vkk_platformTouch_t* self)
 {
-	assert(self);
+	ASSERT(self);
 
 	vkk_platformOnEvent_fn  onEvent;
 	onEvent = VKK_PLATFORM_CALLBACKS.onEvent;
@@ -370,7 +370,7 @@ vkk_platformTouch_action(vkk_platformTouch_t* self,
                          int id,
                          float x, float y)
 {
-	assert(self);
+	ASSERT(self);
 
 	// init action
 	if((self->type == -1) ||

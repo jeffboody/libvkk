@@ -878,7 +878,7 @@ Java_com_jeffboody_vkk_VKKGpsService_NativeGps(JNIEnv* env, jobject obj,
                                                jfloat accuracy, jfloat altitude,
                                                jfloat speed, jfloat bearing, jdouble ts)
 {
-	assert(env);
+	ASSERT(env);
 
 	vkk_platformOnEvent_fn onEvent;
 	onEvent = VKK_PLATFORM_CALLBACKS.onEvent;
