@@ -44,8 +44,10 @@ vkk_uniformSet_new(vkk_engine_t* engine,
                    vkk_uniformAttachment_t* ua_array,
                    vkk_uniformSetFactory_t* usf)
 {
+	// ua_array may be NULL when attachments are refs
 	ASSERT(engine);
-	ASSERT(ua_array);
+	ASSERT((ua_array           && (ua_count > 0)) ||
+	       ((ua_array == NULL) && (ua_count == 0)));
 	ASSERT(usf);
 
 	vkk_renderer_t* renderer = engine->renderer;

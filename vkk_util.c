@@ -215,8 +215,10 @@ vkk_util_copyUniformAttachmentArray(vkk_uniformAttachment_t* dst,
                                     vkk_uniformAttachment_t* src,
                                     vkk_uniformSetFactory_t* usf)
 {
+	// src may be NULL when attachments are refs
 	ASSERT(dst);
-	ASSERT(src);
+	ASSERT((src           && (src_ua_count > 0)) ||
+	       ((src == NULL) && (src_ua_count == 0)));
 	ASSERT(usf);
 
 	// fill binding/type
