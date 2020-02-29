@@ -32,6 +32,8 @@ typedef struct
 {
 	vkk_renderer_t base;
 
+	int resize;
+
 	// swapchain state
 	uint32_t        swapchain_frame;
 	VkFormat        swapchain_format;

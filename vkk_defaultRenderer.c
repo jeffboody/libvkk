@@ -850,6 +850,9 @@ int vkk_defaultRenderer_resize(vkk_renderer_t* base)
 
 	vkk_engine_t* engine = base->engine;
 
+	vkk_defaultRenderer_t* self;
+	self = (vkk_defaultRenderer_t*) base;
+
 	vkDeviceWaitIdle(engine->device);
 
 	vkk_defaultRenderer_deleteDepth(base);
@@ -870,6 +873,8 @@ int vkk_defaultRenderer_resize(vkk_renderer_t* base)
 	{
 		goto fail_framebuffer;
 	}
+
+	self->resize = 0;
 
 	// success
 	return 1;
@@ -972,6 +977,13 @@ vkk_defaultRenderer_begin(vkk_renderer_t* base,
 
 	vkk_engine_t* engine = base->engine;
 
+	// check if a resize event was detected
+	if(self->resize &&
+	   (vkk_defaultRenderer_resize(base) == 0))
+	{
+		return 0;
+	}
+
 	VkSemaphore semaphore_acquire;
 	VkSemaphore semaphore_submit;
 	vkk_defaultRenderer_beginSemaphore(base,
@@ -985,15 +997,44 @@ vkk_defaultRenderer_begin(vkk_renderer_t* base,
 	#else
 		uint64_t timeout = 250000000;
 	#endif
-	if(vkAcquireNextImageKHR(engine->device,
-	                         self->swapchain,
-	                         timeout,
-	                         semaphore_acquire,
-	                         VK_NULL_HANDLE,
-	                         &self->swapchain_frame) != VK_SUCCESS)
+	VkResult acquire;
+	acquire = vkAcquireNextImageKHR(engine->device,
+	                                self->swapchain,
+	                                timeout,
+	                                semaphore_acquire,
+	                                VK_NULL_HANDLE,
+	                                &self->swapchain_frame);
+	if((acquire == VK_SUCCESS) ||
+	   (acquire == VK_SUBOPTIMAL_KHR))
 	{
-		// failure typically caused by resizes
-		return 0;
+		// ignore
+	}
+	else if(acquire == VK_ERROR_OUT_OF_DATE_KHR)
+	{
+		self->resize = 1;
+		goto fail_acquire;
+	}
+	else
+	{
+		LOGW("acquire=%i", (int) acquire);
+		goto fail_acquire;
+	}
+
+	VkSurfaceCapabilitiesKHR caps;
+	if(vkGetPhysicalDeviceSurfaceCapabilitiesKHR(engine->physical_device,
+	                                             engine->surface,
+	                                             &caps) != VK_SUCCESS)
+	{
+		LOGE("vkGetPhysicalDeviceSurfaceCapabilitiesKHR failed");
+		goto fail_caps;
+	}
+
+	// check for resizes
+	if((self->swapchain_extent.width  != caps.currentExtent.width) ||
+	   (self->swapchain_extent.height != caps.currentExtent.height))
+	{
+		self->resize = 1;
+		goto fail_resize;
 	}
 
 	// wait for a frame to complete
@@ -1019,7 +1060,7 @@ vkk_defaultRenderer_begin(vkk_renderer_t* base,
 	if(vkResetCommandBuffer(cb, 0) != VK_SUCCESS)
 	{
 		LOGE("vkResetCommandBuffer failed");
-		return 0;
+		goto fail_reset_cb;
 	}
 
 	VkFramebuffer framebuffer;
@@ -1047,7 +1088,7 @@ vkk_defaultRenderer_begin(vkk_renderer_t* base,
 	if(vkBeginCommandBuffer(cb, &cb_info) != VK_SUCCESS)
 	{
 		LOGE("vkBeginCommandBuffer failed");
-		return 0;
+		goto fail_begin_cb;
 	}
 
 	// stage only applies to textures
@@ -1138,7 +1179,19 @@ vkk_defaultRenderer_begin(vkk_renderer_t* base,
 
 	vkCmdBeginRenderPass(cb, &rp_info, contents);
 
+	// success
 	return 1;
+
+	// failure
+	fail_begin_cb:
+	fail_reset_cb:
+	fail_resize:
+	fail_caps:
+	fail_acquire:
+		vkk_defaultRenderer_endSemaphore(base,
+		                                 &semaphore_acquire,
+		                                 &semaphore_submit);
+	return 0;
 }
 
 void vkk_defaultRenderer_end(vkk_renderer_t* base)
@@ -1189,11 +1242,21 @@ void vkk_defaultRenderer_end(vkk_renderer_t* base)
 		.pResults           = NULL
 	};
 
-	if(vkQueuePresentKHR(engine->queue[VKK_QUEUE_DEFAULT],
-	                     &p_info) != VK_SUCCESS)
+	VkResult present;
+	present = vkQueuePresentKHR(engine->queue[VKK_QUEUE_DEFAULT],
+	                            &p_info);
+	if((present == VK_SUCCESS) ||
+	   (present == VK_SUBOPTIMAL_KHR))
 	{
-		// failure typically caused by resizes
-		return;
+		// ignore
+	}
+	else if(present == VK_ERROR_OUT_OF_DATE_KHR)
+	{
+		self->resize = 1;
+	}
+	else
+	{
+		LOGW("present=%i", (int) present);
 	}
 }
 
