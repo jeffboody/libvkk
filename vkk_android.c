@@ -33,8 +33,10 @@
 #include "../libcc/cc_log.h"
 #include "../libcc/cc_memory.h"
 #include "../libcc/cc_timestamp.h"
-#include "vkk_android.h"
 #include "vkk.h"
+#include "vkk_android.h"
+#include "vkk_engine.h"
+#include "vkk_platform.h"
 
 static vkk_platform_t* platform = NULL;
 
@@ -204,28 +206,33 @@ static void
 onAppCmd(struct android_app* app, int32_t cmd)
 {
 	vkk_platformOnDestroy_fn onDestroy;
+	vkk_platformOnPause_fn   onPause;
 	vkk_platformOnEvent_fn   onEvent;
-	onDestroy = VKK_PLATFORM_CALLBACKS.onDestroy;
-	onEvent   = VKK_PLATFORM_CALLBACKS.onEvent;
+	onDestroy = VKK_PLATFORM_INFO.onDestroy;
+	onPause   = VKK_PLATFORM_INFO.onPause;
+	onEvent   = VKK_PLATFORM_INFO.onEvent;
 
 	if(cmd == APP_CMD_INIT_WINDOW)
 	{
 		LOGI("APP_CMD_INIT_WINDOW");
 
 		// recreate the window surface
-		if(platform->priv)
+		if(platform->engine)
 		{
-			vkk_event_t ve =
+			if(vkk_engine_recreate(platform->engine) == 0)
 			{
-				.type = VKK_EVENT_TYPE_RECREATE,
-				.ts   = cc_timestamp(),
-			};
-			if((*onEvent)(platform->priv, &ve) == 0)
-			{
+				if(platform->priv && (platform->paused == 0))
+				{
+					(*onPause)(platform->priv);
+					platform->paused = 1;
+				}
+
 				// recreate renderer on failure
+				vkk_engine_shutdown(platform->engine);
 				pthread_mutex_lock(&platform->priv_mutex);
 				(*onDestroy)(&platform->priv);
 				pthread_mutex_unlock(&platform->priv_mutex);
+				vkk_engine_delete(&platform->engine);
 			}
 		}
 		platform->has_window = 1;
@@ -237,12 +244,7 @@ onAppCmd(struct android_app* app, int32_t cmd)
 		// destroy the existing window surface
 		if(platform->priv)
 		{
-			vkk_event_t ve =
-			{
-				.type = VKK_EVENT_TYPE_RECREATE,
-				.ts   = cc_timestamp(),
-			};
-			(*onEvent)(platform->priv, &ve);
+			vkk_engine_recreate(platform->engine);
 		}
 		platform->has_window = 0;
 	}
@@ -256,23 +258,30 @@ onAppCmd(struct android_app* app, int32_t cmd)
 	{
 		LOGI("APP_CMD_PAUSE");
 
-		if(platform->running && platform->priv)
+		if(platform->priv && (platform->paused == 0))
 		{
-			vkk_event_t ve =
-			{
-				.type = VKK_EVENT_TYPE_PAUSE,
-				.ts   = cc_timestamp(),
-			};
-			(*onEvent)(platform->priv, &ve);
+			(*onPause)(platform->priv);
+			platform->paused = 1;
 		}
 		platform->running = 0;
 	}
 	else if(cmd == APP_CMD_DESTROY)
 	{
+		if(platform->priv && (platform->paused == 0))
+		{
+			(*onPause)(platform->priv);
+			platform->paused = 1;
+		}
+
 		LOGI("APP_CMD_DESTROY");
+		if(platform->engine)
+		{
+			vkk_engine_shutdown(platform->engine);
+		}
 		pthread_mutex_lock(&platform->priv_mutex);
 		(*onDestroy)(&platform->priv);
 		pthread_mutex_unlock(&platform->priv_mutex);
+		vkk_engine_delete(&platform->engine);
 		platform->running = 0;
 	}
 }
@@ -295,7 +304,7 @@ onInputEvent(struct android_app* app, AInputEvent* event)
 	ASSERT(event);
 
 	vkk_platformOnEvent_fn onEvent;
-	onEvent = VKK_PLATFORM_CALLBACKS.onEvent;
+	onEvent = VKK_PLATFORM_INFO.onEvent;
 
 	int32_t source = AInputEvent_getSource(event);
 	int32_t action = AMotionEvent_getAction(event) &
@@ -549,6 +558,7 @@ vkk_platform_new(struct android_app* app)
 	self->event_tail = 0;
 
 	self->app         = app;
+	self->paused      = 1;
 	app->userData     = self;
 	app->onAppCmd     = onAppCmd;
 	app->onInputEvent = onInputEvent;
@@ -571,7 +581,9 @@ static void vkk_platform_delete(vkk_platform_t** _self)
 	ASSERT(_self);
 
 	vkk_platformOnDestroy_fn onDestroy;
-	onDestroy = VKK_PLATFORM_CALLBACKS.onDestroy;
+	vkk_platformOnPause_fn   onPause;
+	onDestroy = VKK_PLATFORM_INFO.onDestroy;
+	onPause   = VKK_PLATFORM_INFO.onPause;
 
 	vkk_platform_t* self = *_self;
 	if(self)
@@ -580,7 +592,18 @@ static void vkk_platform_delete(vkk_platform_t** _self)
 		pthread_mutex_destroy(&self->event_mutex);
 		pthread_mutex_destroy(&self->priv_mutex);
 
+		if(self->priv && (self->paused == 0))
+		{
+			(*onPause)(self->priv);
+			self->paused = 1;
+		}
+
+		if(self->engine)
+		{
+			vkk_engine_shutdown(self->engine);
+		}
 		(*onDestroy)(&self->priv);
+		vkk_engine_delete(&self->engine);
 		FREE(self);
 		*_self = NULL;
 	}
@@ -657,26 +680,36 @@ static void vkk_platform_draw(vkk_platform_t* self)
 {
 	ASSERT(self);
 
-	vkk_platformOnCreate_fn  onCreate;
-	vkk_platformOnDestroy_fn onDestroy;
-	vkk_platformOnDraw_fn    onDraw;
-	vkk_platformOnEvent_fn   onEvent;
-	onCreate  = VKK_PLATFORM_CALLBACKS.onCreate;
-	onDestroy = VKK_PLATFORM_CALLBACKS.onDestroy;
-	onDraw    = VKK_PLATFORM_CALLBACKS.onDraw;
-	onEvent   = VKK_PLATFORM_CALLBACKS.onEvent;
+	vkk_platformOnCreate_fn onCreate;
+	vkk_platformOnDraw_fn   onDraw;
+	onCreate = VKK_PLATFORM_INFO.onCreate;
+	onDraw   = VKK_PLATFORM_INFO.onDraw;
 
 	if(vkk_platform_rendering(self) == 0)
 	{
 		return;
 	}
 
+	// create engine
+	if(self->engine == NULL)
+	{
+		const char* resource_path;
+		resource_path = self->app->activity->internalDataPath;
+		self->engine = vkk_engine_new(self,
+		                              VKK_PLATFORM_INFO.app_name,
+		                              &VKK_PLATFORM_INFO.app_version,
+		                              resource_path);
+		if(self->engine == NULL)
+		{
+			return;
+		}
+	}
+
 	// create renderer
-	ANativeWindow* window = self->app->window;
 	if(self->priv == NULL)
 	{
 		pthread_mutex_lock(&platform->priv_mutex);
-		self->priv = (*onCreate)(self);
+		self->priv = (*onCreate)(self->engine);
 		pthread_mutex_unlock(&platform->priv_mutex);
 		if(self->priv == NULL)
 		{
@@ -684,39 +717,10 @@ static void vkk_platform_draw(vkk_platform_t* self)
 		}
 
 		self->density = 1.0f;
-		self->width   = (int) ANativeWindow_getWidth(window);
-		self->height  = (int) ANativeWindow_getHeight(window);
-	}
-	else
-	{
-		// check if the native window was resized
-		int width;
-		int height;
-		width  = (int) ANativeWindow_getWidth(window);
-		height = (int) ANativeWindow_getHeight(window);
-		if((self->width  != width) ||
-		   (self->height != height))
-		{
-			self->width  = width;
-			self->height = height;
-
-			vkk_event_t ve =
-			{
-				.type = VKK_EVENT_TYPE_RESIZE,
-				.ts   = cc_timestamp()
-			};
-			if((*onEvent)(self->priv, &ve) == 0)
-			{
-				// recreate renderer on failure
-				pthread_mutex_lock(&platform->priv_mutex);
-				(*onDestroy)(&self->priv);
-				pthread_mutex_unlock(&platform->priv_mutex);
-				return;
-			}
-		}
 	}
 
 	(*onDraw)(self->priv);
+	self->paused = 0;
 }
 
 /***********************************************************
@@ -881,7 +885,7 @@ Java_com_jeffboody_vkk_VKKGpsService_NativeGps(JNIEnv* env, jobject obj,
 	ASSERT(env);
 
 	vkk_platformOnEvent_fn onEvent;
-	onEvent = VKK_PLATFORM_CALLBACKS.onEvent;
+	onEvent = VKK_PLATFORM_INFO.onEvent;
 
 	if(platform)
 	{
@@ -1230,7 +1234,7 @@ void android_main(struct android_app* app)
 	ASSERT(app);
 
 	vkk_platformOnEvent_fn onEvent;
-	onEvent = VKK_PLATFORM_CALLBACKS.onEvent;
+	onEvent = VKK_PLATFORM_INFO.onEvent;
 
 	LOGI("InitVulkan=%i", InitVulkan());
 

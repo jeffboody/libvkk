@@ -28,10 +28,12 @@
 #ifdef ANDROID
 	#include <vulkan_wrapper.h>
 	#include <android_native_app_glue.h>
+	#include "vkk_android.h"
 #else
 	#include <SDL2/SDL.h>
 	#include <SDL2/SDL_vulkan.h>
 	#include <vulkan/vulkan.h>
+	#include "vkk_linux.h"
 #endif
 
 #include "../libcc/cc_jobq.h"
@@ -84,10 +86,9 @@ typedef struct vkk_engine_s
 		SDL_Window* window;
 	#endif
 
-	uint32_t version;
+	vkk_version_t version;
 
-	char resource[256];
-	char cache[256];
+	char resource_path[256];
 
 	// 1) Vulkan synchronization - 2.6. Threading Behavior
 	// * The queue parameter in vkQueueSubmit
@@ -148,6 +149,14 @@ typedef struct vkk_engine_s
 	// jobq(s)
 	cc_jobq_t* jobq_destruct;
 } vkk_engine_t;
+
+vkk_engine_t* vkk_engine_new(vkk_platform_t* platform,
+                             const char* app_name,
+                             vkk_version_t* app_version,
+                             const char* resource_path);
+void          vkk_engine_delete(vkk_engine_t** _self);
+void          vkk_engine_shutdown(vkk_engine_t* self);
+int           vkk_engine_recreate(vkk_engine_t* self);
 
 /*
  * engine util function

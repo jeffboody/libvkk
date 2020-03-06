@@ -26,11 +26,6 @@
 
 #include <stdint.h>
 
-#include "vkk_platform.h"
-
-uint32_t VKK_MAKE_VERSION(uint32_t major, uint32_t minor,
-                          uint32_t patch);
-
 /*
  * constants
  */
@@ -123,6 +118,13 @@ typedef struct vkk_uniformSetFactory_s vkk_uniformSetFactory_t;
 
 typedef struct
 {
+	uint32_t major:10;
+	uint32_t minor:10;
+	uint32_t patch:12;
+} vkk_version_t;
+
+typedef struct
+{
 	uint32_t binding;
 	int      type;
 
@@ -197,45 +199,26 @@ typedef struct
  *     uniform set factories
  *  9) graphics pipelines are NOT shared between renderers
  * 10) CPU and GPU synchronization is handled automatically
- *     by the engine with the exception of the shutdown
- *     function
- * 11) call shutdown from the main thread prior to deleting
- *     the engine thus ensuring GPU rendering completes and
- *     worker threads are no longer blocked waiting for GPU
- *     events
+ *     by the engine via begin/end renderer markers
+ * 11) call the default renderer from the main thread
+ * 12) the default renderer is created and destroyed
+ *     automatically by the engine
  */
 
-vkk_engine_t* vkk_engine_new(vkk_platform_t* platform,
-                             const char* app_name,
-                             uint32_t app_version,
-                             const char* resource,
-                             const char* cache);
-void          vkk_engine_delete(vkk_engine_t** _self);
-void          vkk_engine_shutdown(vkk_engine_t* self);
-int           vkk_engine_imageCaps(vkk_engine_t* self,
-                                   int format);
-void          vkk_engine_meminfo(vkk_engine_t* self,
-                                 size_t* _count_chunks,
-                                 size_t* _count_slots,
-                                 size_t* _size_chunks,
-                                 size_t* _size_slots);
-uint32_t      vkk_engine_version(vkk_engine_t* self);
-
-/*
- * default renderer API
- *
- * 1) call the default renderer from the main thread
- * 2) the default renderer is created and destroyed
- *    automatically by the engine
- * 3) the resize event triggered by native window system
- *    causes the default renderer surfaceSize to be updated
- * 4) the recreate event triggered by native window system
- *    causes the default renderer surface to be recreated
- */
-
-int             vkk_engine_resize(vkk_engine_t* self);
-int             vkk_engine_recreate(vkk_engine_t* self);
-vkk_renderer_t* vkk_engine_renderer(vkk_engine_t* self);
+void            vkk_engine_version(vkk_engine_t* self,
+                                   vkk_version_t* version);
+void            vkk_engine_platformCmd(vkk_engine_t* self,
+                                       int cmd,
+                                       const char* msg);
+const char*     vkk_engine_resourcePath(vkk_engine_t* self);
+void            vkk_engine_meminfo(vkk_engine_t* self,
+                                   size_t* _count_chunks,
+                                   size_t* _count_slots,
+                                   size_t* _size_chunks,
+                                   size_t* _size_slots);
+int             vkk_engine_imageCaps(vkk_engine_t* self,
+                                     int format);
+vkk_renderer_t* vkk_engine_defaultRenderer(vkk_engine_t* self);
 
 /*
  * buffer API

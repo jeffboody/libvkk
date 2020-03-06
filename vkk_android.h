@@ -26,6 +26,7 @@
 
 #include <android_native_app_glue.h>
 
+#include "vkk.h"
 #include "vkk_platform.h"
 
 #define VKK_EVENTQ_BUFSIZE 256
@@ -35,11 +36,9 @@ typedef struct vkk_platform_s
 	struct android_app* app;
 
 	int   running;
+	int   paused;
 	int   has_window;
-	int   width;
-	int   height;
 	float density;
-	void* priv;
 
 	// priv is typically only accessed by main thread
 	// however GPS events are an exception because they
@@ -64,6 +63,12 @@ typedef struct vkk_platform_s
 	int             event_head;
 	int             event_tail;
 	vkk_event_t     event_buffer[VKK_EVENTQ_BUFSIZE];
+
+	vkk_engine_t* engine;
+	void*         priv;
 } vkk_platform_t;
+
+void vkk_platform_cmd(vkk_platform_t* self, int cmd,
+                      const char* msg);
 
 #endif

@@ -28,8 +28,10 @@
 #include "../libcc/cc_log.h"
 #include "../libcc/cc_memory.h"
 #include "../libcc/cc_timestamp.h"
-#include "vkk_linux.h"
 #include "vkk.h"
+#include "vkk_engine.h"
+#include "vkk_linux.h"
+#include "vkk_platform.h"
 
 /***********************************************************
 * private                                                  *
@@ -319,7 +321,7 @@ vkk_platformTouch_event(vkk_platformTouch_t* self)
 	ASSERT(self);
 
 	vkk_platformOnEvent_fn  onEvent;
-	onEvent = VKK_PLATFORM_CALLBACKS.onEvent;
+	onEvent = VKK_PLATFORM_INFO.onEvent;
 
 	if(self->type == -1)
 	{
@@ -422,8 +424,8 @@ static vkk_platform_t* vkk_platform_new(void)
 {
 	vkk_platformOnCreate_fn onCreate;
 	vkk_platformOnEvent_fn  onEvent;
-	onCreate = VKK_PLATFORM_CALLBACKS.onCreate;
-	onEvent  = VKK_PLATFORM_CALLBACKS.onEvent;
+	onCreate = VKK_PLATFORM_INFO.onCreate;
+	onEvent  = VKK_PLATFORM_INFO.onEvent;
 
 	vkk_platform_t* self;
 	self = (vkk_platform_t*) CALLOC(1, sizeof(vkk_platform_t));
@@ -434,6 +436,7 @@ static vkk_platform_t* vkk_platform_new(void)
 	}
 
 	self->running = 1;
+	self->paused  = 1;
 
 	// override the default screen density
 	float density = 1.0f;
@@ -456,7 +459,16 @@ static vkk_platform_t* vkk_platform_new(void)
 		fclose(f);
 	}
 
-	self->priv = (*onCreate)(self);
+	self->engine = vkk_engine_new(self,
+	                              VKK_PLATFORM_INFO.app_name,
+	                              &VKK_PLATFORM_INFO.app_version,
+	                              ".");
+	if(self->engine == NULL)
+	{
+		goto fail_engine;
+	}
+
+	self->priv = (*onCreate)(self->engine);
 	if(self->priv == NULL)
 	{
 		goto fail_priv;
@@ -475,6 +487,8 @@ static vkk_platform_t* vkk_platform_new(void)
 
 	// failure
 	fail_priv:
+		vkk_engine_delete(&self->engine);
+	fail_engine:
 		FREE(self);
 	return NULL;
 }
@@ -482,12 +496,22 @@ static vkk_platform_t* vkk_platform_new(void)
 static void vkk_platform_delete(vkk_platform_t** _self)
 {
 	vkk_platformOnDestroy_fn onDestroy;
-	onDestroy = VKK_PLATFORM_CALLBACKS.onDestroy;
+	vkk_platformOnPause_fn   onPause;
+	onDestroy = VKK_PLATFORM_INFO.onDestroy;
+	onPause   = VKK_PLATFORM_INFO.onPause;
 
 	vkk_platform_t* self = *_self;
 	if(self)
 	{
+		if(self->paused == 0)
+		{
+			(*onPause)(self->priv);
+			self->paused = 1;
+		}
+
+		vkk_engine_shutdown(self->engine);
 		(*onDestroy)(&self->priv);
+		vkk_engine_delete(&self->engine);
 		FREE(self);
 		*_self = NULL;
 	}
@@ -513,8 +537,8 @@ int main(int argc, char** argv)
 {
 	vkk_platformOnDraw_fn  onDraw;
 	vkk_platformOnEvent_fn onEvent;
-	onDraw  = VKK_PLATFORM_CALLBACKS.onDraw;
-	onEvent = VKK_PLATFORM_CALLBACKS.onEvent;
+	onDraw  = VKK_PLATFORM_INFO.onDraw;
+	onEvent = VKK_PLATFORM_INFO.onEvent;
 
 	vkk_platform_t* platform = vkk_platform_new();
 	if(platform == NULL)
@@ -612,17 +636,6 @@ int main(int argc, char** argv)
 			{
 				platform->width  = se.window.data1;
 				platform->height = se.window.data2;
-
-				vkk_event_t ve =
-				{
-					.type = VKK_EVENT_TYPE_RESIZE,
-					.ts   = cc_timestamp()
-				};
-				if((*onEvent)(platform->priv, &ve) == 0)
-				{
-					platform->running = 0;
-					break;
-				}
 			}
 			else if(se.type == SDL_QUIT)
 			{
@@ -635,6 +648,7 @@ int main(int argc, char** argv)
 		if(platform->running)
 		{
 			(*onDraw)(platform->priv);
+			platform->paused = 0;
 		}
 	}
 

@@ -24,14 +24,20 @@
 #ifndef vkk_linux_H
 #define vkk_linux_H
 
-#include "vkk_platform.h"
+#include "vkk.h"
 
 typedef struct vkk_platform_s
 {
 	int   running;
-	void* priv;
+	int   paused;
 	float width;
 	float height;
+
+	vkk_engine_t* engine;
+	void*         priv;
 } vkk_platform_t;
+
+void vkk_platform_cmd(vkk_platform_t* self, int cmd,
+                      const char* msg);
 
 #endif

@@ -34,12 +34,6 @@
 * public                                                   *
 ***********************************************************/
 
-uint32_t VKK_MAKE_VERSION(uint32_t major, uint32_t minor,
-                          uint32_t patch)
-{
-	return VK_MAKE_VERSION(major, minor, patch);
-}
-
 void vkk_util_imageMemoryBarrier(vkk_image_t* image,
                                  VkCommandBuffer cb,
                                  VkImageLayout newLayout,

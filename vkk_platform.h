@@ -25,12 +25,7 @@
 #define vkk_platform_H
 
 #include "../libcc/math/cc_vec2f.h"
-
-/*
- * opaque objects
- */
-
-typedef struct vkk_platform_s vkk_platform_t;
+#include "vkk.h"
 
 /*
  * platform commands
@@ -55,9 +50,6 @@ typedef struct vkk_platform_s vkk_platform_t;
 #define VKK_PLATFORM_CMD_SOFTKEY_HIDE      17
 #define VKK_PLATFORM_CMD_SOFTKEY_SHOW      18
 
-void vkk_platform_cmd(vkk_platform_t* self, int cmd,
-                      const char* msg);
-
 /*
  * event handling
  */
@@ -76,10 +68,7 @@ void vkk_platform_cmd(vkk_platform_t* self, int cmd,
 #define VKK_EVENT_TYPE_KEY_DOWN           10
 #define VKK_EVENT_TYPE_KEY_UP             11
 #define VKK_EVENT_TYPE_MAGNETOMETER       12
-#define VKK_EVENT_TYPE_PAUSE              13
-#define VKK_EVENT_TYPE_PERMISSION_GRANTED 14
-#define VKK_EVENT_TYPE_RECREATE           15
-#define VKK_EVENT_TYPE_RESIZE             16
+#define VKK_EVENT_TYPE_PERMISSION_GRANTED 13
 
 // max actions supported
 #define VKK_EVENT_ACTION_COUNT 4
@@ -253,20 +242,24 @@ typedef struct
  * be delivered when the app main thread is paused.
  */
 
-typedef void* (*vkk_platformOnCreate_fn)(vkk_platform_t* platform);
+typedef void* (*vkk_platformOnCreate_fn)(vkk_engine_t* engine);
 typedef void  (*vkk_platformOnDestroy_fn)(void** _priv);
+typedef void  (*vkk_platformOnPause_fn)(void* priv);
 typedef void  (*vkk_platformOnDraw_fn)(void* priv);
-typedef int   (*vkk_platformOnEvent_fn)(void* priv,
+typedef void  (*vkk_platformOnEvent_fn)(void* priv,
                                         vkk_event_t* event);
 
 typedef struct
 {
+	const char*              app_name;
+	vkk_version_t            app_version;
 	vkk_platformOnCreate_fn  onCreate;
 	vkk_platformOnDestroy_fn onDestroy;
+	vkk_platformOnPause_fn   onPause;
 	vkk_platformOnDraw_fn    onDraw;
 	vkk_platformOnEvent_fn   onEvent;
-} vkk_platformCallbacks_t;
+} vkk_platformInfo_t;
 
-extern vkk_platformCallbacks_t VKK_PLATFORM_CALLBACKS;
+extern vkk_platformInfo_t VKK_PLATFORM_INFO;
 
 #endif

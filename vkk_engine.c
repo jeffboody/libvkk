@@ -29,11 +29,6 @@
 #include "../libcc/cc_log.h"
 #include "../libcc/cc_memory.h"
 #include "../libpak/pak_file.h"
-#ifdef ANDROID
-	#include "vkk_android.h"
-#else
-	#include "vkk_linux.h"
-#endif
 #include "vkk_buffer.h"
 #include "vkk_commandBuffer.h"
 #include "vkk_defaultRenderer.h"
@@ -199,10 +194,11 @@ vkk_engine_initSDL(vkk_engine_t* self, const char* app_name)
 static int
 vkk_engine_newInstance(vkk_engine_t* self,
                        const char* app_name,
-                       uint32_t app_version)
+                       vkk_version_t* app_version)
 {
 	ASSERT(self);
 	ASSERT(app_name);
+	ASSERT(app_version);
 
 	uint32_t    extension_count   = 2;
 	const char* extension_names[] =
@@ -215,14 +211,20 @@ vkk_engine_newInstance(vkk_engine_t* self,
 		#endif
 	};
 
+	uint32_t av = VK_MAKE_VERSION(app_version->major,
+	                              app_version->minor,
+	                              app_version->patch);
+	uint32_t ev = VK_MAKE_VERSION(self->version.major,
+	                              self->version.minor,
+	                              self->version.patch);
 	VkApplicationInfo a_info =
 	{
 		.sType              = VK_STRUCTURE_TYPE_APPLICATION_INFO,
 		.pNext              = NULL,
 		.pApplicationName   = app_name,
-		.applicationVersion = app_version,
-		.pEngineName        = app_name,
-		.engineVersion      = self->version,
+		.applicationVersion = av,
+		.pEngineName        = "vkk",
+		.engineVersion      = ev,
 		.apiVersion         = VK_MAKE_VERSION(1,0,0)
 	};
 
@@ -499,13 +501,17 @@ vkk_engine_importPipelineCache(vkk_engine_t* self,
 	*_size = 0;
 	*_data = NULL;
 
+	char cache[256];
+	snprintf(cache, 256, "%s/pipeline.cache",
+	         self->resource_path);
+
 	// ignore if cache doesn't exist
-	if(access(self->cache, F_OK) != 0)
+	if(access(cache, F_OK) != 0)
 	{
 		return;
 	}
 
-	FILE* f = fopen(self->cache, "r");
+	FILE* f = fopen(cache, "r");
 	if(f == NULL)
 	{
 		LOGW("invalid");
@@ -583,7 +589,11 @@ vkk_engine_exportPipelineCache(vkk_engine_t* self)
 		goto fail_data;
 	}
 
-	FILE* f = fopen(self->cache, "w");
+	char cache[256];
+	snprintf(cache, 256, "%s/pipeline.cache",
+	         self->resource_path);
+
+	FILE* f = fopen(cache, "w");
 	if(f == NULL)
 	{
 		LOGE("invalid");
@@ -655,8 +665,12 @@ vkk_engine_importShaderModule(vkk_engine_t* self,
 	ASSERT(fname);
 	ASSERT(_size);
 
+	char resource[256];
+	snprintf(resource, 256, "%s/resource.pak",
+	         self->resource_path);
+
 	pak_file_t* pak;
-	pak = pak_file_open(self->resource, PAK_FLAG_READ);
+	pak = pak_file_open(resource, PAK_FLAG_READ);
 	if(pak == NULL)
 	{
 		return NULL;
@@ -1086,16 +1100,78 @@ vkk_engine_runDestructFn(int tid, void* owner, void* task)
 * public                                                   *
 ***********************************************************/
 
+void vkk_engine_version(vkk_engine_t* self,
+                        vkk_version_t* version)
+{
+	ASSERT(self);
+	ASSERT(version);
+
+	memcpy((void*) version, (const void*) &self->version,
+	       sizeof(vkk_version_t));
+}
+
+void
+vkk_engine_platformCmd(vkk_engine_t* self, int cmd,
+                       const char* msg)
+{
+	// msg may be NULL
+	ASSERT(self);
+
+	vkk_platform_cmd(self->platform, cmd, msg);
+}
+
+const char* vkk_engine_resourcePath(vkk_engine_t* self)
+{
+	ASSERT(self);
+
+	return self->resource_path;
+}
+
+void vkk_engine_meminfo(vkk_engine_t* self,
+                        size_t* _count_chunks,
+                        size_t* _count_slots,
+                        size_t* _size_chunks,
+                        size_t* _size_slots)
+{
+	ASSERT(self);
+	ASSERT(_count_chunks);
+	ASSERT(_count_slots);
+	ASSERT(_size_chunks);
+	ASSERT(_size_slots);
+
+	vkk_memoryManager_meminfo(self->mm,
+	                          _count_chunks, _count_slots,
+	                          _size_chunks, _size_slots);
+}
+
+int vkk_engine_imageCaps(vkk_engine_t* self, int format)
+{
+	ASSERT(self);
+
+	return self->image_caps_array[format];
+}
+
+vkk_renderer_t*
+vkk_engine_defaultRenderer(vkk_engine_t* self)
+{
+	ASSERT(self);
+
+	return self->renderer;
+}
+
+/***********************************************************
+* protected                                                *
+***********************************************************/
+
 vkk_engine_t* vkk_engine_new(vkk_platform_t* platform,
                              const char* app_name,
-                             uint32_t app_version,
-                             const char* resource,
-                             const char* cache)
+                             vkk_version_t* app_version,
+                             const char* resource_path)
 {
 	ASSERT(platform);
 	ASSERT(app_name);
-	ASSERT(resource);
-	ASSERT(cache);
+	ASSERT(app_version);
+	ASSERT(resource_path);
 
 	vkk_engine_t* self;
 	self = (vkk_engine_t*)
@@ -1116,10 +1192,12 @@ vkk_engine_t* vkk_engine_new(vkk_platform_t* platform,
 		}
 	#endif
 
-	self->version = VK_MAKE_VERSION(1,1,6);
+	self->version.major = 1;
+	self->version.minor = 1;
+	self->version.patch = 7;
 
-	snprintf(self->resource, 256, "%s", resource);
-	snprintf(self->cache, 256, "%s", cache);
+	snprintf(self->resource_path, 256, "%s",
+	         resource_path);
 
 	if(pthread_mutex_init(&self->cmd_mutex, NULL) != 0)
 	{
@@ -1317,61 +1395,12 @@ void vkk_engine_shutdown(vkk_engine_t* self)
 	vkk_engine_rendererUnlock(self);
 }
 
-int vkk_engine_imageCaps(vkk_engine_t* self, int format)
-{
-	ASSERT(self);
-
-	return self->image_caps_array[format];
-}
-
-void vkk_engine_meminfo(vkk_engine_t* self,
-                        size_t* _count_chunks,
-                        size_t* _count_slots,
-                        size_t* _size_chunks,
-                        size_t* _size_slots)
-{
-	ASSERT(self);
-	ASSERT(_count_chunks);
-	ASSERT(_count_slots);
-	ASSERT(_size_chunks);
-	ASSERT(_size_slots);
-
-	vkk_memoryManager_meminfo(self->mm,
-	                          _count_chunks, _count_slots,
-	                          _size_chunks, _size_slots);
-}
-
-uint32_t vkk_engine_version(vkk_engine_t* self)
-{
-	ASSERT(self);
-
-	return self->version;
-}
-
-int vkk_engine_resize(vkk_engine_t* self)
-{
-	ASSERT(self);
-
-	return vkk_defaultRenderer_resize(self->renderer);
-}
-
 int vkk_engine_recreate(vkk_engine_t* self)
 {
 	ASSERT(self);
 
 	return vkk_defaultRenderer_recreate(self->renderer);
 }
-
-vkk_renderer_t* vkk_engine_renderer(vkk_engine_t* self)
-{
-	ASSERT(self);
-
-	return self->renderer;
-}
-
-/***********************************************************
-* protected                                                *
-***********************************************************/
 
 void vkk_engine_mipmapImage(vkk_engine_t* self,
                             vkk_image_t* image,
