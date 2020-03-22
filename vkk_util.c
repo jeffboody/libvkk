@@ -230,7 +230,7 @@ vkk_util_copyUniformAttachmentArray(vkk_uniformAttachment_t* dst,
 		ASSERT(b < usf->ub_count);
 		ASSERT(b == dst[b].binding);
 		ASSERT((src[i].type == VKK_UNIFORM_TYPE_BUFFER) ||
-		       (src[i].type == VKK_UNIFORM_TYPE_SAMPLER));
+		       (src[i].type == VKK_UNIFORM_TYPE_IMAGE));
 		ASSERT(src[i].type == dst[b].type);
 
 		dst[b].buffer = src[i].buffer;

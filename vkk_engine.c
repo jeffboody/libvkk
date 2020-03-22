@@ -39,7 +39,6 @@
 #include "vkk_memoryManager.h"
 #include "vkk_offscreenRenderer.h"
 #include "vkk_pipelineLayout.h"
-#include "vkk_sampler.h"
 #include "vkk_secondaryRenderer.h"
 #include "vkk_uniformSet.h"
 #include "vkk_uniformSetFactory.h"
@@ -893,31 +892,6 @@ vkk_engine_destructImage(vkk_engine_t* self, int wait,
 }
 
 static void
-vkk_engine_destructSampler(vkk_engine_t* self, int wait,
-                           vkk_sampler_t** _sampler)
-{
-	ASSERT(self);
-	ASSERT(_sampler);
-
-	vkk_sampler_t* sampler = *_sampler;
-	if(sampler)
-	{
-		if(wait)
-		{
-			vkk_engine_rendererWaitForTimestamp(self, sampler->ts);
-		}
-		else if(sampler->ts != 0.0)
-		{
-			vkk_engine_queueWaitIdle(self, VKK_QUEUE_DEFAULT);
-		}
-
-		vkDestroySampler(self->device, sampler->sampler, NULL);
-		FREE(sampler);
-		*_sampler = NULL;
-	}
-}
-
-static void
 vkk_engine_destructUniformSetFactory(vkk_engine_t* self,
                                      vkk_uniformSetFactory_t** _usf)
 {
@@ -1063,11 +1037,6 @@ vkk_engine_runDestructFn(int tid, void* owner, void* task)
 		vkk_engine_destructImage(engine, 1,
 		                         &object->image);
 	}
-	else if(object->type == VKK_OBJECT_TYPE_SAMPLER)
-	{
-		vkk_engine_destructSampler(engine, 1,
-		                           &object->sampler);
-	}
 	else if(object->type == VKK_OBJECT_TYPE_UNIFORMSETFACTORY)
 	{
 		vkk_engine_destructUniformSetFactory(engine,
@@ -1194,7 +1163,7 @@ vkk_engine_t* vkk_engine_new(vkk_platform_t* platform,
 
 	self->version.major = 1;
 	self->version.minor = 1;
-	self->version.patch = 7;
+	self->version.patch = 8;
 
 	snprintf(self->resource_path, 256, "%s",
 	         resource_path);
@@ -1211,10 +1180,10 @@ vkk_engine_t* vkk_engine_new(vkk_platform_t* platform,
 		goto fail_usf_mutex;
 	}
 
-	if(pthread_mutex_init(&self->sm_mutex, NULL) != 0)
+	if(pthread_mutex_init(&self->utility_mutex, NULL) != 0)
 	{
 		LOGE("pthread_mutex_init failed");
-		goto fail_sm_mutex;
+		goto fail_utility_mutex;
 	}
 
 	if(pthread_mutex_init(&self->renderer_mutex, NULL) != 0)
@@ -1273,6 +1242,12 @@ vkk_engine_t* vkk_engine_new(vkk_platform_t* platform,
 		goto fail_shader_modules;
 	}
 
+	self->samplers = cc_map_new();
+	if(self->samplers == NULL)
+	{
+		goto fail_samplers;
+	}
+
 	vkk_engine_initImageUsage(self);
 
 	self->renderer = vkk_defaultRenderer_new(self);
@@ -1296,6 +1271,8 @@ vkk_engine_t* vkk_engine_new(vkk_platform_t* platform,
 	fail_jobq_destruct:
 		vkk_defaultRenderer_delete(&self->renderer);
 	fail_renderer:
+		cc_map_delete(&self->samplers);
+	fail_samplers:
 		cc_map_delete(&self->shader_modules);
 	fail_shader_modules:
 		vkDestroyPipelineCache(self->device,
@@ -1317,8 +1294,8 @@ vkk_engine_t* vkk_engine_new(vkk_platform_t* platform,
 	fail_renderer_cond:
 		pthread_mutex_destroy(&self->renderer_mutex);
 	fail_renderer_mutex:
-		pthread_mutex_destroy(&self->sm_mutex);
-	fail_sm_mutex:
+		pthread_mutex_destroy(&self->utility_mutex);
+	fail_utility_mutex:
 		pthread_mutex_destroy(&self->usf_mutex);
 	fail_usf_mutex:
 		pthread_mutex_destroy(&self->cmd_mutex);
@@ -1349,6 +1326,17 @@ void vkk_engine_delete(vkk_engine_t** _self)
 
 		cc_mapIter_t  miterator;
 		cc_mapIter_t* miter;
+		miter = cc_map_head(self->samplers, &miterator);
+		while(miter)
+		{
+			VkSampler* samplerp;
+			samplerp = (VkSampler*)
+			           cc_map_remove(self->samplers, &miter);
+			vkDestroySampler(self->device, *samplerp, NULL);
+			FREE(samplerp);
+		}
+		cc_map_delete(&self->samplers);
+
 		miter = cc_map_head(self->shader_modules, &miterator);
 		while(miter)
 		{
@@ -1367,7 +1355,7 @@ void vkk_engine_delete(vkk_engine_t** _self)
 		vkDestroySurfaceKHR(self->instance,
 		                    self->surface, NULL);
 		vkDestroyInstance(self->instance, NULL);
-		pthread_mutex_destroy(&self->sm_mutex);
+		pthread_mutex_destroy(&self->utility_mutex);
 		pthread_mutex_destroy(&self->usf_mutex);
 		pthread_mutex_destroy(&self->cmd_mutex);
 		#ifndef ANDROID
@@ -1747,25 +1735,33 @@ vkk_engine_attachUniformBuffer(vkk_engine_t* self,
 void
 vkk_engine_attachUniformSampler(vkk_engine_t* self,
                                 vkk_uniformSet_t* us,
-                                vkk_sampler_t* sampler,
+                                vkk_samplerInfo_t* si,
                                 vkk_image_t* image,
                                 uint32_t binding)
 {
 	ASSERT(self);
 	ASSERT(us);
-	ASSERT(sampler);
+	ASSERT(si);
 	ASSERT(image);
 
 	uint32_t count;
 	count = (us->usf->update == VKK_UPDATE_MODE_DEFAULT) ?
 	        vkk_engine_swapchainImageCount(self) : 1;
 
+	VkSampler* samplerp;
+	samplerp = vkk_engine_getSamplerp(self, si);
+	if(samplerp == NULL)
+	{
+		// ignore;
+		return;
+	}
+
 	int i;
 	for(i = 0; i < count; ++i)
 	{
 		VkDescriptorImageInfo di_info =
 		{
-			.sampler     = sampler->sampler,
+			.sampler     = *samplerp,
 			.imageView   = image->image_view,
 			.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL
 		};
@@ -1830,7 +1826,7 @@ vkk_engine_getShaderModule(vkk_engine_t* self,
 	ASSERT(self);
 	ASSERT(fname);
 
-	vkk_engine_smLock(self);
+	vkk_engine_utilityLock(self);
 
 	cc_mapIter_t miter;
 	VkShaderModule sm;
@@ -1838,7 +1834,7 @@ vkk_engine_getShaderModule(vkk_engine_t* self,
 	     cc_map_find(self->shader_modules, &miter, fname);
 	if(sm != VK_NULL_HANDLE)
 	{
-		vkk_engine_smUnlock(self);
+		vkk_engine_utilityUnlock(self);
 		return sm;
 	}
 
@@ -1847,7 +1843,7 @@ vkk_engine_getShaderModule(vkk_engine_t* self,
 	code = vkk_engine_importShaderModule(self, fname, &size);
 	if(code == NULL)
 	{
-		vkk_engine_smUnlock(self);
+		vkk_engine_utilityUnlock(self);
 		return VK_NULL_HANDLE;
 	}
 
@@ -1863,7 +1859,7 @@ vkk_engine_getShaderModule(vkk_engine_t* self,
 	if(vkCreateShaderModule(self->device, &sm_info, NULL,
 	                        &sm) != VK_SUCCESS)
 	{
-		vkk_engine_smUnlock(self);
+		vkk_engine_utilityUnlock(self);
 		LOGE("vkCreateShaderModule failed");
 		goto fail_create;
 	}
@@ -1871,13 +1867,13 @@ vkk_engine_getShaderModule(vkk_engine_t* self,
 	if(cc_map_add(self->shader_modules, (const void*) sm,
 	              fname) == 0)
 	{
-		vkk_engine_smUnlock(self);
+		vkk_engine_utilityUnlock(self);
 		goto fail_add;
 	}
 
 	FREE(code);
 
-	vkk_engine_smUnlock(self);
+	vkk_engine_utilityUnlock(self);
 
 	// success
 	return sm;
@@ -1888,6 +1884,105 @@ vkk_engine_getShaderModule(vkk_engine_t* self,
 	fail_create:
 		FREE(code);
 	return VK_NULL_HANDLE;
+}
+
+VkSampler*
+vkk_engine_getSamplerp(vkk_engine_t* self,
+                       vkk_samplerInfo_t* si)
+{
+	ASSERT(self);
+	ASSERT(si);
+
+	vkk_engine_utilityLock(self);
+
+	// reuse existing sampler
+	cc_mapIter_t miter;
+	VkSampler*   samplerp;
+	samplerp = (VkSampler*)
+	           cc_map_findf(self->samplers,
+                            &miter, "%i/%i/%i",
+                            si->min_filter,
+	                        si->mag_filter,
+	                        si->mipmap_mode);
+	if(samplerp != NULL)
+	{
+		vkk_engine_utilityUnlock(self);
+		return samplerp;
+	}
+
+	VkFilter filter_map[VKK_SAMPLER_FILTER_COUNT] =
+	{
+		VK_FILTER_NEAREST,
+		VK_FILTER_LINEAR
+	};
+
+	VkSamplerMipmapMode mipmap_map[VKK_SAMPLER_MIPMAP_MODE_COUNT] =
+	{
+		VK_SAMPLER_MIPMAP_MODE_NEAREST,
+		VK_SAMPLER_MIPMAP_MODE_LINEAR
+	};
+
+	// Note: the maxLod represents the maximum number of mip
+	// levels that can be supported and is just used to clamp
+	// the computed maxLod for a particular texture.
+	// A large value for maxLod effectively allows all mip
+	// levels to be used for mipmapped textures.
+	VkSamplerCreateInfo sci =
+	{
+		.sType                   = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO,
+		.pNext                   = NULL,
+		.flags                   = 0,
+		.magFilter               = filter_map[si->mag_filter],
+		.minFilter               = filter_map[si->min_filter],
+		.mipmapMode              = mipmap_map[si->mipmap_mode],
+		.addressModeU            = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE,
+		.addressModeV            = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE,
+		.addressModeW            = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE,
+		.mipLodBias              = 0.0f,
+		.anisotropyEnable        = VK_FALSE,
+		.maxAnisotropy           = 0.0f,
+		.compareEnable           = VK_FALSE,
+		.compareOp               = VK_COMPARE_OP_NEVER,
+		.minLod                  = 0.0f,
+		.maxLod                  = 1024.0f,
+		.borderColor             = VK_BORDER_COLOR_FLOAT_OPAQUE_WHITE,
+		.unnormalizedCoordinates = VK_FALSE
+	};
+
+	samplerp = (VkSampler*) CALLOC(1, sizeof(VkSampler));
+	if(samplerp == NULL)
+	{
+		LOGE("CALLOC failed");
+		goto fail_alloc;
+	}
+
+	if(vkCreateSampler(self->device, &sci, NULL,
+	                   samplerp) != VK_SUCCESS)
+	{
+		LOGE("vkCreateSampler failed");
+		goto fail_create;
+	}
+
+	if(cc_map_addf(self->samplers, (const void*) samplerp,
+	               "%i/%i/%i", si->min_filter,
+	               si->mag_filter, si->mipmap_mode) == 0)
+	{
+		goto fail_add;
+	}
+
+	vkk_engine_utilityUnlock(self);
+
+	// succcess
+	return samplerp;
+
+	// failure
+	fail_add:
+		vkDestroySampler(self->device, *samplerp, NULL);
+	fail_create:
+		FREE(samplerp);
+	fail_alloc:
+		vkk_engine_utilityUnlock(self);
+	return NULL;
 }
 
 void vkk_engine_usfLock(vkk_engine_t* self)
@@ -1906,20 +2001,20 @@ void vkk_engine_usfUnlock(vkk_engine_t* self)
 	pthread_mutex_unlock(&self->usf_mutex);
 }
 
-void vkk_engine_smLock(vkk_engine_t* self)
+void vkk_engine_utilityLock(vkk_engine_t* self)
 {
 	ASSERT(self);
 
-	pthread_mutex_lock(&self->sm_mutex);
+	pthread_mutex_lock(&self->utility_mutex);
 	TRACE_BEGIN();
 }
 
-void vkk_engine_smUnlock(vkk_engine_t* self)
+void vkk_engine_utilityUnlock(vkk_engine_t* self)
 {
 	ASSERT(self);
 
 	TRACE_END();
-	pthread_mutex_unlock(&self->sm_mutex);
+	pthread_mutex_unlock(&self->utility_mutex);
 }
 
 void vkk_engine_rendererLock(vkk_engine_t* self)
@@ -2105,11 +2200,6 @@ vkk_engine_deleteObject(vkk_engine_t* self, int type,
 		{
 			vkk_engine_destructImage(self, 0,
 			                         (vkk_image_t**) &obj);
-		}
-		else if(type == VKK_OBJECT_TYPE_SAMPLER)
-		{
-			vkk_engine_destructSampler(self, 0,
-			                           (vkk_sampler_t**) &obj);
 		}
 		else if(type == VKK_OBJECT_TYPE_UNIFORMSETFACTORY)
 		{

@@ -28,7 +28,6 @@
 #include "../libcc/cc_log.h"
 #include "../libcc/cc_memory.h"
 #include "vkk_engine.h"
-#include "vkk_sampler.h"
 #include "vkk_uniformSetFactory.h"
 
 /***********************************************************
@@ -98,15 +97,31 @@ vkk_uniformSetFactory_new(vkk_engine_t* engine,
 
 	// fill in bindings
 	int i;
+	VkSampler* samplerp;
 	for(i = 0; i < ub_count; ++i)
 	{
-		vkk_uniformBinding_t*         usb = &(ub_array[i]);
-		VkDescriptorSetLayoutBinding* b   = &(bindings[i]);
-		b->binding            = usb->binding;
-		b->descriptorType     = dt_map[usb->type];
+		vkk_uniformBinding_t* ub = &(ub_array[i]);
+
+		if((ub->type == VKK_UNIFORM_TYPE_IMAGE) ||
+		   (ub->type == VKK_UNIFORM_TYPE_IMAGE_REF))
+		{
+			samplerp = vkk_engine_getSamplerp(engine, &ub->si);
+			if(samplerp == NULL)
+			{
+				goto fail_sampler;
+			}
+		}
+		else
+		{
+			samplerp = NULL;
+		}
+
+		VkDescriptorSetLayoutBinding* b = &(bindings[i]);
+		b->binding            = ub->binding;
+		b->descriptorType     = dt_map[ub->type];
 		b->descriptorCount    = 1;
-		b->stageFlags         = ss_map[usb->stage];
-		b->pImmutableSamplers = usb->sampler ? &usb->sampler->sampler : NULL;
+		b->stageFlags         = ss_map[ub->stage];
+		b->pImmutableSamplers = samplerp;
 	}
 
 	VkDescriptorSetLayoutCreateInfo dsl_info =
@@ -156,6 +171,7 @@ vkk_uniformSetFactory_new(vkk_engine_t* engine,
 		vkDestroyDescriptorSetLayout(engine->device,
 		                             self->ds_layout, NULL);
 	fail_create_dsl:
+	fail_sampler:
 		FREE(bindings);
 	fail_bindings:
 		FREE(self->ub_array);

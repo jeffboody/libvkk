@@ -77,11 +77,11 @@
 #define VKK_STAGE_VSFS  3
 #define VKK_STAGE_COUNT 4
 
-#define VKK_UNIFORM_TYPE_BUFFER      0
-#define VKK_UNIFORM_TYPE_SAMPLER     1
-#define VKK_UNIFORM_TYPE_BUFFER_REF  2
-#define VKK_UNIFORM_TYPE_SAMPLER_REF 3
-#define VKK_UNIFORM_TYPE_COUNT       4
+#define VKK_UNIFORM_TYPE_BUFFER     0
+#define VKK_UNIFORM_TYPE_IMAGE      1
+#define VKK_UNIFORM_TYPE_BUFFER_REF 2
+#define VKK_UNIFORM_TYPE_IMAGE_REF  3
+#define VKK_UNIFORM_TYPE_COUNT      4
 
 #define VKK_UPDATE_MODE_STATIC    0
 #define VKK_UPDATE_MODE_DEFAULT   1
@@ -107,7 +107,6 @@ typedef struct vkk_engine_s            vkk_engine_t;
 typedef struct vkk_graphicsPipeline_s  vkk_graphicsPipeline_t;
 typedef struct vkk_image_s             vkk_image_t;
 typedef struct vkk_pipelineLayout_s    vkk_pipelineLayout_t;
-typedef struct vkk_sampler_s           vkk_sampler_t;
 typedef struct vkk_renderer_s          vkk_renderer_t;
 typedef struct vkk_uniformSet_s        vkk_uniformSet_t;
 typedef struct vkk_uniformSetFactory_s vkk_uniformSetFactory_t;
@@ -137,10 +136,17 @@ typedef struct
 
 typedef struct
 {
-	uint32_t       binding;
-	int            type;
-	int            stage;
-	vkk_sampler_t* sampler;
+	int min_filter;
+	int mag_filter;
+	int mipmap_mode;
+} vkk_samplerInfo_t;
+
+typedef struct
+{
+	uint32_t          binding;
+	int               type;
+	int               stage;
+	vkk_samplerInfo_t si;
 } vkk_uniformBinding_t;
 
 typedef struct
@@ -175,7 +181,7 @@ typedef struct
  *     any renderer which used the object has already called
  *     vkk_renderer_end().
  *  3) an object cannot be used by any thread once deleted
- *  4) image, sampler, uniformSetFactory and pipelineLayout
+ *  4) image, uniformSetFactory and pipelineLayout
  *     may be shared between renderers
  *  5) images may only be bound to a single offscreen
  *     renderer at once
@@ -248,16 +254,6 @@ int          vkk_image_format(vkk_image_t* self);
 size_t       vkk_image_size(vkk_image_t* self,
                             uint32_t* _width,
                             uint32_t* height);
-
-/*
- * sampler API
- */
-
-vkk_sampler_t* vkk_sampler_new(vkk_engine_t* engine,
-                               int min_filter,
-                               int mag_filter,
-                               int mipmap_mode);
-void           vkk_sampler_delete(vkk_sampler_t** _self);
 
 /*
  * uniform set factory API

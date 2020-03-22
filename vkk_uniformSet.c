@@ -180,11 +180,11 @@ vkk_uniformSet_new(vkk_engine_t* engine,
 			                               ua_array[i].buffer,
 			                               ua_array[i].binding);
 		}
-		else if(ua_array[i].type == VKK_UNIFORM_TYPE_SAMPLER)
+		else if(ua_array[i].type == VKK_UNIFORM_TYPE_IMAGE)
 		{
 			uint32_t b = ua_array[i].binding;
 			vkk_engine_attachUniformSampler(engine, self,
-			                                usf->ub_array[b].sampler,
+			                                &usf->ub_array[b].si,
 			                                ua_array[i].image,
 			                                ua_array[i].binding);
 		}

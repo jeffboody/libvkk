@@ -15,7 +15,6 @@ CLASSES = \
 	vkk_offscreenRenderer \
 	vkk_pipelineLayout    \
 	vkk_renderer          \
-	vkk_sampler           \
 	vkk_secondaryRenderer \
 	vkk_uniformSet        \
 	vkk_uniformSetFactory \

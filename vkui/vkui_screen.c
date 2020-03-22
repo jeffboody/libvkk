@@ -244,15 +244,6 @@ vkui_screen_new(vkk_engine_t* engine,
 
 	self->renderer = renderer;
 
-	self->sampler = vkk_sampler_new(engine,
-	                                VKK_SAMPLER_FILTER_LINEAR,
-	                                VKK_SAMPLER_FILTER_LINEAR,
-	                                VKK_SAMPLER_MIPMAP_MODE_NEAREST);
-	if(self->sampler == NULL)
-	{
-		goto fail_sampler;
-	}
-
 	vkk_uniformBinding_t ub0_array[1] =
 	{
 		// layout(std140, set=0, binding=0) uniform uniformMvp
@@ -260,7 +251,6 @@ vkui_screen_new(vkk_engine_t* engine,
 			.binding  = 0,
 			.type     = VKK_UNIFORM_TYPE_BUFFER,
 			.stage    = VKK_STAGE_VS,
-			.sampler  = NULL
 		},
 	};
 
@@ -280,7 +270,6 @@ vkui_screen_new(vkk_engine_t* engine,
 			.binding  = 0,
 			.type     = VKK_UNIFORM_TYPE_BUFFER,
 			.stage    = VKK_STAGE_FS,
-			.sampler  = NULL
 		},
 	};
 
@@ -300,14 +289,18 @@ vkui_screen_new(vkk_engine_t* engine,
 			.binding  = 0,
 			.type     = VKK_UNIFORM_TYPE_BUFFER,
 			.stage    = VKK_STAGE_FS,
-			.sampler  = NULL
 		},
 		// layout(set=2, binding=1) uniform sampler2D image;
 		{
 			.binding  = 1,
-			.type     = VKK_UNIFORM_TYPE_SAMPLER_REF,
+			.type     = VKK_UNIFORM_TYPE_IMAGE_REF,
 			.stage    = VKK_STAGE_FS,
-			.sampler  = self->sampler
+			.si       =
+			{
+				.min_filter  = VKK_SAMPLER_FILTER_LINEAR,
+				.mag_filter  = VKK_SAMPLER_FILTER_LINEAR,
+				.mipmap_mode = VKK_SAMPLER_MIPMAP_MODE_NEAREST,
+			}
 		},
 	};
 
@@ -327,28 +320,24 @@ vkui_screen_new(vkk_engine_t* engine,
 			.binding  = 0,
 			.type     = VKK_UNIFORM_TYPE_BUFFER,
 			.stage    = VKK_STAGE_FS,
-			.sampler  = NULL
 		},
 		// layout(std140, set=3, binding=1) uniform uniformColor1
 		{
 			.binding  = 1,
 			.type     = VKK_UNIFORM_TYPE_BUFFER,
 			.stage    = VKK_STAGE_FS,
-			.sampler  = NULL
 		},
 		// layout(std140, set=3, binding=2) uniform uniformColor2
 		{
 			.binding  = 2,
 			.type     = VKK_UNIFORM_TYPE_BUFFER,
 			.stage    = VKK_STAGE_FS,
-			.sampler  = NULL
 		},
 		// layout(std140, set=3, binding=3) uniform uniformAb
 		{
 			.binding  = 3,
 			.type     = VKK_UNIFORM_TYPE_BUFFER,
 			.stage    = VKK_STAGE_FS,
-			.sampler  = NULL
 		},
 	};
 
@@ -714,8 +703,6 @@ vkui_screen_new(vkk_engine_t* engine,
 	fail_usf1_color:
 		vkk_uniformSetFactory_delete(&self->usf0_mvp);
 	fail_usf0_mvp:
-		vkk_sampler_delete(&self->sampler);
-	fail_sampler:
 		FREE(self);
 	return NULL;
 }
@@ -775,7 +762,6 @@ void vkui_screen_delete(vkui_screen_t** _self)
 		vkk_uniformSetFactory_delete(&self->usf2_multiplyImage);
 		vkk_uniformSetFactory_delete(&self->usf1_color);
 		vkk_uniformSetFactory_delete(&self->usf0_mvp);
-		vkk_sampler_delete(&self->sampler);
 		FREE(self);
 		*_self = NULL;
 	}

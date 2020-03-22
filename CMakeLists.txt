@@ -50,7 +50,6 @@ add_library(vkk
             vkk_offscreenRenderer.c
             vkk_pipelineLayout.c
             vkk_renderer.c
-            vkk_sampler.c
             vkk_secondaryRenderer.c
             vkk_uniformSet.c
             vkk_uniformSetFactory.c

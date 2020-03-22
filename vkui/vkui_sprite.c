@@ -90,7 +90,7 @@ static void vkui_sprite_draw(vkui_widget_t* widget)
 	vkk_uniformAttachment_t ua =
 	{
 		.binding = 1,
-		.type    = VKK_UNIFORM_TYPE_SAMPLER_REF,
+		.type    = VKK_UNIFORM_TYPE_IMAGE_REF,
 		.image   = img21
 	};
 

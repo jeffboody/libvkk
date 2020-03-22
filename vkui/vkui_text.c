@@ -197,7 +197,7 @@ static void vkui_text_draw(vkui_widget_t* widget)
 		vkk_uniformAttachment_t ua =
 		{
 			.binding = 1,
-			.type    = VKK_UNIFORM_TYPE_SAMPLER_REF,
+			.type    = VKK_UNIFORM_TYPE_IMAGE_REF,
 			.image   = font->img21
 		};
 

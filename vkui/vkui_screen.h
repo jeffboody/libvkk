@@ -41,7 +41,6 @@ typedef struct vkui_screen_s
 {
 	vkk_engine_t*            engine;
 	vkk_renderer_t*          renderer;
-	vkk_sampler_t*           sampler;
 	vkk_uniformSetFactory_t* usf0_mvp;
 	vkk_uniformSetFactory_t* usf1_color;
 	vkk_uniformSetFactory_t* usf2_multiplyImage;

@@ -35,7 +35,6 @@
 #include "vkk_offscreenRenderer.h"
 #include "vkk_pipelineLayout.h"
 #include "vkk_renderer.h"
-#include "vkk_sampler.h"
 #include "vkk_secondaryRenderer.h"
 #include "vkk_uniformSet.h"
 #include "vkk_uniformSetFactory.h"
@@ -63,7 +62,7 @@ vkk_fillUniformAttachmentArray(vkk_uniformAttachment_t* dst,
 		ASSERT(b < usf->ub_count);
 		ASSERT(b == dst[b].binding);
 		ASSERT((src[i].type == VKK_UNIFORM_TYPE_BUFFER_REF) ||
-		       (src[i].type == VKK_UNIFORM_TYPE_SAMPLER_REF));
+		       (src[i].type == VKK_UNIFORM_TYPE_IMAGE_REF));
 		ASSERT(src[i].type == dst[b].type);
 
 		dst[b].buffer = src[i].buffer;
@@ -114,23 +113,31 @@ vkk_renderer_updateUniformBufferRef(vkk_renderer_t* self,
 }
 
 static void
-vkk_renderer_updateUniformSamplerRef(vkk_renderer_t* self,
-                                     vkk_uniformSet_t* us,
-                                     uint32_t swapchain_frame,
-                                     vkk_sampler_t* sampler,
-                                     vkk_image_t* image,
-                                     uint32_t binding)
+vkk_renderer_updateUniformImageRef(vkk_renderer_t* self,
+                                   vkk_uniformSet_t* us,
+                                   uint32_t swapchain_frame,
+                                   vkk_samplerInfo_t* si,
+                                   vkk_image_t* image,
+                                   uint32_t binding)
 {
 	ASSERT(self);
 	ASSERT(us);
-	ASSERT(sampler);
+	ASSERT(si);
 	ASSERT(image);
 
 	vkk_engine_t* engine = self->engine;
 
+	VkSampler* samplerp;
+	samplerp = vkk_engine_getSamplerp(engine, si);
+	if(samplerp == NULL)
+	{
+		// ignore;
+		return;
+	}
+
 	VkDescriptorImageInfo di_info =
 	{
-		.sampler     = sampler->sampler,
+		.sampler     = *samplerp,
 		.imageView   = image->image_view,
 		.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL
 	};
@@ -550,14 +557,14 @@ vkk_renderer_updateUniformSetRefs(vkk_renderer_t* self,
 			                                    ua_array[i].buffer,
 			                                    ua_array[i].binding);
 		}
-		else if(ua_array[i].type == VKK_UNIFORM_TYPE_SAMPLER_REF)
+		else if(ua_array[i].type == VKK_UNIFORM_TYPE_IMAGE_REF)
 		{
 			uint32_t b = ua_array[i].binding;
-			vkk_renderer_updateUniformSamplerRef(self, us,
-			                                     swapchain_frame,
-			                                     usf->ub_array[b].sampler,
-			                                     ua_array[i].image,
-			                                     ua_array[i].binding);
+			vkk_renderer_updateUniformImageRef(self, us,
+			                                   swapchain_frame,
+			                                   &usf->ub_array[b].si,
+			                                   ua_array[i].image,
+			                                   ua_array[i].binding);
 		}
 	}
 }
@@ -623,10 +630,9 @@ void vkk_renderer_bindUniformSets(vkk_renderer_t* self,
 				{
 					ua->buffer->ts = ts;
 				}
-				else if(ua->type == VKK_UNIFORM_TYPE_SAMPLER)
+				else if(ua->type == VKK_UNIFORM_TYPE_IMAGE)
 				{
-					ua->image->ts   = ts;
-					ub->sampler->ts = ts;
+					ua->image->ts = ts;
 				}
 			}
 			us_array[i]->ts = ts;

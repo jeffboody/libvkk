@@ -48,12 +48,11 @@
 #define VKK_OBJECT_TYPE_RENDERER          0
 #define VKK_OBJECT_TYPE_BUFFER            1
 #define VKK_OBJECT_TYPE_IMAGE             2
-#define VKK_OBJECT_TYPE_SAMPLER           3
-#define VKK_OBJECT_TYPE_UNIFORMSETFACTORY 4
-#define VKK_OBJECT_TYPE_UNIFORMSET        5
-#define VKK_OBJECT_TYPE_PIPELINELAYOUT    6
-#define VKK_OBJECT_TYPE_GRAPHICSPIPELINE  7
-#define VKK_OBJECT_TYPE_COUNT             8
+#define VKK_OBJECT_TYPE_UNIFORMSETFACTORY 3
+#define VKK_OBJECT_TYPE_UNIFORMSET        4
+#define VKK_OBJECT_TYPE_PIPELINELAYOUT    5
+#define VKK_OBJECT_TYPE_GRAPHICSPIPELINE  6
+#define VKK_OBJECT_TYPE_COUNT             7
 
 typedef struct vkk_object_s
 {
@@ -65,7 +64,6 @@ typedef struct vkk_object_s
 		vkk_renderer_t*          renderer;
 		vkk_buffer_t*            buffer;
 		vkk_image_t*             image;
-		vkk_sampler_t*           sampler;
 		vkk_uniformSetFactory_t* usf;
 		vkk_uniformSet_t*        us;
 		vkk_pipelineLayout_t*    pl;
@@ -109,13 +107,14 @@ typedef struct vkk_engine_s
 	//   vkResetCommandBuffer and vkCmdFunctions (cmd_mutex)
 	// 3) usf synchronization
 	// * ds_available, dp_list and us_list
-	// 4) shader module synchronization
+	// 4) utility synchronization
 	// * shader_modules
+	// * samplers
 	// 5) renderer/ts synchronization
 	// * shutdown and ts_expired
 	pthread_mutex_t cmd_mutex;
 	pthread_mutex_t usf_mutex;
-	pthread_mutex_t sm_mutex;
+	pthread_mutex_t utility_mutex;
 	pthread_mutex_t renderer_mutex;
 	pthread_cond_t  renderer_cond;
 
@@ -138,6 +137,9 @@ typedef struct vkk_engine_s
 
 	// shaders
 	cc_map_t* shader_modules;
+
+	// samplers
+	cc_map_t* samplers;
 
 	// image capabilities
 	int image_caps_array[VKK_IMAGE_FORMAT_COUNT];
@@ -191,7 +193,7 @@ void             vkk_engine_attachUniformBuffer(vkk_engine_t* self,
                                                 uint32_t binding);
 void             vkk_engine_attachUniformSampler(vkk_engine_t* self,
                                                  vkk_uniformSet_t* us,
-                                                 vkk_sampler_t* sampler,
+                                                 vkk_samplerInfo_t* si,
                                                  vkk_image_t* image,
                                                  uint32_t binding);
 int              vkk_engine_getMemoryTypeIndex(vkk_engine_t* self,
@@ -200,12 +202,14 @@ int              vkk_engine_getMemoryTypeIndex(vkk_engine_t* self,
                                                uint32_t* mt_index);
 VkShaderModule   vkk_engine_getShaderModule(vkk_engine_t* self,
                                             const char* fname);
+VkSampler*       vkk_engine_getSamplerp(vkk_engine_t* self,
+                                        vkk_samplerInfo_t* si);
 void             vkk_engine_cmdLock(vkk_engine_t* self);
 void             vkk_engine_cmdUnlock(vkk_engine_t* self);
 void             vkk_engine_usfLock(vkk_engine_t* self);
 void             vkk_engine_usfUnlock(vkk_engine_t* self);
-void             vkk_engine_smLock(vkk_engine_t* self);
-void             vkk_engine_smUnlock(vkk_engine_t* self);
+void             vkk_engine_utilityLock(vkk_engine_t* self);
+void             vkk_engine_utilityUnlock(vkk_engine_t* self);
 void             vkk_engine_rendererLock(vkk_engine_t* self);
 void             vkk_engine_rendererUnlock(vkk_engine_t* self);
 void             vkk_engine_rendererSignal(vkk_engine_t* self);
