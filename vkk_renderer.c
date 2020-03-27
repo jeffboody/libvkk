@@ -623,9 +623,7 @@ void vkk_renderer_bindUniformSets(vkk_renderer_t* self,
 			for(j = 0; j < us_array[i]->ua_count; ++j)
 			{
 				vkk_uniformAttachment_t* ua;
-				vkk_uniformBinding_t*    ub;
 				ua = &(us_array[i]->ua_array[j]);
-				ub = &(us_array[i]->usf->ub_array[j]);
 				if(ua->type == VKK_UNIFORM_TYPE_BUFFER)
 				{
 					ua->buffer->ts = ts;
