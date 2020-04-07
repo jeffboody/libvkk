@@ -260,8 +260,11 @@ pipelines/uniform sets, clear depth, set
 viewport/scissor and draw geometry.
 
 The vkk\_renderer\_updateBuffer() function may be used to
-update uniform, vertex and index buffers. When a uniform
-buffer is declared with an update mode of DEFAULT or
+update uniform, vertex and index buffers. The default
+renderer may only update buffers when the update mode is
+set to DEFAULT and offscreen renderers may only update
+buffers when the update mode is set to OFFSCREEN. When a
+uniform buffer is declared with an update mode of DEFAULT or
 OFFSCREEN then the app must update the buffer once and only
 once every frame. The app must update the entire uniform
 buffer. The rules for updating a vertex/index buffer are

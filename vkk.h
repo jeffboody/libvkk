@@ -174,41 +174,6 @@ typedef struct
 
 /*
  * engine API
- *
- *  1) objects may be created from any thread using the
- *     engine handle
- *  2) objects may be deleted from any thread as long as
- *     any renderer which used the object has already called
- *     vkk_renderer_end().
- *  3) an object cannot be used by any thread once deleted
- *  4) image, uniformSetFactory and pipelineLayout
- *     may be shared between renderers
- *  5) images may only be bound to a single offscreen
- *     renderer at once
- *  6) images should not be bound to an offscreen renderer
- *     between begin/end commands
- *  7) regarding buffers and uniform sets
- *     a) sharing between renderers is only allowed when
- *        update is set to STATIC
- *     b) may only be updated by default renderer when
- *        update is set to DEFAULT
- *     c) may only be updated by offscreen renderer when
- *        update is set to OFFSCREEN
- *     d) when update is set to DEFAULT and the buffer
- *        usage is uniform then then the buffer must be
- *        updated once and only once per frame (to keep all
- *        bindings in a uniform set consistent)
- *     e) when update is set to DEFAULT and the buffer
- *        usage is vertex or index then the buffer may be
- *        updated zero or one times
- *  8) a pipeline layout may be associated with up to 4
- *     uniform set factories
- *  9) graphics pipelines are NOT shared between renderers
- * 10) CPU and GPU synchronization is handled automatically
- *     by the engine via begin/end renderer markers
- * 11) call the default renderer from the main thread
- * 12) the default renderer is created and destroyed
- *     automatically by the engine
  */
 
 void            vkk_engine_version(vkk_engine_t* self,
@@ -256,16 +221,6 @@ size_t       vkk_image_size(vkk_image_t* self,
                             uint32_t* height);
 
 /*
- * uniform set factory API
- */
-
-vkk_uniformSetFactory_t* vkk_uniformSetFactory_new(vkk_engine_t* engine,
-                                                   int update,
-                                                   uint32_t ub_count,
-                                                   vkk_uniformBinding_t* ub_array);
-void                     vkk_uniformSetFactory_delete(vkk_uniformSetFactory_t** _self);
-
-/*
  * uniform set API
  */
 
@@ -275,6 +230,16 @@ vkk_uniformSet_t* vkk_uniformSet_new(vkk_engine_t* engine,
                                      vkk_uniformAttachment_t* ua_array,
                                      vkk_uniformSetFactory_t* usf);
 void              vkk_uniformSet_delete(vkk_uniformSet_t** _self);
+
+/*
+ * uniform set factory API
+ */
+
+vkk_uniformSetFactory_t* vkk_uniformSetFactory_new(vkk_engine_t* engine,
+                                                   int update,
+                                                   uint32_t ub_count,
+                                                   vkk_uniformBinding_t* ub_array);
+void                     vkk_uniformSetFactory_delete(vkk_uniformSetFactory_t** _self);
 
 /*
  * pipeline layout API
@@ -295,42 +260,6 @@ void                    vkk_graphicsPipeline_delete(vkk_graphicsPipeline_t** _se
 
 /*
  * rendering API
- *
- *  1) three renderer types exist
- *     a) the default renderer is created automatically
- *        by the engine which can be used to render to the
- *        display
- *     b) an offscreen renderer may be created which can
- *        render to texture
- *     c) secondary renderer(s) may be created to build
- *        command buffer(s) in parallel which may then
- *        be submitted to the primary renderer with
- *        drawSecondary
- *  2) when the renderer mode is set to PRIMARY then the
- *     drawSecondary() function is not allowed
- *  3) when the renderer mode is set to SECONDARY then the
- *     only vkk_renderer_* functions allowed between
- *     begin()/end() are surfaceSize() and drawSecondary()
- *  4) a secondary renderer may only submit its command
- *     buffer(s) once to the primary renderer before it must
- *     recreate them for the next frame
- *  5) the beginSecondary() function should only be called if
- *     the corresponding primary renderer begin() function
- *     was successful
- *  6) call vkk_renderer_* functions between begin()/end()
- *     on a single thread
- *  7) if begin() succeeds then you must also call end()
- *  8) the default renderer completes asynchronously
- *     (e.g. end() is non-blocking) and should be called
- *     from the main thread
- *  9) the offscreen renderer completes synchronously
- *     (e.g. end() is blocking) and should be called from a
- *     worker thread
- * 10) the secondary renderer completes asynchronously
- *     (e.g. end() is non-blocking) and may be called from
- *     either the worker thread or the main thread
- * 11) the depth buffer, viewport and scissor are initialized
- *     automatically by begin()
  */
 
 vkk_renderer_t* vkk_renderer_newOffscreen(vkk_engine_t* engine,
