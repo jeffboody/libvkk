@@ -574,6 +574,7 @@ void vkk_renderer_bindGraphicsPipeline(vkk_renderer_t* self,
 {
 	ASSERT(self);
 	ASSERT(self->mode == VKK_RENDERER_MODE_PRIMARY);
+	ASSERT(self == gp->renderer);
 
 	VkCommandBuffer cb = vkk_renderer_commandBuffer(self);
 

@@ -59,7 +59,8 @@ vkk_graphicsPipeline_new(vkk_engine_t* engine,
 		LOGE("CALLOC failed");
 		return NULL;
 	}
-	self->engine = engine;
+	self->engine   = engine;
+	self->renderer = gpi->renderer;
 
 	VkPipelineShaderStageCreateInfo pss_info[2] =
 	{

@@ -34,9 +34,10 @@
 
 typedef struct vkk_graphicsPipeline_s
 {
-	vkk_engine_t* engine;
-	double        ts;
-	VkPipeline    pipeline;
+	vkk_engine_t*   engine;
+	vkk_renderer_t* renderer;
+	double          ts;
+	VkPipeline      pipeline;
 } vkk_graphicsPipeline_t;
 
 #endif

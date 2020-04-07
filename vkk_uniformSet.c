@@ -52,6 +52,20 @@ vkk_uniformSet_new(vkk_engine_t* engine,
 
 	vkk_renderer_t* renderer = engine->renderer;
 
+	// validate the update method
+	int i;
+	#ifdef ASSERT_DEBUG
+		for(i = 0; i < ua_count; ++i)
+		{
+			if(ua_array[i].type == VKK_UNIFORM_TYPE_BUFFER)
+			{
+				vkk_buffer_t* buffer = ua_array[i].buffer;
+				ASSERT((buffer->update == usf->update) ||
+				       (buffer->update == VKK_UPDATE_MODE_STATIC));
+			}
+		}
+	#endif
+
 	// get the last expired timestamp
 	vkk_engine_rendererLock(engine);
 	double ets = vkk_defaultRenderer_tsExpiredLocked(renderer);
@@ -78,7 +92,6 @@ vkk_uniformSet_new(vkk_engine_t* engine,
 	}
 	vkk_engine_usfUnlock(engine);
 
-	int i;
 	if(self == NULL)
 	{
 		// create a new uniform set
