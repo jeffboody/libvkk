@@ -188,9 +188,9 @@ typedef struct
 
 typedef struct
 {
-	vkk_samplerFilter_e min_filter;
-	vkk_samplerFilter_e mag_filter;
-	vkk_samplerFilter_e mipmap_mode;
+	vkk_samplerFilter_e     min_filter;
+	vkk_samplerFilter_e     mag_filter;
+	vkk_samplerMipmapMode_e mipmap_mode;
 } vkk_samplerInfo_t;
 
 typedef struct
