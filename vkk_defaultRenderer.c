@@ -967,7 +967,8 @@ vkk_defaultRenderer_tsExpiredLocked(vkk_renderer_t* base)
 
 int
 vkk_defaultRenderer_begin(vkk_renderer_t* base,
-                          int mode, float* clear_color)
+                          vkk_rendererMode_e mode,
+                          float* clear_color)
 {
 	ASSERT(base);
 	ASSERT(clear_color);

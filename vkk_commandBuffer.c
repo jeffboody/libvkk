@@ -38,7 +38,7 @@
 vkk_commandBuffer_t*
 vkk_commandBuffer_new(vkk_engine_t* engine,
                       uint32_t cb_count,
-                      int renderer_type)
+                      vkk_rendererType_e renderer_type)
 {
 	ASSERT(engine);
 

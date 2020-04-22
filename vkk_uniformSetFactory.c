@@ -36,7 +36,7 @@
 
 vkk_uniformSetFactory_t*
 vkk_uniformSetFactory_new(vkk_engine_t* engine,
-                          int update,
+                          vkk_updateMode_e update,
                           uint32_t ub_count,
                           vkk_uniformBinding_t* ub_array)
 {

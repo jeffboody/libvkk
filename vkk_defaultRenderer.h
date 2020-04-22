@@ -89,7 +89,7 @@ double          vkk_defaultRenderer_tsExpiredLocked(vkk_renderer_t* base);
  */
 
 int             vkk_defaultRenderer_begin(vkk_renderer_t* base,
-                                          int mode,
+                                          vkk_rendererMode_e mode,
                                           float* clear_color);
 void            vkk_defaultRenderer_end(vkk_renderer_t* base);
 void            vkk_defaultRenderer_surfaceSize(vkk_renderer_t* base,

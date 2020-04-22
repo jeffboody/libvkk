@@ -38,7 +38,7 @@
 
 static int
 vkk_offscreenRenderer_newRenderpass(vkk_renderer_t* base,
-                                    int format)
+                                    vkk_imageFormat_e format)
 {
 	ASSERT(base);
 
@@ -160,7 +160,7 @@ static int
 vkk_offscreenRenderer_newFramebuffer(vkk_renderer_t* base,
                                      uint32_t width,
                                      uint32_t height,
-                                     int format)
+                                     vkk_imageFormat_e format)
 {
 	ASSERT(base);
 
@@ -235,7 +235,7 @@ vkk_offscreenRenderer_deleteFramebuffer(vkk_renderer_t* base)
 vkk_renderer_t*
 vkk_offscreenRenderer_new(vkk_engine_t* engine,
                           uint32_t width, uint32_t height,
-                          int format)
+                          vkk_imageFormat_e format)
 {
 	ASSERT(engine);
 
@@ -333,7 +333,7 @@ void vkk_offscreenRenderer_delete(vkk_renderer_t** _base)
 
 int
 vkk_offscreenRenderer_begin(vkk_renderer_t* base,
-                            int mode,
+                            vkk_rendererMode_e mode,
                             vkk_image_t* image,
                             float* clear_color)
 {

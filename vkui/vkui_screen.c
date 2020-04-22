@@ -1200,20 +1200,19 @@ vkui_screen_spriteImage(vkui_screen_t* self,
 		goto fail_format;
 	}
 
-	int req  = VKK_IMAGE_CAPS_TEXTURE |
-	           VKK_IMAGE_CAPS_FILTER_LINEAR;
-	int caps = vkk_engine_imageCaps(self->engine,
-	                                image_format);
-	if((caps & req) != req)
+	vkk_imageCaps_t caps;
+	vkk_engine_imageCaps(self->engine, image_format, &caps);
+	if((caps.texture == 0) || (caps.filter_linear == 0))
 	{
 		// try to fall back to RGBA8888
 		image_format = VKK_IMAGE_FORMAT_RGBA8888;
-		caps         = vkk_engine_imageCaps(self->engine,
-		                                    VKK_IMAGE_FORMAT_RGBA8888);
-		if((caps & req) != req)
+		vkk_engine_imageCaps(self->engine, image_format, &caps);
+		if((caps.texture == 0) ||
+		   (caps.filter_linear == 0))
 		{
-			LOGW("unsupported format=%i, caps=0x%X",
-			     image_format, caps);
+			LOGW("unsupported format=%i, texture=%i, filter_linear=%i",
+			     (int) image_format, (int) caps.texture,
+			     (int) caps.filter_linear);
 			goto fail_format;
 		}
 

@@ -45,18 +45,22 @@
 
 #define VKK_DESCRIPTOR_POOL_SIZE 64
 
-#define VKK_OBJECT_TYPE_RENDERER          0
-#define VKK_OBJECT_TYPE_BUFFER            1
-#define VKK_OBJECT_TYPE_IMAGE             2
-#define VKK_OBJECT_TYPE_UNIFORMSETFACTORY 3
-#define VKK_OBJECT_TYPE_UNIFORMSET        4
-#define VKK_OBJECT_TYPE_PIPELINELAYOUT    5
-#define VKK_OBJECT_TYPE_GRAPHICSPIPELINE  6
+typedef enum
+{
+	VKK_OBJECT_TYPE_RENDERER          = 0,
+	VKK_OBJECT_TYPE_BUFFER            = 1,
+	VKK_OBJECT_TYPE_IMAGE             = 2,
+	VKK_OBJECT_TYPE_UNIFORMSETFACTORY = 3,
+	VKK_OBJECT_TYPE_UNIFORMSET        = 4,
+	VKK_OBJECT_TYPE_PIPELINELAYOUT    = 5,
+	VKK_OBJECT_TYPE_GRAPHICSPIPELINE  = 6,
+} vkk_objectType_e;
+
 #define VKK_OBJECT_TYPE_COUNT             7
 
 typedef struct vkk_object_s
 {
-	int type;
+	vkk_objectType_e type;
 
 	union
 	{
@@ -142,7 +146,7 @@ typedef struct vkk_engine_s
 	cc_map_t* samplers;
 
 	// image capabilities
-	int image_caps_array[VKK_IMAGE_FORMAT_COUNT];
+	vkk_imageCaps_t image_caps_array[VKK_IMAGE_FORMAT_COUNT];
 
 	// default renderer
 	int             shutdown;
@@ -221,7 +225,8 @@ void             vkk_engine_deleteSurface(vkk_engine_t* self);
 void             vkk_engine_deleteDefaultDepthImage(vkk_engine_t* self,
                                                     vkk_image_t** _image);
 
-void             vkk_engine_deleteObject(vkk_engine_t* self, int type,
+void             vkk_engine_deleteObject(vkk_engine_t* self,
+                                         vkk_objectType_e type,
                                          void* obj);
 
 #endif

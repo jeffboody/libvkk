@@ -38,9 +38,9 @@
 vkk_image_t* vkk_image_new(vkk_engine_t* engine,
                            uint32_t width,
                            uint32_t height,
-                           int format,
+                           vkk_imageFormat_e format,
                            int mipmap,
-                           int stage,
+                           vkk_stage_e stage,
                            const void* pixels)
 {
 	// pixels may be NULL for depth image or
@@ -244,7 +244,7 @@ void vkk_image_delete(vkk_image_t** _self)
 	}
 }
 
-int vkk_image_format(vkk_image_t* self)
+vkk_imageFormat_e vkk_image_format(vkk_image_t* self)
 {
 	ASSERT(self);
 

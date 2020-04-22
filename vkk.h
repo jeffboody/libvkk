@@ -30,73 +30,114 @@
  * constants
  */
 
-#define VKK_BLEND_MODE_DISABLED     0
-#define VKK_BLEND_MODE_TRANSPARENCY 1
-#define VKK_BLEND_MODE_COUNT        2
+typedef enum
+{
+	VKK_BLEND_MODE_DISABLED     = 0,
+	VKK_BLEND_MODE_TRANSPARENCY = 1,
+} vkk_blendMode_e;
 
-#define VKK_BUFFER_USAGE_UNIFORM 0
-#define VKK_BUFFER_USAGE_VERTEX  1
-#define VKK_BUFFER_USAGE_INDEX   2
-#define VKK_BUFFER_USAGE_COUNT   3
+#define VKK_BLEND_MODE_COUNT 2
 
-#define VKK_IMAGE_FORMAT_RGBA8888 0
-#define VKK_IMAGE_FORMAT_RGBA4444 1
-#define VKK_IMAGE_FORMAT_RGB888   2
-#define VKK_IMAGE_FORMAT_RGB565   3
-#define VKK_IMAGE_FORMAT_RG88     4
-#define VKK_IMAGE_FORMAT_R8       5
-#define VKK_IMAGE_FORMAT_DEPTH    6
-#define VKK_IMAGE_FORMAT_COUNT    7
+typedef enum
+{
+	VKK_BUFFER_USAGE_UNIFORM = 0,
+	VKK_BUFFER_USAGE_VERTEX  = 1,
+	VKK_BUFFER_USAGE_INDEX   = 2,
+} vkk_bufferUsage_e;
 
-#define VKK_IMAGE_CAPS_TEXTURE         1
-#define VKK_IMAGE_CAPS_MIPMAP          2
-#define VKK_IMAGE_CAPS_FILTER_LINEAR   4
-#define VKK_IMAGE_CAPS_OFFSCREEN       8
-#define VKK_IMAGE_CAPS_OFFSCREEN_BLEND 16
+#define VKK_BUFFER_USAGE_COUNT 3
 
-#define VKK_INDEX_TYPE_USHORT 0
-#define VKK_INDEX_TYPE_UINT   1
-#define VKK_INDEX_TYPE_COUNT  2
+typedef enum
+{
+	VKK_IMAGE_FORMAT_RGBA8888 = 0,
+	VKK_IMAGE_FORMAT_RGBA4444 = 1,
+	VKK_IMAGE_FORMAT_RGB888   = 2,
+	VKK_IMAGE_FORMAT_RGB565   = 3,
+	VKK_IMAGE_FORMAT_RG88     = 4,
+	VKK_IMAGE_FORMAT_R8       = 5,
+	VKK_IMAGE_FORMAT_DEPTH    = 6,
+} vkk_imageFormat_e;
 
-#define VKK_PRIMITIVE_TRIANGLE_LIST  0
-#define VKK_PRIMITIVE_TRIANGLE_STRIP 1
-#define VKK_PRIMITIVE_TRIANGLE_FAN   2
+#define VKK_IMAGE_FORMAT_COUNT 7
+
+typedef enum
+{
+	VKK_INDEX_TYPE_USHORT = 0,
+	VKK_INDEX_TYPE_UINT   = 1,
+} vkk_indexType_e;
+
+#define VKK_INDEX_TYPE_COUNT 2
+
+typedef enum
+{
+	VKK_PRIMITIVE_TRIANGLE_LIST  = 0,
+	VKK_PRIMITIVE_TRIANGLE_STRIP = 1,
+	VKK_PRIMITIVE_TRIANGLE_FAN   = 2,
+} vkk_primitive_e;
+
 #define VKK_PRIMITIVE_TRIANGLE_COUNT 3
 
-#define VKK_SAMPLER_FILTER_NEAREST 0
-#define VKK_SAMPLER_FILTER_LINEAR  1
-#define VKK_SAMPLER_FILTER_COUNT   2
+typedef enum
+{
+	VKK_SAMPLER_FILTER_NEAREST = 0,
+	VKK_SAMPLER_FILTER_LINEAR  = 1,
+} vkk_samplerFilter_e;
 
-#define VKK_SAMPLER_MIPMAP_MODE_NEAREST 0
-#define VKK_SAMPLER_MIPMAP_MODE_LINEAR  1
-#define VKK_SAMPLER_MIPMAP_MODE_COUNT   2
+#define VKK_SAMPLER_FILTER_COUNT 2
 
-#define VKK_STAGE_DEPTH 0
-#define VKK_STAGE_VS    1
-#define VKK_STAGE_FS    2
-#define VKK_STAGE_VSFS  3
+typedef enum
+{
+	VKK_SAMPLER_MIPMAP_MODE_NEAREST = 0,
+	VKK_SAMPLER_MIPMAP_MODE_LINEAR  = 1,
+} vkk_samplerMipmapMode_e;
+
+#define VKK_SAMPLER_MIPMAP_MODE_COUNT 2
+
+typedef enum
+{
+	VKK_STAGE_DEPTH = 0,
+	VKK_STAGE_VS    = 1,
+	VKK_STAGE_FS    = 2,
+	VKK_STAGE_VSFS  = 3,
+} vkk_stage_e;
+
 #define VKK_STAGE_COUNT 4
 
-#define VKK_UNIFORM_TYPE_BUFFER     0
-#define VKK_UNIFORM_TYPE_IMAGE      1
-#define VKK_UNIFORM_TYPE_BUFFER_REF 2
-#define VKK_UNIFORM_TYPE_IMAGE_REF  3
-#define VKK_UNIFORM_TYPE_COUNT      4
+typedef enum
+{
+	VKK_UNIFORM_TYPE_BUFFER     = 0,
+	VKK_UNIFORM_TYPE_IMAGE      = 1,
+	VKK_UNIFORM_TYPE_BUFFER_REF = 2,
+	VKK_UNIFORM_TYPE_IMAGE_REF  = 3,
+} vkk_uniformType_e;
 
-#define VKK_UPDATE_MODE_STATIC    0
-#define VKK_UPDATE_MODE_DEFAULT   1
-#define VKK_UPDATE_MODE_OFFSCREEN 2
-#define VKK_UPDATE_MODE_COUNT     3
+#define VKK_UNIFORM_TYPE_COUNT 4
 
-#define VKK_VERTEX_FORMAT_FLOAT   0
-#define VKK_VERTEX_FORMAT_SINT    1
-#define VKK_VERTEX_FORMAT_SSHORT  2
-#define VKK_VERTEX_FORMAT_UINT    3
-#define VKK_VERTEX_FORMAT_USHORT  4
-#define VKK_VERTEX_FORMAT_COUNT   5
+typedef enum
+{
+	VKK_UPDATE_MODE_STATIC    = 0,
+	VKK_UPDATE_MODE_DEFAULT   = 1,
+	VKK_UPDATE_MODE_OFFSCREEN = 2,
+} vkk_updateMode_e;
 
-#define VKK_RENDERER_MODE_PRIMARY   1
-#define VKK_RENDERER_MODE_SECONDARY 2
+#define VKK_UPDATE_MODE_COUNT 3
+
+typedef enum
+{
+	VKK_VERTEX_FORMAT_FLOAT  = 0,
+	VKK_VERTEX_FORMAT_SINT   = 1,
+	VKK_VERTEX_FORMAT_SSHORT = 2,
+	VKK_VERTEX_FORMAT_UINT   = 3,
+	VKK_VERTEX_FORMAT_USHORT = 4,
+} vkk_vertexFormat_e;
+
+#define VKK_VERTEX_FORMAT_COUNT 5
+
+typedef enum
+{
+	VKK_RENDERER_MODE_PRIMARY   = 1,
+	VKK_RENDERER_MODE_SECONDARY = 2,
+} vkk_rendererMode_e;
 
 /*
  * opaque objects
@@ -110,6 +151,7 @@ typedef struct vkk_pipelineLayout_s    vkk_pipelineLayout_t;
 typedef struct vkk_renderer_s          vkk_renderer_t;
 typedef struct vkk_uniformSet_s        vkk_uniformSet_t;
 typedef struct vkk_uniformSetFactory_s vkk_uniformSetFactory_t;
+typedef enum   vkk_platformCmd_s       vkk_platformCmd_e;
 
 /*
  * parameter structures
@@ -117,15 +159,25 @@ typedef struct vkk_uniformSetFactory_s vkk_uniformSetFactory_t;
 
 typedef struct
 {
-	uint32_t major:10;
-	uint32_t minor:10;
-	uint32_t patch:12;
+	unsigned int major:10;
+	unsigned int minor:10;
+	unsigned int patch:12;
 } vkk_version_t;
 
 typedef struct
 {
-	uint32_t binding;
-	int      type;
+	unsigned int texture:1;
+	unsigned int mipmap:1;
+	unsigned int filter_linear:1;
+	unsigned int offscreen:1;
+	unsigned int offscreen_blend:1;
+	unsigned int pad:17;
+} vkk_imageCaps_t;
+
+typedef struct
+{
+	uint32_t          binding;
+	vkk_uniformType_e type;
 
 	union
 	{
@@ -136,24 +188,24 @@ typedef struct
 
 typedef struct
 {
-	int min_filter;
-	int mag_filter;
-	int mipmap_mode;
+	vkk_samplerFilter_e min_filter;
+	vkk_samplerFilter_e mag_filter;
+	vkk_samplerFilter_e mipmap_mode;
 } vkk_samplerInfo_t;
 
 typedef struct
 {
 	uint32_t          binding;
-	int               type;
-	int               stage;
+	vkk_uniformType_e type;
+	vkk_stage_e       stage;
 	vkk_samplerInfo_t si;
 } vkk_uniformBinding_t;
 
 typedef struct
 {
-	uint32_t location;
-	uint32_t components;
-	int      format;
+	uint32_t           location;
+	uint32_t           components;
+	vkk_vertexFormat_e format;
 } vkk_vertexBufferInfo_t;
 
 typedef struct
@@ -164,12 +216,12 @@ typedef struct
 	const char*             fs;
 	uint32_t                vb_count;
 	vkk_vertexBufferInfo_t* vbi;
-	int                     primitive;
+	vkk_primitive_e         primitive;
 	int                     primitive_restart;
 	int                     cull_back;
 	int                     depth_test;
 	int                     depth_write;
-	int                     blend_mode;
+	vkk_blendMode_e         blend_mode;
 } vkk_graphicsPipelineInfo_t;
 
 /*
@@ -179,7 +231,7 @@ typedef struct
 void            vkk_engine_version(vkk_engine_t* self,
                                    vkk_version_t* version);
 void            vkk_engine_platformCmd(vkk_engine_t* self,
-                                       int cmd,
+                                       vkk_platformCmd_e cmd,
                                        const char* msg);
 const char*     vkk_engine_resourcePath(vkk_engine_t* self);
 void            vkk_engine_meminfo(vkk_engine_t* self,
@@ -187,8 +239,9 @@ void            vkk_engine_meminfo(vkk_engine_t* self,
                                    size_t* _count_slots,
                                    size_t* _size_chunks,
                                    size_t* _size_slots);
-int             vkk_engine_imageCaps(vkk_engine_t* self,
-                                     int format);
+void            vkk_engine_imageCaps(vkk_engine_t* self,
+                                     vkk_imageFormat_e format,
+                                     vkk_imageCaps_t* caps);
 vkk_renderer_t* vkk_engine_defaultRenderer(vkk_engine_t* self);
 
 /*
@@ -196,8 +249,8 @@ vkk_renderer_t* vkk_engine_defaultRenderer(vkk_engine_t* self);
  */
 
 vkk_buffer_t* vkk_buffer_new(vkk_engine_t* engine,
-                             int update,
-                             int usage,
+                             vkk_updateMode_e update,
+                             vkk_bufferUsage_e usage,
                              size_t size,
                              const void* buf);
 void          vkk_buffer_delete(vkk_buffer_t** _self);
@@ -207,18 +260,18 @@ size_t        vkk_buffer_size(vkk_buffer_t* self);
  * image API
  */
 
-vkk_image_t* vkk_image_new(vkk_engine_t* engine,
-                           uint32_t width,
-                           uint32_t height,
-                           int format,
-                           int mipmap,
-                           int stage,
-                           const void* pixels);
-void         vkk_image_delete(vkk_image_t** _self);
-int          vkk_image_format(vkk_image_t* self);
-size_t       vkk_image_size(vkk_image_t* self,
-                            uint32_t* _width,
-                            uint32_t* height);
+vkk_image_t*      vkk_image_new(vkk_engine_t* engine,
+                                uint32_t width,
+                                uint32_t height,
+                                vkk_imageFormat_e format,
+                                int mipmap,
+                                vkk_stage_e stage,
+                                const void* pixels);
+void              vkk_image_delete(vkk_image_t** _self);
+vkk_imageFormat_e vkk_image_format(vkk_image_t* self);
+size_t            vkk_image_size(vkk_image_t* self,
+                                 uint32_t* _width,
+                                 uint32_t* height);
 
 /*
  * uniform set API
@@ -236,7 +289,7 @@ void              vkk_uniformSet_delete(vkk_uniformSet_t** _self);
  */
 
 vkk_uniformSetFactory_t* vkk_uniformSetFactory_new(vkk_engine_t* engine,
-                                                   int update,
+                                                   vkk_updateMode_e update,
                                                    uint32_t ub_count,
                                                    vkk_uniformBinding_t* ub_array);
 void                     vkk_uniformSetFactory_delete(vkk_uniformSetFactory_t** _self);
@@ -265,14 +318,14 @@ void                    vkk_graphicsPipeline_delete(vkk_graphicsPipeline_t** _se
 vkk_renderer_t* vkk_renderer_newOffscreen(vkk_engine_t* engine,
                                           uint32_t width,
                                           uint32_t height,
-                                          int format);
+                                          vkk_imageFormat_e format);
 vkk_renderer_t* vkk_renderer_newSecondary(vkk_renderer_t* primary);
 void            vkk_renderer_delete(vkk_renderer_t** _self);
 int             vkk_renderer_beginDefault(vkk_renderer_t* self,
-                                          int mode,
+                                          vkk_rendererMode_e mode,
                                           float* clear_color);
 int             vkk_renderer_beginOffscreen(vkk_renderer_t* self,
-                                            int mode,
+                                            vkk_rendererMode_e mode,
                                             vkk_image_t* image,
                                             float* clear_color);
 int             vkk_renderer_beginSecondary(vkk_renderer_t* self);
@@ -312,7 +365,7 @@ void            vkk_renderer_draw(vkk_renderer_t* self,
 void            vkk_renderer_drawIndexed(vkk_renderer_t* self,
                                          uint32_t index_count,
                                          uint32_t vertex_buffer_count,
-                                         int index_type,
+                                         vkk_indexType_e index_type,
                                          vkk_buffer_t* index_buffer,
                                          vkk_buffer_t** vertex_buffers);
 void            vkk_renderer_drawSecondary(vkk_renderer_t* self,

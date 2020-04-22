@@ -31,95 +31,108 @@
  * platform commands
  */
 
-#define VKK_PLATFORM_CMD_ACCELEROMETER_OFF 1
-#define VKK_PLATFORM_CMD_ACCELEROMETER_ON  2
-#define VKK_PLATFORM_CMD_CHECK_PERMISSIONS 3
-#define VKK_PLATFORM_CMD_EXIT              4
-#define VKK_PLATFORM_CMD_GPS_OFF           5
-#define VKK_PLATFORM_CMD_GPS_ON            6
-#define VKK_PLATFORM_CMD_GPS_RECORD        7
-#define VKK_PLATFORM_CMD_GPS_PAUSE         8
-#define VKK_PLATFORM_CMD_GYROSCOPE_OFF     9
-#define VKK_PLATFORM_CMD_GYROSCOPE_ON      10
-#define VKK_PLATFORM_CMD_LOADURL           11
-#define VKK_PLATFORM_CMD_MAGNETOMETER_OFF  12
-#define VKK_PLATFORM_CMD_MAGNETOMETER_ON   13
-#define VKK_PLATFORM_CMD_PLAY_CLICK        14
-#define VKK_PLATFORM_CMD_REQ_LOCATION_PERM 15
-#define VKK_PLATFORM_CMD_REQ_STORAGE_PERM  16
-#define VKK_PLATFORM_CMD_SOFTKEY_HIDE      17
-#define VKK_PLATFORM_CMD_SOFTKEY_SHOW      18
+typedef enum vkk_platformCmd_s
+{
+	VKK_PLATFORM_CMD_ACCELEROMETER_OFF = 1,
+	VKK_PLATFORM_CMD_ACCELEROMETER_ON  = 2,
+	VKK_PLATFORM_CMD_CHECK_PERMISSIONS = 3,
+	VKK_PLATFORM_CMD_EXIT              = 4,
+	VKK_PLATFORM_CMD_GPS_OFF           = 5,
+	VKK_PLATFORM_CMD_GPS_ON            = 6,
+	VKK_PLATFORM_CMD_GPS_RECORD        = 7,
+	VKK_PLATFORM_CMD_GPS_PAUSE         = 8,
+	VKK_PLATFORM_CMD_GYROSCOPE_OFF     = 9,
+	VKK_PLATFORM_CMD_GYROSCOPE_ON      = 10,
+	VKK_PLATFORM_CMD_LOADURL           = 11,
+	VKK_PLATFORM_CMD_MAGNETOMETER_OFF  = 12,
+	VKK_PLATFORM_CMD_MAGNETOMETER_ON   = 13,
+	VKK_PLATFORM_CMD_PLAY_CLICK        = 14,
+	VKK_PLATFORM_CMD_REQ_LOCATION_PERM = 15,
+	VKK_PLATFORM_CMD_REQ_STORAGE_PERM  = 16,
+	VKK_PLATFORM_CMD_SOFTKEY_HIDE      = 17,
+	VKK_PLATFORM_CMD_SOFTKEY_SHOW      = 18,
+} vkk_platformCmd_e;
 
 /*
  * event handling
  */
 
 // type
-#define VKK_EVENT_TYPE_ACCELEROMETER      0
-#define VKK_EVENT_TYPE_ACTION_DOWN        1
-#define VKK_EVENT_TYPE_ACTION_MOVE        2
-#define VKK_EVENT_TYPE_ACTION_UP          3
-#define VKK_EVENT_TYPE_AXIS_MOVE          4
-#define VKK_EVENT_TYPE_BUTTON_DOWN        5
-#define VKK_EVENT_TYPE_BUTTON_UP          6
-#define VKK_EVENT_TYPE_DENSITY            7
-#define VKK_EVENT_TYPE_GPS                8
-#define VKK_EVENT_TYPE_GYROSCOPE          9
-#define VKK_EVENT_TYPE_KEY_DOWN           10
-#define VKK_EVENT_TYPE_KEY_UP             11
-#define VKK_EVENT_TYPE_MAGNETOMETER       12
-#define VKK_EVENT_TYPE_PERMISSION_GRANTED 13
+typedef enum
+{
+	VKK_EVENT_TYPE_UNDEFINED          = -1,
+	VKK_EVENT_TYPE_ACCELEROMETER      = 0,
+	VKK_EVENT_TYPE_ACTION_DOWN        = 1,
+	VKK_EVENT_TYPE_ACTION_MOVE        = 2,
+	VKK_EVENT_TYPE_ACTION_UP          = 3,
+	VKK_EVENT_TYPE_AXIS_MOVE          = 4,
+	VKK_EVENT_TYPE_BUTTON_DOWN        = 5,
+	VKK_EVENT_TYPE_BUTTON_UP          = 6,
+	VKK_EVENT_TYPE_DENSITY            = 7,
+	VKK_EVENT_TYPE_GPS                = 8,
+	VKK_EVENT_TYPE_GYROSCOPE          = 9,
+	VKK_EVENT_TYPE_KEY_DOWN           = 10,
+	VKK_EVENT_TYPE_KEY_UP             = 11,
+	VKK_EVENT_TYPE_MAGNETOMETER       = 12,
+	VKK_EVENT_TYPE_PERMISSION_GRANTED = 13,
+} vkk_eventType_e;
 
 // max actions supported
 #define VKK_EVENT_ACTION_COUNT 4
 
 // axis ids
-#define VKK_AXIS_X1 0x00
-#define VKK_AXIS_Y1 0x01
-#define VKK_AXIS_X2 0x0B
-#define VKK_AXIS_Y2 0x0E
-#define VKK_AXIS_RT 0x12
-#define VKK_AXIS_LT 0x11
-#define VKK_AXIS_HX 0x0F
-#define VKK_AXIS_HY 0x10
+typedef enum
+{
+	VKK_AXIS_X1 = 0x00,
+	VKK_AXIS_Y1 = 0x01,
+	VKK_AXIS_X2 = 0x0B,
+	VKK_AXIS_Y2 = 0x0E,
+	VKK_AXIS_RT = 0x12,
+	VKK_AXIS_LT = 0x11,
+	VKK_AXIS_HX = 0x0F,
+	VKK_AXIS_HY = 0x10,
+} vkk_axis_e;
 
 // button ids
-#define VKK_BUTTON_1      0xBC
-#define VKK_BUTTON_2      0xBD
-#define VKK_BUTTON_3      0xBE
-#define VKK_BUTTON_4      0xBF
-#define VKK_BUTTON_5      0xC0
-#define VKK_BUTTON_6      0xC1
-#define VKK_BUTTON_7      0xC2
-#define VKK_BUTTON_8      0xC3
-#define VKK_BUTTON_9      0xC4
-#define VKK_BUTTON_10     0xC5
-#define VKK_BUTTON_11     0xC6
-#define VKK_BUTTON_12     0xC7
-#define VKK_BUTTON_13     0xC8
-#define VKK_BUTTON_14     0xC9
-#define VKK_BUTTON_15     0xCA
-#define VKK_BUTTON_16     0xCB
-#define VKK_BUTTON_A      0x60
-#define VKK_BUTTON_B      0x61
-#define VKK_BUTTON_C      0x62
-#define VKK_BUTTON_L1     0x66
-#define VKK_BUTTON_R1     0x67
-#define VKK_BUTTON_L2     0x68
-#define VKK_BUTTON_R2     0x69
-#define VKK_BUTTON_MODE   0x6E
-#define VKK_BUTTON_SELECT 0x6D
-#define VKK_BUTTON_START  0x6C
-#define VKK_BUTTON_THUMBL 0x6A
-#define VKK_BUTTON_THUMBR 0x6B
-#define VKK_BUTTON_X      0x63
-#define VKK_BUTTON_Y      0x64
-#define VKK_BUTTON_Z      0x65
-#define VKK_BUTTON_UP     0x13
-#define VKK_BUTTON_DOWN   0x14
-#define VKK_BUTTON_LEFT   0x15
-#define VKK_BUTTON_RIGHT  0x16
-#define VKK_BUTTON_CENTER 0x17
+typedef enum
+{
+	VKK_BUTTON_1      = 0xBC,
+	VKK_BUTTON_2      = 0xBD,
+	VKK_BUTTON_3      = 0xBE,
+	VKK_BUTTON_4      = 0xBF,
+	VKK_BUTTON_5      = 0xC0,
+	VKK_BUTTON_6      = 0xC1,
+	VKK_BUTTON_7      = 0xC2,
+	VKK_BUTTON_8      = 0xC3,
+	VKK_BUTTON_9      = 0xC4,
+	VKK_BUTTON_10     = 0xC5,
+	VKK_BUTTON_11     = 0xC6,
+	VKK_BUTTON_12     = 0xC7,
+	VKK_BUTTON_13     = 0xC8,
+	VKK_BUTTON_14     = 0xC9,
+	VKK_BUTTON_15     = 0xCA,
+	VKK_BUTTON_16     = 0xCB,
+	VKK_BUTTON_A      = 0x60,
+	VKK_BUTTON_B      = 0x61,
+	VKK_BUTTON_C      = 0x62,
+	VKK_BUTTON_L1     = 0x66,
+	VKK_BUTTON_R1     = 0x67,
+	VKK_BUTTON_L2     = 0x68,
+	VKK_BUTTON_R2     = 0x69,
+	VKK_BUTTON_MODE   = 0x6E,
+	VKK_BUTTON_SELECT = 0x6D,
+	VKK_BUTTON_START  = 0x6C,
+	VKK_BUTTON_THUMBL = 0x6A,
+	VKK_BUTTON_THUMBR = 0x6B,
+	VKK_BUTTON_X      = 0x63,
+	VKK_BUTTON_Y      = 0x64,
+	VKK_BUTTON_Z      = 0x65,
+	VKK_BUTTON_UP     = 0x13,
+	VKK_BUTTON_DOWN   = 0x14,
+	VKK_BUTTON_LEFT   = 0x15,
+	VKK_BUTTON_RIGHT  = 0x16,
+	VKK_BUTTON_CENTER = 0x17,
+} vkk_button_e;
 
 // special keys
 // normal keys use standard ASCII keycode
@@ -165,15 +178,15 @@ typedef struct
 
 typedef struct
 {
-	int   id;
-	int   axis;
-	float value;
+	int        id;
+	vkk_axis_e axis;
+	float      value;
 } vkk_eventAxis_t;
 
 typedef struct
 {
-	int id;
-	int button;
+	int          id;
+	vkk_button_e button;
 } vkk_eventButton_t;
 
 typedef struct
@@ -210,9 +223,16 @@ typedef struct
 	float gfz;
 } vkk_eventMagnetometer_t;
 
+// Android permissions
+typedef enum
+{
+	VKK_PERMISSION_LOCATION = 1,
+	VKK_PERMISSION_STORAGE  = 2,
+} vkk_permission_e;
+
 typedef struct
 {
-	int    type;
+	vkk_eventType_e type;
 	double ts;
 	union
 	{
@@ -225,13 +245,9 @@ typedef struct
 		vkk_eventGyroscope_t     gyroscope;
 		vkk_eventKey_t           key;
 		vkk_eventMagnetometer_t  magnetometer;
-		int                      permission;
+		vkk_permission_e         permission;
 	};
 } vkk_event_t;
-
-// Android permissions
-#define VKK_PERMISSION_LOCATION 1
-#define VKK_PERMISSION_STORAGE  2
 
 /*
  * platform API

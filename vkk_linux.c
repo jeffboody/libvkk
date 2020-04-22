@@ -296,11 +296,11 @@ typedef struct
 {
 	vkk_platform_t* platform;
 
-	int   count;
-	int   type;
-	int   id[4];
-	float x[4];
-	float y[4];
+	int             count;
+	vkk_eventType_e type;
+	int             id[4];
+	float           x[4];
+	float           y[4];
 } vkk_platformTouch_t;
 
 static void
@@ -312,7 +312,7 @@ vkk_platformTouch_init(vkk_platformTouch_t* self,
 
 	self->platform = platform;
 	self->count    = 0;
-	self->type     = -1;
+	self->type     = VKK_EVENT_TYPE_UNDEFINED;
 }
 
 static void
@@ -323,7 +323,7 @@ vkk_platformTouch_event(vkk_platformTouch_t* self)
 	vkk_platformOnEvent_fn  onEvent;
 	onEvent = VKK_PLATFORM_INFO.onEvent;
 
-	if(self->type == -1)
+	if(self->type == VKK_EVENT_TYPE_UNDEFINED)
 	{
 		return;
 	}
@@ -363,19 +363,19 @@ vkk_platformTouch_event(vkk_platformTouch_t* self)
 	{
 		self->count = 0;
 	}
-	self->type = -1;
+	self->type = VKK_EVENT_TYPE_UNDEFINED;
 }
 
 static void
 vkk_platformTouch_action(vkk_platformTouch_t* self,
-                         int type,
+                         vkk_eventType_e type,
                          int id,
                          float x, float y)
 {
 	ASSERT(self);
 
 	// init action
-	if((self->type == -1) ||
+	if((self->type == VKK_EVENT_TYPE_UNDEFINED) ||
 	   (type == VKK_EVENT_TYPE_ACTION_UP))
 	{
 		// ignore invalid actions
@@ -517,8 +517,9 @@ static void vkk_platform_delete(vkk_platform_t** _self)
 	}
 }
 
-void vkk_platform_cmd(vkk_platform_t* self, int cmd,
-                 const char* msg)
+void vkk_platform_cmd(vkk_platform_t* self,
+                      vkk_platformCmd_e cmd,
+                      const char* msg)
 {
 	// msg may be NULL
 	ASSERT(self);
@@ -563,7 +564,7 @@ int main(int argc, char** argv)
 					continue;
 				}
 
-				int type = VKK_EVENT_TYPE_KEY_UP;
+				vkk_eventType_e type = VKK_EVENT_TYPE_KEY_UP;
 				if(se.type == SDL_KEYDOWN)
 				{
 					type = VKK_EVENT_TYPE_KEY_DOWN;
@@ -585,7 +586,7 @@ int main(int argc, char** argv)
 			        (se.type == SDL_MOUSEBUTTONDOWN) ||
 			        (se.type == SDL_MOUSEMOTION))
 			{
-				int type = VKK_EVENT_TYPE_ACTION_UP;
+				vkk_eventType_e type = VKK_EVENT_TYPE_ACTION_UP;
 				if(se.type == SDL_MOUSEBUTTONDOWN)
 				{
 					type = VKK_EVENT_TYPE_ACTION_DOWN;
@@ -617,7 +618,7 @@ int main(int argc, char** argv)
 			        (se.type == SDL_FINGERDOWN) ||
 			        (se.type == SDL_FINGERMOTION))
 			{
-				int type = VKK_EVENT_TYPE_ACTION_UP;
+				vkk_eventType_e type = VKK_EVENT_TYPE_ACTION_UP;
 				if(se.type == SDL_FINGERDOWN)
 				{
 					type = VKK_EVENT_TYPE_ACTION_DOWN;

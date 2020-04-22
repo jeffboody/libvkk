@@ -183,7 +183,7 @@ vkk_renderer_getPrimary(vkk_renderer_t* self)
 ***********************************************************/
 
 void vkk_renderer_init(vkk_renderer_t* self,
-                       int type,
+                       vkk_rendererType_e type,
                        vkk_engine_t* engine)
 {
 	ASSERT(self);
@@ -301,7 +301,7 @@ vkk_renderer_tsCurrent(vkk_renderer_t* self)
 vkk_renderer_t*
 vkk_renderer_newOffscreen(vkk_engine_t* engine,
                           uint32_t width, uint32_t height,
-                          int format)
+                          vkk_imageFormat_e format)
 {
 	ASSERT(engine);
 
@@ -339,7 +339,7 @@ void vkk_renderer_delete(vkk_renderer_t** _self)
 }
 
 int vkk_renderer_beginDefault(vkk_renderer_t* self,
-                              int mode,
+                              vkk_rendererMode_e mode,
                               float* clear_color)
 {
 	ASSERT(self);
@@ -370,7 +370,7 @@ int vkk_renderer_beginDefault(vkk_renderer_t* self,
 }
 
 int vkk_renderer_beginOffscreen(vkk_renderer_t* self,
-                                int mode,
+                                vkk_rendererMode_e mode,
                                 vkk_image_t* image,
                                 float* clear_color)
 {
@@ -786,7 +786,7 @@ void vkk_renderer_draw(vkk_renderer_t* self,
 void vkk_renderer_drawIndexed(vkk_renderer_t* self,
                               uint32_t index_count,
                               uint32_t vertex_buffer_count,
-                              int index_type,
+                              vkk_indexType_e index_type,
                               vkk_buffer_t* index_buffer,
                               vkk_buffer_t** vertex_buffers)
 {

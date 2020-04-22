@@ -64,7 +64,7 @@ void vkk_util_imageMemoryBarrier(vkk_image_t* image,
 
 void vkk_util_imageMemoryBarrierRaw(VkImage image,
                                     VkCommandBuffer cb,
-                                    int stage,
+                                    vkk_stage_e stage,
                                     VkImageLayout oldLayout,
                                     VkImageLayout newLayout,
                                     uint32_t baseMipLevel,
@@ -187,7 +187,7 @@ void vkk_util_imageMemoryBarrierRaw(VkImage image,
 	                     0, 0, NULL, 0, NULL, 1, &imb);
 }
 
-VkFormat vkk_util_imageFormat(int format)
+VkFormat vkk_util_imageFormat(vkk_imageFormat_e format)
 {
 	VkFormat format_map[VKK_IMAGE_FORMAT_COUNT] =
 	{

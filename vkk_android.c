@@ -473,7 +473,7 @@ onInputEvent(struct android_app* app, AInputEvent* event)
 		}
 
 		// translate the action
-		int type;
+		vkk_eventType_e type;
 		if(action <= AMOTION_EVENT_ACTION_DOWN)
 		{
 			type = VKK_EVENT_TYPE_ACTION_DOWN;
@@ -727,7 +727,8 @@ static void vkk_platform_draw(vkk_platform_t* self)
 * public                                                   *
 ***********************************************************/
 
-void vkk_platform_cmd(vkk_platform_t* self, int cmd,
+void vkk_platform_cmd(vkk_platform_t* self,
+                      vkk_platformCmd_e cmd,
                       const char* msg)
 {
 	// msg may be NULL
@@ -787,7 +788,8 @@ void vkk_platform_cmd(vkk_platform_t* self, int cmd,
 		return;
 	}
 
-	(*env)->CallStaticVoidMethod(env, cls, mid, cmd, jmsg);
+	(*env)->CallStaticVoidMethod(env, cls, mid, (int) cmd,
+	                             jmsg);
 	(*env)->DeleteLocalRef(env, jmsg);
 }
 

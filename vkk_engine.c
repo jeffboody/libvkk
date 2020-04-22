@@ -39,6 +39,7 @@
 #include "vkk_memoryManager.h"
 #include "vkk_offscreenRenderer.h"
 #include "vkk_pipelineLayout.h"
+#include "vkk_platform.h"
 #include "vkk_secondaryRenderer.h"
 #include "vkk_uniformSet.h"
 #include "vkk_uniformSetFactory.h"
@@ -730,7 +731,7 @@ static void vkk_engine_initImageUsage(vkk_engine_t* self)
 		if((flags & VK_FORMAT_FEATURE_SAMPLED_IMAGE_BIT) &&
 		   (flags & VK_FORMAT_FEATURE_TRANSFER_DST_BIT))
 		{
-			self->image_caps_array[i] |= VKK_IMAGE_CAPS_TEXTURE;
+			self->image_caps_array[i].texture = 1;
 		}
 
 		// check for mipmap caps
@@ -740,29 +741,29 @@ static void vkk_engine_initImageUsage(vkk_engine_t* self)
 		   (flags & VK_FORMAT_FEATURE_TRANSFER_SRC_BIT)  &&
 		   (flags & VK_FORMAT_FEATURE_TRANSFER_DST_BIT))
 		{
-			self->image_caps_array[i] |= VKK_IMAGE_CAPS_MIPMAP;
+			self->image_caps_array[i].mipmap = 1;
 		}
 
 		// check for linear filtering
 		if(flags & VK_FORMAT_FEATURE_SAMPLED_IMAGE_FILTER_LINEAR_BIT)
 		{
-			self->image_caps_array[i] |= VKK_IMAGE_CAPS_FILTER_LINEAR;
+			self->image_caps_array[i].filter_linear = 1;
 		}
 
 		// check for offscreen caps
 		if(flags & VK_FORMAT_FEATURE_COLOR_ATTACHMENT_BIT)
 		{
-			self->image_caps_array[i] |= VKK_IMAGE_CAPS_OFFSCREEN;
+			self->image_caps_array[i].offscreen = 1;
 			if(flags & VK_FORMAT_FEATURE_COLOR_ATTACHMENT_BLEND_BIT)
 			{
-				self->image_caps_array[i] |= VKK_IMAGE_CAPS_OFFSCREEN_BLEND;
+				self->image_caps_array[i].offscreen_blend = 1;
 			}
 		}
 	}
 }
 
 static vkk_object_t*
-vkk_object_new(int type, void* obj)
+vkk_object_new(vkk_objectType_e type, void* obj)
 {
 	ASSERT(obj);
 
@@ -1080,7 +1081,8 @@ void vkk_engine_version(vkk_engine_t* self,
 }
 
 void
-vkk_engine_platformCmd(vkk_engine_t* self, int cmd,
+vkk_engine_platformCmd(vkk_engine_t* self,
+                       vkk_platformCmd_e cmd,
                        const char* msg)
 {
 	// msg may be NULL
@@ -1113,11 +1115,14 @@ void vkk_engine_meminfo(vkk_engine_t* self,
 	                          _size_chunks, _size_slots);
 }
 
-int vkk_engine_imageCaps(vkk_engine_t* self, int format)
+void vkk_engine_imageCaps(vkk_engine_t* self,
+                          vkk_imageFormat_e format,
+                          vkk_imageCaps_t* caps)
 {
 	ASSERT(self);
+	ASSERT(caps);
 
-	return self->image_caps_array[format];
+	*caps = self->image_caps_array[format];
 }
 
 vkk_renderer_t*
@@ -1163,7 +1168,7 @@ vkk_engine_t* vkk_engine_new(vkk_platform_t* platform,
 
 	self->version.major = 1;
 	self->version.minor = 1;
-	self->version.patch = 8;
+	self->version.patch = 9;
 
 	snprintf(self->resource_path, 256, "%s",
 	         resource_path);
@@ -2159,7 +2164,8 @@ vkk_engine_deleteDefaultDepthImage(vkk_engine_t* self,
 }
 
 void
-vkk_engine_deleteObject(vkk_engine_t* self, int type,
+vkk_engine_deleteObject(vkk_engine_t* self,
+                        vkk_objectType_e type,
                         void* obj)
 {
 	ASSERT(self);

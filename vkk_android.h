@@ -68,7 +68,8 @@ typedef struct vkk_platform_s
 	void*         priv;
 } vkk_platform_t;
 
-void vkk_platform_cmd(vkk_platform_t* self, int cmd,
+void vkk_platform_cmd(vkk_platform_t* self,
+                      vkk_platformCmd_e cmd,
                       const char* msg);
 
 #endif

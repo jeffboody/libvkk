@@ -34,17 +34,17 @@
 
 typedef struct vkk_image_s
 {
-	vkk_engine_t*  engine;
-	double         ts;
-	uint32_t       width;
-	uint32_t       height;
-	int            format;
-	int            stage;
-	uint32_t       mip_levels;
-	VkImageLayout* layout_array;
-	VkImage        image;
-	vkk_memory_t*  memory;
-	VkImageView    image_view;
+	vkk_engine_t*     engine;
+	double            ts;
+	uint32_t          width;
+	uint32_t          height;
+	vkk_imageFormat_e format;
+	vkk_stage_e       stage;
+	uint32_t          mip_levels;
+	VkImageLayout*    layout_array;
+	VkImage           image;
+	vkk_memory_t*     memory;
+	VkImageView       image_view;
 } vkk_image_t;
 
 #endif

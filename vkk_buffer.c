@@ -36,8 +36,9 @@
 ***********************************************************/
 
 vkk_buffer_t*
-vkk_buffer_new(vkk_engine_t* engine, int update,
-               int usage, size_t size,
+vkk_buffer_new(vkk_engine_t* engine,
+               vkk_updateMode_e update,
+               vkk_bufferUsage_e usage, size_t size,
                const void* buf)
 {
 	// buf may be NULL

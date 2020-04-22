@@ -37,12 +37,12 @@ void     vkk_util_imageMemoryBarrier(vkk_image_t* image,
                                      uint32_t levelCount);
 void     vkk_util_imageMemoryBarrierRaw(VkImage image,
                                         VkCommandBuffer cb,
-                                        int stage,
+                                        vkk_stage_e stage,
                                         VkImageLayout oldLayout,
                                         VkImageLayout newLayout,
                                         uint32_t baseMipLevel,
                                         uint32_t levelCount);
-VkFormat vkk_util_imageFormat(int format);
+VkFormat vkk_util_imageFormat(vkk_imageFormat_e format);
 void     vkk_util_copyUniformAttachmentArray(vkk_uniformAttachment_t* dst,
                                              uint32_t src_ua_count,
                                              vkk_uniformAttachment_t* src,

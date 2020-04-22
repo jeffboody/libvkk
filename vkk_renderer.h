@@ -53,22 +53,27 @@ typedef VkCommandBuffer
 typedef uint32_t
 (*vkk_renderer_swapchainFrameFn)(vkk_renderer_t* self);
 
-#define VKK_RENDERER_TYPE_DEFAULT   0
-#define VKK_RENDERER_TYPE_OFFSCREEN 1
-#define VKK_RENDERER_TYPE_SECONDARY 2
+typedef enum
+{
+	VKK_RENDERER_TYPE_DEFAULT   = 0,
+	VKK_RENDERER_TYPE_OFFSCREEN = 1,
+	VKK_RENDERER_TYPE_SECONDARY = 2,
+} vkk_rendererType_e;
+
+#define VKK_RENDERER_TYPE_COUNT 3
 
 typedef struct vkk_renderer_s
 {
 	vkk_engine_t* engine;
 
-	int type;
-	int mode;
+	vkk_rendererType_e type;
+	vkk_rendererMode_e mode;
 } vkk_renderer_t;
 
 // protected functions
 
 void            vkk_renderer_init(vkk_renderer_t* self,
-                                  int type,
+                                  vkk_rendererType_e type,
                                   vkk_engine_t* engine);
 VkRenderPass    vkk_renderer_renderPass(vkk_renderer_t* self);
 VkFramebuffer   vkk_renderer_framebuffer(vkk_renderer_t* self);
