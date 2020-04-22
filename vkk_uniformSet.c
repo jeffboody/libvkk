@@ -27,6 +27,7 @@
 #define LOG_TAG "vkk"
 #include "../libcc/cc_log.h"
 #include "../libcc/cc_memory.h"
+#include "vkk_buffer.h"
 #include "vkk_defaultRenderer.h"
 #include "vkk_engine.h"
 #include "vkk_uniformSet.h"
