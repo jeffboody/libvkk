@@ -1220,8 +1220,8 @@ static void check_memory(void)
 	size_t size  = MEMSIZE();
 	if(count || size)
 	{
-		LOGW("memory leak: count=%i, size=%i",
-		     (int) count, (int) size);
+		LOGW("memory leak detected");
+		MEMINFO();
 	}
 }
 
