@@ -31,15 +31,33 @@ Engine
 The engine object is created/destroyed automatically by
 the platform and is the main handle that the app uses to
 interface with the VKK library. This interface includes
-functions to query the engine version, resource path, the
-meminfo, image capabilities and handle to the default
-renderer. The interface also provides a function to send
-commands to the platform.
+functions to query the engine state and send commands
+to the platform.
 
-The resource path maps to the internal data path on
-Android or the current directory on Linux.
+The version function allows the app to query the engine
+version.
 
-The meminfo can be used to determine the amount of
+	typedef struct
+	{
+		unsigned int major:10;
+		unsigned int minor:10;
+		unsigned int patch:12;
+	} vkk_version_t;
+
+	void vkk_engine_version(vkk_engine_t* self,
+	                        vkk_version_t* version);
+
+The resourcePath function provides a location for the app
+to store offline data. The resource path also contains a
+resource file provided by the app during the build process.
+The resource path maps to the internal data path on Android
+or the current directory on Linux. See the _Resource File_
+section for more details.
+
+	const char*
+	vkk_engine_resourcePath(vkk_engine_t* self);
+
+The meminfo function can be used to determine the amount of
 graphics memory allocated by the engine. A chunk represents
 a block of Vulkan memory from which a pool will perform
 suballocations and a slot is an individual suballocation.
@@ -48,10 +66,49 @@ allocated and size\_slots is the amount of memory actually
 used. Note that there is a compile time debug setting in
 meminfo that can be used to print all allocations.
 
-The imageCaps function allows the app the hardware
-capabilities supported for a given format.
+	void vkk_engine_meminfo(vkk_engine_t* self,
+	                        size_t* _count_chunks,
+	                        size_t* _count_slots,
+	                        size_t* _size_chunks,
+	                        size_t* _size_slots);
 
-The default renderer is used to draw to the display.
+The imageCaps function allows the app to query the
+capabilities supported for a given image format. Image
+capabilities flags include texture, mipmap, filter\_linear,
+offscreen and offscreen\_blend. The offscreen\_blend flag
+indicates if an image bound for offscreen rendering supports
+a graphics pipeline with transparency blending.
+
+	typedef enum
+	{
+		VKK_IMAGE_FORMAT_RGBA8888 = 0,
+		VKK_IMAGE_FORMAT_RGBA4444 = 1,
+		VKK_IMAGE_FORMAT_RGB888   = 2,
+		VKK_IMAGE_FORMAT_RGB565   = 3,
+		VKK_IMAGE_FORMAT_RG88     = 4,
+		VKK_IMAGE_FORMAT_R8       = 5,
+		VKK_IMAGE_FORMAT_DEPTH    = 6,
+	} vkk_imageFormat_e;
+
+	typedef struct
+	{
+		unsigned int texture:1;
+		unsigned int mipmap:1;
+		unsigned int filter_linear:1;
+		unsigned int offscreen:1;
+		unsigned int offscreen_blend:1;
+		unsigned int pad:17;
+	} vkk_imageCaps_t;
+
+	void vkk_engine_imageCaps(vkk_engine_t* self,
+	                          vkk_imageFormat_e format,
+	                          vkk_imageCaps_t* caps);
+
+The defaultRenderer function can be used to query for the
+renderer that can draw to the display. See the _Renderer_
+section for more details.
+
+	vkk_renderer_t* vkk_engine_defaultRenderer(vkk_engine_t* self);
 
 The platformCmd function allows the app to send commands
 to the platform. There are commands to turn on/off device
@@ -59,54 +116,122 @@ sensors, play sounds, show the soft keyboard, load a URL
 in a browser and request platform permissions. On Linux,
 all commands are currently ignored except the EXIT command.
 
-See the _Resource File_ section for details on the
-resource.pak file.
+	typedef enum vkk_platformCmd_s
+	{
+		VKK_PLATFORM_CMD_ACCELEROMETER_OFF = 1,
+		VKK_PLATFORM_CMD_ACCELEROMETER_ON  = 2,
+		VKK_PLATFORM_CMD_CHECK_PERMISSIONS = 3,
+		VKK_PLATFORM_CMD_EXIT              = 4,
+		VKK_PLATFORM_CMD_GPS_OFF           = 5,
+		VKK_PLATFORM_CMD_GPS_ON            = 6,
+		VKK_PLATFORM_CMD_GPS_RECORD        = 7,
+		VKK_PLATFORM_CMD_GPS_PAUSE         = 8,
+		VKK_PLATFORM_CMD_GYROSCOPE_OFF     = 9,
+		VKK_PLATFORM_CMD_GYROSCOPE_ON      = 10,
+		VKK_PLATFORM_CMD_LOADURL           = 11,
+		VKK_PLATFORM_CMD_MAGNETOMETER_OFF  = 12,
+		VKK_PLATFORM_CMD_MAGNETOMETER_ON   = 13,
+		VKK_PLATFORM_CMD_PLAY_CLICK        = 14,
+		VKK_PLATFORM_CMD_REQ_LOCATION_PERM = 15,
+		VKK_PLATFORM_CMD_REQ_STORAGE_PERM  = 16,
+		VKK_PLATFORM_CMD_SOFTKEY_HIDE      = 17,
+		VKK_PLATFORM_CMD_SOFTKEY_SHOW      = 18,
+	} vkk_platformCmd_e;
+
+	void vkk_engine_platformCmd(vkk_engine_t* self,
+	                            vkk_platformCmd_e cmd,
+	                            const char* msg);
 
 Buffers
 =======
 
-Buffer objects may be created by the app for uniform, vertex
-and index buffers.
+Buffers objects may be created by the app for uniform
+buffers, vertex buffers and index arrays. The new/delete
+functions can be used to create/destroy buffer objects.
+The update mode and update function are described in the
+_Renderer_ section. Unlike Vulkan, memory for buffers is
+managed by the engine based on the requirements of the
+update mode.
 
-The app must specify how a buffer will be updated. The
-update modes supported include STATIC, DEFAULT and
-OFFSCREEN. These update modes allow the VKK library to
-provide a simplified interface that combines buffer, memory
-management and synchronization.
+	typedef enum
+	{
+		VKK_UPDATE_MODE_STATIC    = 0,
+		VKK_UPDATE_MODE_DEFAULT   = 1,
+		VKK_UPDATE_MODE_OFFSCREEN = 2,
+	} vkk_updateMode_e;
 
-Uniform buffers support all GLSL types and layouts defined
-by std140.
+	typedef enum
+	{
+		VKK_BUFFER_USAGE_UNIFORM = 0,
+		VKK_BUFFER_USAGE_VERTEX  = 1,
+		VKK_BUFFER_USAGE_INDEX   = 2,
+	} vkk_bufferUsage_e;
 
-Vertex buffers may have FLOAT, SINT, SSHORT, UINT or USHORT
-elements and may have 1-4 components per element. Note that
-packing of multiple attributes into a single buffer is not
-currently supported.
+	vkk_buffer_t* vkk_buffer_new(vkk_engine_t* engine,
+	                             vkk_updateMode_e update,
+	                             vkk_bufferUsage_e usage,
+	                             size_t size,
+	                             const void* buf);
+	void vkk_buffer_delete(vkk_buffer_t** _self);
 
-Index buffers may have USHORT or UINT elements.
+The size function allows the app to query the buffer size.
 
-See the _Renderer_ section for the definition of update
-modes and rules for updating buffers.
+	size_t vkk_buffer_size(vkk_buffer_t* self);
 
 Images
 ======
 
 Image objects may be created by the app for textures and
-offscreen rendering.
+offscreen rendering. The image formats exposed include
+RGBA8888, RGBA4444, RGB888, RGB565, RG88 and R8. However,
+you must query the image capabilities to determine if the
+image format is supported. The DEPTH format and stage are
+only used internally by the engine. Images whose width and
+height are a power-of-two may be mipmapped. The stage flag
+indicates if the image will be used as a texture for vertex
+shaders and/or fragment shaders. The pixels may be NULL for
+offscreen rendering. Unlike Vulkan, memory for images is
+managed by the engine.
 
-The image formats exposed include RGBA8888, RGBA4444,
-RGB888, RGB565, RG88 and R8. However, you must query the
-image capabilities to determine if the image format is
-supported by hardware. Image capabilities flags include
-TEXTURE, MIPMAP, FILTER\_LINEAR, OFFSCREEN and
-OFFSCREEN\_BLEND. The OFFSCREEN\_BLEND flag indicates if
-an image bound for offscreen rendering supports a graphics
-pipeline with transparency blending.
+	typedef enum
+	{
+		VKK_IMAGE_FORMAT_RGBA8888 = 0,
+		VKK_IMAGE_FORMAT_RGBA4444 = 1,
+		VKK_IMAGE_FORMAT_RGB888   = 2,
+		VKK_IMAGE_FORMAT_RGB565   = 3,
+		VKK_IMAGE_FORMAT_RG88     = 4,
+		VKK_IMAGE_FORMAT_R8       = 5,
+		VKK_IMAGE_FORMAT_DEPTH    = 6,
+	} vkk_imageFormat_e;
 
-Images whose width and height are a power-of-two may be
-mipmapped.
+	typedef enum
+	{
+		VKK_STAGE_DEPTH = 0,
+		VKK_STAGE_VS    = 1,
+		VKK_STAGE_FS    = 2,
+		VKK_STAGE_VSFS  = 3,
+	} vkk_stage_e;
 
-The app must specify all shader stages that the image will
-be used. These shader stages may include VS, FS or VSFS.
+	vkk_image_t* vkk_image_new(vkk_engine_t* engine,
+	                           uint32_t width,
+	                           uint32_t height,
+	                           vkk_imageFormat_e format,
+	                           int mipmap,
+	                           vkk_stage_e stage,
+	                           const void* pixels);
+	void         vkk_image_delete(vkk_image_t** _self);
+
+The format function allows the app to query the image
+format.
+
+	vkk_imageFormat_e vkk_image_format(vkk_image_t* self);
+
+The size function allows the app to query the image size,
+width and height.
+
+	size_t vkk_image_size(vkk_image_t* self,
+	                      uint32_t* _width,
+	                      uint32_t* height);
 
 See the _Renderer_ section for rules on sharing an image
 between renderers and for offscreen rendering.
@@ -116,72 +241,161 @@ Uniform Set
 
 Uniform set objects may be created by the app to encapsulate
 a set of uniform variables described by a shader with the
-same set index. When creating the uniform set you must
-attach the buffers and images described by the uniform set
-factory bindings. Note that the buffer and image references
-are updated by the renderer rather than attached during
-creation.
+same set index. See the _Shaders_ section for details on the
+set and binding indexes. When creating the uniform set you
+must attach the buffers and images described by the uniform
+set factory bindings. Buffer and image references are used
+when a different buffer or image may be required each frame.
+An example use case for an image reference is for an
+animated GIF. The references are updated by the renderer
+rather than attached during creation. The references must
+be updated once and only once per frame (not per draw call)
+by the renderer prior to the first draw call.
+
+	typedef enum
+	{
+		VKK_UNIFORM_TYPE_BUFFER     = 0,
+		VKK_UNIFORM_TYPE_IMAGE      = 1,
+		VKK_UNIFORM_TYPE_BUFFER_REF = 2,
+		VKK_UNIFORM_TYPE_IMAGE_REF  = 3,
+	} vkk_uniformType_e;
+
+	typedef struct
+	{
+		uint32_t          binding;
+		vkk_uniformType_e type;
+
+		union
+		{
+			vkk_buffer_t* buffer;
+			vkk_image_t*  image;
+		};
+	} vkk_uniformAttachment_t;
+
+	vkk_uniformSet_t* vkk_uniformSet_new(vkk_engine_t* engine,
+	                                     uint32_t set,
+	                                     uint32_t ua_count,
+	                                     vkk_uniformAttachment_t* ua_array,
+	                                     vkk_uniformSetFactory_t* usf);
+	void              vkk_uniformSet_delete(vkk_uniformSet_t** _self);
 
 It is important to note that a uniform set implements the
 update mode defined by the uniform set factory. The uniform
 buffers attached to the uniform set must have the same update
-mode or be STATIC. These update modes allow the VKK library
-to provide a simplified interface that combines buffer,
-memory management and synchronization.
-
-See the _Shaders_ section for details on the set index.
-
-See the _Uniform Set Factory_ section to create a uniform
-set factory.
+mode or be STATIC. The update mode and update function are
+described in the _Renderer_ section.
 
 See the _Renderer_ section for details on binding uniform
-sets, updating uniform set references, definition of update
-modes and rules for updating buffers.
+sets and updating uniform set references.
 
 Uniform Set Factory
 ===================
 
 Uniform set factory objects may be created by the app which
-describe the binding indexes for a particular set index of
-a shader. This binding description is used to manage an
-internal pool of Vulkan descriptor sets and enables the app
-to create uniform sets.
+describes the binding indexes for a particular set index of
+a shader. See the _Shaders_ section for details on the set
+and binding indexes. A uniformBinding is required for every
+buffer, image, buffer reference and image reference in the
+set. The stage flag indicates if the uniform will be used by
+vertex shaders and/or fragment shaders. When the uniform
+binding type is IMAGE or IMAGE\_REF then the app must also
+specify the sampler filtering and mipmapping modes.
 
-The app must specify the binding type which may include
-BUFFER, IMAGE, BUFFER\_REF or IMAGE\_REF. The BUFFER and
-IMAGE types indicate that the same buffer or image will
-always be attached to a uniform set created by the uniform
-set factory. The BUFFER\_REF and IMAGE\_REF types indicate
-that the renderer MUST update the uniform set reference
-for each frame. References are useful for the app to swap
-the buffer/image rather than updating that buffer/image at
-draw time. An example use case for an image reference is an
-animated GIF.
+	typedef enum
+	{
+		VKK_UNIFORM_TYPE_BUFFER     = 0,
+		VKK_UNIFORM_TYPE_IMAGE      = 1,
+		VKK_UNIFORM_TYPE_BUFFER_REF = 2,
+		VKK_UNIFORM_TYPE_IMAGE_REF  = 3,
+	} vkk_uniformType_e;
 
-The app must specify all shader stages that the uniform set
-will be used. These shader stages may include VS, FS or
-VSFS.
+	typedef enum
+	{
+		VKK_STAGE_DEPTH = 0,
+		VKK_STAGE_VS    = 1,
+		VKK_STAGE_FS    = 2,
+		VKK_STAGE_VSFS  = 3,
+	} vkk_stage_e;
 
-When the uniform binding type is IMAGE or IMAGE\_REF then the
-app must also specify the sampler information. This includes
-the min\_filter, mag\_filter and mipmap\_mode.
+	typedef enum
+	{
+		VKK_SAMPLER_FILTER_NEAREST = 0,
+		VKK_SAMPLER_FILTER_LINEAR  = 1,
+	} vkk_samplerFilter_e;
 
-See the _Shaders_ section for details on the set and
-binding indexes.
+	typedef enum
+	{
+		VKK_SAMPLER_MIPMAP_MODE_NEAREST = 0,
+		VKK_SAMPLER_MIPMAP_MODE_LINEAR  = 1,
+	} vkk_samplerMipmapMode_e;
 
-See the _Renderer_ section for updating uniform set
-references and for rules on sharing the uniform set factory
-between renderers.
+	typedef struct
+	{
+		vkk_samplerFilter_e     min_filter;
+		vkk_samplerFilter_e     mag_filter;
+		vkk_samplerMipmapMode_e mipmap_mode;
+	} vkk_samplerInfo_t;
+
+	typedef struct
+	{
+		uint32_t          binding;
+		vkk_uniformType_e type;
+		vkk_stage_e       stage;
+		vkk_samplerInfo_t si;
+	} vkk_uniformBinding_t;
+
+The new/delete functions can be used to create/destroy
+uniform set factory objects. The update mode and update
+function are described in the _Renderer_ section. The array
+of uniformBindings are used to manage an internal pool
+of Vulkan descriptor sets and enables the app to create
+uniform sets.
+
+	typedef enum
+	{
+		VKK_UPDATE_MODE_STATIC    = 0,
+		VKK_UPDATE_MODE_DEFAULT   = 1,
+		VKK_UPDATE_MODE_OFFSCREEN = 2,
+	} vkk_updateMode_e;
+
+	vkk_uniformSetFactory_t* vkk_uniformSetFactory_new(vkk_engine_t* engine,
+	                                                   vkk_updateMode_e update,
+	                                                   uint32_t ub_count,
+	                                                   vkk_uniformBinding_t* ub_array);
+	void                     vkk_uniformSetFactory_delete(vkk_uniformSetFactory_t** _self);
+
+See the _Renderer_ section for for rules on sharing the
+uniform set factory between renderers.
+
+See the _Uniform Set_ section to create uniform sets from a
+uniform set factory.
+
+See the _Pipeline Layout_ section to create a pipeline
+layout from an array of uniform set factories.
 
 Pipeline Layout
 ===============
 
 Pipeline layout objects may be created by the app which
-describe the collection of sets and bindings which may be
-used by shaders when a graphics pipeline is bound.
+describe the collection of sets and bindings that may be
+used by a graphics pipeline and its associated shaders.
+
+The new/delete functions can be used to create/destroy
+pipeline layout objects. The uniform set factories which
+where created with uniformBindings include the information
+necessary to describe the collection of sets and bindings
+for the pipeline layout.
+
+	vkk_pipelineLayout_t* vkk_pipelineLayout_new(vkk_engine_t* engine,
+	                                             uint32_t usf_count,
+	                                             vkk_uniformSetFactory_t** usf_array);
+	void                  vkk_pipelineLayout_delete(vkk_pipelineLayout_t** _self);
 
 See the _Shaders_ section for guidelines on choosing a
 strategy for selecting the set and binding indexes.
+
+See the _Graphics Pipeline_ section for attaching a
+pipeline layout to a graphics pipeline.
 
 See the _Renderer_ section for rules on sharing the pipeline
 layout between renderers.
@@ -190,18 +404,87 @@ Graphics Pipeline
 =================
 
 Graphics pipeline objects may be created by the app which
-encapsulates the graphics state required for rendering. The
-graphics pipeline state includes the renderer, pipeline
-layout, shaders, vertex buffer state, primitive state,
-depth state and blend state.
+encapsulates the graphics state required for rendering.
+Graphics state may be swapped during rendering by simply
+binding a new graphics pipeline object. Graphics pipelines
+are interchangeable when the pipeline layout and the
+renderer are the same. The following graphics state is
+described by a graphics pipeline object.
 
-Graphics pipelines may be swapped during rendering by simply
-binding a new graphics pipeline object.
+The vertexBufferInfo encodes the location index, vertex
+format and number of components per vertex. Calls to the
+renderer draw functions accept vertex buffers and these
+must match the format described by the currently bound
+graphics pipeline. Only 1-4 components are supported.
 
-Graphics pipelines are interchangeable when the pipeline
-layout and the renderer are the same.
+	typedef enum
+	{
+		VKK_VERTEX_FORMAT_FLOAT  = 0,
+		VKK_VERTEX_FORMAT_SINT   = 1,
+		VKK_VERTEX_FORMAT_SSHORT = 2,
+		VKK_VERTEX_FORMAT_UINT   = 3,
+		VKK_VERTEX_FORMAT_USHORT = 4,
+	} vkk_vertexFormat_e;
+
+	typedef struct
+	{
+		uint32_t           location;
+		uint32_t           components;
+		vkk_vertexFormat_e format;
+	} vkk_vertexBufferInfo_t;
+
+The primitives supported include triangle lists, triangle
+strips and triangle fans. The primitive restart flag may be
+used with indexed rendering to allow a -1 index to cause
+the rasterizer to begin a new primitive. Primitive restart
+can be useful to draw multiple primitives with a single draw
+call.
+
+	typedef enum
+	{
+		VKK_PRIMITIVE_TRIANGLE_LIST  = 0,
+		VKK_PRIMITIVE_TRIANGLE_STRIP = 1,
+		VKK_PRIMITIVE_TRIANGLE_FAN   = 2,
+	} vkk_primitive_e;
+
+The blendMode supports blending with transparency (e.g. one
+minus src alpha).
+
+	typedef enum
+	{
+		VKK_BLEND_MODE_DISABLED     = 0,
+		VKK_BLEND_MODE_TRANSPARENCY = 1,
+	} vkk_blendMode_e;
+
+The vertex and fragment shaders are specified by providing
+a path to the SPIR-V shader in the resource file. The
+cull\_back, depth\_test and depth\_write flags enable the
+corresponding functionality.
+
+	typedef struct
+	{
+		vkk_renderer_t*         renderer;
+		vkk_pipelineLayout_t*   pl;
+		const char*             vs;
+		const char*             fs;
+		uint32_t                vb_count;
+		vkk_vertexBufferInfo_t* vbi;
+		vkk_primitive_e         primitive;
+		int                     primitive_restart;
+		int                     cull_back;
+		int                     depth_test;
+		int                     depth_write;
+		vkk_blendMode_e         blend_mode;
+	} vkk_graphicsPipelineInfo_t;
+
+	vkk_graphicsPipeline_t* vkk_graphicsPipeline_new(vkk_engine_t* engine,
+	                                                 vkk_graphicsPipelineInfo_t* gpi);
+	void                    vkk_graphicsPipeline_delete(vkk_graphicsPipeline_t** _self);
 
 See the _Renderer_ section for binding a graphics pipeline.
+
+See the _Resource File_ section for including shaders in
+the resource file.
 
 Renderer
 ========
@@ -213,7 +496,25 @@ to render to an image and the secondary renderer allows the
 app to record commands to a secondary command buffer. The
 default renderer object is created/destroyed automatically
 by the engine while the offscreen/secondary renderer objects
-may be created by the app.
+may be created/destroyed by the app.
+
+	typedef enum
+	{
+		VKK_IMAGE_FORMAT_RGBA8888 = 0,
+		VKK_IMAGE_FORMAT_RGBA4444 = 1,
+		VKK_IMAGE_FORMAT_RGB888   = 2,
+		VKK_IMAGE_FORMAT_RGB565   = 3,
+		VKK_IMAGE_FORMAT_RG88     = 4,
+		VKK_IMAGE_FORMAT_R8       = 5,
+		VKK_IMAGE_FORMAT_DEPTH    = 6,
+	} vkk_imageFormat_e;
+
+	vkk_renderer_t* vkk_renderer_newOffscreen(vkk_engine_t* engine,
+	                                          uint32_t width,
+	                                          uint32_t height,
+	                                          vkk_imageFormat_e format);
+	vkk_renderer_t* vkk_renderer_newSecondary(vkk_renderer_t* primary);
+	void            vkk_renderer_delete(vkk_renderer_t** _self);
 
 The rendering commands are issued between begin and end
 functions where the begin function is specific to the
@@ -222,89 +523,180 @@ must also call the end function. The default/offscreen
 renderers accepts a rendering mode which determines the type
 of rendering commands that may be issued. The PRIMARY
 rendering mode allows all rendering commands except for
-vkk\_renderer\_drawSecondary(). The SECONDARY rendering mode
-only allows vkk\_renderer\_drawSecondary() and
-vkk\_renderer\_surfaceSize(). Note that the depth buffer,
+the drawSecondary function. The SECONDARY rendering mode
+only allows the drawSecondary and surfaceSize functions.
+The beginOffscreen function accepts an image that will be
+used as a render target. Note that the depth buffer,
 viewport and scissor are initialized automatically by the
-begin function.
+begin functions.
+
+	typedef enum
+	{
+		VKK_RENDERER_MODE_PRIMARY   = 1,
+		VKK_RENDERER_MODE_SECONDARY = 2,
+	} vkk_rendererMode_e;
+
+	int  vkk_renderer_beginDefault(vkk_renderer_t* self,
+	                               vkk_rendererMode_e mode,
+	                               float* clear_color);
+	int  vkk_renderer_beginOffscreen(vkk_renderer_t* self,
+	                                 vkk_rendererMode_e mode,
+	                                 vkk_image_t* image,
+	                                 float* clear_color);
+	int  vkk_renderer_beginSecondary(vkk_renderer_t* self);
+	void vkk_renderer_end(vkk_renderer_t* self);
+
+The offscreen renderer images may only be used as a render
+target for a single offscreen renderer at once. Images must
+not be in use by another renderer (e.g. used between the
+renderer begin/end functions) prior to beginning offscreen
+rendering with the image. Images must match the size and
+format of the offscreen renderer.
 
 The app may utilize secondary rendering to optimize
 performance by creating multiple secondary renderers to
 record various parts of the scene in parallel. The drawing
 doesn't actually occur until the secondary renderers are
-drawn into a SECONDARY renderer with the
-vkk\_renderer\_drawSecondary() function. A secondary
-renderer may only be drawn once per frame into a SECONDARY
-renderer. The commands recorded to the secondary command
-buffer are only valid for the current frame and must be
-re-recorded for subsequent frames. And finally, the
-vkk\_renderer\_beginSecondary() function should only be
-called if the corresponding SECONDARY renderer begin
-function was successful.
-
-Images may only be used as a render target for a single
-offscreen renderer at once. Images must not be in use
-by another renderer (e.g. used between the renderer
-begin/end functions) prior to beginning offscreen
-rendering with the image.
+drawn into a SECONDARY renderer with the drawSecondary
+function. A secondary renderer may only be drawn once per
+frame into a SECONDARY renderer. The commands recorded to
+the secondary command buffer are only valid for the current
+frame and must be re-recorded for subsequent frames. And
+finally, the beginSecondary function should only be called
+if the corresponding SECONDARY renderer begin function was
+successful.
 
 Renderers may share images, uniform set factories and
 pipeline layouts. Renderers may share buffers and uniform
 sets only when update is set to STATIC. Renderers may not
 share graphics pipelines.
 
-The renderer provides a minimal interface for performing
-rendering operations. These operations allow the app to
-update buffers/uniform set references, bind graphics
-pipelines/uniform sets, clear depth, set
-viewport/scissor and draw geometry.
+The surfaceSize function allows the app to query the
+renderer for the surface size.
 
-The vkk\_renderer\_updateBuffer() function may be used to
-update uniform, vertex and index buffers. The default
-renderer may only update buffers when the update mode is
-set to DEFAULT and offscreen renderers may only update
-buffers when the update mode is set to OFFSCREEN. When a
-uniform buffer is declared with an update mode of DEFAULT or
-OFFSCREEN then the app must update the buffer once and only
-once every frame. The app must update the entire uniform
-buffer. The rules for updating a vertex/index buffer are
-subtly different. When a vertex/index buffer is declared
+	void vkk_renderer_surfaceSize(vkk_renderer_t* self,
+	                              uint32_t* _width,
+	                              uint32_t* _height);
+
+The updateBuffer function may be used to update uniform,
+vertex and index buffers. The default renderer may only
+update buffers when the update mode is set to DEFAULT and
+offscreen renderers may only update buffers when the update
+mode is set to OFFSCREEN. When a uniform buffer is declared
 with an update mode of DEFAULT or OFFSCREEN then the app
-may update the buffer zero or one time per frame. The app
-may update a subset of the vertex/index buffer. The partial
-updates for vertex/index buffers allows the app to avoid
-reallocating a vertex/index buffer per frame when the
-underlying geometry may be changing shape.
+must update the buffer once and only once every frame. The
+app must update the entire uniform buffer. The rules for
+updating a vertex/index buffer are subtly different. When a
+vertex/index buffer is declared with an update mode of
+DEFAULT or OFFSCREEN then the app may update the buffer zero
+or one time per frame. The app may update a subset of the
+vertex/index buffer. The partial updates for vertex/index
+buffers allows the app to avoid reallocating a vertex/index
+buffer per frame when the underlying geometry may be
+changing shape.
 
-The vkk\_renderer\_updateUniformSetRefs() function may be
-used to update references for a uniform set (BUFFER\_REF and
-IMAGE\_REF). When a uniform set includes such a reference
-then they muse be updated once and only once per frame.
+	void vkk_renderer_updateBuffer(vkk_renderer_t* self,
+	                               vkk_buffer_t* buffer,
+	                               size_t size,
+	                               const void* buf);
 
-The vkk\_renderer\_bindGraphicsPipeline() function may be
-used to bind a new graphics pipeline state.
+The updateUniformSetRefs function may be used to update
+references for a uniform set (BUFFER\_REF and IMAGE\_REF).
+When a uniform set includes such a reference then they must
+be updated once and only once per frame.
 
-The vkk\_renderer\_bindUniformSets() function may be used to
-to bind multiple uniform sets simultaneously. The function
-takes an array of uniform sets whose set indexes must be in
-order and without gaps. If a shader requires sets
-{ 0, 1, 3 } then vkk\_renderer\_bindUniformSets() must be
-called twice with the uniform sets { 0, 1 } and { 3 } to
-meet the requirements of the underlying Vulkan API. If
-a shader for the bound graphics pipeline does not require
-a particular uniform set then doens't need to be bound.
+	typedef enum
+	{
+		VKK_UNIFORM_TYPE_BUFFER     = 0,
+		VKK_UNIFORM_TYPE_IMAGE      = 1,
+		VKK_UNIFORM_TYPE_BUFFER_REF = 2,
+		VKK_UNIFORM_TYPE_IMAGE_REF  = 3,
+	} vkk_uniformType_e;
 
-The app may overwite the viewport or scissor with the
-vkk\_renderer\_viewport() and vkk\_renderer\_scissor()
-functions. Note that you may find it useful to use the
-cc\_mat4f\_perspective() and cc\_mat4f\_orthoVK() functions
-to prepare the perspective projection and orthographic
-projection matrices since viewport origin has flipped from
-OpenGL to Vulkan.
+	typedef struct
+	{
+		uint32_t          binding;
+		vkk_uniformType_e type;
 
-The app may issue drawing commands with the
-vkk\_renderer\_draw() and vkk\_renderer\_drawIndexed()
-functions.
+		union
+		{
+			vkk_buffer_t* buffer;
+			vkk_image_t*  image;
+		};
+	} vkk_uniformAttachment_t;
+
+	void vkk_renderer_updateUniformSetRefs(vkk_renderer_t* self,
+	                                       vkk_uniformSet_t* us,
+	                                       uint32_t ua_count,
+	                                       vkk_uniformAttachment_t* ua_array);
+
+The bindGraphicsPipeline function may be used to bind a new
+graphics pipeline state.
+
+	void vkk_renderer_bindGraphicsPipeline(vkk_renderer_t* self,
+	                                       vkk_graphicsPipeline_t* gp);
+
+The bindUniformSets function may be used to to bind multiple
+uniform sets simultaneously. The function takes an array of
+uniform sets whose set indexes must be in order and without
+gaps. If a shader requires sets { 0, 1, 3 } then the
+bindUniformSets function must be called twice with the
+uniform sets { 0, 1 } and { 3 } to meet the requirements of
+the underlying Vulkan API. Only the uniform sets for the
+shaders referenced by the current graphics pipeline need to
+be bound.
+
+	void vkk_renderer_bindUniformSets(vkk_renderer_t* self,
+	                                  uint32_t us_count,
+	                                  vkk_uniformSet_t** us_array);
+
+The clearDepth function can be called to reset the depth
+buffer.
+
+	void vkk_renderer_clearDepth(vkk_renderer_t* self);
+
+The app may override the viewport or scissor with the
+viewport and scissor functions. Note that you may find it
+useful to use the cc\_mat4f\_perspective() and
+cc\_mat4f\_orthoVK() functions to prepare the perspective
+projection and orthographic projection matrices since
+viewport origin has flipped from OpenGL to Vulkan.
+
+	void vkk_renderer_viewport(vkk_renderer_t* self,
+	                           float x,
+	                           float y,
+	                           float width,
+	                           float height);
+	void vkk_renderer_scissor(vkk_renderer_t* self,
+	                          uint32_t x,
+	                          uint32_t y,
+	                          uint32_t width,
+	                          uint32_t height);
+
+The following drawing functions may be called by the app to
+issue drawing commands or submit secondary command buffers.
+Note that the vertex format of the vertex buffer must match
+the currently bound graphics pipeline.
+
+	typedef enum
+	{
+		VKK_INDEX_TYPE_USHORT = 0,
+		VKK_INDEX_TYPE_UINT   = 1,
+	} vkk_indexType_e;
+
+	void vkk_renderer_draw(vkk_renderer_t* self,
+	                       uint32_t vertex_count,
+	                       uint32_t vertex_buffer_count,
+	                       vkk_buffer_t** vertex_buffers);
+	void vkk_renderer_drawIndexed(vkk_renderer_t* self,
+	                              uint32_t index_count,
+	                              uint32_t vertex_buffer_count,
+	                              vkk_indexType_e index_type,
+	                              vkk_buffer_t* index_buffer,
+	                              vkk_buffer_t** vertex_buffers);
+	void vkk_renderer_drawSecondary(vkk_renderer_t* self,
+	                                uint32_t secondary_count,
+	                                vkk_renderer_t** secondary_array);
 
 See the _Threading/Synchronization_ section for threading
 and synchronization rules regarding the renderer.
@@ -426,12 +818,154 @@ called from the UI thread. This is because the app may have
 requested GPS recording which can cause events to be
 delivered when the app main thread is paused.
 
+	typedef void* (*vkk_platformOnCreate_fn)(vkk_engine_t* engine);
+	typedef void  (*vkk_platformOnDestroy_fn)(void** _priv);
+	typedef void  (*vkk_platformOnPause_fn)(void* priv);
+	typedef void  (*vkk_platformOnDraw_fn)(void* priv);
+	typedef void  (*vkk_platformOnEvent_fn)(void* priv,
+	                                        vkk_event_t* event);
+
+	typedef struct
+	{
+		const char*              app_name;
+		vkk_version_t            app_version;
+		vkk_platformOnCreate_fn  onCreate;
+		vkk_platformOnDestroy_fn onDestroy;
+		vkk_platformOnPause_fn   onPause;
+		vkk_platformOnDraw_fn    onDraw;
+		vkk_platformOnEvent_fn   onEvent;
+	} vkk_platformInfo_t;
+
+	extern vkk_platformInfo_t VKK_PLATFORM_INFO;
+
 The platform event callbacks provides Android specific
 sensor events for accelerometer, magnetometer, gyroscope and
 GPS sensors. Additional events are generated for human input
 devices such as keyboards, mice, touchscreens and joysticks.
 And finally, events are also generated for Android specific
 changes to screen density and permissions.
+
+	typedef enum
+	{
+		VKK_EVENT_TYPE_UNDEFINED          = -1,
+		VKK_EVENT_TYPE_ACCELEROMETER      = 0,
+		VKK_EVENT_TYPE_ACTION_DOWN        = 1,
+		VKK_EVENT_TYPE_ACTION_MOVE        = 2,
+		VKK_EVENT_TYPE_ACTION_UP          = 3,
+		VKK_EVENT_TYPE_AXIS_MOVE          = 4,
+		VKK_EVENT_TYPE_BUTTON_DOWN        = 5,
+		VKK_EVENT_TYPE_BUTTON_UP          = 6,
+		VKK_EVENT_TYPE_DENSITY            = 7,
+		VKK_EVENT_TYPE_GPS                = 8,
+		VKK_EVENT_TYPE_GYROSCOPE          = 9,
+		VKK_EVENT_TYPE_KEY_DOWN           = 10,
+		VKK_EVENT_TYPE_KEY_UP             = 11,
+		VKK_EVENT_TYPE_MAGNETOMETER       = 12,
+		VKK_EVENT_TYPE_PERMISSION_GRANTED = 13,
+	} vkk_eventType_e;
+
+	typedef struct
+	{
+		float ax;
+		float ay;
+		float az;
+		int   rotation;
+	} vkk_eventAccelerometer_t;
+
+	typedef struct
+	{
+		int count;
+		cc_vec2f_t coord[VKK_EVENT_ACTION_COUNT];
+	} vkk_eventAction_t;
+
+	typedef struct
+	{
+		double lat;
+		double lon;
+		float  accuracy;
+		float  altitude;
+		float  speed;
+		float  bearing;
+	} vkk_eventGps_t;
+
+	typedef struct
+	{
+		float ax;
+		float ay;
+		float az;
+	} vkk_eventGyroscope_t;
+
+	typedef struct
+	{
+		int keycode;
+		int meta;
+		int repeat;
+	} vkk_eventKey_t;
+
+	typedef struct
+	{
+		float mx;
+		float my;
+		float mz;
+		float gfx;
+		float gfy;
+		float gfz;
+	} vkk_eventMagnetometer_t;
+
+	typedef enum
+	{
+		VKK_PERMISSION_LOCATION = 1,
+		VKK_PERMISSION_STORAGE  = 2,
+	} vkk_permission_e;
+
+	typedef struct
+	{
+		vkk_eventType_e type;
+		double ts;
+		union
+		{
+			vkk_eventAccelerometer_t accelerometer;
+			vkk_eventAction_t        action;
+			vkk_eventAxis_t          axis;
+			vkk_eventButton_t        button;
+			float                    density;
+			vkk_eventGps_t           gps;
+			vkk_eventGyroscope_t     gyroscope;
+			vkk_eventKey_t           key;
+			vkk_eventMagnetometer_t  magnetometer;
+			vkk_permission_e         permission;
+		};
+	} vkk_event_t;
+
+The keycodes use the standard ASCII keycode except for the
+following special keys.
+
+	#define VKK_KEYCODE_ENTER     0x00D
+	#define VKK_KEYCODE_ESCAPE    0x01B
+	#define VKK_KEYCODE_BACKSPACE 0x008
+	#define VKK_KEYCODE_DELETE    0x07F
+	#define VKK_KEYCODE_UP        0x100
+	#define VKK_KEYCODE_DOWN      0x101
+	#define VKK_KEYCODE_LEFT      0x102
+	#define VKK_KEYCODE_RIGHT     0x103
+	#define VKK_KEYCODE_HOME      0x104
+	#define VKK_KEYCODE_END       0x105
+	#define VKK_KEYCODE_PGUP      0x106
+	#define VKK_KEYCODE_PGDOWN    0x107
+	#define VKK_KEYCODE_INSERT    0x108
+
+The meta field is a mask containing the following values.
+
+	#define VKK_META_ALT     0x00000032
+	#define VKK_META_ALT_L   0x00000010
+	#define VKK_META_ALT_R   0x00000020
+	#define VKK_META_CTRL    0x00007000
+	#define VKK_META_CTRL_L  0x00002000
+	#define VKK_META_CTRL_R  0x00004000
+	#define VKK_META_SHIFT   0x000000C1
+	#define VKK_META_SHIFT_L 0x00000040
+	#define VKK_META_SHIFT_R 0x00000080
+	#define VKK_META_CAPS    0x00100000
 
 See the _Dependencies_ section for details on the
 VKKNativeActivity interface required for Android.

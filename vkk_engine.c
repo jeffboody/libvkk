@@ -1080,17 +1080,6 @@ void vkk_engine_version(vkk_engine_t* self,
 	       sizeof(vkk_version_t));
 }
 
-void
-vkk_engine_platformCmd(vkk_engine_t* self,
-                       vkk_platformCmd_e cmd,
-                       const char* msg)
-{
-	// msg may be NULL
-	ASSERT(self);
-
-	vkk_platform_cmd(self->platform, cmd, msg);
-}
-
 const char* vkk_engine_resourcePath(vkk_engine_t* self)
 {
 	ASSERT(self);
@@ -1131,6 +1120,17 @@ vkk_engine_defaultRenderer(vkk_engine_t* self)
 	ASSERT(self);
 
 	return self->renderer;
+}
+
+void
+vkk_engine_platformCmd(vkk_engine_t* self,
+                       vkk_platformCmd_e cmd,
+                       const char* msg)
+{
+	// msg may be NULL
+	ASSERT(self);
+
+	vkk_platform_cmd(self->platform, cmd, msg);
 }
 
 /***********************************************************

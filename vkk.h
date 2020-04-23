@@ -230,9 +230,6 @@ typedef struct
 
 void            vkk_engine_version(vkk_engine_t* self,
                                    vkk_version_t* version);
-void            vkk_engine_platformCmd(vkk_engine_t* self,
-                                       vkk_platformCmd_e cmd,
-                                       const char* msg);
 const char*     vkk_engine_resourcePath(vkk_engine_t* self);
 void            vkk_engine_meminfo(vkk_engine_t* self,
                                    size_t* _count_chunks,
@@ -243,6 +240,9 @@ void            vkk_engine_imageCaps(vkk_engine_t* self,
                                      vkk_imageFormat_e format,
                                      vkk_imageCaps_t* caps);
 vkk_renderer_t* vkk_engine_defaultRenderer(vkk_engine_t* self);
+void            vkk_engine_platformCmd(vkk_engine_t* self,
+                                       vkk_platformCmd_e cmd,
+                                       const char* msg);
 
 /*
  * buffer API
