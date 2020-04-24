@@ -61,6 +61,7 @@ vkk_graphicsPipeline_new(vkk_engine_t* engine,
 	}
 	self->engine   = engine;
 	self->renderer = gpi->renderer;
+	self->pl       = gpi->pl;
 
 	VkPipelineShaderStageCreateInfo pss_info[2] =
 	{

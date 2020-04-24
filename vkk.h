@@ -344,7 +344,6 @@ void            vkk_renderer_updateUniformSetRefs(vkk_renderer_t* self,
 void            vkk_renderer_bindGraphicsPipeline(vkk_renderer_t* self,
                                                   vkk_graphicsPipeline_t* gp);
 void            vkk_renderer_bindUniformSets(vkk_renderer_t* self,
-                                             vkk_pipelineLayout_t* pl,
                                              uint32_t us_count,
                                              vkk_uniformSet_t** us_array);
 void            vkk_renderer_clearDepth(vkk_renderer_t* self);

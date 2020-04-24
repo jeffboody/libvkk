@@ -720,8 +720,7 @@ void vkui_widget_draw(vkui_widget_t* self)
 			screen->us3_tricolor,
 		};
 		vkk_renderer_bindUniformSets(screen->renderer,
-		                             screen->pl, 4,
-		                             us_array);
+		                             4, us_array);
 		vkk_renderer_draw(screen->renderer, 4*VKUI_WIDGET_BEZEL,
 		                  1, &self->vb_xyuv);
 	}

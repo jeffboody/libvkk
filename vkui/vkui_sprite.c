@@ -106,8 +106,7 @@ static void vkui_sprite_draw(vkui_widget_t* widget)
 		screen->us3_tricolor,
 	};
 
-	vkk_renderer_bindUniformSets(screen->renderer,
-	                             screen->pl, 4,
+	vkk_renderer_bindUniformSets(screen->renderer, 4,
 	                             us_array);
 	vkk_renderer_draw(screen->renderer, 4,
 	                  1, &self->vb_color_xyuv);

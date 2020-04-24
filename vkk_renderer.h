@@ -68,6 +68,9 @@ typedef struct vkk_renderer_s
 
 	vkk_rendererType_e type;
 	vkk_rendererMode_e mode;
+
+	// currently bound graphics pipeline
+	vkk_graphicsPipeline_t* gp;
 } vkk_renderer_t;
 
 // protected functions

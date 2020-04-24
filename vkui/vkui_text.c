@@ -216,8 +216,7 @@ static void vkui_text_draw(vkui_widget_t* widget)
 		};
 
 		vkk_renderer_bindUniformSets(screen->renderer,
-		                             screen->pl, 4,
-		                             us_font);
+		                             4, us_font);
 
 		vkk_renderer_draw(screen->renderer, 2*3*len,
 		                  1, &self->vb_xyuv);

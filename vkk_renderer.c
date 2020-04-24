@@ -439,6 +439,7 @@ void vkk_renderer_end(vkk_renderer_t* self)
 	}
 
 	self->mode = VKK_RENDERER_MODE_PRIMARY;
+	self->gp   = NULL;
 }
 
 void vkk_renderer_surfaceSize(vkk_renderer_t* self,
@@ -581,18 +582,18 @@ void vkk_renderer_bindGraphicsPipeline(vkk_renderer_t* self,
 	vkCmdBindPipeline(cb,
 	                  VK_PIPELINE_BIND_POINT_GRAPHICS,
 	                  gp->pipeline);
+	self->gp = gp;
 
 	// update timestamp
 	gp->ts = vkk_renderer_tsCurrent(self);
 }
 
 void vkk_renderer_bindUniformSets(vkk_renderer_t* self,
-                                  vkk_pipelineLayout_t* pl,
                                   uint32_t us_count,
                                   vkk_uniformSet_t** us_array)
 {
 	ASSERT(self);
-	ASSERT(pl);
+	ASSERT(self->gp);
 	ASSERT(us_array);
 	ASSERT(self->mode == VKK_RENDERER_MODE_PRIMARY);
 
@@ -643,7 +644,7 @@ void vkk_renderer_bindUniformSets(vkk_renderer_t* self,
 	VkCommandBuffer cb = vkk_renderer_commandBuffer(self);
 	vkCmdBindDescriptorSets(cb,
 	                        VK_PIPELINE_BIND_POINT_GRAPHICS,
-	                        pl->pl, first, us_count, ds,
+	                        self->gp->pl->pl, first, us_count, ds,
 	                        0, NULL);
 }
 

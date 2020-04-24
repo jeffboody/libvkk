@@ -226,8 +226,7 @@ void vkui_tricolor_drawBuffer(vkui_tricolor_t* self,
 		self->us,
 	};
 	vkk_renderer_bindUniformSets(screen->renderer,
-	                             screen->pl, 4,
-	                             us_tri);
+	                             4, us_tri);
 	vkk_renderer_draw(screen->renderer, vc, 1, &vb);
 }
 
@@ -275,7 +274,6 @@ void vkui_tricolor_drawRect(vkui_tricolor_t* self)
 		self->us,
 	};
 	vkk_renderer_bindUniformSets(screen->renderer,
-	                             screen->pl, 4,
-	                             us_tri);
+	                             4, us_tri);
 	vkk_renderer_draw(screen->renderer, 4, 1, &self->vb_xyuv);
 }
