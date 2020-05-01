@@ -1,13 +1,36 @@
-About
-=====
+Introduction
+============
 
 The Vulkan Kit (VKK) is a graphics library that exposes a
-simplified graphics pipeline layered on the the Vulkan
-graphics library. The features exposed by the VKK library
-are limited to the subset necessary to port my own OpenGL
-apps to Vulkan. These features include the following.
+high level API layered on the low level Vulkan graphics
+library.
 
-* Cross platform development with Linux and Android
+Vulkan is very different than the previous OpenGL graphics
+standard due to its low level interface. The low level
+interface provides many advantages including a simplified
+driver implementation and consistent behavior across
+devices. The developer may also implement custom high level
+algorithms which can greatly impact an apps performance,
+memory usage, rendering quality and even stability. However,
+the tradeoff of a low level interface is that it requires
+developers to implement many algorithms which were
+historically included by a graphics vendors OpenGL driver
+implementation. Some examples of these algorithms include
+memory management, conversion of images to optimal formats,
+and implicit synchronization of graphics primitives. The
+benefits of the low level API come at a high cost for
+graphics apps which may not require complete control over
+every aspect of rendering.
+
+VKK was designed to simplify development of graphics apps
+which may benefit from multithreaded rendering capabilities
+exposed by Vulkan. VKK does not expose the complete set of
+features supported by either OpenGL or Vulkan. The features
+exposed are limited to a set commonly used by graphics
+applications and will likely be extended in future releases.
+The graphics features exposed by the VKK library include.
+
+* Single header file graphics interface (vkk.h)
 * Rendering to the display
 * Offscreen rendering (e.g. render to texture)
 * Secondary rendering (e.g. render to command buffer)
@@ -15,11 +38,20 @@ apps to Vulkan. These features include the following.
 * Graphics pipeline with vertex and fragment shader stages
 * Graphics memory is automatically pooled and suballocated
 * Shader support for uniform buffers and images
-* 2D textures with optional mipmapping are supported
+* 2D images with optional mipmapping are supported
 * Triangles are the only primitive supported
 * Transparency, depth clearing, viewport and scissors
-* Single header file graphics interface (vkk.h)
+
+VKK exposes a cross platform interface that supports the
+Android and Linux platforms. The platform features exposed
+by the VKK library include.
+
 * Single header file platform interface (vkk\_platform.h)
+* Application lifecycle management
+* Screen density events for UI scaling
+* Keyboard, touch and joystick events
+* Android sensor events (accelerometer, magnetometer, gyroscope, and GPS)
+* Android permissions (location and storage)
 
 The following sections describe the engine, objects,
 shaders, threading/synchronization, platform interface and
