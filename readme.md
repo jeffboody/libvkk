@@ -4,49 +4,34 @@ Introduction
 The Vulkan Kit (VKK) is a high level graphics API layered
 on the low level Vulkan graphics API.
 
-Vulkan is very different than the former OpenGL graphics
-standard due to its low level API. The low level API allows
+Vulkan is very different from the former OpenGL graphics
+standard due to its low level API. The low level API
+provides developers unprecedented capability to optimze
+algorithms for each apps workload. Optimized algorithms can
+greatly impact an apps performance, memory usage, rendering
+quality and portability. The low level API also allows
 hardware vendors to provide a much simpler driver thats
-easier to test. As a result, drivers will have fewer bugs
-and behave more consistently across devices. The low level
-API also provides developers unprecedented capability to
-optimze algorithms for each apps workload. Optimized
-algorithms can greatly impact an apps performance, memory
-usage, rendering quality and even stability. The tradeoff
-of the low level API is that it requires developers to
-implement many algorithms that were historically included by
-the OpenGL graphics driver. Examples algorithms include
-memory management, internal synchronization, converting data
-formats, updating resources and pooling commands. The
-benefits of the low level API comes at a high cost for
+easier to test resulting in fewer bugs and better
+consistency across devices. An important tradeoff of the
+low level API is that it requires developers to implement
+many algorithms that were historically included by the
+OpenGL graphics driver. Example algorithms include memory
+management, internal synchronization, data conversion,
+resource updates and command pooling. However, the benefits
+of the low level API comes at a high development cost for
 graphics apps which may not need to optimize every aspect of
 rendering.
 
-VKK was designed to simplify development of graphics apps
-by implementing common algorithms while still exposing
-an important subset of Vulkan design concepts. These
-include multithreaded rendering, graphics pipelines,
-secondary command buffers and low overhead uniform updates.
-VKK includes support for a small number of object types
-including an engine, buffers, images, uniform sets, uniform
-set factories, graphics pipelines, pipeline layouts and
-renderers. The engine object is created/destroyed
-automatically by the platform and is the main handle that
-the app uses to interface with VKK. Buffer objects can
-represent uniform buffers, vertex buffers and index buffers.
-Image objects represent textures and offscreen buffers. VKK
-simplifies buffers/images by managing memory, image views,
-image layouts, image mipmapping and tracking GPU usage.
-Uniform set and uniform set factory objects manage
-descriptor sets, descriptor pools and descriptor set
-layouts. The uniform set includes a uniform attachment and
-uniform binding description that can be generated easily by
-inspection of the apps shaders.  Graphics pipeline and
-pipeline layout objects are thin wrappers around their
-Vulkan counterparts. Renderer objects implement much of the
-low level Vulkan code to manage command buffers, device
-queues, render passes, surfaces, semaphores and memory
-barriers.
+VKK simplifies development of graphics apps by exposing a
+high level graphics API which includes support for an
+important subset of Vulkan design concepts. These include
+multithreaded rendering, graphics pipelines, secondary
+command buffers and low overhead resource updates. The
+underlying Vulkan implementation is abstracted allowing the
+developer to focus on implementing graphics concepts. VKK
+supports a minimal subset of commonly used graphics features
+and object types. VKK also provides a platform interface to
+simplify cross-platform development.
 
 The graphics features exposed by VKK include.
 
@@ -62,19 +47,30 @@ The graphics features exposed by VKK include.
 * Triangles are the only primitive supported
 * Transparency, depth clearing, viewport and scissors
 
+The graphics object types exposed by VKK include.
+
+* Engine
+* Buffers
+* Images
+* Uniform Sets
+* Uniform Set Factories
+* Graphics Pipelines
+* Pipeline Layouts
+* Renderers
+* SPIR-V Shaders
+
 The platform features exposed by VKK include.
 
 * Single header file (vkk\_platform.h)
-* Cross platform support for Linux and Android
+* Cross-platform support for Linux and Android
 * Application lifecycle management
 * Screen density events for UI scaling
 * Keyboard, touch and joystick events
 * Android sensor events (accelerometer, magnetometer, gyroscope, and GPS)
 * Android permissions (location and storage)
 
-The following sections describe the engine, objects,
-shaders, threading/synchronization, platform interface and
-miscelaneous topics.
+The following sections describe the concepts, features and
+objects referenced above.
 
 Engine
 ======
@@ -1075,7 +1071,7 @@ flipped from OpenGL to Vulkan.
 	https://github.com/jeffboody/libcc
 
 The engine uses a resource file stored in the pak file
-format for shader modules to simplify cross platform
+format for shader modules to simplify cross-platform
 resource management.
 
 	https://github.com/jeffboody/libpak
