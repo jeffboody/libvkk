@@ -33,6 +33,7 @@ typedef struct vkui_viewbox_s
 	vkui_bulletbox_t* bullet;
 	vkui_widget_t*    body;
 	vkui_widget_t*    footer;
+	int               transparent;
 } vkui_viewbox_t;
 
 #endif

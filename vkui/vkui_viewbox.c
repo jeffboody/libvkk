@@ -114,7 +114,11 @@ vkui_viewbox_click(vkui_widget_t* widget, void* priv,
 		return 1;
 	}
 
-	// viewboxes are always clicked
+	// viewboxes are always clicked unless transparent
+	if(self->transparent)
+	{
+		return 0;
+	}
 	return 1;
 }
 
@@ -346,6 +350,11 @@ vkui_viewbox_new(vkui_screen_t* screen, size_t wsize,
 
 	self->body   = body;
 	self->footer = footer;
+
+	if(style->color_body.a == 0.0f)
+	{
+		self->transparent = 1;
+	}
 
 	// success
 	return self;
