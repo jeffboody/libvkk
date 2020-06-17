@@ -1064,9 +1064,11 @@ void vkui_screen_draw(vkui_screen_t* self)
 	                          sizeof(cc_mat4f_t),
 	                          (const void*) &mvp);
 
-	vkui_widget_draw(self->top_widget);
+	vkk_renderer_viewport(self->renderer,
+	                      0.0f, 0.0f, (float) w, (float) h);
 	vkk_renderer_scissor(self->renderer,
 	                     0, 0, w, h);
+	vkui_widget_draw(self->top_widget);
 	vkui_screen_bind(self, VKUI_SCREEN_BIND_NONE);
 
 	// play sound fx
