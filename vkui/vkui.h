@@ -213,6 +213,9 @@ vkui_screen_t* vkui_screen_new(vkk_engine_t* engine,
 void           vkui_screen_delete(vkui_screen_t** _self);
 vkui_widget_t* vkui_screen_top(vkui_screen_t* self,
                                vkui_widget_t* top);
+void           vkui_screen_contentRect(vkui_screen_t* self,
+                                       int t, int l,
+                                       int b, int r);
 void           vkui_screen_focus(vkui_screen_t* self,
                                  vkui_widget_t* focus);
 void           vkui_screen_density(vkui_screen_t* self,

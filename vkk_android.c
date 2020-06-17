@@ -22,6 +22,7 @@
  */
 
 #include <android_native_app_glue.h>
+#include <android/window.h>
 #include <jni.h>
 #include <math.h>
 #include <stdlib.h>
@@ -214,7 +215,13 @@ onAppCmd(struct android_app* app, int32_t cmd)
 
 	if(cmd == APP_CMD_INIT_WINDOW)
 	{
-		LOGI("APP_CMD_INIT_WINDOW");
+		LOGD("APP_CMD_INIT_WINDOW");
+
+		ANativeActivity_setWindowFlags(app->activity,
+		                               AWINDOW_FLAG_FORCE_NOT_FULLSCREEN |
+		                               AWINDOW_FLAG_LAYOUT_IN_SCREEN     |
+		                               AWINDOW_FLAG_LAYOUT_INSET_DECOR,
+		                               AWINDOW_FLAG_FULLSCREEN);
 
 		// recreate the window surface
 		if(platform->engine)
@@ -239,7 +246,7 @@ onAppCmd(struct android_app* app, int32_t cmd)
 	}
 	else if(cmd == APP_CMD_TERM_WINDOW)
 	{
-		LOGI("APP_CMD_TERM_WINDOW");
+		LOGD("APP_CMD_TERM_WINDOW");
 
 		// destroy the existing window surface
 		if(platform->priv)
@@ -250,13 +257,13 @@ onAppCmd(struct android_app* app, int32_t cmd)
 	}
 	else if(cmd == APP_CMD_RESUME)
 	{
-		LOGI("APP_CMD_RESUME");
+		LOGD("APP_CMD_RESUME");
 		platform->running = 1;
 	}
 	else if((cmd == APP_CMD_PAUSE) ||
 	        (cmd == APP_CMD_STOP))
 	{
-		LOGI("APP_CMD_PAUSE");
+		LOGD("APP_CMD_PAUSE");
 
 		if(platform->priv && (platform->paused == 0))
 		{
@@ -273,7 +280,7 @@ onAppCmd(struct android_app* app, int32_t cmd)
 			platform->paused = 1;
 		}
 
-		LOGI("APP_CMD_DESTROY");
+		LOGD("APP_CMD_DESTROY");
 		if(platform->engine)
 		{
 			vkk_engine_shutdown(platform->engine);
@@ -283,6 +290,27 @@ onAppCmd(struct android_app* app, int32_t cmd)
 		pthread_mutex_unlock(&platform->priv_mutex);
 		vkk_engine_delete(&platform->engine);
 		platform->running = 0;
+	}
+	else if(cmd == APP_CMD_CONTENT_RECT_CHANGED)
+	{
+		LOGD("APP_CMD_CONTENT_RECT_CHANGED: t=%i, l=%i, b=%i, r=%i",
+		     app->contentRect.top, app->contentRect.left,
+		     app->contentRect.bottom, app->contentRect.right);
+
+		vkk_event_t ve =
+		{
+			.type = VKK_EVENT_TYPE_CONTENT_RECT,
+			.ts   = cc_timestamp(),
+			.content_rect =
+			{
+				.t = app->contentRect.top,
+				.l = app->contentRect.left,
+				.b = app->contentRect.bottom,
+				.r = app->contentRect.right,
+			}
+		};
+
+		(*onEvent)(platform->priv, &ve);
 	}
 }
 
@@ -1227,6 +1255,17 @@ static void check_memory(void)
 	}
 }
 
+static void
+onContentRectChanged(ANativeActivity* activity,
+                     const ARect* rect)
+{
+	struct android_app* android_app;
+	android_app = (struct android_app*) activity->instance;
+	pthread_mutex_lock(&android_app->mutex);
+	android_app->pendingContentRect = *rect;
+	pthread_mutex_unlock(&android_app->mutex);
+}
+
 /***********************************************************
 * android_main                                             *
 ***********************************************************/
@@ -1239,6 +1278,10 @@ void android_main(struct android_app* app)
 	onEvent = VKK_PLATFORM_INFO.onEvent;
 
 	LOGI("InitVulkan=%i", InitVulkan());
+
+	// workaround for android_native_app_glue which does not
+	// implement APP_CMD_CONTENT_RECT_CHANGED
+	app->activity->callbacks->onContentRectChanged = onContentRectChanged;
 
 	if(isTimestampValid(app) == 0)
 	{
@@ -1307,6 +1350,19 @@ void android_main(struct android_app* app)
 			id = ALooper_pollAll(rendering ? 0 : -1,
 		                         NULL, &outEvents, &outData);
 		}
+
+		// workaround for android_native_app_glue which does not
+		// implement APP_CMD_CONTENT_RECT_CHANGED
+		pthread_mutex_lock(&app->mutex);
+		if((app->contentRect.top    != app->pendingContentRect.top)    ||
+		   (app->contentRect.left   != app->pendingContentRect.left)   ||
+		   (app->contentRect.bottom != app->pendingContentRect.bottom) ||
+		   (app->contentRect.right  != app->pendingContentRect.right))
+		{
+			app->contentRect = app->pendingContentRect;
+			onAppCmd(app, APP_CMD_CONTENT_RECT_CHANGED);
+		}
+		pthread_mutex_unlock(&app->mutex);
 
 		// poll for JNI events
 		if(platform->priv)

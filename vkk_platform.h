@@ -74,7 +74,8 @@ typedef enum
 	VKK_EVENT_TYPE_KEY_DOWN           = 10,
 	VKK_EVENT_TYPE_KEY_UP             = 11,
 	VKK_EVENT_TYPE_MAGNETOMETER       = 12,
-	VKK_EVENT_TYPE_PERMISSION_GRANTED = 13,
+	VKK_EVENT_TYPE_CONTENT_RECT       = 13,
+	VKK_EVENT_TYPE_PERMISSION_GRANTED = 14,
 } vkk_eventType_e;
 
 // max actions supported
@@ -223,6 +224,14 @@ typedef struct
 	float gfz;
 } vkk_eventMagnetometer_t;
 
+typedef struct
+{
+	int t;
+	int l;
+	int b;
+	int r;
+} vkk_eventContentRect_t;
+
 // Android permissions
 typedef enum
 {
@@ -245,6 +254,7 @@ typedef struct
 		vkk_eventGyroscope_t     gyroscope;
 		vkk_eventKey_t           key;
 		vkk_eventMagnetometer_t  magnetometer;
+		vkk_eventContentRect_t   content_rect;
 		vkk_permission_e         permission;
 	};
 } vkk_event_t;

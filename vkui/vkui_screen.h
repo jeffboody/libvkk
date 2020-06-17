@@ -71,6 +71,12 @@ typedef struct vkui_screen_s
 	uint32_t h;
 	float    density;
 
+	// content rect
+	uint32_t content_rect_top;
+	uint32_t content_rect_left;
+	uint32_t content_rect_width;
+	uint32_t content_rect_height;
+
 	// UI scale factor
 	int scale;
 

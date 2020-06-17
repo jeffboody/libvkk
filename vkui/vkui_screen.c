@@ -783,6 +783,20 @@ vkui_screen_top(vkui_screen_t* self, vkui_widget_t* top)
 	return prev;
 }
 
+void vkui_screen_contentRect(vkui_screen_t* self,
+                             int t, int l,
+                             int b, int r)
+{
+	ASSERT(self);
+
+	self->content_rect_top    = t;
+	self->content_rect_left   = l;
+	self->content_rect_width  = r - l;
+	self->content_rect_height = b - t;
+
+	self->dirty = 1;
+}
+
 void
 vkui_screen_focus(vkui_screen_t* self, vkui_widget_t* focus)
 {
@@ -1025,10 +1039,22 @@ void vkui_screen_draw(vkui_screen_t* self)
 			.h = h,
 		};
 
-		float layout_w = w;
-		float layout_h = h;
+		// override the clip with content_rect
+		if((self->content_rect_width  > 0)  &&
+		   (self->content_rect_height > 0)  &&
+		   (self->content_rect_width  <= w) &&
+		   (self->content_rect_height <= h))
+		{
+			clip.t = self->content_rect_top;
+			clip.l = self->content_rect_left;
+			clip.w = self->content_rect_width;
+			clip.h = self->content_rect_height;
+		}
+
+		float layout_w = clip.w;
+		float layout_h = clip.h;
 		vkui_widget_layoutSize(top, &layout_w, &layout_h);
-		vkui_widget_layoutXYClip(top, 0.0f, 0.0f, &clip, 1, 1);
+		vkui_widget_layoutXYClip(top, clip.l, clip.t, &clip, 1, 1);
 		self->dirty = 0;
 	}
 
