@@ -339,7 +339,7 @@ vkui_text_t* vkui_text_new(vkui_screen_t* screen,
                            vkui_textFn_t* text_fn,
                            cc_vec4f_t* color_fill);
 void        vkui_text_delete(vkui_text_t** _self);
-void        vkui_text_label(vkui_text_t* self,
+int         vkui_text_label(vkui_text_t* self,
                             const char* fmt, ...);
 
 // textbox

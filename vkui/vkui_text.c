@@ -484,12 +484,17 @@ vkui_text_new(vkui_screen_t* screen, size_t wsize,
 	}
 
 	// initialize string and cursor
-	vkui_text_label(self, "%s", "");
+	if(vkui_text_label(self, "%s", "") == 0)
+	{
+		goto fail_label;
+	}
 
 	// success
 	return self;
 
 	// failure
+	fail_label:
+		vkk_uniformSet_delete(&self->us2_multiplyImage);
 	fail_us2_multiplyImage:
 		vkk_buffer_delete(&self->ub20_multiply);
 	fail_ub20_multiply:
@@ -568,7 +573,7 @@ int vkui_text_height(vkui_text_t* self)
 	return vkui_font_height(font);
 }
 
-void
+int
 vkui_text_label(vkui_text_t* self, const char* fmt, ...)
 {
 	ASSERT(self);
@@ -589,7 +594,7 @@ vkui_text_label(vkui_text_t* self, const char* fmt, ...)
 	size_t size = len + 1;
 	if(vkui_text_resize(self, size) == 0)
 	{
-		return;
+		return 0;
 	}
 	snprintf(self->string, size, "%s", tmp_string);
 
@@ -613,4 +618,5 @@ vkui_text_label(vkui_text_t* self, const char* fmt, ...)
 	}
 
 	vkui_screen_dirty(screen);
+	return 1;
 }
