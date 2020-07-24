@@ -297,20 +297,23 @@ onAppCmd(struct android_app* app, int32_t cmd)
 		     app->contentRect.top, app->contentRect.left,
 		     app->contentRect.bottom, app->contentRect.right);
 
-		vkk_event_t ve =
+		if(platform->priv && (platform->paused == 0))
 		{
-			.type = VKK_EVENT_TYPE_CONTENT_RECT,
-			.ts   = cc_timestamp(),
-			.content_rect =
+			vkk_event_t ve =
 			{
-				.t = app->contentRect.top,
-				.l = app->contentRect.left,
-				.b = app->contentRect.bottom,
-				.r = app->contentRect.right,
-			}
-		};
+				.type = VKK_EVENT_TYPE_CONTENT_RECT,
+				.ts   = cc_timestamp(),
+				.content_rect =
+				{
+					.t = app->contentRect.top,
+					.l = app->contentRect.left,
+					.b = app->contentRect.bottom,
+					.r = app->contentRect.right,
+				}
+			};
 
-		(*onEvent)(platform->priv, &ve);
+			(*onEvent)(platform->priv, &ve);
+		}
 	}
 }
 
