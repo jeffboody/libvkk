@@ -61,8 +61,25 @@ vkui_textbox_print(vkui_textbox_t* self, const char* string)
 	};
 
 	vkui_text_t* text;
-	text = vkui_text_new(widget->screen, 0, &text_layout,
-	                     &self->text_style, &text_fn, &clear);
+	if((string[0] == '\0') &&
+	   (self->text_style.size > VKUI_TEXT_SIZE_SMALL))
+	{
+		// use a smaller size/spacing between paragraphs
+		vkui_textStyle_t text_style;
+		memcpy(&text_style, &self->text_style,
+		       sizeof(vkui_textStyle_t));
+		text_style.size    = self->text_style.size - 1;
+		text_style.spacing = VKUI_TEXT_SPACING_NONE;
+
+		text = vkui_text_new(widget->screen, 0, &text_layout,
+		                     &text_style, &text_fn, &clear);
+	}
+	else
+	{
+		text = vkui_text_new(widget->screen, 0, &text_layout,
+		                     &self->text_style, &text_fn, &clear);
+	}
+
 	if(text == NULL)
 	{
 		return;
