@@ -87,6 +87,11 @@ static void vkui_sprite_draw(vkui_widget_t* widget)
 	                          sizeof(cc_mat4f_t),
 	                          (const void*) &mvp);
 
+	vkk_renderer_updateBuffer(screen->renderer,
+	                          self->ub10_color,
+	                          sizeof(cc_vec4f_t),
+	                          (const void*) &self->color);
+
 	vkk_uniformAttachment_t ua =
 	{
 		.binding = 1,
@@ -183,6 +188,8 @@ vkui_sprite_new(vkui_screen_t* screen,
 	self->index = 0;
 	self->theta = 0.0f;
 
+	cc_vec4f_copy(color, &self->color);
+
 	self->img21_array = (vkk_image_t**)
 	                    CALLOC(count,
 	                           sizeof(vkk_image_t*));
@@ -227,7 +234,7 @@ vkui_sprite_new(vkui_screen_t* screen,
 
 
 	self->ub10_color = vkk_buffer_new(screen->engine,
-	                                  VKK_UPDATE_MODE_STATIC,
+	                                  VKK_UPDATE_MODE_DEFAULT,
 	                                  VKK_BUFFER_USAGE_UNIFORM,
 	                                  sizeof(cc_vec4f_t),
 	                                  color);
@@ -366,6 +373,15 @@ void vkui_sprite_rotate(vkui_sprite_t* self, float theta)
 	ASSERT(self);
 
 	self->theta = theta;
+}
+
+void vkui_sprite_color(vkui_sprite_t* self,
+                       cc_vec4f_t* color)
+{
+	ASSERT(self);
+	ASSERT(color);
+
+	cc_vec4f_copy(color, &self->color);
 }
 
 void vkui_sprite_fill(vkui_sprite_t* self,

@@ -37,6 +37,8 @@ typedef struct vkui_sprite_s
 	uint32_t index;
 	float    theta;
 
+	cc_vec4f_t color;
+
 	// shader data
 	vkk_image_t**     img21_array;
 	vkk_buffer_t*     vb_color_xyuv;
