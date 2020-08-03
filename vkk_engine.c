@@ -1168,7 +1168,7 @@ vkk_engine_t* vkk_engine_new(vkk_platform_t* platform,
 
 	self->version.major = 1;
 	self->version.minor = 1;
-	self->version.patch = 12;
+	self->version.patch = 13;
 
 	snprintf(self->resource_path, 256, "%s",
 	         resource_path);

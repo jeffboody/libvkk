@@ -203,6 +203,11 @@ static int shiftKeycode(int keycode, int meta)
 * android app interface                                    *
 ***********************************************************/
 
+static vkk_event_t*
+vkk_platform_dequeue(vkk_platform_t* self);
+
+static void vkk_platform_enqueue(vkk_platform_t* self);
+
 static void
 onAppCmd(struct android_app* app, int32_t cmd)
 {
@@ -297,23 +302,14 @@ onAppCmd(struct android_app* app, int32_t cmd)
 		     app->contentRect.top, app->contentRect.left,
 		     app->contentRect.bottom, app->contentRect.right);
 
-		if(platform->priv && (platform->paused == 0))
-		{
-			vkk_event_t ve =
-			{
-				.type = VKK_EVENT_TYPE_CONTENT_RECT,
-				.ts   = cc_timestamp(),
-				.content_rect =
-				{
-					.t = app->contentRect.top,
-					.l = app->contentRect.left,
-					.b = app->contentRect.bottom,
-					.r = app->contentRect.right,
-				}
-			};
-
-			(*onEvent)(platform->priv, &ve);
-		}
+		vkk_event_t* e    = vkk_platform_dequeue(platform);
+		e->type           = VKK_EVENT_TYPE_CONTENT_RECT;
+		e->ts             = cc_timestamp();
+		e->content_rect.t = app->contentRect.top,
+		e->content_rect.l = app->contentRect.left,
+		e->content_rect.b = app->contentRect.bottom,
+		e->content_rect.r = app->contentRect.right,
+		vkk_platform_enqueue(platform);
 	}
 }
 
