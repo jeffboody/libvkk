@@ -416,21 +416,22 @@ void vkui_widget_layoutSize(vkui_widget_t* self,
 
 	// initialize size
 	int   style;
-	float sz   = 0.0f;
-	float h_bo = 0.0f;
-	float v_bo = 0.0f;
+	float sz    = 0.0f;
+	float h_bo  = 0.0f;
+	float sh_bo = self->scroll.scroll_bar ? 3.0f : 2.0f;
+	float v_bo  = 0.0f;
 	vkui_screen_layoutBorder(self->screen, layout->border,
 	                         &h_bo, &v_bo);
 	if(layout->wrapx == VKUI_WIDGET_WRAP_SHRINK)
 	{
-		self->rect_draw.w   = *w - 2.0f*h_bo;
+		self->rect_draw.w   = *w - sh_bo*h_bo;
 		self->rect_border.w = *w;
 	}
 	else if(layout->wrapx == VKUI_WIDGET_WRAP_STRETCH_PARENT)
 	{
 		sz = *w;
 		sz *= layout->stretchx;
-		self->rect_draw.w   = sz - 2.0f*h_bo;
+		self->rect_draw.w   = sz - sh_bo*h_bo;
 		self->rect_border.w = sz;
 	}
 	else if((layout->wrapx >= VKUI_WIDGET_WRAP_STRETCH_TEXT_VSMALL) &&
@@ -440,7 +441,7 @@ void vkui_widget_layoutSize(vkui_widget_t* self,
 		sz = vkui_screen_layoutText(self->screen, style);
 		sz *= layout->stretchx;
 		self->rect_draw.w   = sz;
-		self->rect_border.w = sz + 2.0f*h_bo;
+		self->rect_border.w = sz + sh_bo*h_bo;
 	}
 	else if((layout->wrapx >= VKUI_WIDGET_WRAP_STRETCH_TEXT_HSMALL) &&
 	        (layout->wrapx <= VKUI_WIDGET_WRAP_STRETCH_TEXT_HLARGE))
@@ -449,7 +450,7 @@ void vkui_widget_layoutSize(vkui_widget_t* self,
 		sz = ar*vkui_screen_layoutText(self->screen, style);
 		sz *= layout->stretchx;
 		self->rect_draw.w   = sz;
-		self->rect_border.w = sz + 2.0f*h_bo;
+		self->rect_border.w = sz + sh_bo*h_bo;
 	}
 
 	// intersect draw with border interior
@@ -520,7 +521,7 @@ void vkui_widget_layoutSize(vkui_widget_t* self,
 	if(layout->wrapx == VKUI_WIDGET_WRAP_SHRINK)
 	{
 		self->rect_draw.w   = draw_w;
-		self->rect_border.w = draw_w + 2.0f*h_bo;
+		self->rect_border.w = draw_w + sh_bo*h_bo;
 	}
 
 	// wrap height
