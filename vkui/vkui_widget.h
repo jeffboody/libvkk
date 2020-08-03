@@ -47,6 +47,8 @@ typedef void (*vkui_widget_reflowFn)(vkui_widget_t* widget,
                                      float w, float h);
 typedef void (*vkui_widget_sizeFn)(vkui_widget_t* widget,
                                    float* w, float* h);
+typedef void (*vkui_widget_aspectRatioFn)(vkui_widget_t* widget,
+                                          float* ar);
 typedef int  (*vkui_widget_keyPressFn)(vkui_widget_t* widget,
                                        void* priv, int keycode, int meta);
 typedef void (*vkui_widget_layoutFn)(vkui_widget_t* widget,
@@ -70,6 +72,11 @@ typedef struct vkui_widgetPrivFn_s
 	// it's internal size (e.g. ignoring borders)
 	// called internally by vkui_widget_layoutSize()
 	vkui_widget_sizeFn size_fn;
+
+	// aspect_fn allows a derived widget to define
+	// it's unstretched aspect ratio
+	// called internally by vkui_widget_layoutSize()
+	vkui_widget_aspectRatioFn aspect_fn;
 
 	// keyPress_fn allows a derived widget to define it's keyPress
 	// behavior called internally by vkui_widget_keyPress()

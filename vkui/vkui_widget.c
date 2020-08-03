@@ -414,6 +414,14 @@ void vkui_widget_layoutSize(vkui_widget_t* self,
 	                                     VKUI_TEXT_FONTTYPE_REGULAR);
 	float ar    = vkui_font_aspectRatioAvg(font);
 
+	// initialize the widget aspect ratio
+	float war = 1.0f;
+	vkui_widget_aspectRatioFn aspect_fn = priv_fn->aspect_fn;
+	if(aspect_fn)
+	{
+		(*aspect_fn)(self, &war);
+	}
+
 	// initialize size
 	int   style;
 	float sz    = 0.0f;
@@ -430,7 +438,7 @@ void vkui_widget_layoutSize(vkui_widget_t* self,
 	else if(layout->wrapx == VKUI_WIDGET_WRAP_STRETCH_PARENT)
 	{
 		sz = *w;
-		sz *= layout->stretchx;
+		sz *= war*layout->stretchx;
 		self->rect_draw.w   = sz - sh_bo*h_bo;
 		self->rect_border.w = sz;
 	}
@@ -438,7 +446,7 @@ void vkui_widget_layoutSize(vkui_widget_t* self,
 	        (layout->wrapx <= VKUI_WIDGET_WRAP_STRETCH_TEXT_VLARGE))
 	{
 		style = layout->wrapx - VKUI_WIDGET_WRAP_STRETCH_TEXT_VSMALL;
-		sz = vkui_screen_layoutText(self->screen, style);
+		sz = war*vkui_screen_layoutText(self->screen, style);
 		sz *= layout->stretchx;
 		self->rect_draw.w   = sz;
 		self->rect_border.w = sz + sh_bo*h_bo;
@@ -447,7 +455,7 @@ void vkui_widget_layoutSize(vkui_widget_t* self,
 	        (layout->wrapx <= VKUI_WIDGET_WRAP_STRETCH_TEXT_HLARGE))
 	{
 		style = layout->wrapx - VKUI_WIDGET_WRAP_STRETCH_TEXT_HSMALL;
-		sz = ar*vkui_screen_layoutText(self->screen, style);
+		sz = war*ar*vkui_screen_layoutText(self->screen, style);
 		sz *= layout->stretchx;
 		self->rect_draw.w   = sz;
 		self->rect_border.w = sz + sh_bo*h_bo;

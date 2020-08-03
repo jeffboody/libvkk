@@ -47,6 +47,20 @@ static const float XYUV[] =
 * private                                                  *
 ***********************************************************/
 
+static void
+vkui_sprite_aspect(vkui_widget_t* widget, float* ar)
+{
+	ASSERT(widget);
+
+	vkui_sprite_t* self  = (vkui_sprite_t*) widget;
+	vkk_image_t*   img21 = self->img21_array[self->index];
+
+	uint32_t w;
+	uint32_t h;
+	vkk_image_size(img21, &w, &h);
+	*ar = ((float) w)/((float) h);
+}
+
 static void vkui_sprite_draw(vkui_widget_t* widget)
 {
 	ASSERT(widget);
@@ -167,7 +181,8 @@ vkui_sprite_new(vkui_screen_t* screen,
 
 	vkui_widgetPrivFn_t priv_fn =
 	{
-		.draw_fn = vkui_sprite_draw,
+		.aspect_fn = vkui_sprite_aspect,
+		.draw_fn   = vkui_sprite_draw,
 	};
 
 	cc_vec4f_t clear =
