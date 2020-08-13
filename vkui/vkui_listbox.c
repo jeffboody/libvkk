@@ -554,6 +554,25 @@ int vkui_listbox_add(vkui_listbox_t* self,
 	return 1;
 }
 
+int vkui_listbox_addSorted(vkui_listbox_t* self,
+                           cc_listcmp_fn compare,
+                           vkui_widget_t* widget)
+{
+	ASSERT(self);
+	ASSERT(compare);
+	ASSERT(widget);
+
+	if(cc_list_insertSorted(self->list, compare,
+	                        (const void*) widget) == 0)
+	{
+		return 0;
+	}
+
+	vkui_screen_dirty(widget->screen);
+
+	return 1;
+}
+
 vkui_widget_t* vkui_listbox_remove(vkui_listbox_t* self)
 {
 	ASSERT(self);

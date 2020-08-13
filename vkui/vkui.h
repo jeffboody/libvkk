@@ -25,6 +25,7 @@
 #define vkui_H
 
 #include "../../libcc/math/cc_vec4f.h"
+#include "../../libcc/cc_list.h"
 #include "../vkk.h"
 
 /*
@@ -291,6 +292,9 @@ void            vkui_listbox_delete(vkui_listbox_t** _self);
 void            vkui_listbox_clear(vkui_listbox_t* self);
 int             vkui_listbox_add(vkui_listbox_t* self,
                                  vkui_widget_t* widget);
+int             vkui_listbox_addSorted(vkui_listbox_t* self,
+                                       cc_listcmp_fn compare,
+                                       vkui_widget_t* widget);
 vkui_widget_t*  vkui_listbox_remove(vkui_listbox_t* self);
 
 // radiobox
