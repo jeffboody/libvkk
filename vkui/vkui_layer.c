@@ -256,7 +256,9 @@ void vkui_layer_clear(vkui_layer_t* self)
 	ASSERT(self);
 
 	vkui_widget_t* widget = (vkui_widget_t*) self;
+
 	cc_list_discard(self->list);
+	vkui_widget_scrollTop(widget);
 	vkui_screen_dirty(widget->screen);
 }
 
@@ -272,8 +274,8 @@ int vkui_layer_add(vkui_layer_t* self,
 		return 0;
 	}
 
-	vkui_screen_dirty(widget->screen);
 	vkui_widget_scrollTop(widget);
+	vkui_screen_dirty(widget->screen);
 
 	return 1;
 }
@@ -283,6 +285,8 @@ vkui_widget_t* vkui_layer_remove(vkui_layer_t* self)
 	ASSERT(self);
 
 	vkui_widget_t* widget = (vkui_widget_t*) self;
+
+	vkui_widget_scrollTop(widget);
 	vkui_screen_dirty(widget->screen);
 
 	cc_listIter_t* iter = cc_list_tail(self->list);

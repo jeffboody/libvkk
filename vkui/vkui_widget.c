@@ -304,7 +304,8 @@ void vkui_widget_layoutXYClip(vkui_widget_t* self,
 	}
 
 	// drag the widget (see dragable rules)
-	if(dragx && (w > cw))
+	if((self->layout.wrapx == VKUI_WIDGET_WRAP_SHRINK) &&
+	   dragx && (w > cw))
 	{
 		l += self->drag_dx;
 
@@ -321,7 +322,8 @@ void vkui_widget_layoutXYClip(vkui_widget_t* self,
 		dragx = 0;
 	}
 
-	if(dragy && (h > ch))
+	if((self->layout.wrapy == VKUI_WIDGET_WRAP_SHRINK) &&
+	   dragy && (h > ch))
 	{
 		t += self->drag_dy;
 
@@ -750,8 +752,10 @@ void vkui_widget_draw(vkui_widget_t* self)
 	}
 
 	// draw the scroll bar
+	// the 0.99f constant is due to the fact that s can be
+	// affected by small precision errors
 	float s = self->rect_clip.h/self->rect_border.h;
-	if(scroll->scroll_bar && (s < 1.0f))
+	if(scroll->scroll_bar && (s < 0.99f))
 	{
 		// clamp the start/end points
 		float a = -self->drag_dy/self->rect_border.h;
