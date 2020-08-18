@@ -250,6 +250,10 @@ vkui_bulletbox_t* vkui_bulletbox_new(vkui_screen_t* screen,
 void              vkui_bulletbox_delete(vkui_bulletbox_t** _self);
 void              vkui_bulletbox_select(vkui_bulletbox_t* self,
                                         uint32_t index);
+void              vkui_bulletbox_colorIcon(vkui_bulletbox_t* self,
+                                           cc_vec4f_t* color);
+void              vkui_bulletbox_colorText(vkui_bulletbox_t* self,
+                                           cc_vec4f_t* color);
 void              vkui_bulletbox_label(vkui_bulletbox_t* self,
                                        const char* fmt, ...);
 
@@ -345,6 +349,8 @@ vkui_text_t* vkui_text_new(vkui_screen_t* screen,
                            vkui_textFn_t* text_fn,
                            cc_vec4f_t* color_fill);
 void        vkui_text_delete(vkui_text_t** _self);
+void        vkui_text_color(vkui_text_t* self,
+                            cc_vec4f_t* color);
 int         vkui_text_label(vkui_text_t* self,
                             const char* fmt, ...);
 

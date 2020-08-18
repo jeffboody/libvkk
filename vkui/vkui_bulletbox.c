@@ -277,6 +277,24 @@ void vkui_bulletbox_select(vkui_bulletbox_t* self,
 	vkui_sprite_select(self->icon, index);
 }
 
+void vkui_bulletbox_colorIcon(vkui_bulletbox_t* self,
+                              cc_vec4f_t* color)
+{
+	ASSERT(self);
+	ASSERT(color);
+
+	vkui_sprite_color(self->icon, color);
+}
+
+void vkui_bulletbox_colorText(vkui_bulletbox_t* self,
+                              cc_vec4f_t* color)
+{
+	ASSERT(self);
+	ASSERT(color);
+
+	vkui_text_color(self->text, color);
+}
+
 void vkui_bulletbox_label(vkui_bulletbox_t* self,
                           const char* fmt, ...)
 {

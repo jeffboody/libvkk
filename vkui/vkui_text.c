@@ -186,6 +186,10 @@ static void vkui_text_draw(vkui_widget_t* widget)
 		                          self->ub00_mvp, sizeof(cc_mat4f_t),
 		                          (const void*) &mvp);
 
+		vkk_renderer_updateBuffer(screen->renderer,
+		                          self->ub10_color, sizeof(cc_vec4f_t),
+		                          (const void*) &self->style.color);
+
 		int multiply = 0;
 		vkk_renderer_updateBuffer(screen->renderer,
 		                          self->ub20_multiply,
@@ -432,7 +436,7 @@ vkui_text_new(vkui_screen_t* screen, size_t wsize,
 	}
 
 	self->ub10_color = vkk_buffer_new(screen->engine,
-	                                  VKK_UPDATE_MODE_STATIC,
+	                                  VKK_UPDATE_MODE_DEFAULT,
 	                                  VKK_BUFFER_USAGE_UNIFORM,
 	                                  sizeof(cc_vec4f_t),
 	                                  &text_style->color);
@@ -571,6 +575,14 @@ int vkui_text_height(vkui_text_t* self)
 	vkui_font_t*      font   = vkui_screen_font(screen,
 	                                            style->font_type);
 	return vkui_font_height(font);
+}
+
+void vkui_text_color(vkui_text_t* self, cc_vec4f_t* color)
+{
+	ASSERT(self);
+	ASSERT(color);
+
+	cc_vec4f_copy(color, &self->style.color);
 }
 
 int
