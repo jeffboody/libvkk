@@ -945,18 +945,20 @@ Java_com_jeffboody_vkk_VKKGpsService_NativeGps(JNIEnv* env, jobject obj,
 }
 
 JNIEXPORT void JNICALL
-Java_com_jeffboody_vkk_VKKNativeActivity_NativeGrantPermission(JNIEnv* env,
+Java_com_jeffboody_vkk_VKKNativeActivity_NativePermissionStatus(JNIEnv* env,
                                                                jobject obj,
-                                                               jint permission)
+                                                               jint permission,
+                                                               jint status)
 {
 	ASSERT(env);
 
 	if(platform)
 	{
-		vkk_event_t* e = vkk_platform_dequeue(platform);
-		e->type        = VKK_EVENT_TYPE_PERMISSION_GRANTED;
-		e->ts          = cc_timestamp();
-		e->permission  = permission;
+		vkk_event_t* e           = vkk_platform_dequeue(platform);
+		e->type                  = VKK_EVENT_TYPE_PERMISSION_STATUS;
+		e->ts                    = cc_timestamp();
+		e->permission.permission = permission;
+		e->permission.status     = status;
 		vkk_platform_enqueue(platform);
 	}
 }

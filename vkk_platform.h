@@ -33,25 +33,26 @@
 
 typedef enum vkk_platformCmd_s
 {
-	VKK_PLATFORM_CMD_ACCELEROMETER_OFF = 1,
-	VKK_PLATFORM_CMD_ACCELEROMETER_ON  = 2,
-	VKK_PLATFORM_CMD_CHECK_PERMISSIONS = 3,
-	VKK_PLATFORM_CMD_EXIT              = 4,
-	VKK_PLATFORM_CMD_GPS_OFF           = 5,
-	VKK_PLATFORM_CMD_GPS_ON            = 6,
-	VKK_PLATFORM_CMD_GPS_RECORD        = 7,
-	VKK_PLATFORM_CMD_GPS_PAUSE         = 8,
-	VKK_PLATFORM_CMD_GYROSCOPE_OFF     = 9,
-	VKK_PLATFORM_CMD_GYROSCOPE_ON      = 10,
-	VKK_PLATFORM_CMD_LOADURL           = 11,
-	VKK_PLATFORM_CMD_MAGNETOMETER_OFF  = 12,
-	VKK_PLATFORM_CMD_MAGNETOMETER_ON   = 13,
-	VKK_PLATFORM_CMD_PLAY_CLICK        = 14,
-	VKK_PLATFORM_CMD_PLAY_NOTIFY       = 15,
-	VKK_PLATFORM_CMD_REQ_LOCATION_PERM = 16,
-	VKK_PLATFORM_CMD_REQ_STORAGE_PERM  = 17,
-	VKK_PLATFORM_CMD_SOFTKEY_HIDE      = 18,
-	VKK_PLATFORM_CMD_SOFTKEY_SHOW      = 19,
+	VKK_PLATFORM_CMD_ACCELEROMETER_OFF        = 1,
+	VKK_PLATFORM_CMD_ACCELEROMETER_ON         = 2,
+	VKK_PLATFORM_CMD_CHECK_PERMISSIONS        = 3,
+	VKK_PLATFORM_CMD_EXIT                     = 4,
+	VKK_PLATFORM_CMD_GPS_OFF                  = 5,
+	VKK_PLATFORM_CMD_GPS_ON                   = 6,
+	VKK_PLATFORM_CMD_GPS_RECORD               = 7,
+	VKK_PLATFORM_CMD_GPS_PAUSE                = 8,
+	VKK_PLATFORM_CMD_GYROSCOPE_OFF            = 9,
+	VKK_PLATFORM_CMD_GYROSCOPE_ON             = 10,
+	VKK_PLATFORM_CMD_LOADURL                  = 11,
+	VKK_PLATFORM_CMD_MAGNETOMETER_OFF         = 12,
+	VKK_PLATFORM_CMD_MAGNETOMETER_ON          = 13,
+	VKK_PLATFORM_CMD_PLAY_CLICK               = 14,
+	VKK_PLATFORM_CMD_PLAY_NOTIFY              = 15,
+	VKK_PLATFORM_CMD_FINE_LOCATION_PERM       = 16,
+	VKK_PLATFORM_CMD_BACKGROUND_LOCATION_PERM = 17,
+	VKK_PLATFORM_CMD_STORAGE_PERM             = 18,
+	VKK_PLATFORM_CMD_SOFTKEY_HIDE             = 19,
+	VKK_PLATFORM_CMD_SOFTKEY_SHOW             = 20,
 } vkk_platformCmd_e;
 
 /*
@@ -61,22 +62,22 @@ typedef enum vkk_platformCmd_s
 // type
 typedef enum
 {
-	VKK_EVENT_TYPE_UNDEFINED          = -1,
-	VKK_EVENT_TYPE_ACCELEROMETER      = 0,
-	VKK_EVENT_TYPE_ACTION_DOWN        = 1,
-	VKK_EVENT_TYPE_ACTION_MOVE        = 2,
-	VKK_EVENT_TYPE_ACTION_UP          = 3,
-	VKK_EVENT_TYPE_AXIS_MOVE          = 4,
-	VKK_EVENT_TYPE_BUTTON_DOWN        = 5,
-	VKK_EVENT_TYPE_BUTTON_UP          = 6,
-	VKK_EVENT_TYPE_DENSITY            = 7,
-	VKK_EVENT_TYPE_GPS                = 8,
-	VKK_EVENT_TYPE_GYROSCOPE          = 9,
-	VKK_EVENT_TYPE_KEY_DOWN           = 10,
-	VKK_EVENT_TYPE_KEY_UP             = 11,
-	VKK_EVENT_TYPE_MAGNETOMETER       = 12,
-	VKK_EVENT_TYPE_CONTENT_RECT       = 13,
-	VKK_EVENT_TYPE_PERMISSION_GRANTED = 14,
+	VKK_EVENT_TYPE_UNDEFINED         = -1,
+	VKK_EVENT_TYPE_ACCELEROMETER     = 0,
+	VKK_EVENT_TYPE_ACTION_DOWN       = 1,
+	VKK_EVENT_TYPE_ACTION_MOVE       = 2,
+	VKK_EVENT_TYPE_ACTION_UP         = 3,
+	VKK_EVENT_TYPE_AXIS_MOVE         = 4,
+	VKK_EVENT_TYPE_BUTTON_DOWN       = 5,
+	VKK_EVENT_TYPE_BUTTON_UP         = 6,
+	VKK_EVENT_TYPE_DENSITY           = 7,
+	VKK_EVENT_TYPE_GPS               = 8,
+	VKK_EVENT_TYPE_GYROSCOPE         = 9,
+	VKK_EVENT_TYPE_KEY_DOWN          = 10,
+	VKK_EVENT_TYPE_KEY_UP            = 11,
+	VKK_EVENT_TYPE_MAGNETOMETER      = 12,
+	VKK_EVENT_TYPE_CONTENT_RECT      = 13,
+	VKK_EVENT_TYPE_PERMISSION_STATUS = 14,
 } vkk_eventType_e;
 
 // max actions supported
@@ -236,9 +237,16 @@ typedef struct
 // Android permissions
 typedef enum
 {
-	VKK_PERMISSION_LOCATION = 1,
-	VKK_PERMISSION_STORAGE  = 2,
+	VKK_PERMISSION_FINE_LOCATION       = 1,
+	VKK_PERMISSION_BACKGROUND_LOCATION = 2,
+	VKK_PERMISSION_STORAGE             = 3,
 } vkk_permission_e;
+
+typedef struct
+{
+	vkk_permission_e permission;
+	int status;
+} vkk_eventPermission_t;
 
 typedef struct
 {
@@ -256,7 +264,7 @@ typedef struct
 		vkk_eventKey_t           key;
 		vkk_eventMagnetometer_t  magnetometer;
 		vkk_eventContentRect_t   content_rect;
-		vkk_permission_e         permission;
+		vkk_eventPermission_t    permission;
 	};
 } vkk_event_t;
 
