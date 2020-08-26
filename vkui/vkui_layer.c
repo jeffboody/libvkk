@@ -280,21 +280,24 @@ int vkui_layer_add(vkui_layer_t* self,
 	return 1;
 }
 
-vkui_widget_t* vkui_layer_remove(vkui_layer_t* self)
+cc_listIter_t* vkui_layer_head(vkui_layer_t* self)
 {
 	ASSERT(self);
+
+	return cc_list_head(self->list);
+}
+
+vkui_widget_t* vkui_layer_remove(vkui_layer_t* self,
+                                 cc_listIter_t** _iter)
+{
+	ASSERT(self);
+	ASSERT(_iter);
 
 	vkui_widget_t* widget = (vkui_widget_t*) self;
 
 	vkui_widget_scrollTop(widget);
 	vkui_screen_dirty(widget->screen);
 
-	cc_listIter_t* iter = cc_list_tail(self->list);
-	if(iter)
-	{
-		return (vkui_widget_t*)
-		       cc_list_remove(self->list, &iter);
-	}
-
-	return NULL;
+	return (vkui_widget_t*)
+	       cc_list_remove(self->list, _iter);
 }

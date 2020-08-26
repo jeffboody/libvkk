@@ -132,12 +132,14 @@ void vkui_radiolist_clear(vkui_radiolist_t* self)
 
 	vkui_listbox_t* listbox = (vkui_listbox_t*) self;
 
-	vkui_radiobox_t* rb;
-	rb = (vkui_radiobox_t*) vkui_listbox_remove(listbox);
-	while(rb)
+	cc_listIter_t* iter;
+	iter = vkui_listbox_head(listbox);
+	while(iter)
 	{
+		vkui_radiobox_t* rb;
+		rb = (vkui_radiobox_t*)
+		     vkui_listbox_remove(listbox, &iter);
 		vkui_radiobox_delete(&rb);
-		rb = (vkui_radiobox_t*) vkui_listbox_remove(listbox);
 	}
 }
 

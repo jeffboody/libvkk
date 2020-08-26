@@ -576,21 +576,24 @@ int vkui_listbox_addSorted(vkui_listbox_t* self,
 	return 1;
 }
 
-vkui_widget_t* vkui_listbox_remove(vkui_listbox_t* self)
+cc_listIter_t* vkui_listbox_head(vkui_listbox_t* self)
 {
 	ASSERT(self);
+
+	return cc_list_head(self->list);
+}
+
+vkui_widget_t*  vkui_listbox_remove(vkui_listbox_t* self,
+                                    cc_listIter_t** _iter)
+{
+	ASSERT(self);
+	ASSERT(_iter);
 
 	vkui_widget_t* widget = (vkui_widget_t*) self;
 
 	vkui_widget_scrollTop(widget);
 	vkui_screen_dirty(widget->screen);
 
-	cc_listIter_t* iter = cc_list_tail(self->list);
-	if(iter)
-	{
-		return (vkui_widget_t*)
-		       cc_list_remove(self->list, &iter);
-	}
-
-	return NULL;
+	return (vkui_widget_t*)
+	       cc_list_remove(self->list, _iter);
 }

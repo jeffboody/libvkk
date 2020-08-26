@@ -282,7 +282,9 @@ void           vkui_layer_delete(vkui_layer_t** _self);
 void           vkui_layer_clear(vkui_layer_t* self);
 int            vkui_layer_add(vkui_layer_t* self,
                               vkui_widget_t* widget);
-vkui_widget_t* vkui_layer_remove(vkui_layer_t* self);
+cc_listIter_t* vkui_layer_head(vkui_layer_t* self);
+vkui_widget_t* vkui_layer_remove(vkui_layer_t* self,
+                                 cc_listIter_t** _iter);
 
 // listbox
 vkui_listbox_t* vkui_listbox_new(vkui_screen_t* screen,
@@ -299,7 +301,9 @@ int             vkui_listbox_add(vkui_listbox_t* self,
 int             vkui_listbox_addSorted(vkui_listbox_t* self,
                                        cc_listcmp_fn compare,
                                        vkui_widget_t* widget);
-vkui_widget_t*  vkui_listbox_remove(vkui_listbox_t* self);
+cc_listIter_t*  vkui_listbox_head(vkui_listbox_t* self);
+vkui_widget_t*  vkui_listbox_remove(vkui_listbox_t* self,
+                                    cc_listIter_t** _iter);
 
 // radiobox
 vkui_radiobox_t* vkui_radiobox_new(vkui_screen_t* screen,

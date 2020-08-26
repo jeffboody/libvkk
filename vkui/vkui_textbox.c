@@ -185,12 +185,14 @@ vkui_textbox_reflow(vkui_widget_t* widget, float w, float h)
 	float height = (float) vkui_font_height(font);
 
 	// clear the text
-	vkui_text_t* text;
-	text = (vkui_text_t*) vkui_listbox_remove(listbox);
-	while(text)
+	cc_listIter_t* iter;
+	iter = vkui_listbox_head(listbox);
+	while(iter)
 	{
+		vkui_text_t* text;
+		text = (vkui_text_t*)
+		       vkui_listbox_remove(listbox, &iter);
 		vkui_text_delete(&text);
-		text = (vkui_text_t*) vkui_listbox_remove(listbox);
 	}
 
 	// initialize parser
@@ -203,7 +205,7 @@ vkui_textbox_reflow(vkui_widget_t* widget, float w, float h)
 	int  type = VKUI_TOKEN_END;
 
 	// reflow the string(s)
-	cc_listIter_t* iter = cc_list_head(self->strings);
+	iter = cc_list_head(self->strings);
 	while(iter)
 	{
 		const char* src = (const char*) cc_list_peekIter(iter);
@@ -369,15 +371,17 @@ void vkui_textbox_clear(vkui_textbox_t* self)
 	vkui_listbox_t* listbox = (vkui_listbox_t*) self;
 
 	// clear the text
-	vkui_text_t* text;
-	text = (vkui_text_t*) vkui_listbox_remove(listbox);
-	while(text)
+	cc_listIter_t* iter;
+	iter = vkui_listbox_head(listbox);
+	while(iter)
 	{
+		vkui_text_t* text;
+		text = (vkui_text_t*)
+		       vkui_listbox_remove(listbox, &iter);
 		vkui_text_delete(&text);
-		text = (vkui_text_t*) vkui_listbox_remove(listbox);
 	}
 
-	cc_listIter_t* iter = cc_list_head(self->strings);
+	iter = cc_list_head(self->strings);
 	while(iter)
 	{
 		void* string;
