@@ -1058,118 +1058,6 @@ Java_com_jeffboody_vkk_VKKNativeActivity_NativeMagnetometer(JNIEnv* env,
 ***********************************************************/
 
 static int
-isTimestampValid(struct android_app* app)
-{
-	ASSERT(app);
-
-	// import ts1
-	AAssetManager* am;
-	am = app->activity->assetManager;
-	AAsset* asset = AAssetManager_open(am, "timestamp.raw",
-	                                   AASSET_MODE_BUFFER);
-	if(asset == NULL)
-	{
-		LOGE("AAssetManager_open %s failed", "timestamp.raw");
-		return 0;
-	}
-
-	size_t sz1 = (size_t) AAsset_getLength(asset);
-	if(sz1 == 0)
-	{
-		LOGE("invalid sz1=%u", (unsigned int) sz1);
-		goto fail_ts1_size;
-	}
-
-	char* ts1 = (char*) CALLOC(sz1, sizeof(char));
-	if(ts1 == NULL)
-	{
-		LOGE("CALLOC failed");
-		goto fail_ts1_alloc;
-	}
-
-	if(AAsset_read(asset, ts1, sz1) != sz1)
-	{
-		LOGE("AAsset_read failed");
-		goto fail_ts1_read;
-	}
-
-	// check if ts2 exists
-	char fname[256];
-	snprintf(fname, 256, "%s/timestamp.raw",
-	         app->activity->internalDataPath);
-	if(access(fname, F_OK) != 0)
-	{
-		LOGW("invalid %s", fname);
-		goto fail_ts2_access;
-	}
-
-	// import ts2
-	FILE* f = fopen(fname, "r");
-	if(f == NULL)
-	{
-		LOGW("invalid %s", fname);
-		goto fail_ts2_fopen;
-	}
-
-	fseek(f, (long) 0, SEEK_END);
-	size_t sz2 = (size_t) ftell(f);
-	fseek(f, 0, SEEK_SET);
-
-	if(sz1 != sz2)
-	{
-		LOGW("invalid sz1=%i, sz2=%i", (int) sz1, (int) sz2);
-		goto fail_compare_size;
-	}
-
-	char* ts2 = (char*) CALLOC(sz2, sizeof(char));
-	if(ts2 == NULL)
-	{
-		LOGE("CALLOC failed");
-		goto fail_ts2_alloc;
-	}
-
-	if(fread(ts2, sz2, 1, f) != 1)
-	{
-		LOGE("fread failed");
-		goto fail_ts2_read;
-	}
-
-	// compare timestamps
-	for(int i = 0; i < sz1; ++i)
-	{
-		if(ts1[i] != ts2[i])
-		{
-			LOGW("invalid ts1=%s, ts2=%s", ts1, ts2);
-			goto fail_compare;
-		}
-	}
-
-	FREE(ts2);
-	fclose(f);
-	FREE(ts1);
-	AAsset_close(asset);
-
-	// success
-	return 1;
-
-	// failure
-	fail_compare:
-	fail_ts2_read:
-		FREE(ts2);
-	fail_ts2_alloc:
-	fail_compare_size:
-		fclose(f);
-	fail_ts2_fopen:
-	fail_ts2_access:
-	fail_ts1_read:
-		FREE(ts1);
-	fail_ts1_alloc:
-	fail_ts1_size:
-		AAsset_close(asset);
-	return 0;
-}
-
-static int
 updateResource(struct android_app* app, const char* src,
                const char* dst)
 {
@@ -1278,30 +1166,25 @@ void android_main(struct android_app* app)
 	vkk_platformOnEvent_fn onEvent;
 	onEvent = VKK_PLATFORM_INFO.onEvent;
 
-	LOGI("InitVulkan=%i", InitVulkan());
+	// initialize Vulkan
+	if(InitVulkan() == 0)
+	{
+		LOGE("InitVulkan failed");
+		return;
+	}
 
 	// workaround for android_native_app_glue which does not
 	// implement APP_CMD_CONTENT_RECT_CHANGED
 	app->activity->callbacks->onContentRectChanged = onContentRectChanged;
 
-	if(isTimestampValid(app) == 0)
+	// update resource.pak
+	char fname[256];
+	snprintf(fname, 256, "%s/resource.pak",
+	         app->activity->internalDataPath);
+	if(updateResource(app, "resource.pak", fname) == 0)
 	{
-		char fname[256];
-		snprintf(fname, 256, "%s/resource.pak",
-		         app->activity->internalDataPath);
-		if(updateResource(app, "resource.pak", fname) == 0)
-		{
-			check_memory();
-			return;
-		}
-
-		snprintf(fname, 256, "%s/timestamp.raw",
-		         app->activity->internalDataPath);
-		if(updateResource(app, "timestamp.raw", fname) == 0)
-		{
-			check_memory();
-			return;
-		}
+		check_memory();
+		return;
 	}
 
 	platform = vkk_platform_new(app);
