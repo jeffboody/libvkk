@@ -181,9 +181,10 @@ command.
 		VKK_PLATFORM_CMD_PLAY_NOTIFY              = 15,
 		VKK_PLATFORM_CMD_FINE_LOCATION_PERM       = 16,
 		VKK_PLATFORM_CMD_BACKGROUND_LOCATION_PERM = 17,
-		VKK_PLATFORM_CMD_STORAGE_PERM             = 18,
-		VKK_PLATFORM_CMD_SOFTKEY_HIDE             = 19,
-		VKK_PLATFORM_CMD_SOFTKEY_SHOW             = 20,
+		VKK_PLATFORM_CMD_READ_STORAGE_PERM        = 18,
+		VKK_PLATFORM_CMD_WRITE_STORAGE_PERM       = 19,
+		VKK_PLATFORM_CMD_SOFTKEY_HIDE             = 20,
+		VKK_PLATFORM_CMD_SOFTKEY_SHOW             = 21,
 	} vkk_platformCmd_e;
 
 	void vkk_engine_platformCmd(vkk_engine_t* self,
@@ -1010,7 +1011,8 @@ changes to screen density, the content rect and permissions.
 	{
 		VKK_PERMISSION_FINE_LOCATION       = 1,
 		VKK_PERMISSION_BACKGROUND_LOCATION = 2,
-		VKK_PERMISSION_STORAGE             = 3,
+		VKK_PERMISSION_READ_STORAGE        = 3,
+		VKK_PERMISSION_WRITE_STORAGE       = 4,
 	} vkk_permission_e;
 
 	typedef struct
