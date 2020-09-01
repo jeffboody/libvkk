@@ -79,6 +79,7 @@ typedef enum
 	VKK_EVENT_TYPE_MAGNETOMETER      = 12,
 	VKK_EVENT_TYPE_CONTENT_RECT      = 13,
 	VKK_EVENT_TYPE_PERMISSION_STATUS = 14,
+	VKK_EVENT_TYPE_LOW_MEMORY        = 15,
 } vkk_eventType_e;
 
 // max actions supported

@@ -965,6 +965,29 @@ vkk_defaultRenderer_tsExpiredLocked(vkk_renderer_t* base)
 	return self->ts_expired;
 }
 
+void vkk_defaultRenderer_deviceWaitIdle(vkk_renderer_t* base)
+{
+	vkk_defaultRenderer_t* self;
+	self = (vkk_defaultRenderer_t*) base;
+
+	vkk_engine_t* engine = base->engine;
+
+	vkDeviceWaitIdle(engine->device);
+
+	// expire the completed frame
+	int i;
+	vkk_engine_rendererLock(engine);
+	for(i = 0; i < self->swapchain_image_count; ++i)
+	{
+		if(self->ts_array[i] > self->ts_expired)
+		{
+			self->ts_expired = self->ts_array[i];
+		}
+	}
+	vkk_engine_rendererSignal(base->engine);
+	vkk_engine_rendererUnlock(engine);
+}
+
 int
 vkk_defaultRenderer_begin(vkk_renderer_t* base,
                           vkk_rendererMode_e mode,

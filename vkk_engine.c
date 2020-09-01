@@ -1388,6 +1388,13 @@ void vkk_engine_shutdown(vkk_engine_t* self)
 	vkk_engine_rendererUnlock(self);
 }
 
+void vkk_engine_deviceWaitIdle(vkk_engine_t* self)
+{
+	ASSERT(self);
+
+	vkk_defaultRenderer_deviceWaitIdle(self->renderer);
+}
+
 int vkk_engine_recreate(vkk_engine_t* self)
 {
 	ASSERT(self);

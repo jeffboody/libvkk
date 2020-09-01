@@ -162,6 +162,7 @@ vkk_engine_t* vkk_engine_new(vkk_platform_t* platform,
                              const char* resource_path);
 void          vkk_engine_delete(vkk_engine_t** _self);
 void          vkk_engine_shutdown(vkk_engine_t* self);
+void          vkk_engine_deviceWaitIdle(vkk_engine_t* self);
 int           vkk_engine_recreate(vkk_engine_t* self);
 
 /*

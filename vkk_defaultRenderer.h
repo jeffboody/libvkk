@@ -83,6 +83,7 @@ int             vkk_defaultRenderer_recreate(vkk_renderer_t* base);
 uint32_t        vkk_defaultRenderer_swapchainImageCount(vkk_renderer_t* base);
 double          vkk_defaultRenderer_tsCurrent(vkk_renderer_t* base);
 double          vkk_defaultRenderer_tsExpiredLocked(vkk_renderer_t* base);
+void            vkk_defaultRenderer_deviceWaitIdle(vkk_renderer_t* base);
 
 /*
  * renderer callback API

@@ -272,6 +272,11 @@ onAppCmd(struct android_app* app, int32_t cmd)
 
 		if(platform->priv && (platform->paused == 0))
 		{
+			if(platform->engine)
+			{
+				vkk_engine_deviceWaitIdle(platform->engine);
+			}
+
 			(*onPause)(platform->priv);
 			platform->paused = 1;
 		}
@@ -312,6 +317,21 @@ onAppCmd(struct android_app* app, int32_t cmd)
 				.content_rect.l = app->contentRect.left,
 				.content_rect.b = app->contentRect.bottom,
 				.content_rect.r = app->contentRect.right,
+			};
+
+			(*onEvent)(platform->priv, &ve);
+		}
+	}
+	else if(cmd == APP_CMD_LOW_MEMORY)
+	{
+		LOGD("APP_CMD_LOW_MEMORY");
+
+		if(platform->priv)
+		{
+			vkk_event_t ve =
+			{
+				.type = VKK_EVENT_TYPE_LOW_MEMORY,
+				.ts   = cc_timestamp(),
 			};
 
 			(*onEvent)(platform->priv, &ve);
@@ -1260,7 +1280,7 @@ void android_main(struct android_app* app)
 			vkk_event_t e;
 			while(vkk_platform_poll(platform, &e))
 			{
-					(*onEvent)(platform->priv, &e);
+				(*onEvent)(platform->priv, &e);
 			}
 		}
 
