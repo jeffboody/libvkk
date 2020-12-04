@@ -38,7 +38,7 @@
 ***********************************************************/
 
 static int
-vkui_font_parseStart(void* priv, int line,
+vkui_font_parseStart(void* priv, int line, float progress,
                      const char* name, const char** atts)
 {
 	ASSERT(priv);
@@ -108,7 +108,7 @@ vkui_font_parseStart(void* priv, int line,
 }
 
 static int
-vkui_font_parseEnd(void* priv, int line,
+vkui_font_parseEnd(void* priv, int line, float progress,
                    const char* name, const char* content)
 {
 	// content may be NULL
