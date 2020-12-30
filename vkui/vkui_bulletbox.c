@@ -195,7 +195,8 @@ vkui_bulletbox_new(vkui_screen_t* screen, size_t wsize,
 	{
 		wrap = VKUI_WIDGET_WRAP_STRETCH_TEXT_VLARGE;
 	}
-	else if(text_style->size == VKUI_TEXT_SIZE_SMALL)
+	else if((text_style->size == VKUI_TEXT_SIZE_SMALL) ||
+	        (text_style->size == VKUI_TEXT_SIZE_XSMALL))
 	{
 		wrap = VKUI_WIDGET_WRAP_STRETCH_TEXT_VSMALL;
 	}

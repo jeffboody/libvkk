@@ -144,7 +144,11 @@ float vkui_screen_layoutText(vkui_screen_t* self, int size)
 
 	// default size is 24 px at density 1.0
 	float sizef = 24.0f*self->density*vkui_screen_scalef(self);
-	if(size == VKUI_TEXT_SIZE_SMALL)
+	if(size == VKUI_TEXT_SIZE_XSMALL)
+	{
+		return 0.45f*sizef;
+	}
+	else if(size == VKUI_TEXT_SIZE_SMALL)
 	{
 		return 0.66f*sizef;
 	}
