@@ -503,7 +503,7 @@ vkk_engine_importPipelineCache(vkk_engine_t* self,
 
 	char cache[256];
 	snprintf(cache, 256, "%s/pipeline.cache",
-	         self->resource_path);
+	         self->internal_path);
 
 	// ignore if cache doesn't exist
 	if(access(cache, F_OK) != 0)
@@ -591,7 +591,7 @@ vkk_engine_exportPipelineCache(vkk_engine_t* self)
 
 	char cache[256];
 	snprintf(cache, 256, "%s/pipeline.cache",
-	         self->resource_path);
+	         self->internal_path);
 
 	FILE* f = fopen(cache, "w");
 	if(f == NULL)
@@ -667,7 +667,7 @@ vkk_engine_importShaderModule(vkk_engine_t* self,
 
 	char resource[256];
 	snprintf(resource, 256, "%s/resource.pak",
-	         self->resource_path);
+	         self->internal_path);
 
 	pak_file_t* pak;
 	pak = pak_file_open(resource, PAK_FLAG_READ);
@@ -1080,11 +1080,18 @@ void vkk_engine_version(vkk_engine_t* self,
 	       sizeof(vkk_version_t));
 }
 
-const char* vkk_engine_resourcePath(vkk_engine_t* self)
+const char* vkk_engine_internalPath(vkk_engine_t* self)
 {
 	ASSERT(self);
 
-	return self->resource_path;
+	return self->internal_path;
+}
+
+const char* vkk_engine_externalPath(vkk_engine_t* self)
+{
+	ASSERT(self);
+
+	return self->external_path;
 }
 
 void vkk_engine_meminfo(vkk_engine_t* self,
@@ -1139,13 +1146,17 @@ vkk_engine_platformCmd(vkk_engine_t* self,
 
 vkk_engine_t* vkk_engine_new(vkk_platform_t* platform,
                              const char* app_name,
+                             const char* app_dir,
                              vkk_version_t* app_version,
-                             const char* resource_path)
+                             const char* internal_path,
+                             const char* external_path)
 {
 	ASSERT(platform);
 	ASSERT(app_name);
+	ASSERT(app_dir);
 	ASSERT(app_version);
-	ASSERT(resource_path);
+	ASSERT(internal_path);
+	ASSERT(external_path);
 
 	vkk_engine_t* self;
 	self = (vkk_engine_t*)
@@ -1168,10 +1179,62 @@ vkk_engine_t* vkk_engine_new(vkk_platform_t* platform,
 
 	self->version.major = 1;
 	self->version.minor = 1;
-	self->version.patch = 16;
+	self->version.patch = 17;
 
-	snprintf(self->resource_path, 256, "%s",
-	         resource_path);
+	// initialize paths
+	// trim tailing '/' character of internal/external path
+	size_t len = strlen(internal_path);
+	if(internal_path[len - 1] == '/')
+	{
+		#ifdef ANDROID
+			snprintf(self->internal_path, 256, "%s",
+			         internal_path);
+			len = strlen(self->internal_path);
+			if(self->internal_path[len - 1] == '/')
+			{
+				self->internal_path[len - 1] = '\0';
+			}
+		#else
+			snprintf(self->internal_path, 256, "%s%s",
+			         internal_path, app_dir);
+		#endif
+	}
+	else
+	{
+		#ifdef ANDROID
+			snprintf(self->internal_path, 256, "%s",
+			         internal_path);
+		#else
+			snprintf(self->internal_path, 256, "%s/%s",
+			         internal_path, app_dir);
+		#endif
+	}
+	len = strlen(external_path);
+	if(external_path[len - 1] == '/')
+	{
+		#ifdef ANDROID
+			snprintf(self->external_path, 256, "%s",
+			         external_path);
+			len = strlen(self->external_path);
+			if(self->external_path[len - 1] == '/')
+			{
+				self->external_path[len - 1] = '\0';
+			}
+		#else
+			snprintf(self->external_path, 256, "%s%s",
+			         external_path, app_dir);
+		#endif
+	}
+	else
+	{
+		#ifdef ANDROID
+			snprintf(self->external_path, 256, "%s",
+			         external_path);
+		#else
+			snprintf(self->external_path, 256, "%s/%s",
+			         external_path, app_dir);
+		#endif
+	}
 
 	if(pthread_mutex_init(&self->cmd_mutex, NULL) != 0)
 	{

@@ -21,8 +21,11 @@
  */
 
 #include <SDL2/SDL.h>
+#include <pwd.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <sys/types.h>
+#include <unistd.h>
 
 #define LOG_TAG "vkk"
 #include "../libcc/cc_log.h"
@@ -427,6 +430,30 @@ static vkk_platform_t* vkk_platform_new(void)
 	onCreate = VKK_PLATFORM_INFO.onCreate;
 	onEvent  = VKK_PLATFORM_INFO.onEvent;
 
+	// initialize home
+	char home[256];
+	const char* tmp = getenv("HOME");
+	if(tmp)
+	{
+		snprintf(home, 256, "%s", tmp);
+	}
+	else
+	{
+		struct passwd  pwd;
+		struct passwd* result = NULL;
+		char           buf[4096];
+		int ret = getpwuid_r(getuid(), &pwd,
+		                     buf, 4096,
+		                     &result);
+		if((ret != 0) || (result == NULL))
+		{
+			LOGE("invalid home");
+			return NULL;
+		}
+
+		snprintf(home, 256, "%s", result->pw_dir);
+	}
+
 	vkk_platform_t* self;
 	self = (vkk_platform_t*) CALLOC(1, sizeof(vkk_platform_t));
 	if(self == NULL)
@@ -461,8 +488,9 @@ static vkk_platform_t* vkk_platform_new(void)
 
 	self->engine = vkk_engine_new(self,
 	                              VKK_PLATFORM_INFO.app_name,
+	                              VKK_PLATFORM_INFO.app_dir,
 	                              &VKK_PLATFORM_INFO.app_version,
-	                              ".");
+	                              home, home);
 	if(self->engine == NULL)
 	{
 		goto fail_engine;

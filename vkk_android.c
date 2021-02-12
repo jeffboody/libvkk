@@ -23,6 +23,8 @@
 
 #include <android_native_app_glue.h>
 #include <android/window.h>
+#include <sys/stat.h>
+#include <sys/types.h>
 #include <jni.h>
 #include <math.h>
 #include <stdlib.h>
@@ -746,12 +748,16 @@ static void vkk_platform_draw(vkk_platform_t* self)
 	// create engine
 	if(self->engine == NULL)
 	{
-		const char* resource_path;
-		resource_path = self->app->activity->internalDataPath;
+		const char* internal_path;
+		const char* external_path;
+		internal_path = self->app->activity->internalDataPath;
+		external_path = self->app->activity->externalDataPath;
 		self->engine = vkk_engine_new(self,
 		                              VKK_PLATFORM_INFO.app_name,
+		                              VKK_PLATFORM_INFO.app_dir,
 		                              &VKK_PLATFORM_INFO.app_version,
-		                              resource_path);
+		                              internal_path,
+		                              external_path);
 		if(self->engine == NULL)
 		{
 			return;

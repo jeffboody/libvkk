@@ -90,7 +90,8 @@ typedef struct vkk_engine_s
 
 	vkk_version_t version;
 
-	char resource_path[256];
+	char internal_path[256];
+	char external_path[256];
 
 	// 1) Vulkan synchronization - 2.6. Threading Behavior
 	// * The queue parameter in vkQueueSubmit
@@ -158,8 +159,10 @@ typedef struct vkk_engine_s
 
 vkk_engine_t* vkk_engine_new(vkk_platform_t* platform,
                              const char* app_name,
+                             const char* app_dir,
                              vkk_version_t* app_version,
-                             const char* resource_path);
+                             const char* internal_path,
+                             const char* external_path);
 void          vkk_engine_delete(vkk_engine_t** _self);
 void          vkk_engine_shutdown(vkk_engine_t* self);
 void          vkk_engine_deviceWaitIdle(vkk_engine_t* self);

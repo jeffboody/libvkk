@@ -288,6 +288,7 @@ typedef void  (*vkk_platformOnEvent_fn)(void* priv,
 typedef struct
 {
 	const char*              app_name;
+	const char*              app_dir;
 	vkk_version_t            app_version;
 	vkk_platformOnCreate_fn  onCreate;
 	vkk_platformOnDestroy_fn onDestroy;

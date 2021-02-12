@@ -93,13 +93,15 @@ the engine version.
 	void vkk_engine_version(vkk_engine_t* self,
 	                        vkk_version_t* version);
 
-The vkk\_engine\_resourcePath() function provides a location
-for the app to store offline data. The resource path also
-contains a resource file provided by the app during the build
-process. The resource path maps to the internal data path on
-Android or the current directory on Linux.
+The vkk\_engine\_internalPath() and
+vkk\_engine\_externalPath() functions provide a locations
+for the app to store offline data. A resource file is
+provided by the app during the build process and is stored
+in the internal path.
 
-	const char* vkk_engine_resourcePath(vkk_engine_t* self);
+	const char* vkk_engine_internalPath(vkk_engine_t* self);
+
+	const char* vkk_engine_externalPath(vkk_engine_t* self);
 
 The vkk\_engine\_meminfo() function can be used to determine
 the amount of graphics memory allocated by the engine. A
@@ -913,6 +915,7 @@ delivered when the app main thread is paused.
 	typedef struct
 	{
 		const char*              app_name;
+		const char*              app_dir;
 		vkk_version_t            app_version;
 		vkk_platformOnCreate_fn  onCreate;
 		vkk_platformOnDestroy_fn onDestroy;

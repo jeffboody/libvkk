@@ -230,7 +230,8 @@ typedef struct
 
 void            vkk_engine_version(vkk_engine_t* self,
                                    vkk_version_t* version);
-const char*     vkk_engine_resourcePath(vkk_engine_t* self);
+const char*     vkk_engine_internalPath(vkk_engine_t* self);
+const char*     vkk_engine_externalPath(vkk_engine_t* self);
 void            vkk_engine_meminfo(vkk_engine_t* self,
                                    size_t* _count_chunks,
                                    size_t* _count_slots,
