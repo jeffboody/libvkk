@@ -46,6 +46,7 @@ typedef struct vkk_memoryManager_s
 	pthread_mutex_t manager_mutex;
 	pthread_mutex_t chunk_mutex;
 	pthread_cond_t  chunk_cond;
+	pthread_cond_t  pool_cond;
 } vkk_memoryManager_t;
 
 vkk_memoryManager_t* vkk_memoryManager_new(vkk_engine_t* engine);

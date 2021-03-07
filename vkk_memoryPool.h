@@ -30,6 +30,7 @@ typedef struct vkk_memoryPool_s
 {
 	vkk_memoryManager_t* mm;
 
+	int          locked;
 	uint32_t     count;
 	VkDeviceSize stride;
 	uint32_t     mt_index;
@@ -46,7 +47,8 @@ void              vkk_memoryPool_delete(vkk_memoryPool_t** _self);
 vkk_memory_t*     vkk_memoryPool_alloc(vkk_memoryPool_t* self);
 int               vkk_memoryPool_free(vkk_memoryPool_t* self,
                                       int shutdown,
-                                      vkk_memory_t** _memory);
+                                      vkk_memory_t** _memory,
+                                      vkk_memoryChunk_t** _chunk);
 void              vkk_memoryPool_meminfo(vkk_memoryPool_t* self);
 
 #endif

@@ -143,10 +143,12 @@ vkk_memoryPool_alloc(vkk_memoryPool_t* self)
 
 int vkk_memoryPool_free(vkk_memoryPool_t* self,
                         int shutdown,
-                        vkk_memory_t** _memory)
+                        vkk_memory_t** _memory,
+                        vkk_memoryChunk_t** _chunk)
 {
 	ASSERT(self);
 	ASSERT(_memory);
+	ASSERT(_chunk);
 
 	vkk_memory_t* memory = *_memory;
 	if(memory)
@@ -169,7 +171,7 @@ int vkk_memoryPool_free(vkk_memoryPool_t* self,
 
 				iter = cc_list_next(iter);
 			}
-			vkk_memoryChunk_delete(&chunk);
+			*_chunk = chunk;
 		}
 	}
 

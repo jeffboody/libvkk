@@ -91,35 +91,47 @@ vkk_memoryManager_chunkUnlock(vkk_memoryManager_t* self,
 	pthread_cond_broadcast(&self->chunk_cond);
 }
 
-static void
-vkk_memoryManager_freeLocked(vkk_memoryManager_t* self,
-                             vkk_memory_t** _memory)
+static int
+vkk_memoryManager_poolLock(vkk_memoryManager_t* self,
+                           vkk_memoryPool_t* pool)
 {
 	ASSERT(self);
-	ASSERT(_memory);
+	ASSERT(pool);
 
-	vkk_memory_t* memory = *_memory;
-	if(memory)
+	// check if the pool is already locked
+	// note that the pool may not exist after waiting
+	// so the caller must check if the pool exists
+	// before retrying the lock
+	if(pool->locked)
 	{
-		// free the memory and delete pool (if necessary);
-		vkk_memoryChunk_t* chunk = memory->chunk;
-		vkk_memoryPool_t*  pool  = chunk->pool;
-		if(vkk_memoryPool_free(pool, self->shutdown, _memory))
-		{
-			cc_mapIter_t  miterator;
-			cc_mapIter_t* miter = &miterator;
-
-			vkk_memoryPool_t* tmp;
-			tmp = (vkk_memoryPool_t*)
-			      cc_map_findf(self->pools, miter, "%u/%u",
-			                   (uint32_t) pool->mt_index,
-			                   (uint32_t) pool->stride);
-			assert(tmp == pool);
-
-			cc_map_remove(self->pools, &miter);
-			vkk_memoryPool_delete(&pool);
-		}
+		TRACE_END();
+		pthread_cond_wait(&self->pool_cond,
+		                  &self->manager_mutex);
+		TRACE_BEGIN();
+		return 0;
 	}
+
+	pool->locked = 1;
+
+	TRACE_END();
+	pthread_mutex_unlock(&self->manager_mutex);
+
+	return 1;
+}
+
+static void
+vkk_memoryManager_poolUnlock(vkk_memoryManager_t* self,
+                             vkk_memoryPool_t* pool)
+{
+	ASSERT(self);
+	ASSERT(pool);
+
+	pthread_mutex_lock(&self->manager_mutex);
+	TRACE_BEGIN();
+
+	pool->locked = 0;
+
+	pthread_cond_broadcast(&self->pool_cond);
 }
 
 static size_t computePoolCount(size_t stride)
@@ -148,6 +160,106 @@ static size_t computePoolCount(size_t stride)
 	}
 
 	return count;
+}
+
+static vkk_memory_t*
+vkk_memoryManager_alloc(vkk_memoryManager_t* self,
+                        VkMemoryRequirements* mr,
+                        VkFlags mp_flags)
+{
+	ASSERT(self);
+	ASSERT(mr);
+
+	vkk_memoryManager_lock(self);
+
+	vkk_engine_t* engine = self->engine;
+
+	uint32_t mt_index;
+	if(vkk_engine_getMemoryTypeIndex(engine,
+	                                 mr->memoryTypeBits,
+	                                 mp_flags,
+	                                 &mt_index) == 0)
+	{
+		goto fail_memory_type;
+	}
+
+	// compute the pool stride
+	VkDeviceSize stride = mr->alignment;
+	while(stride < mr->size)
+	{
+		stride *= 2;
+	}
+
+	// find an existing pool
+	int locked       = 0;
+	int pool_created = 0;
+	cc_mapIter_t      miterator;
+	cc_mapIter_t*     miter;
+	vkk_memoryPool_t* pool;
+	while(locked == 0)
+	{
+		miter = &miterator;
+		pool  = (vkk_memoryPool_t*)
+		        cc_map_findf(self->pools, miter, "%u/%u",
+		                     (uint32_t) mt_index,
+		                     (uint32_t) stride);
+		if(pool == NULL)
+		{
+			// otherwise create a new pool
+			uint32_t count = computePoolCount((size_t) stride);
+			pool = vkk_memoryPool_new(self, count, stride, mt_index);
+			if(pool == NULL)
+			{
+				goto fail_pool;
+			}
+			pool_created = 1;
+
+			if(cc_map_addf(self->pools, (const void*) pool, "%u/%u",
+			               (uint32_t) mt_index,
+			               (uint32_t) stride) == 0)
+			{
+				goto fail_add;
+			}
+		}
+
+		locked = vkk_memoryManager_poolLock(self, pool);
+	}
+
+	// allocate memory
+	vkk_memory_t* memory = vkk_memoryPool_alloc(pool);
+	if(memory == NULL)
+	{
+		vkk_memoryManager_poolUnlock(self, pool);
+		goto fail_alloc;
+	}
+	vkk_memoryManager_poolUnlock(self, pool);
+	vkk_memoryManager_unlock(self);
+
+	// success
+	return memory;
+
+	// failure
+	fail_alloc:
+	{
+		if(pool_created)
+		{
+			cc_map_findf(self->pools, miter, "%u/%u",
+			             (uint32_t) mt_index,
+			             (uint32_t) stride);
+			cc_map_remove(self->pools, &miter);
+		}
+	}
+	fail_add:
+	{
+		if(pool_created)
+		{
+			vkk_memoryPool_delete(&pool);
+		}
+	}
+	fail_pool:
+	fail_memory_type:
+		vkk_memoryManager_unlock(self);
+	return NULL;
 }
 
 /***********************************************************
@@ -194,10 +306,18 @@ vkk_memoryManager_new(vkk_engine_t* engine)
 		goto fail_chunk_cond;
 	}
 
+	if(pthread_cond_init(&self->pool_cond, NULL) != 0)
+	{
+		LOGE("pthread_cond_init failed");
+		goto fail_pool_cond;
+	}
+
 	// success
 	return self;
 
 	// failure
+	fail_pool_cond:
+		pthread_cond_destroy(&self->chunk_cond);
 	fail_chunk_cond:
 		pthread_mutex_destroy(&self->chunk_mutex);
 	fail_chunk_mutex:
@@ -218,6 +338,7 @@ void vkk_memoryManager_delete(vkk_memoryManager_t** _self)
 	{
 		ASSERT(cc_map_size(self->pools) == 0);
 
+		pthread_cond_destroy(&self->pool_cond);
 		pthread_cond_destroy(&self->chunk_cond);
 		pthread_mutex_destroy(&self->chunk_mutex);
 		pthread_mutex_destroy(&self->manager_mutex);
@@ -242,9 +363,8 @@ vkk_memoryManager_allocBuffer(vkk_memoryManager_t* self,
                               size_t size,
                               const void* buf)
 {
+	// buf may be NULL
 	ASSERT(self);
-
-	vkk_memoryManager_lock(self);
 
 	vkk_engine_t* engine = self->engine;
 
@@ -254,123 +374,33 @@ vkk_memoryManager_allocBuffer(vkk_memoryManager_t* self,
 
 	VkFlags mp_flags = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT |
 	                   VK_MEMORY_PROPERTY_HOST_COHERENT_BIT;
-	uint32_t mt_index;
-	if(vkk_engine_getMemoryTypeIndex(engine,
-	                                 mr.memoryTypeBits,
-	                                 mp_flags,
-	                                 &mt_index) == 0)
+
+	vkk_memory_t* memory;
+	memory = vkk_memoryManager_alloc(self, &mr, mp_flags);
+	if(memory == NULL)
 	{
-		vkk_memoryManager_unlock(self);
 		return NULL;
 	}
 
-	// compute the pool stride
-	VkDeviceSize stride = mr.alignment;
-	while(stride < mr.size)
-	{
-		stride *= 2;
-	}
-
-	// find an existing pool
-	int pool_created = 0;
-	cc_mapIter_t      miterator;
-	cc_mapIter_t*     miter = &miterator;
-	vkk_memoryPool_t* pool;
-	pool = (vkk_memoryPool_t*)
-	       cc_map_findf(self->pools, miter, "%u/%u",
-	                    (uint32_t) mt_index,
-	                    (uint32_t) stride);
-	if(pool == NULL)
-	{
-		// otherwise create a new pool
-		uint32_t count = computePoolCount((size_t) stride);
-		pool = vkk_memoryPool_new(self, count, stride, mt_index);
-		if(pool == NULL)
-		{
-			vkk_memoryManager_unlock(self);
-			return NULL;
-		}
-		pool_created = 1;
-
-		if(cc_map_addf(self->pools, (const void*) pool, "%u/%u",
-		               (uint32_t) mt_index,
-		               (uint32_t) stride) == 0)
-		{
-			goto fail_pool;
-		}
-	}
-
-	// allocate memory
-	vkk_memory_t* memory = vkk_memoryPool_alloc(pool);
-	if(memory == NULL)
-	{
-		goto fail_alloc;
-	}
-
-	vkk_memoryChunk_t* chunk = memory->chunk;
-	vkk_memoryManager_chunkLock(self, chunk);
 	if(buf)
 	{
-		if(size > pool->stride)
-		{
-			LOGE("invalid size=%u, stride=%u",
-			     (uint32_t) size, (uint32_t) pool->stride);
-			goto fail_size;
-		}
-
-		void* data;
-		if(vkMapMemory(engine->device, chunk->memory,
-		               memory->offset, size, 0,
-		               &data) == VK_SUCCESS)
-		{
-			memcpy(data, buf, size);
-			vkUnmapMemory(engine->device, chunk->memory);
-		}
-		else
-		{
-			LOGE("vkMapMemory failed");
-			goto fail_map;
-		}
+		vkk_memoryManager_update(self, memory, size, buf);
 	}
 
 	if(vkBindBufferMemory(engine->device, buffer,
-	                      chunk->memory,
+	                      memory->chunk->memory,
 	                      memory->offset) != VK_SUCCESS)
 	{
 		LOGE("vkBindBufferMemory failed");
 		goto fail_bind;
 	}
 
-	vkk_memoryManager_chunkUnlock(self, chunk);
-	vkk_memoryManager_unlock(self);
-
 	// success
 	return memory;
 
 	// failure
 	fail_bind:
-	fail_map:
-	fail_size:
-		vkk_memoryManager_chunkUnlock(self, chunk);
-		vkk_memoryManager_freeLocked(self, &memory);
-	fail_alloc:
-	{
-		if(pool_created)
-		{
-			cc_map_findf(self->pools, miter, "%u/%u",
-			             (uint32_t) mt_index,
-			             (uint32_t) stride);
-			cc_map_remove(self->pools, &miter);
-		}
-	}
-	fail_pool:
-	{
-		if(pool_created)
-		{
-			vkk_memoryPool_delete(&pool);
-		}
-		vkk_memoryManager_unlock(self);
-	}
+		vkk_memoryManager_free(self, &memory);
 	return NULL;
 }
 
@@ -380,8 +410,6 @@ vkk_memoryManager_allocImage(vkk_memoryManager_t* self,
 {
 	ASSERT(self);
 
-	vkk_memoryManager_lock(self);
-
 	vkk_engine_t* engine = self->engine;
 
 	VkMemoryRequirements mr;
@@ -389,94 +417,28 @@ vkk_memoryManager_allocImage(vkk_memoryManager_t* self,
 	                             image, &mr);
 
 	VkFlags mp_flags = 0;
-	uint32_t mt_index;
-	if(vkk_engine_getMemoryTypeIndex(engine,
-	                                 mr.memoryTypeBits,
-	                                 mp_flags,
-	                                 &mt_index) == 0)
+
+	vkk_memory_t* memory;
+	memory = vkk_memoryManager_alloc(self, &mr, mp_flags);
+	if(memory == NULL)
 	{
-		vkk_memoryManager_unlock(self);
 		return NULL;
 	}
 
-	// compute the pool stride
-	VkDeviceSize stride = mr.alignment;
-	while(stride < mr.size)
-	{
-		stride *= 2;
-	}
-
-	// find an existing pool
-	int pool_created = 0;
-	cc_mapIter_t      miterator;
-	cc_mapIter_t*     miter = &miterator;
-	vkk_memoryPool_t* pool;
-	pool = (vkk_memoryPool_t*)
-	       cc_map_findf(self->pools, miter, "%u/%u",
-	                    (uint32_t) mt_index,
-	                    (uint32_t) stride);
-	if(pool == NULL)
-	{
-		// otherwise create a new pool
-		uint32_t count = computePoolCount((size_t) stride);
-		pool = vkk_memoryPool_new(self, count, stride, mt_index);
-		if(pool == NULL)
-		{
-			vkk_memoryManager_unlock(self);
-			return NULL;
-		}
-		pool_created = 1;
-
-		if(cc_map_addf(self->pools, (const void*) pool, "%u/%u",
-		               (uint32_t) mt_index,
-		               (uint32_t) stride) == 0)
-		{
-			goto fail_pool;
-		}
-	}
-
-	// allocate memory
-	vkk_memory_t* memory = vkk_memoryPool_alloc(pool);
-	if(memory == NULL)
-	{
-		goto fail_alloc;
-	}
-
-	vkk_memoryChunk_t* chunk = memory->chunk;
 	if(vkBindImageMemory(engine->device, image,
-	                     chunk->memory,
+	                     memory->chunk->memory,
 	                     memory->offset) != VK_SUCCESS)
 	{
 		LOGE("vkBindBufferMemory failed");
 		goto fail_bind;
 	}
 
-	vkk_memoryManager_unlock(self);
-
 	// success
 	return memory;
 
 	// failure
 	fail_bind:
-		vkk_memoryManager_freeLocked(self, &memory);
-	fail_alloc:
-	{
-		if(pool_created)
-		{
-			cc_map_findf(self->pools, miter, "%u/%u",
-			             (uint32_t) mt_index,
-			             (uint32_t) stride);
-			cc_map_remove(self->pools, &miter);
-		}
-	}
-	fail_pool:
-	{
-		if(pool_created)
-		{
-			vkk_memoryPool_delete(&pool);
-		}
-		vkk_memoryManager_unlock(self);
-	}
+		vkk_memoryManager_free(self, &memory);
 	return NULL;
 }
 
@@ -486,9 +448,49 @@ void vkk_memoryManager_free(vkk_memoryManager_t* self,
 	ASSERT(self);
 	ASSERT(_memory);
 
-	vkk_memoryManager_lock(self);
-	vkk_memoryManager_freeLocked(self, _memory);
-	vkk_memoryManager_unlock(self);
+	vkk_memory_t* memory = *_memory;
+	if(memory)
+	{
+		vkk_memoryManager_lock(self);
+
+		// free the memory and delete pool (if necessary);
+		vkk_memoryPool_t* pool = memory->chunk->pool;
+
+		int locked = 0;
+		while(locked == 0)
+		{
+			locked = vkk_memoryManager_poolLock(self, pool);
+		}
+
+		vkk_memoryChunk_t* chunk = NULL;
+		if(vkk_memoryPool_free(pool, self->shutdown,
+		                       _memory, &chunk))
+		{
+			cc_mapIter_t  miterator;
+			cc_mapIter_t* miter = &miterator;
+
+			vkk_memoryPool_t* tmp;
+			tmp = (vkk_memoryPool_t*)
+			      cc_map_findf(self->pools, miter, "%u/%u",
+			                   (uint32_t) pool->mt_index,
+			                   (uint32_t) pool->stride);
+			assert(tmp == pool);
+
+			cc_map_remove(self->pools, &miter);
+			vkk_memoryManager_poolUnlock(self, pool);
+		}
+		else
+		{
+			vkk_memoryManager_poolUnlock(self, pool);
+			pool = NULL;
+		}
+		vkk_memoryManager_unlock(self);
+
+		// chunk and pool may be deleted while unlocked
+		// since they have been detached from the manager
+		vkk_memoryChunk_delete(&chunk);
+		vkk_memoryPool_delete(&pool);
+	}
 }
 
 void vkk_memoryManager_update(vkk_memoryManager_t* self,
