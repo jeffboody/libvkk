@@ -1175,7 +1175,7 @@ vkui_screen_spriteImage(vkui_screen_t* self,
 	}
 	else if(strstr(name, ".jpg"))
 	{
-		tex = texgz_jpeg_importf(pak->f);
+		tex = texgz_jpeg_importf(pak->f, TEXGZ_RGB);
 	}
 	else if(strstr(name, ".texz"))
 	{
