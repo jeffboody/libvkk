@@ -55,6 +55,18 @@ vkk_memoryChunk_new(vkk_memoryPool_t* pool)
 
 	self->pool = pool;
 
+	// create an updater hash to reduce mutex conflicts
+	// for unrelated chunks
+	int      i;
+	int      u = 0;
+	int      n = sizeof(uint64_t);
+	uint64_t p = (uint64_t) self;
+	for(i = 0; i < n; ++i)
+	{
+		u += (p >> i) & 0xFF;
+	}
+	self->updater = u % VKK_CHUNK_UPDATERS;
+
 	VkMemoryAllocateInfo ma_info =
 	{
 		.sType           = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO,

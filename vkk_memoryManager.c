@@ -63,14 +63,16 @@ vkk_memoryManager_chunkLock(vkk_memoryManager_t* self,
 	ASSERT(self);
 	ASSERT(chunk);
 
-	pthread_mutex_lock(&self->chunk_mutex);
+	int u = chunk->updater;
+
+	pthread_mutex_lock(&self->chunk_mutex[u]);
 	TRACE_BEGIN();
 
 	while(chunk->locked)
 	{
 		TRACE_END();
-		pthread_cond_wait(&self->chunk_cond,
-		                  &self->chunk_mutex);
+		pthread_cond_wait(&self->chunk_cond[u],
+		                  &self->chunk_mutex[u]);
 		TRACE_BEGIN();
 	}
 
@@ -84,11 +86,13 @@ vkk_memoryManager_chunkUnlock(vkk_memoryManager_t* self,
 	ASSERT(self);
 	ASSERT(chunk);
 
+	int u = chunk->updater;
+
 	chunk->locked = 0;
 
 	TRACE_END();
-	pthread_mutex_unlock(&self->chunk_mutex);
-	pthread_cond_broadcast(&self->chunk_cond);
+	pthread_mutex_unlock(&self->chunk_mutex[u]);
+	pthread_cond_broadcast(&self->chunk_cond[u]);
 }
 
 static int
@@ -294,16 +298,24 @@ vkk_memoryManager_new(vkk_engine_t* engine)
 		goto fail_manager_mutex;
 	}
 
-	if(pthread_mutex_init(&self->chunk_mutex, NULL) != 0)
+	int u;
+	for(u = 0; u < VKK_CHUNK_UPDATERS; ++u)
 	{
-		LOGE("pthread_mutex_init failed");
-		goto fail_chunk_mutex;
+		if(pthread_mutex_init(&self->chunk_mutex[u], NULL) != 0)
+		{
+			LOGE("pthread_mutex_init failed");
+			goto fail_chunk_mutex;
+		}
 	}
 
-	if(pthread_cond_init(&self->chunk_cond, NULL) != 0)
+	int v;
+	for(v = 0; v < VKK_CHUNK_UPDATERS; ++v)
 	{
-		LOGE("pthread_cond_init failed");
-		goto fail_chunk_cond;
+		if(pthread_cond_init(&self->chunk_cond[v], NULL) != 0)
+		{
+			LOGE("pthread_cond_init failed");
+			goto fail_chunk_cond;
+		}
 	}
 
 	if(pthread_cond_init(&self->pool_cond, NULL) != 0)
@@ -317,9 +329,21 @@ vkk_memoryManager_new(vkk_engine_t* engine)
 
 	// failure
 	fail_pool_cond:
-		pthread_cond_destroy(&self->chunk_cond);
+	{
+		int i;
+		for(i = 0; i < v; ++i)
+		{
+			pthread_cond_destroy(&self->chunk_cond[i]);
+		}
+	}
 	fail_chunk_cond:
-		pthread_mutex_destroy(&self->chunk_mutex);
+	{
+		int i;
+		for(i = 0; i < u; ++i)
+		{
+			pthread_mutex_destroy(&self->chunk_mutex[i]);
+		}
+	}
 	fail_chunk_mutex:
 		pthread_mutex_destroy(&self->manager_mutex);
 	fail_manager_mutex:
@@ -339,8 +363,13 @@ void vkk_memoryManager_delete(vkk_memoryManager_t** _self)
 		ASSERT(cc_map_size(self->pools) == 0);
 
 		pthread_cond_destroy(&self->pool_cond);
-		pthread_cond_destroy(&self->chunk_cond);
-		pthread_mutex_destroy(&self->chunk_mutex);
+
+		int u;
+		for(u = 0; u < VKK_CHUNK_UPDATERS; ++u)
+		{
+			pthread_cond_destroy(&self->chunk_cond[u]);
+			pthread_mutex_destroy(&self->chunk_mutex[u]);
+		}
 		pthread_mutex_destroy(&self->manager_mutex);
 		cc_map_delete(&self->pools);
 		FREE(self);

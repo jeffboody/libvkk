@@ -31,6 +31,7 @@ typedef struct vkk_memoryChunk_s
 	vkk_memoryPool_t* pool;
 
 	int            locked;
+	int            updater;
 	uint32_t       slot;
 	uint32_t       usecount;
 	VkDeviceMemory memory;

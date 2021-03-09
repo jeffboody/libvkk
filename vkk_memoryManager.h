@@ -29,6 +29,8 @@
 #include "../libcc/cc_map.h"
 #include "vkk_memory.h"
 
+#define VKK_CHUNK_UPDATERS 8
+
 typedef struct vkk_memoryManager_s
 {
 	vkk_engine_t* engine;
@@ -44,8 +46,8 @@ typedef struct vkk_memoryManager_s
 	size_t size_slots;
 
 	pthread_mutex_t manager_mutex;
-	pthread_mutex_t chunk_mutex;
-	pthread_cond_t  chunk_cond;
+	pthread_mutex_t chunk_mutex[VKK_CHUNK_UPDATERS];
+	pthread_cond_t  chunk_cond[VKK_CHUNK_UPDATERS];
 	pthread_cond_t  pool_cond;
 } vkk_memoryManager_t;
 
