@@ -34,6 +34,12 @@
 #include "vkk_memoryManager.h"
 #include "vkk_memoryPool.h"
 
+typedef struct
+{
+	uint32_t mt_index;
+	uint32_t stride;
+} vkk_memoryPoolKey_t;
+
 /***********************************************************
 * private                                                  *
 ***********************************************************/
@@ -194,6 +200,12 @@ vkk_memoryManager_alloc(vkk_memoryManager_t* self,
 		stride *= 2;
 	}
 
+	vkk_memoryPoolKey_t key =
+	{
+		.mt_index = (uint32_t) mt_index,
+		.stride   = (uint32_t) stride
+	};
+
 	// find an existing pool
 	int locked       = 0;
 	int pool_created = 0;
@@ -204,9 +216,8 @@ vkk_memoryManager_alloc(vkk_memoryManager_t* self,
 	{
 		miter = &miterator;
 		pool  = (vkk_memoryPool_t*)
-		        cc_map_findf(self->pools, miter, "%u/%u",
-		                     (uint32_t) mt_index,
-		                     (uint32_t) stride);
+		        cc_map_findp(self->pools, miter,
+		                     sizeof(vkk_memoryPoolKey_t), &key);
 		if(pool == NULL)
 		{
 			// otherwise create a new pool
@@ -218,9 +229,8 @@ vkk_memoryManager_alloc(vkk_memoryManager_t* self,
 			}
 			pool_created = 1;
 
-			if(cc_map_addf(self->pools, (const void*) pool, "%u/%u",
-			               (uint32_t) mt_index,
-			               (uint32_t) stride) == 0)
+			if(cc_map_addp(self->pools, (const void*) pool,
+			               sizeof(vkk_memoryPoolKey_t), &key) == 0)
 			{
 				goto fail_add;
 			}
@@ -247,9 +257,8 @@ vkk_memoryManager_alloc(vkk_memoryManager_t* self,
 	{
 		if(pool_created)
 		{
-			cc_map_findf(self->pools, miter, "%u/%u",
-			             (uint32_t) mt_index,
-			             (uint32_t) stride);
+			cc_map_findp(self->pools, miter,
+			             sizeof(vkk_memoryPoolKey_t), &key);
 			cc_map_remove(self->pools, &miter);
 		}
 	}
@@ -491,6 +500,12 @@ void vkk_memoryManager_free(vkk_memoryManager_t* self,
 			locked = vkk_memoryManager_poolLock(self, pool);
 		}
 
+		vkk_memoryPoolKey_t key =
+		{
+			.mt_index = (uint32_t) pool->mt_index,
+			.stride   = (uint32_t) pool->stride
+		};
+
 		vkk_memoryChunk_t* chunk = NULL;
 		if(vkk_memoryPool_free(pool, self->shutdown,
 		                       _memory, &chunk))
@@ -500,9 +515,8 @@ void vkk_memoryManager_free(vkk_memoryManager_t* self,
 
 			vkk_memoryPool_t* tmp;
 			tmp = (vkk_memoryPool_t*)
-			      cc_map_findf(self->pools, miter, "%u/%u",
-			                   (uint32_t) pool->mt_index,
-			                   (uint32_t) pool->stride);
+			      cc_map_findp(self->pools, miter,
+			                   sizeof(vkk_memoryPoolKey_t), &key);
 			assert(tmp == pool);
 
 			cc_map_remove(self->pools, &miter);

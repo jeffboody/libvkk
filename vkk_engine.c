@@ -1974,11 +1974,8 @@ vkk_engine_getSamplerp(vkk_engine_t* self,
 	cc_mapIter_t miter;
 	VkSampler*   samplerp;
 	samplerp = (VkSampler*)
-	           cc_map_findf(self->samplers,
-                            &miter, "%i/%i/%i",
-                            si->min_filter,
-	                        si->mag_filter,
-	                        si->mipmap_mode);
+	           cc_map_findp(self->samplers, &miter,
+	                        sizeof(vkk_samplerInfo_t), si);
 	if(samplerp != NULL)
 	{
 		vkk_engine_utilityUnlock(self);
@@ -2038,9 +2035,8 @@ vkk_engine_getSamplerp(vkk_engine_t* self,
 		goto fail_create;
 	}
 
-	if(cc_map_addf(self->samplers, (const void*) samplerp,
-	               "%i/%i/%i", si->min_filter,
-	               si->mag_filter, si->mipmap_mode) == 0)
+	if(cc_map_addp(self->samplers, (const void*) samplerp,
+	               sizeof(vkk_samplerInfo_t), si) == 0)
 	{
 		goto fail_add;
 	}
