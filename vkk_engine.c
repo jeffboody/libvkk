@@ -1179,7 +1179,7 @@ vkk_engine_t* vkk_engine_new(vkk_platform_t* platform,
 
 	self->version.major = 1;
 	self->version.minor = 1;
-	self->version.patch = 17;
+	self->version.patch = 18;
 
 	// initialize paths
 	// trim tailing '/' character of internal/external path
@@ -1486,6 +1486,7 @@ void vkk_engine_mipmapImage(vkk_engine_t* self,
 	int i;
 	uint32_t w = image->width;
 	uint32_t h = image->height;
+	uint32_t d = image->depth;
 	for(i = 1; i < image->mip_levels; ++i)
 	{
 		VkImageBlit ib =
@@ -1507,7 +1508,7 @@ void vkk_engine_mipmapImage(vkk_engine_t* self,
 				{
 					.x = (uint32_t) (w >> (i - 1)),
 					.y = (uint32_t) (h >> (i - 1)),
-					.z = 1,
+					.z = (uint32_t) (d >> (i - 1)),
 				}
 			},
 			.dstSubresource =
@@ -1527,7 +1528,7 @@ void vkk_engine_mipmapImage(vkk_engine_t* self,
 				{
 					.x = (uint32_t) (w >> i),
 					.y = (uint32_t) (h >> i),
-					.z = 1,
+					.z = (uint32_t) (d >> i),
 				}
 			}
 		};
@@ -1540,6 +1541,10 @@ void vkk_engine_mipmapImage(vkk_engine_t* self,
 		if(ib.dstOffsets[1].y == 0)
 		{
 			ib.dstOffsets[1].y = 1;
+		}
+		if(ib.dstOffsets[1].z == 0)
+		{
+			ib.dstOffsets[1].z = 1;
 		}
 
 		VkFormat format = vkk_util_imageFormat(image->format);

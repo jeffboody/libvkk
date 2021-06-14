@@ -486,7 +486,7 @@ vkui_screen_new(vkk_engine_t* engine,
 
 	unsigned char pixel21[] = { 0, 0, 0, 255 };
 	self->img21 = vkk_image_new(engine,
-	                            1, 1,
+	                            1, 1, 1,
 	                            VKK_IMAGE_FORMAT_RGBA8888,
 	                            1, VKK_STAGE_FS,
 	                            (const void*) pixel21);
@@ -1270,7 +1270,7 @@ vkui_screen_spriteImage(vkui_screen_t* self,
 	}
 
 	image = vkk_image_new(self->engine,
-	                      tex->width, tex->height,
+	                      tex->width, tex->height, 1,
 	                      image_format, 0, VKK_STAGE_FS,
 	                      tex->pixels);
 	if(image == NULL)

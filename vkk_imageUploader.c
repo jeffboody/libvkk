@@ -323,7 +323,9 @@ int vkk_imageUploader_upload(vkk_imageUploader_t* self,
 
 	uint32_t width;
 	uint32_t height;
-	size_t size = vkk_image_size(image, &width, &height);
+	uint32_t depth;
+	size_t   size;
+	size = vkk_image_size(image, &width, &height, &depth);
 
 	vkk_uploaderBuffer_t* ub;
 	cc_multimapIter_t     miterator;
@@ -430,7 +432,7 @@ int vkk_imageUploader_upload(vkk_imageUploader_t* self,
 		{
 			.width  = image->width,
 			.height = image->height,
-			.depth  = 1
+			.depth  = image->depth
 		}
 	};
 

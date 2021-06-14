@@ -135,7 +135,7 @@ vkk_offscreenRenderer_newDepth(vkk_renderer_t* base,
 	vkk_engine_t* engine = base->engine;
 
 	self->depth_image = vkk_image_new(engine, width, height,
-	                                  VKK_IMAGE_FORMAT_DEPTH,
+	                                  1, VKK_IMAGE_FORMAT_DEPTH,
 	                                  0, VKK_STAGE_DEPTH, NULL);
 	if(self->depth_image == NULL)
 	{
@@ -169,7 +169,7 @@ vkk_offscreenRenderer_newFramebuffer(vkk_renderer_t* base,
 
 	vkk_engine_t* engine = base->engine;
 
-	self->src_image = vkk_image_new(engine, width, height,
+	self->src_image = vkk_image_new(engine, width, height, 1,
 	                                format, 0, VKK_STAGE_FS,
 	                                NULL);
 	if(self->src_image == NULL)
@@ -348,6 +348,7 @@ vkk_offscreenRenderer_begin(vkk_renderer_t* base,
 
 	ASSERT((image->width  == src_image->width)  &&
 	       (image->height == src_image->height) &&
+	       (image->depth  == src_image->depth)  &&
 	       (image->format == src_image->format));
 
 	VkCommandBuffer cb;

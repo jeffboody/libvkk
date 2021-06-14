@@ -368,7 +368,7 @@ vkk_defaultRenderer_newDepth(vkk_renderer_t* base)
 	self->depth_image = vkk_image_new(engine,
 	                                  self->swapchain_extent.width,
 	                                  self->swapchain_extent.height,
-	                                  VKK_IMAGE_FORMAT_DEPTH,
+	                                  1, VKK_IMAGE_FORMAT_DEPTH,
 	                                  0, VKK_STAGE_DEPTH, NULL);
 	if(self->depth_image == NULL)
 	{

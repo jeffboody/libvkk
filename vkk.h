@@ -51,14 +51,15 @@ typedef enum
 {
 	VKK_IMAGE_FORMAT_RGBA8888 = 0,
 	VKK_IMAGE_FORMAT_RGBA4444 = 1,
-	VKK_IMAGE_FORMAT_RGB888   = 2,
-	VKK_IMAGE_FORMAT_RGB565   = 3,
-	VKK_IMAGE_FORMAT_RG88     = 4,
-	VKK_IMAGE_FORMAT_R8       = 5,
-	VKK_IMAGE_FORMAT_DEPTH    = 6,
+	VKK_IMAGE_FORMAT_RGBAF32  = 2,
+	VKK_IMAGE_FORMAT_RGB888   = 3,
+	VKK_IMAGE_FORMAT_RGB565   = 4,
+	VKK_IMAGE_FORMAT_RG88     = 5,
+	VKK_IMAGE_FORMAT_R8       = 6,
+	VKK_IMAGE_FORMAT_DEPTH    = 7,
 } vkk_imageFormat_e;
 
-#define VKK_IMAGE_FORMAT_COUNT 7
+#define VKK_IMAGE_FORMAT_COUNT 8
 
 typedef enum
 {
@@ -264,6 +265,7 @@ size_t        vkk_buffer_size(vkk_buffer_t* self);
 vkk_image_t*      vkk_image_new(vkk_engine_t* engine,
                                 uint32_t width,
                                 uint32_t height,
+                                uint32_t depth,
                                 vkk_imageFormat_e format,
                                 int mipmap,
                                 vkk_stage_e stage,
@@ -272,7 +274,8 @@ void              vkk_image_delete(vkk_image_t** _self);
 vkk_imageFormat_e vkk_image_format(vkk_image_t* self);
 size_t            vkk_image_size(vkk_image_t* self,
                                  uint32_t* _width,
-                                 uint32_t* height);
+                                 uint32_t* _height,
+                                 uint32_t* _depth);
 
 /*
  * uniform set API

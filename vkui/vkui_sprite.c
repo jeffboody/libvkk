@@ -57,7 +57,8 @@ vkui_sprite_aspect(vkui_widget_t* widget, float* ar)
 
 	uint32_t w;
 	uint32_t h;
-	vkk_image_size(img21, &w, &h);
+	uint32_t d;
+	vkk_image_size(img21, &w, &h, &d);
 	*ar = ((float) w)/((float) h);
 }
 

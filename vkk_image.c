@@ -38,6 +38,7 @@
 vkk_image_t* vkk_image_new(vkk_engine_t* engine,
                            uint32_t width,
                            uint32_t height,
+                           uint32_t depth,
                            vkk_imageFormat_e format,
                            int mipmap,
                            vkk_stage_e stage,
@@ -57,8 +58,10 @@ vkk_image_t* vkk_image_new(vkk_engine_t* engine,
 
 		uint32_t w = 1;
 		uint32_t h = 1;
+		uint32_t d = 1;
 		uint32_t n = 1;
 		uint32_t m = 1;
+		uint32_t o = 1;
 
 		while(w < width)
 		{
@@ -72,14 +75,28 @@ vkk_image_t* vkk_image_new(vkk_engine_t* engine,
 			m += 1;
 		}
 
-		if((w != width) || (h != height))
+		while(d < depth)
 		{
-			LOGE("invalid w=%u, width=%u, h=%u, height=%u",
-			     w, width, h, height);
+			d *= 2;
+			o += 1;
+		}
+
+		if((w != width) || (h != height) || (d != depth))
+		{
+			LOGE("invalid w=%u, width=%u, h=%u, height=%u, d=%u, depth=%u",
+			     w, width, h, height, d, depth);
 			return NULL;
 		}
 
-		mip_levels = (m > n) ? m : n;
+		// get the maximum mip levels
+		if(m > n)
+		{
+			mip_levels = (m > o) ? m : o;
+		}
+		else
+		{
+			mip_levels = (n > o) ? n : o;
+		}
 	}
 
 	vkk_image_t* self;
@@ -102,6 +119,7 @@ vkk_image_t* vkk_image_new(vkk_engine_t* engine,
 
 	self->width      = width;
 	self->height     = height;
+	self->depth      = depth;
 	self->format     = format;
 	self->stage      = stage;
 	self->mip_levels = mip_levels;
@@ -137,13 +155,14 @@ vkk_image_t* vkk_image_new(vkk_engine_t* engine,
 		.sType       = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,
 		.pNext       = NULL,
 		.flags       = 0,
-		.imageType   = VK_IMAGE_TYPE_2D,
+		.imageType   = (depth == 1) ? VK_IMAGE_TYPE_2D :
+		                              VK_IMAGE_TYPE_3D,
 		.format      = vkk_util_imageFormat(format),
 		.extent      =
 		{
 			width,
 			height,
-			1
+			depth
 		},
 		.mipLevels   = mip_levels,
 		.arrayLayers = 1,
@@ -176,7 +195,8 @@ vkk_image_t* vkk_image_new(vkk_engine_t* engine,
 		.pNext      = NULL,
 		.flags      = 0,
 		.image      = self->image,
-		.viewType   = VK_IMAGE_VIEW_TYPE_2D,
+		.viewType   = (depth == 1) ? VK_IMAGE_VIEW_TYPE_2D :
+		                             VK_IMAGE_VIEW_TYPE_3D,
 		.format     = vkk_util_imageFormat(format),
 		.components =
 		{
@@ -252,24 +272,30 @@ vkk_imageFormat_e vkk_image_format(vkk_image_t* self)
 }
 
 size_t vkk_image_size(vkk_image_t* self,
-                      uint32_t* _width, uint32_t* _height)
+                      uint32_t* _width,
+                      uint32_t* _height,
+                      uint32_t* _depth)
 {
 	ASSERT(self);
 	ASSERT(_width);
 	ASSERT(_height);
+	ASSERT(_depth);
 
 	size_t bpp[VKK_IMAGE_FORMAT_COUNT] =
 	{
-		4, // VKK_IMAGE_FORMAT_RGBA8888
-		2, // VKK_IMAGE_FORMAT_RGBA4444
-		3, // VKK_IMAGE_FORMAT_RGB888
-		2, // VKK_IMAGE_FORMAT_RGB565
-		2, // VKK_IMAGE_FORMAT_RG88
-		1, // VKK_IMAGE_FORMAT_R8
-		4, // VKK_IMAGE_FORMAT_DEPTH
+		4,  // VKK_IMAGE_FORMAT_RGBA8888
+		2,  // VKK_IMAGE_FORMAT_RGBA4444
+		16, // VKK_IMAGE_FORMAT_RGBAF32
+		3,  // VKK_IMAGE_FORMAT_RGB888
+		2,  // VKK_IMAGE_FORMAT_RGB565
+		2,  // VKK_IMAGE_FORMAT_RG88
+		1,  // VKK_IMAGE_FORMAT_R8
+		4,  // VKK_IMAGE_FORMAT_DEPTH
 	};
 
 	*_width  = self->width;
 	*_height = self->height;
-	return self->width*self->height*bpp[self->format];
+	*_depth  = self->depth;
+	return self->width*self->height*self->depth*
+	       bpp[self->format];
 }

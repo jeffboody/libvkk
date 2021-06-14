@@ -38,6 +38,7 @@ typedef struct vkk_image_s
 	double            ts;
 	uint32_t          width;
 	uint32_t          height;
+	uint32_t          depth;
 	vkk_imageFormat_e format;
 	vkk_stage_e       stage;
 	uint32_t          mip_levels;
