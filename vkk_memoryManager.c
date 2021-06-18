@@ -425,13 +425,16 @@ vkk_memoryManager_allocBuffer(vkk_memoryManager_t* self,
 		vkk_memoryManager_update(self, memory, size, buf);
 	}
 
+	vkk_memoryManager_chunkLock(self, memory->chunk);
 	if(vkBindBufferMemory(engine->device, buffer,
 	                      memory->chunk->memory,
 	                      memory->offset) != VK_SUCCESS)
 	{
 		LOGE("vkBindBufferMemory failed");
+		vkk_memoryManager_chunkUnlock(self, memory->chunk);
 		goto fail_bind;
 	}
+	vkk_memoryManager_chunkUnlock(self, memory->chunk);
 
 	// success
 	return memory;
@@ -463,13 +466,16 @@ vkk_memoryManager_allocImage(vkk_memoryManager_t* self,
 		return NULL;
 	}
 
+	vkk_memoryManager_chunkLock(self, memory->chunk);
 	if(vkBindImageMemory(engine->device, image,
 	                     memory->chunk->memory,
 	                     memory->offset) != VK_SUCCESS)
 	{
-		LOGE("vkBindBufferMemory failed");
+		LOGE("vkBindImageMemory failed");
+		vkk_memoryManager_chunkUnlock(self, memory->chunk);
 		goto fail_bind;
 	}
+	vkk_memoryManager_chunkUnlock(self, memory->chunk);
 
 	// success
 	return memory;
