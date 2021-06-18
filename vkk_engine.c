@@ -1534,6 +1534,18 @@ void vkk_engine_mipmapImage(vkk_engine_t* self,
 		};
 
 		// enforce the minimum size
+		if(ib.srcOffsets[1].x == 0)
+		{
+			ib.srcOffsets[1].x = 1;
+		}
+		if(ib.srcOffsets[1].y == 0)
+		{
+			ib.srcOffsets[1].y = 1;
+		}
+		if(ib.srcOffsets[1].z == 0)
+		{
+			ib.srcOffsets[1].z = 1;
+		}
 		if(ib.dstOffsets[1].x == 0)
 		{
 			ib.dstOffsets[1].x = 1;
