@@ -1179,7 +1179,7 @@ vkk_engine_t* vkk_engine_new(vkk_platform_t* platform,
 
 	self->version.major = 1;
 	self->version.minor = 1;
-	self->version.patch = 18;
+	self->version.patch = 19;
 
 	// initialize paths
 	// trim tailing '/' character of internal/external path

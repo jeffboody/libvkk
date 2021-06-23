@@ -40,6 +40,7 @@ typedef struct vkk_image_s
 	uint32_t          height;
 	uint32_t          depth;
 	vkk_imageFormat_e format;
+	int               mipmap;
 	vkk_stage_e       stage;
 	uint32_t          mip_levels;
 	VkImageLayout*    layout_array;

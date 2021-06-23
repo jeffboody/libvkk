@@ -121,6 +121,7 @@ vkk_image_t* vkk_image_new(vkk_engine_t* engine,
 	self->height     = height;
 	self->depth      = depth;
 	self->format     = format;
+	self->mipmap     = mipmap;
 	self->stage      = stage;
 	self->mip_levels = mip_levels;
 
@@ -286,6 +287,7 @@ size_t vkk_image_size(vkk_image_t* self,
 		4,  // VKK_IMAGE_FORMAT_RGBA8888
 		2,  // VKK_IMAGE_FORMAT_RGBA4444
 		16, // VKK_IMAGE_FORMAT_RGBAF32
+		8,  // VKK_IMAGE_FORMAT_RGBAF16
 		3,  // VKK_IMAGE_FORMAT_RGB888
 		2,  // VKK_IMAGE_FORMAT_RGB565
 		2,  // VKK_IMAGE_FORMAT_RG88

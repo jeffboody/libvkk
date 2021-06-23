@@ -209,6 +209,228 @@ vkk_imageUploader_unlock(vkk_imageUploader_t* self)
 	pthread_mutex_unlock(&self->mutex);
 }
 
+static int
+vkk_imageUploader_uploadF16(vkk_imageUploader_t* self,
+                            vkk_image_t* image,
+                            const void* pixels)
+{
+	ASSERT(self);
+	ASSERT(image);
+	ASSERT(pixels);
+
+	vkk_engine_t* engine = self->engine;
+
+	vkk_image_t* tmp;
+	tmp = vkk_image_new(engine,
+	                    image->width, image->height,
+	                    image->depth,
+	                    VKK_IMAGE_FORMAT_RGBAF32,
+	                    image->mipmap, image->stage,
+	                    pixels);
+	if(tmp == NULL)
+	{
+		return 0;
+	}
+
+	vkk_imageUploader_lock(self);
+
+	vkk_uploaderInstance_t* ui;
+	cc_listIter_t* iter = cc_list_head(self->instance_list);
+	if(iter)
+	{
+		ui = (vkk_uploaderInstance_t*)
+		     cc_list_remove(self->instance_list, &iter);
+	}
+	else
+	{
+		ui = vkk_uploaderInstance_new(engine);
+		if(ui == NULL)
+		{
+			vkk_imageUploader_unlock(self);
+			goto fail_ui;
+		}
+	}
+	vkk_imageUploader_unlock(self);
+
+	VkCommandBuffer cb;
+	cb = vkk_commandBuffer_get(ui->cmd_buffer, 0);
+
+	vkResetFences(engine->device, 1, &ui->fence);
+	if(vkResetCommandBuffer(cb, 0) != VK_SUCCESS)
+	{
+		LOGE("vkResetCommandBuffer failed");
+		goto fail_cb;
+	}
+
+	// begin the transfer commands
+	VkCommandBufferInheritanceInfo cbi_info =
+	{
+		.sType                = VK_STRUCTURE_TYPE_COMMAND_BUFFER_INHERITANCE_INFO,
+		.pNext                = NULL,
+		.renderPass           = VK_NULL_HANDLE,
+		.subpass              = 0,
+		.framebuffer          = VK_NULL_HANDLE,
+		.occlusionQueryEnable = VK_FALSE,
+		.queryFlags           = 0,
+		.pipelineStatistics   = 0
+	};
+
+	VkCommandBufferBeginInfo cb_info =
+	{
+		.sType            = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,
+		.pNext            = NULL,
+		.flags            = 0,
+		.pInheritanceInfo = &cbi_info
+	};
+
+	if(vkBeginCommandBuffer(cb, &cb_info) != VK_SUCCESS)
+	{
+		LOGE("vkBeginCommandBuffer failed");
+		goto fail_begin_cb;
+	}
+
+	// transition tmp to src for blitting
+	vkk_util_imageMemoryBarrier(tmp, cb,
+	                            VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
+	                            0, tmp->mip_levels);
+
+	// transition image to dst for blitting
+	vkk_util_imageMemoryBarrier(image, cb,
+	                            VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+	                            0, image->mip_levels);
+
+	// blit each mip_level from tmp to image
+	int i;
+	uint32_t w = image->width;
+	uint32_t h = image->height;
+	uint32_t d = image->depth;
+	for(i = 0; i < image->mip_levels; ++i)
+	{
+		VkImageBlit ib =
+		{
+			.srcSubresource =
+			{
+				.aspectMask     = VK_IMAGE_ASPECT_COLOR_BIT,
+				.mipLevel       = i,
+				.baseArrayLayer = 0,
+				.layerCount     = 1
+			},
+			.srcOffsets =
+			{
+				{
+					.x = 0,
+					.y = 0,
+					.z = 0,
+				},
+				{
+					.x = (uint32_t) (w >> i),
+					.y = (uint32_t) (h >> i),
+					.z = (uint32_t) (d >> i),
+				}
+			},
+			.dstSubresource =
+			{
+				.aspectMask     = VK_IMAGE_ASPECT_COLOR_BIT,
+				.mipLevel       = i,
+				.baseArrayLayer = 0,
+				.layerCount     = 1
+			},
+			.dstOffsets =
+			{
+				{
+					.x = 0,
+					.y = 0,
+					.z = 0,
+				},
+				{
+					.x = (uint32_t) (w >> i),
+					.y = (uint32_t) (h >> i),
+					.z = (uint32_t) (d >> i),
+				}
+			}
+		};
+
+		// enforce the minimum size
+		if(ib.srcOffsets[1].x == 0)
+		{
+			ib.srcOffsets[1].x = 1;
+		}
+		if(ib.srcOffsets[1].y == 0)
+		{
+			ib.srcOffsets[1].y = 1;
+		}
+		if(ib.srcOffsets[1].z == 0)
+		{
+			ib.srcOffsets[1].z = 1;
+		}
+		if(ib.dstOffsets[1].x == 0)
+		{
+			ib.dstOffsets[1].x = 1;
+		}
+		if(ib.dstOffsets[1].y == 0)
+		{
+			ib.dstOffsets[1].y = 1;
+		}
+		if(ib.dstOffsets[1].z == 0)
+		{
+			ib.dstOffsets[1].z = 1;
+		}
+
+		vkCmdBlitImage(cb,
+		               tmp->image,
+		               VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
+		               image->image,
+		               VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+		               1, &ib, VK_FILTER_NEAREST);
+	}
+
+	// transition image shading mode
+	vkk_util_imageMemoryBarrier(image, cb,
+	                            VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+	                            0, image->mip_levels);
+
+	// end the transfer commands
+	vkEndCommandBuffer(cb);
+
+	// submit the commands
+	if(vkk_engine_queueSubmit(engine, VKK_QUEUE_OFFLINE, &cb,
+	                          NULL, NULL, NULL,
+	                          ui->fence) == 0)
+	{
+		goto fail_submit;
+	}
+
+	uint64_t timeout = UINT64_MAX;
+	if(vkWaitForFences(engine->device, 1, &ui->fence, VK_TRUE,
+	                   timeout) != VK_SUCCESS)
+	{
+		LOGW("vkWaitForFences failed");
+		vkk_engine_queueWaitIdle(engine, VKK_QUEUE_OFFLINE);
+	}
+
+	vkk_imageUploader_lock(self);
+	if(cc_list_append(self->instance_list, NULL,
+	                  (const void*) ui) == NULL)
+	{
+		vkk_uploaderInstance_delete(&ui);
+	}
+	vkk_imageUploader_unlock(self);
+
+	vkk_image_delete(&tmp);
+
+	// success
+	return 1;
+
+	// failure
+	fail_submit:
+	fail_begin_cb:
+	fail_cb:
+		vkk_uploaderInstance_delete(&ui);
+	fail_ui:
+		vkk_image_delete(&tmp);
+	return 0;
+}
+
 /***********************************************************
 * public                                                   *
 ***********************************************************/
@@ -319,6 +541,16 @@ int vkk_imageUploader_upload(vkk_imageUploader_t* self,
 	{
 		vkk_imageUploader_unlock(self);
 		return 0;
+	}
+
+	// F16 images are a special case because the source
+	// pixels are in F32 format and must be converted by
+	// performing vkCmdBlitImage since there is not a native
+	// F16 type in C
+	if(image->format == VKK_IMAGE_FORMAT_RGBAF16)
+	{
+		vkk_imageUploader_unlock(self);
+		return vkk_imageUploader_uploadF16(self, image, pixels);
 	}
 
 	uint32_t width;
