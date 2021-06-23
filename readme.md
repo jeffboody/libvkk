@@ -132,11 +132,12 @@ transparency blending.
 		VKK_IMAGE_FORMAT_RGBA8888 = 0,
 		VKK_IMAGE_FORMAT_RGBA4444 = 1,
 		VKK_IMAGE_FORMAT_RGBAF32  = 2,
-		VKK_IMAGE_FORMAT_RGB888   = 3,
-		VKK_IMAGE_FORMAT_RGB565   = 4,
-		VKK_IMAGE_FORMAT_RG88     = 5,
-		VKK_IMAGE_FORMAT_R8       = 6,
-		VKK_IMAGE_FORMAT_DEPTH    = 7,
+		VKK_IMAGE_FORMAT_RGBAF16  = 3,
+		VKK_IMAGE_FORMAT_RGB888   = 4,
+		VKK_IMAGE_FORMAT_RGB565   = 5,
+		VKK_IMAGE_FORMAT_RG88     = 6,
+		VKK_IMAGE_FORMAT_R8       = 7,
+		VKK_IMAGE_FORMAT_DEPTH    = 8,
 	} vkk_imageFormat_e;
 
 	typedef struct
@@ -255,17 +256,21 @@ shaders and/or fragment shaders. The pixels may be NULL for
 offscreen rendering.
 
 The vkk\_image\_new() and vkk\_image\_delete() functions can
-be used to create/destroy image objects.
+be used to create/destroy image objects. Note that the F16
+image format requires that the pixels be specified as floats
+which are then converted internally to half floats.
 
 	typedef enum
 	{
 		VKK_IMAGE_FORMAT_RGBA8888 = 0,
 		VKK_IMAGE_FORMAT_RGBA4444 = 1,
-		VKK_IMAGE_FORMAT_RGB888   = 2,
-		VKK_IMAGE_FORMAT_RGB565   = 3,
-		VKK_IMAGE_FORMAT_RG88     = 4,
-		VKK_IMAGE_FORMAT_R8       = 5,
-		VKK_IMAGE_FORMAT_DEPTH    = 6,
+		VKK_IMAGE_FORMAT_RGBAF32  = 2,
+		VKK_IMAGE_FORMAT_RGBAF16  = 3,
+		VKK_IMAGE_FORMAT_RGB888   = 4,
+		VKK_IMAGE_FORMAT_RGB565   = 5,
+		VKK_IMAGE_FORMAT_RG88     = 6,
+		VKK_IMAGE_FORMAT_R8       = 7,
+		VKK_IMAGE_FORMAT_DEPTH    = 8,
 	} vkk_imageFormat_e;
 
 	typedef enum
@@ -584,11 +589,13 @@ create/destroy graphics pipeline objects.
 	{
 		VKK_IMAGE_FORMAT_RGBA8888 = 0,
 		VKK_IMAGE_FORMAT_RGBA4444 = 1,
-		VKK_IMAGE_FORMAT_RGB888   = 2,
-		VKK_IMAGE_FORMAT_RGB565   = 3,
-		VKK_IMAGE_FORMAT_RG88     = 4,
-		VKK_IMAGE_FORMAT_R8       = 5,
-		VKK_IMAGE_FORMAT_DEPTH    = 6,
+		VKK_IMAGE_FORMAT_RGBAF32  = 2,
+		VKK_IMAGE_FORMAT_RGBAF16  = 3,
+		VKK_IMAGE_FORMAT_RGB888   = 4,
+		VKK_IMAGE_FORMAT_RGB565   = 5,
+		VKK_IMAGE_FORMAT_RG88     = 6,
+		VKK_IMAGE_FORMAT_R8       = 7,
+		VKK_IMAGE_FORMAT_DEPTH    = 8,
 	} vkk_imageFormat_e;
 
 	vkk_renderer_t* vkk_renderer_newOffscreen(vkk_engine_t* engine,
