@@ -220,6 +220,8 @@ void           vkui_screen_contentRect(vkui_screen_t* self,
                                        int b, int r);
 void           vkui_screen_focus(vkui_screen_t* self,
                                  vkui_widget_t* focus);
+void           vkui_screen_move(vkui_screen_t* self,
+                                vkui_widget_t* move);
 void           vkui_screen_density(vkui_screen_t* self,
                                    float density);
 void           vkui_screen_rescale(vkui_screen_t* self,

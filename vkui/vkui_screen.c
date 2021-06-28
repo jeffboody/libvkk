@@ -810,6 +810,15 @@ vkui_screen_focus(vkui_screen_t* self, vkui_widget_t* focus)
 	self->focus_widget = focus;
 }
 
+void
+vkui_screen_move(vkui_screen_t* self, vkui_widget_t* move)
+{
+	// move may be NULL
+	ASSERT(self);
+
+	self->move_widget = move;
+}
+
 void vkui_screen_resize(vkui_screen_t* self, int w, int h)
 {
 	ASSERT(self);
@@ -895,6 +904,8 @@ int vkui_screen_pointerUp(vkui_screen_t* self,
 	}
 	self->pointer_state = VKUI_WIDGET_POINTER_UP;
 
+	vkui_screen_move(self, NULL);
+
 	return touch;
 }
 
@@ -936,7 +947,12 @@ int vkui_screen_pointerMove(vkui_screen_t* self,
 
 	// ignore events with less than 8ms time delta
 	float dt = (float) (t0 - self->pointer_t0);
-	if(dt >= 0.008f)
+	if(self->move_widget)
+	{
+		vkui_widget_click(self->move_widget,
+		                  VKUI_WIDGET_POINTER_MOVE, x, y);
+	}
+	else if(dt >= 0.008f)
 	{
 		// update the move state
 		self->pointer_x0 = x;

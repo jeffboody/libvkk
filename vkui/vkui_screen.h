@@ -83,6 +83,7 @@ typedef struct vkui_screen_s
 	// widget(s)
 	vkui_widget_t* top_widget;
 	vkui_widget_t* focus_widget;
+	vkui_widget_t* move_widget;
 
 	// layout dirty flag
 	int dirty;
