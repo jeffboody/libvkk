@@ -220,11 +220,11 @@ vkk_imageUploader_uploadF16(vkk_imageUploader_t* self,
 
 	vkk_engine_t* engine = self->engine;
 
+	// tmp image is F32 format (F16 format - 1)
 	vkk_image_t* tmp;
 	tmp = vkk_image_new(engine,
 	                    image->width, image->height,
-	                    image->depth,
-	                    VKK_IMAGE_FORMAT_RGBAF32,
+	                    image->depth, image->format - 1,
 	                    image->mipmap, image->stage,
 	                    pixels);
 	if(tmp == NULL)
@@ -547,7 +547,10 @@ int vkk_imageUploader_upload(vkk_imageUploader_t* self,
 	// pixels are in F32 format and must be converted by
 	// performing vkCmdBlitImage since there is not a native
 	// F16 type in C
-	if(image->format == VKK_IMAGE_FORMAT_RGBAF16)
+	if((image->format == VKK_IMAGE_FORMAT_RGBAF16) ||
+	   (image->format == VKK_IMAGE_FORMAT_RGBF16)  ||
+	   (image->format == VKK_IMAGE_FORMAT_RGF16)   ||
+	   (image->format == VKK_IMAGE_FORMAT_RF16))
 	{
 		vkk_imageUploader_unlock(self);
 		return vkk_imageUploader_uploadF16(self, image, pixels);

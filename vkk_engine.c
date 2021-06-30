@@ -759,6 +759,17 @@ static void vkk_engine_initImageUsage(vkk_engine_t* self)
 				self->image_caps_array[i].offscreen_blend = 1;
 			}
 		}
+
+		// debug image caps
+		#if 0
+			LOGI("caps(%i) texture=%i, mipmap=%i, filter_linear=%i, offscreen=%i, offscreen_blend=%i",
+			     i,
+			     (int) self->image_caps_array[i].texture,
+			     (int) self->image_caps_array[i].mipmap,
+			     (int) self->image_caps_array[i].filter_linear,
+			     (int) self->image_caps_array[i].offscreen,
+			     (int) self->image_caps_array[i].offscreen_blend);
+		#endif
 	}
 }
 
@@ -1179,7 +1190,7 @@ vkk_engine_t* vkk_engine_new(vkk_platform_t* platform,
 
 	self->version.major = 1;
 	self->version.minor = 1;
-	self->version.patch = 19;
+	self->version.patch = 20;
 
 	// initialize paths
 	// trim tailing '/' character of internal/external path

@@ -135,9 +135,15 @@ transparency blending.
 		VKK_IMAGE_FORMAT_RGBAF16  = 3,
 		VKK_IMAGE_FORMAT_RGB888   = 4,
 		VKK_IMAGE_FORMAT_RGB565   = 5,
-		VKK_IMAGE_FORMAT_RG88     = 6,
-		VKK_IMAGE_FORMAT_R8       = 7,
-		VKK_IMAGE_FORMAT_DEPTH    = 8,
+		VKK_IMAGE_FORMAT_RGBF32   = 6,
+		VKK_IMAGE_FORMAT_RGBF16   = 7,
+		VKK_IMAGE_FORMAT_RG88     = 8,
+		VKK_IMAGE_FORMAT_RGF32    = 9,
+		VKK_IMAGE_FORMAT_RGF16    = 10,
+		VKK_IMAGE_FORMAT_R8       = 11,
+		VKK_IMAGE_FORMAT_RF32     = 12,
+		VKK_IMAGE_FORMAT_RF16     = 13,
+		VKK_IMAGE_FORMAT_DEPTH    = 14,
 	} vkk_imageFormat_e;
 
 	typedef struct
@@ -257,7 +263,7 @@ offscreen rendering.
 
 The vkk\_image\_new() and vkk\_image\_delete() functions can
 be used to create/destroy image objects. Note that the F16
-image format requires that the pixels be specified as floats
+image formats require that the pixels be specified as floats
 which are then converted internally to half floats.
 
 	typedef enum
@@ -268,9 +274,15 @@ which are then converted internally to half floats.
 		VKK_IMAGE_FORMAT_RGBAF16  = 3,
 		VKK_IMAGE_FORMAT_RGB888   = 4,
 		VKK_IMAGE_FORMAT_RGB565   = 5,
-		VKK_IMAGE_FORMAT_RG88     = 6,
-		VKK_IMAGE_FORMAT_R8       = 7,
-		VKK_IMAGE_FORMAT_DEPTH    = 8,
+		VKK_IMAGE_FORMAT_RGBF32   = 6,
+		VKK_IMAGE_FORMAT_RGBF16   = 7,
+		VKK_IMAGE_FORMAT_RG88     = 8,
+		VKK_IMAGE_FORMAT_RGF32    = 9,
+		VKK_IMAGE_FORMAT_RGF16    = 10,
+		VKK_IMAGE_FORMAT_R8       = 11,
+		VKK_IMAGE_FORMAT_RF32     = 12,
+		VKK_IMAGE_FORMAT_RF16     = 13,
+		VKK_IMAGE_FORMAT_DEPTH    = 14,
 	} vkk_imageFormat_e;
 
 	typedef enum
@@ -593,9 +605,15 @@ create/destroy graphics pipeline objects.
 		VKK_IMAGE_FORMAT_RGBAF16  = 3,
 		VKK_IMAGE_FORMAT_RGB888   = 4,
 		VKK_IMAGE_FORMAT_RGB565   = 5,
-		VKK_IMAGE_FORMAT_RG88     = 6,
-		VKK_IMAGE_FORMAT_R8       = 7,
-		VKK_IMAGE_FORMAT_DEPTH    = 8,
+		VKK_IMAGE_FORMAT_RGBF32   = 6,
+		VKK_IMAGE_FORMAT_RGBF16   = 7,
+		VKK_IMAGE_FORMAT_RG88     = 8,
+		VKK_IMAGE_FORMAT_RGF32    = 9,
+		VKK_IMAGE_FORMAT_RGF16    = 10,
+		VKK_IMAGE_FORMAT_R8       = 11,
+		VKK_IMAGE_FORMAT_RF32     = 12,
+		VKK_IMAGE_FORMAT_RF16     = 13,
+		VKK_IMAGE_FORMAT_DEPTH    = 14,
 	} vkk_imageFormat_e;
 
 	vkk_renderer_t* vkk_renderer_newOffscreen(vkk_engine_t* engine,
