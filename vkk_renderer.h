@@ -32,27 +32,6 @@
 
 #include "vkk.h"
 
-// function pointers
-typedef int
-(*vkk_renderer_beginDefaultFn)(vkk_renderer_t* self,
-                               float* clear_color);
-typedef int
-(*vkk_renderer_beginOffscreenFn)(vkk_renderer_t* self,
-                                 vkk_image_t* image,
-                                 float* clear_color);
-typedef void
-(*vkk_renderer_endFn)(vkk_renderer_t* self);
-typedef void
-(*vkk_renderer_surfaceSizeFn)(vkk_renderer_t* self,
-                              uint32_t* _width,
-                              uint32_t* _height);
-typedef VkRenderPass
-(*vkk_renderer_renderPassFn)(vkk_renderer_t* self);
-typedef VkCommandBuffer
-(*vkk_renderer_commandBufferFn)(vkk_renderer_t* self);
-typedef uint32_t
-(*vkk_renderer_swapchainFrameFn)(vkk_renderer_t* self);
-
 typedef enum
 {
 	VKK_RENDERER_TYPE_DEFAULT   = 0,
