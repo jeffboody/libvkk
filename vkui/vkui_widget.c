@@ -149,7 +149,7 @@ vkui_widget_new(vkui_screen_t* screen, size_t wsize,
 
 	// shader data
 	self->vb_xyuv = vkk_buffer_new(screen->engine,
-	                               VKK_UPDATE_MODE_DEFAULT,
+	                               VKK_UPDATE_MODE_ASYNCHRONOUS,
 	                               VKK_BUFFER_USAGE_VERTEX,
 	                               4*VKUI_WIDGET_BEZEL*sizeof(cc_vec4f_t),
 	                               NULL);
@@ -159,7 +159,7 @@ vkui_widget_new(vkui_screen_t* screen, size_t wsize,
 	}
 
 	self->ub10_color = vkk_buffer_new(screen->engine,
-	                                VKK_UPDATE_MODE_DEFAULT,
+	                                VKK_UPDATE_MODE_ASYNCHRONOUS,
 	                                VKK_BUFFER_USAGE_UNIFORM,
 	                                sizeof(cc_vec4f_t),
 	                                color);

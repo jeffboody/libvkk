@@ -34,10 +34,10 @@
 #include "vkk_defaultRenderer.h"
 #include "vkk_engine.h"
 #include "vkk_graphicsPipeline.h"
+#include "vkk_imageRenderer.h"
 #include "vkk_imageUploader.h"
 #include "vkk_image.h"
 #include "vkk_memoryManager.h"
-#include "vkk_offscreenRenderer.h"
 #include "vkk_pipelineLayout.h"
 #include "vkk_platform.h"
 #include "vkk_secondaryRenderer.h"
@@ -750,25 +750,25 @@ static void vkk_engine_initImageUsage(vkk_engine_t* self)
 			self->image_caps_array[i].filter_linear = 1;
 		}
 
-		// check for offscreen caps
+		// check for target caps
 		if(flags & VK_FORMAT_FEATURE_COLOR_ATTACHMENT_BIT)
 		{
-			self->image_caps_array[i].offscreen = 1;
+			self->image_caps_array[i].target = 1;
 			if(flags & VK_FORMAT_FEATURE_COLOR_ATTACHMENT_BLEND_BIT)
 			{
-				self->image_caps_array[i].offscreen_blend = 1;
+				self->image_caps_array[i].target_blend = 1;
 			}
 		}
 
 		// debug image caps
 		#if 0
-			LOGI("caps(%i) texture=%i, mipmap=%i, filter_linear=%i, offscreen=%i, offscreen_blend=%i",
+			LOGI("caps(%i) texture=%i, mipmap=%i, filter_linear=%i, target=%i, target_blend=%i",
 			     i,
 			     (int) self->image_caps_array[i].texture,
 			     (int) self->image_caps_array[i].mipmap,
 			     (int) self->image_caps_array[i].filter_linear,
-			     (int) self->image_caps_array[i].offscreen,
-			     (int) self->image_caps_array[i].offscreen_blend);
+			     (int) self->image_caps_array[i].target,
+			     (int) self->image_caps_array[i].target_blend);
 		#endif
 	}
 }
@@ -815,9 +815,9 @@ vkk_engine_destructRenderer(vkk_engine_t* self, int wait,
 	if(renderer)
 	{
 		// default renderer deleted in vkk_engine_delete
-		if(renderer->type == VKK_RENDERER_TYPE_OFFSCREEN)
+		if(renderer->type == VKK_RENDERER_TYPE_IMAGE)
 		{
-			vkk_offscreenRenderer_delete(_renderer);
+			vkk_imageRenderer_delete(_renderer);
 		}
 		else if(renderer->type == VKK_RENDERER_TYPE_SECONDARY)
 		{
@@ -857,7 +857,7 @@ vkk_engine_destructBuffer(vkk_engine_t* self, int wait,
 		}
 
 		uint32_t count;
-		count = (buffer->update == VKK_UPDATE_MODE_DEFAULT) ?
+		count = (buffer->update == VKK_UPDATE_MODE_ASYNCHRONOUS) ?
 		        vkk_engine_swapchainImageCount(self) : 1;
 		int i;
 		for(i = 0; i < count; ++i)
@@ -1190,7 +1190,7 @@ vkk_engine_t* vkk_engine_new(vkk_platform_t* platform,
 
 	self->version.major = 1;
 	self->version.minor = 1;
-	self->version.patch = 20;
+	self->version.patch = 21;
 
 	// initialize paths
 	// trim tailing '/' character of internal/external path
@@ -1801,14 +1801,14 @@ vkk_engine_attachUniformBuffer(vkk_engine_t* self,
 	ASSERT(buffer);
 
 	uint32_t count;
-	count = (us->usf->update == VKK_UPDATE_MODE_DEFAULT) ?
+	count = (us->usf->update == VKK_UPDATE_MODE_ASYNCHRONOUS) ?
 	        vkk_engine_swapchainImageCount(self) : 1;
 
 	int i;
 	for(i = 0; i < count; ++i)
 	{
 		uint32_t idx;
-		idx = (buffer->update == VKK_UPDATE_MODE_DEFAULT) ? i : 0;
+		idx = (buffer->update == VKK_UPDATE_MODE_ASYNCHRONOUS) ? i : 0;
 		VkDescriptorBufferInfo db_info =
 		{
 			.buffer  = buffer->buffer[idx],
@@ -1848,7 +1848,7 @@ vkk_engine_attachUniformSampler(vkk_engine_t* self,
 	ASSERT(image);
 
 	uint32_t count;
-	count = (us->usf->update == VKK_UPDATE_MODE_DEFAULT) ?
+	count = (us->usf->update == VKK_UPDATE_MODE_ASYNCHRONOUS) ?
 	        vkk_engine_swapchainImageCount(self) : 1;
 
 	VkSampler* samplerp;

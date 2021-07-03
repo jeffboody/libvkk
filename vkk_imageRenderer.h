@@ -21,8 +21,8 @@
  *
  */
 
-#ifndef vkk_offscreenRenderer_H
-#define vkk_offscreenRenderer_H
+#ifndef vkk_imageRenderer_H
+#define vkk_imageRenderer_H
 
 #include "vkk.h"
 #include "vkk_commandBuffer.h"
@@ -50,33 +50,33 @@ typedef struct
 
 	// command buffer
 	vkk_commandBuffer_t* cmd_buffer;
-} vkk_offscreenRenderer_t;
+} vkk_imageRenderer_t;
 
 /*
- * offscreen renderer API
+ * image renderer API
  */
 
-vkk_renderer_t* vkk_offscreenRenderer_new(vkk_engine_t* engine,
-                                          uint32_t width,
-                                          uint32_t height,
-                                          vkk_imageFormat_e format);
-void            vkk_offscreenRenderer_delete(vkk_renderer_t** _base);
+vkk_renderer_t* vkk_imageRenderer_new(vkk_engine_t* engine,
+                                      uint32_t width,
+                                      uint32_t height,
+                                      vkk_imageFormat_e format);
+void            vkk_imageRenderer_delete(vkk_renderer_t** _base);
 
 /*
  * renderer callback API
  */
 
-int             vkk_offscreenRenderer_begin(vkk_renderer_t* base,
-                                            vkk_rendererMode_e mode,
-                                            vkk_image_t* image,
-                                            float* clear_color);
-void            vkk_offscreenRenderer_end(vkk_renderer_t* base);
-void            vkk_offscreenRenderer_surfaceSize(vkk_renderer_t* base,
-                                                  uint32_t* _width,
-                                                  uint32_t* _height);
-VkRenderPass    vkk_offscreenRenderer_renderPass(vkk_renderer_t* base);
-VkFramebuffer   vkk_offscreenRenderer_framebuffer(vkk_renderer_t* base);
-VkCommandBuffer vkk_offscreenRenderer_commandBuffer(vkk_renderer_t* base);
-uint32_t        vkk_offscreenRenderer_swapchainFrame(vkk_renderer_t* base);
+int             vkk_imageRenderer_begin(vkk_renderer_t* base,
+                                        vkk_rendererMode_e mode,
+                                        vkk_image_t* image,
+                                        float* clear_color);
+void            vkk_imageRenderer_end(vkk_renderer_t* base);
+void            vkk_imageRenderer_surfaceSize(vkk_renderer_t* base,
+                                              uint32_t* _width,
+                                              uint32_t* _height);
+VkRenderPass    vkk_imageRenderer_renderPass(vkk_renderer_t* base);
+VkFramebuffer   vkk_imageRenderer_framebuffer(vkk_renderer_t* base);
+VkCommandBuffer vkk_imageRenderer_commandBuffer(vkk_renderer_t* base);
+uint32_t        vkk_imageRenderer_swapchainFrame(vkk_renderer_t* base);
 
 #endif

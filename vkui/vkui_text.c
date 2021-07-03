@@ -411,7 +411,7 @@ vkui_text_new(vkui_screen_t* screen, size_t wsize,
 	memcpy(&self->style, text_style, sizeof(vkui_textStyle_t));
 
 	self->ub00_mvp = vkk_buffer_new(screen->engine,
-	                                VKK_UPDATE_MODE_DEFAULT,
+	                                VKK_UPDATE_MODE_ASYNCHRONOUS,
 	                                VKK_BUFFER_USAGE_UNIFORM,
 	                                sizeof(cc_mat4f_t), NULL);
 	if(self->ub00_mvp == NULL)
@@ -436,7 +436,7 @@ vkui_text_new(vkui_screen_t* screen, size_t wsize,
 	}
 
 	self->ub10_color = vkk_buffer_new(screen->engine,
-	                                  VKK_UPDATE_MODE_DEFAULT,
+	                                  VKK_UPDATE_MODE_ASYNCHRONOUS,
 	                                  VKK_BUFFER_USAGE_UNIFORM,
 	                                  sizeof(cc_vec4f_t),
 	                                  &text_style->color);
@@ -462,7 +462,7 @@ vkui_text_new(vkui_screen_t* screen, size_t wsize,
 	}
 
 	self->ub20_multiply = vkk_buffer_new(screen->engine,
-	                                     VKK_UPDATE_MODE_DEFAULT,
+	                                     VKK_UPDATE_MODE_ASYNCHRONOUS,
 	                                     VKK_BUFFER_USAGE_UNIFORM,
 	                                     sizeof(int),
 	                                     NULL);

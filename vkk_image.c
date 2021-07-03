@@ -45,7 +45,7 @@ vkk_image_t* vkk_image_new(vkk_engine_t* engine,
                            const void* pixels)
 {
 	// pixels may be NULL for depth image or
-	// offscreen rendering
+	// image rendering
 	ASSERT(engine);
 
 	// check if mipmapped images are a power-of-two

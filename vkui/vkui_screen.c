@@ -259,7 +259,7 @@ vkui_screen_new(vkk_engine_t* engine,
 	};
 
 	self->usf0_mvp = vkk_uniformSetFactory_new(engine,
-	                                           VKK_UPDATE_MODE_DEFAULT,
+	                                           VKK_UPDATE_MODE_ASYNCHRONOUS,
 	                                           1,
 	                                           ub0_array);
 	if(self->usf0_mvp == NULL)
@@ -278,7 +278,7 @@ vkui_screen_new(vkk_engine_t* engine,
 	};
 
 	self->usf1_color = vkk_uniformSetFactory_new(engine,
-	                                             VKK_UPDATE_MODE_DEFAULT,
+	                                             VKK_UPDATE_MODE_ASYNCHRONOUS,
 	                                             1,
 	                                             ub1_array);
 	if(self->usf1_color == NULL)
@@ -309,7 +309,7 @@ vkui_screen_new(vkk_engine_t* engine,
 	};
 
 	self->usf2_multiplyImage = vkk_uniformSetFactory_new(engine,
-	                                                     VKK_UPDATE_MODE_DEFAULT,
+	                                                     VKK_UPDATE_MODE_ASYNCHRONOUS,
 	                                                     2,
 	                                                     ub2_array);
 	if(self->usf2_multiplyImage == NULL)
@@ -346,7 +346,7 @@ vkui_screen_new(vkk_engine_t* engine,
 	};
 
 	self->usf3_tricolor = vkk_uniformSetFactory_new(engine,
-	                                                VKK_UPDATE_MODE_DEFAULT,
+	                                                VKK_UPDATE_MODE_ASYNCHRONOUS,
 	                                                4,
 	                                                ub3_array);
 	if(self->usf3_tricolor == NULL)
@@ -454,7 +454,7 @@ vkui_screen_new(vkk_engine_t* engine,
 	}
 
 	self->ub00_mvp = vkk_buffer_new(engine,
-	                                VKK_UPDATE_MODE_DEFAULT,
+	                                VKK_UPDATE_MODE_ASYNCHRONOUS,
 	                                VKK_BUFFER_USAGE_UNIFORM,
 	                                sizeof(cc_mat4f_t), NULL);
 	if(self->ub00_mvp == NULL)
@@ -1147,7 +1147,7 @@ vkui_screen_textVb(vkui_screen_t* self, uint32_t size,
 
 	// create a new buffer
 	return vkk_buffer_new(self->engine,
-	                      VKK_UPDATE_MODE_DEFAULT,
+	                      VKK_UPDATE_MODE_ASYNCHRONOUS,
 	                      VKK_BUFFER_USAGE_VERTEX,
 	                      size, NULL);
 }

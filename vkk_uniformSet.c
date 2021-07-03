@@ -123,7 +123,7 @@ vkk_uniformSet_new(vkk_engine_t* engine,
 		                                    ua_array, usf);
 
 		uint32_t ds_count;
-		ds_count = (usf->update == VKK_UPDATE_MODE_DEFAULT) ?
+		ds_count = (usf->update == VKK_UPDATE_MODE_ASYNCHRONOUS) ?
 		           vkk_engine_swapchainImageCount(engine) : 1;
 		self->ds_array = (VkDescriptorSet*)
 		                 CALLOC(ds_count, sizeof(VkDescriptorSet));

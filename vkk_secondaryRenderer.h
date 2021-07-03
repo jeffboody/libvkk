@@ -32,7 +32,7 @@ typedef struct
 {
 	vkk_renderer_t base;
 
-	vkk_renderer_t* primary;
+	vkk_renderer_t* executor;
 
 	// command buffers
 	// one per swapchain image
@@ -46,7 +46,7 @@ typedef struct
  * secondary renderer API
  */
 
-vkk_renderer_t* vkk_secondaryRenderer_new(vkk_renderer_t* primary);
+vkk_renderer_t* vkk_secondaryRenderer_new(vkk_renderer_t* executor);
 void            vkk_secondaryRenderer_delete(vkk_renderer_t** _base);
 
 /*

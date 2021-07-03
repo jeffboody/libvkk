@@ -37,7 +37,7 @@ The graphics features exposed by VKK include.
 
 * Single header file (vkk.h)
 * Rendering to the display
-* Offscreen rendering (e.g. render to texture)
+* Image rendering (e.g. render to texture)
 * Secondary rendering (e.g. render to command buffer)
 * Multithreaded rendering, creation and destruction
 * Graphics pipeline with vertex and fragment shader stages
@@ -122,9 +122,9 @@ used to print all allocations.
 The vkk\_engine\_imageCaps() function allows the app to
 query the capabilities supported for a given image format.
 Image capabilities flags include texture, mipmap,
-filter\_linear, offscreen and offscreen\_blend. The
-offscreen\_blend flag indicates if an image bound for
-offscreen rendering supports a graphics pipeline with
+filter\_linear, target and target\_blend. The
+target\_blend flag indicates if an image bound for
+target rendering supports a graphics pipeline with
 transparency blending.
 
 	typedef enum
@@ -151,8 +151,8 @@ transparency blending.
 		unsigned int texture:1;
 		unsigned int mipmap:1;
 		unsigned int filter_linear:1;
-		unsigned int offscreen:1;
-		unsigned int offscreen_blend:1;
+		unsigned int target:1;
+		unsigned int target:1;
 		unsigned int pad:17;
 	} vkk_imageCaps_t;
 
@@ -217,9 +217,9 @@ can be used to create/destroy buffer objects.
 
 	typedef enum
 	{
-		VKK_UPDATE_MODE_STATIC    = 0,
-		VKK_UPDATE_MODE_DEFAULT   = 1,
-		VKK_UPDATE_MODE_OFFSCREEN = 2,
+		VKK_UPDATE_MODE_STATIC       = 0,
+		VKK_UPDATE_MODE_ASYNCHRONOUS = 1,
+		VKK_UPDATE_MODE_SYNCHRONOUS  = 2,
 	} vkk_updateMode_e;
 
 	typedef enum
@@ -251,7 +251,7 @@ Images
 ======
 
 Image objects may be created by the app for textures and
-offscreen rendering. The image formats exposed include
+image rendering. The image formats exposed include
 RGBA8888, RGBA4444, RGB888, RGB565, RG88 and R8. However,
 you must query the image capabilities to determine if the
 image format is supported. The DEPTH format and stage are
@@ -259,7 +259,7 @@ only used internally by the engine. Images whose width and
 height are a power-of-two may be mipmapped. The stage flag
 indicates if the image will be used as a texture for vertex
 shaders and/or fragment shaders. The pixels may be NULL for
-offscreen rendering.
+image rendering.
 
 The vkk\_image\_new() and vkk\_image\_delete() functions can
 be used to create/destroy image objects. Note that the F16
@@ -320,7 +320,7 @@ See the _Engine_ section for details on querying image
 capabilities.
 
 See the _Renderer_ section for rules on sharing an image
-between renderers and for offscreen rendering.
+between renderers and for image rendering.
 
 See the _Uniform Set_ section for details on attaching a
 image to a uniform set.
@@ -441,9 +441,9 @@ functions can be used to create/destroy uniform set objects.
 
 	typedef enum
 	{
-		VKK_UPDATE_MODE_STATIC    = 0,
-		VKK_UPDATE_MODE_DEFAULT   = 1,
-		VKK_UPDATE_MODE_OFFSCREEN = 2,
+		VKK_UPDATE_MODE_STATIC       = 0,
+		VKK_UPDATE_MODE_ASYNCHRONOUS = 1,
+		VKK_UPDATE_MODE_SYNCHRONOUS  = 2,
 	} vkk_updateMode_e;
 
 	vkk_uniformSetFactory_t* vkk_uniformSetFactory_new(vkk_engine_t* engine,
@@ -585,14 +585,14 @@ Renderer
 
 Renderer objects are avilable to the app for three different
 rendering cases. The default renderer allows the app to
-render to the display, the offscreen renderer allows the app
+render to the display, the image renderer allows the app
 to render to an image and the secondary renderer allows the
 app to record commands to a secondary command buffer. The
 default renderer object is created/destroyed automatically
-by the engine while the offscreen/secondary renderer objects
+by the engine while the image/secondary renderer objects
 may be created/destroyed by the app.
 
-The vkk\_renderer\_newOffscreen(),
+The vkk\_renderer\_newImage(),
 vkk\_renderer\_newSecondary() and
 vkk\_graphicsPipeline\_delete() functions can be used to
 create/destroy graphics pipeline objects.
@@ -616,66 +616,66 @@ create/destroy graphics pipeline objects.
 		VKK_IMAGE_FORMAT_DEPTH    = 14,
 	} vkk_imageFormat_e;
 
-	vkk_renderer_t* vkk_renderer_newOffscreen(vkk_engine_t* engine,
-	                                          uint32_t width,
-	                                          uint32_t height,
-	                                          vkk_imageFormat_e format);
-	vkk_renderer_t* vkk_renderer_newSecondary(vkk_renderer_t* primary);
+	vkk_renderer_t* vkk_renderer_newImage(vkk_engine_t* engine,
+	                                      uint32_t width,
+	                                      uint32_t height,
+	                                      vkk_imageFormat_e format);
+	vkk_renderer_t* vkk_renderer_newSecondary(vkk_renderer_t* executor);
 	void            vkk_renderer_delete(vkk_renderer_t** _self);
 
 The rendering commands are issued between
 vkk\_renderer\_beginDefault(),
-vkk\_renderer\_beginOffscreen(),
+vkk\_renderer\_beginImage(),
 vkk\_renderer\_beginSecondary() and vkk\_renderer\_end()
 functions. If the begin function succeeds then the app
-must also call the end function. The default/offscreen
+must also call the end function. The default/image
 renderers accepts a rendering mode which determines the type
-of rendering commands that may be issued. The PRIMARY
+of rendering commands that may be issued. The DRAW
 rendering mode allows all rendering commands except for
-the vkk\_renderer\_drawSecondary() function. The SECONDARY
+the vkk\_renderer\_execute() function. The EXECUTE
 rendering mode only allows the
-vkk\_renderer\_drawSecondary() and
+vkk\_renderer\_execute() and
 vkk\_renderer\_surfaceSize() functions.
-The vkk\_renderer\_beginOffscreen() function accepts an
+The vkk\_renderer\_beginImage() function accepts an
 image that will be used as a render target. Note that the
 depth buffer, viewport and scissor are initialized
 automatically by the begin functions.
 
 	typedef enum
 	{
-		VKK_RENDERER_MODE_PRIMARY   = 1,
-		VKK_RENDERER_MODE_SECONDARY = 2,
+		VKK_RENDERER_MODE_DRAW    = 1,
+		VKK_RENDERER_MODE_EXECUTE = 2,
 	} vkk_rendererMode_e;
 
 	int  vkk_renderer_beginDefault(vkk_renderer_t* self,
 	                               vkk_rendererMode_e mode,
 	                               float* clear_color);
-	int  vkk_renderer_beginOffscreen(vkk_renderer_t* self,
-	                                 vkk_rendererMode_e mode,
-	                                 vkk_image_t* image,
-	                                 float* clear_color);
+	int  vkk_renderer_beginImage(vkk_renderer_t* self,
+	                             vkk_rendererMode_e mode,
+	                             vkk_image_t* image,
+	                             float* clear_color);
 	int  vkk_renderer_beginSecondary(vkk_renderer_t* self);
 	void vkk_renderer_end(vkk_renderer_t* self);
 
-The offscreen renderer images may only be used as a render
-target for a single offscreen renderer at once. Images must
+The image renderer images may only be used as a render
+target for a single image renderer at once. Images must
 not be in use by another renderer (e.g. used between the
-renderer begin/end functions) prior to beginning offscreen
+renderer begin/end functions) prior to beginning image
 rendering with the image. Images must match the size and
-format of the offscreen renderer.
+format of the image renderer.
 
 The app may utilize secondary rendering to optimize
 performance by creating multiple secondary renderers to
 record various parts of the scene in parallel. The drawing
 doesn't actually occur until the secondary renderers are
-drawn into a SECONDARY renderer with the
-vkk\_renderer\_drawSecondary() function. A secondary
-renderer may only be drawn once per frame into a SECONDARY
+drawn into an EXECUTE renderer with the
+vkk\_renderer\_execute() function. A secondary
+renderer may only be drawn once per frame into an EXECUTE
 renderer. The commands recorded to the secondary command
 buffer are only valid for the current frame and must be
 re-recorded for subsequent frames. And finally, the
 vkk_renderer\_beginSecondary() function should only be
-called if the corresponding SECONDARY renderer begin
+called if the corresponding EXECUTE renderer begin
 function was successful.
 
 Renderers may share images, uniform set factories and
@@ -693,18 +693,18 @@ query the renderer for the surface size.
 The vkk\_renderer\_updateBuffer() function may be used to
 update uniform, vertex and index buffers. The default
 renderer may only update buffers when the update mode is set
-to DEFAULT and offscreen renderers may only update buffers
-when the update mode is set to OFFSCREEN. When a uniform
-buffer is declared with an update mode of DEFAULT or
-OFFSCREEN then the app must update the buffer once and only
+to ASYNCHRONOUS and image renderers may only update buffers
+when the update mode is set to SYNCHRONOUS. When a uniform
+buffer is declared with an update mode of ASYNCHRONOUS or
+SYNCHRONOUS then the app must update the buffer once and only
 once every frame. The app must update the entire uniform
 buffer. The rules for updating a vertex/index buffer are
 subtly different. When a vertex/index buffer is declared
-with an update mode of DEFAULT or OFFSCREEN then the app
-may update the buffer zero or one time per frame. The app
-may update a subset of the vertex/index buffer. The partial
-updates for vertex/index buffers allows the app to avoid
-reallocating a vertex/index buffer per frame when the
+with an update mode of ASYNCHRONOUS or SYNCHRONOUS then the
+app may update the buffer zero or one time per frame. The
+app may update a subset of the vertex/index buffer. The
+partial updates for vertex/index buffers allows the app to
+avoid reallocating a vertex/index buffer per frame when the
 underlying geometry may be changing shape.
 
 	void vkk_renderer_updateBuffer(vkk_renderer_t* self,
@@ -804,9 +804,9 @@ the currently bound graphics pipeline.
 	                              vkk_indexType_e index_type,
 	                              vkk_buffer_t* index_buffer,
 	                              vkk_buffer_t** vertex_buffers);
-	void vkk_renderer_drawSecondary(vkk_renderer_t* self,
-	                                uint32_t secondary_count,
-	                                vkk_renderer_t** secondary_array);
+	void vkk_renderer_execute(vkk_renderer_t* self,
+	                          uint32_t secondary_count,
+	                          vkk_renderer_t** secondary_array);
 
 See the _Engine_ section to query the default renderer.
 
@@ -913,7 +913,7 @@ synchronization rules.
 8.  Synchronization for a specific renderer is required when
     called from multiple threads
 9.  Default and secondary renderers complete asynchronously
-10. Offscreen renderers completes synchronously
+10. Image renderers completes synchronously
 11. GPU synchronization is handled automatically by the
     engine
 

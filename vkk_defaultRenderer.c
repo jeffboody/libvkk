@@ -1128,7 +1128,7 @@ vkk_defaultRenderer_begin(vkk_renderer_t* base,
 
 	// the secondary renderers also initialize
 	// viewport and scissor in beginSecondary
-	if(mode == VKK_RENDERER_MODE_PRIMARY)
+	if(mode == VKK_RENDERER_MODE_DRAW)
 	{
 		VkViewport viewport =
 		{
@@ -1196,7 +1196,7 @@ vkk_defaultRenderer_begin(vkk_renderer_t* base,
 	};
 
 	VkSubpassContents contents = VK_SUBPASS_CONTENTS_INLINE;
-	if(mode == VKK_RENDERER_MODE_SECONDARY)
+	if(mode == VKK_RENDERER_MODE_EXECUTE)
 	{
 		contents = VK_SUBPASS_CONTENTS_SECONDARY_COMMAND_BUFFERS;
 	}

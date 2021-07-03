@@ -58,7 +58,7 @@ vkui_tricolor_t* vkui_tricolor_new(vkui_screen_t* screen,
 	self->screen = screen;
 
 	self->vb_xyuv = vkk_buffer_new(screen->engine,
-	                               VKK_UPDATE_MODE_DEFAULT,
+	                               VKK_UPDATE_MODE_ASYNCHRONOUS,
 	                               VKK_BUFFER_USAGE_VERTEX,
 	                               4*sizeof(cc_vec4f_t),
 	                               NULL);
@@ -98,7 +98,7 @@ vkui_tricolor_t* vkui_tricolor_new(vkui_screen_t* screen,
 	}
 
 	self->ub33_ab = vkk_buffer_new(screen->engine,
-	                               VKK_UPDATE_MODE_DEFAULT,
+	                               VKK_UPDATE_MODE_ASYNCHRONOUS,
 	                               VKK_BUFFER_USAGE_UNIFORM,
 	                               sizeof(cc_vec2f_t), NULL);
 	if(self->ub33_ab == NULL)

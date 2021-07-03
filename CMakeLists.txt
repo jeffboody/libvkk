@@ -42,12 +42,12 @@ add_library(vkk
             vkk_engine.c
             vkk_graphicsPipeline.c
             vkk_image.c
+            vkk_imageRenderer.c
             vkk_imageUploader.c
             vkk_memory.c
             vkk_memoryChunk.c
             vkk_memoryManager.c
             vkk_memoryPool.c
-            vkk_offscreenRenderer.c
             vkk_pipelineLayout.c
             vkk_renderer.c
             vkk_secondaryRenderer.c

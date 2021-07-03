@@ -123,9 +123,9 @@ typedef enum
 
 typedef enum
 {
-	VKK_UPDATE_MODE_STATIC    = 0,
-	VKK_UPDATE_MODE_DEFAULT   = 1,
-	VKK_UPDATE_MODE_OFFSCREEN = 2,
+	VKK_UPDATE_MODE_STATIC       = 0,
+	VKK_UPDATE_MODE_ASYNCHRONOUS = 1,
+	VKK_UPDATE_MODE_SYNCHRONOUS  = 2,
 } vkk_updateMode_e;
 
 #define VKK_UPDATE_MODE_COUNT 3
@@ -143,8 +143,8 @@ typedef enum
 
 typedef enum
 {
-	VKK_RENDERER_MODE_PRIMARY   = 1,
-	VKK_RENDERER_MODE_SECONDARY = 2,
+	VKK_RENDERER_MODE_DRAW    = 1,
+	VKK_RENDERER_MODE_EXECUTE = 2,
 } vkk_rendererMode_e;
 
 /*
@@ -177,8 +177,8 @@ typedef struct
 	unsigned int texture:1;
 	unsigned int mipmap:1;
 	unsigned int filter_linear:1;
-	unsigned int offscreen:1;
-	unsigned int offscreen_blend:1;
+	unsigned int target:1;
+	unsigned int target_blend:1;
 	unsigned int pad:17;
 } vkk_imageCaps_t;
 
@@ -326,19 +326,19 @@ void                    vkk_graphicsPipeline_delete(vkk_graphicsPipeline_t** _se
  * rendering API
  */
 
-vkk_renderer_t* vkk_renderer_newOffscreen(vkk_engine_t* engine,
-                                          uint32_t width,
-                                          uint32_t height,
-                                          vkk_imageFormat_e format);
-vkk_renderer_t* vkk_renderer_newSecondary(vkk_renderer_t* primary);
+vkk_renderer_t* vkk_renderer_newImage(vkk_engine_t* engine,
+                                      uint32_t width,
+                                      uint32_t height,
+                                      vkk_imageFormat_e format);
+vkk_renderer_t* vkk_renderer_newSecondary(vkk_renderer_t* executor);
 void            vkk_renderer_delete(vkk_renderer_t** _self);
 int             vkk_renderer_beginDefault(vkk_renderer_t* self,
                                           vkk_rendererMode_e mode,
                                           float* clear_color);
-int             vkk_renderer_beginOffscreen(vkk_renderer_t* self,
-                                            vkk_rendererMode_e mode,
-                                            vkk_image_t* image,
-                                            float* clear_color);
+int             vkk_renderer_beginImage(vkk_renderer_t* self,
+                                        vkk_rendererMode_e mode,
+                                        vkk_image_t* image,
+                                        float* clear_color);
 int             vkk_renderer_beginSecondary(vkk_renderer_t* self);
 void            vkk_renderer_end(vkk_renderer_t* self);
 void            vkk_renderer_surfaceSize(vkk_renderer_t* self,
@@ -378,8 +378,8 @@ void            vkk_renderer_drawIndexed(vkk_renderer_t* self,
                                          vkk_indexType_e index_type,
                                          vkk_buffer_t* index_buffer,
                                          vkk_buffer_t** vertex_buffers);
-void            vkk_renderer_drawSecondary(vkk_renderer_t* self,
-                                           uint32_t secondary_count,
-                                           vkk_renderer_t** secondary_array);
+void            vkk_renderer_execute(vkk_renderer_t* self,
+                                     uint32_t secondary_count,
+                                     vkk_renderer_t** secondary_array);
 
 #endif

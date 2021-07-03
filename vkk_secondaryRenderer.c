@@ -37,20 +37,17 @@
 #include "vkk_util.h"
 
 /***********************************************************
-* private                                                  *
-***********************************************************/
-
-/***********************************************************
 * public                                                   *
 ***********************************************************/
 
 vkk_renderer_t*
-vkk_secondaryRenderer_new(vkk_renderer_t* primary)
+vkk_secondaryRenderer_new(vkk_renderer_t* executor)
 {
-	ASSERT(primary);
-	ASSERT(primary->type != VKK_RENDERER_TYPE_SECONDARY);
+	ASSERT(executor);
+	ASSERT(executor->type != VKK_RENDERER_TYPE_SECONDARY);
+	ASSERT(executor->mode == VKK_RENDERER_MODE_EXECUTE);
 
-	vkk_engine_t* engine = primary->engine;
+	vkk_engine_t* engine = executor->engine;
 
 	vkk_secondaryRenderer_t* self;
 	self = (vkk_secondaryRenderer_t*)
@@ -65,13 +62,13 @@ vkk_secondaryRenderer_new(vkk_renderer_t* primary)
 	vkk_renderer_init(base, VKK_RENDERER_TYPE_SECONDARY,
 	                  engine);
 
-	self->primary = primary;
+	self->executor = executor;
 
 	uint32_t swapchain_image_count = 1;
-	if(primary->type == VKK_RENDERER_TYPE_DEFAULT)
+	if(executor->type == VKK_RENDERER_TYPE_DEFAULT)
 	{
 		vkk_defaultRenderer_t* def;
-		def = (vkk_defaultRenderer_t*) primary;
+		def = (vkk_defaultRenderer_t*) executor;
 		swapchain_image_count = def->swapchain_image_count;
 	}
 
@@ -116,7 +113,7 @@ int vkk_secondaryRenderer_begin(vkk_renderer_t* base)
 	self = (vkk_secondaryRenderer_t*) base;
 
 	uint32_t swapchain_frame;
-	swapchain_frame = vkk_renderer_swapchainFrame(self->primary);
+	swapchain_frame = vkk_renderer_swapchainFrame(self->executor);
 
 	VkCommandBuffer cb;
 	cb = vkk_commandBuffer_get(self->cmd_buffers,
@@ -129,8 +126,8 @@ int vkk_secondaryRenderer_begin(vkk_renderer_t* base)
 
 	VkFramebuffer framebuffer;
 	VkRenderPass  render_pass;
-	framebuffer = vkk_renderer_framebuffer(self->primary);
-	render_pass = vkk_renderer_renderPass(self->primary);
+	framebuffer = vkk_renderer_framebuffer(self->executor);
+	render_pass = vkk_renderer_renderPass(self->executor);
 	VkCommandBufferInheritanceInfo cbi_info =
 	{
 		.sType                = VK_STRUCTURE_TYPE_COMMAND_BUFFER_INHERITANCE_INFO,
@@ -159,7 +156,7 @@ int vkk_secondaryRenderer_begin(vkk_renderer_t* base)
 
 	uint32_t width;
 	uint32_t height;
-	vkk_renderer_surfaceSize(self->primary,
+	vkk_renderer_surfaceSize(self->executor,
 	                         &width, &height);
 	VkViewport viewport =
 	{
@@ -188,7 +185,7 @@ int vkk_secondaryRenderer_begin(vkk_renderer_t* base)
 	vkCmdSetScissor(cb, 0, 1, &scissor);
 
 	// update timestamp
-	self->ts = vkk_renderer_tsCurrent(self->primary);
+	self->ts = vkk_renderer_tsCurrent(self->executor);
 
 	return 1;
 }
@@ -213,7 +210,8 @@ void vkk_secondaryRenderer_surfaceSize(vkk_renderer_t* base,
 	vkk_secondaryRenderer_t* self;
 	self = (vkk_secondaryRenderer_t*) base;
 
-	vkk_renderer_surfaceSize(self->primary, _width, _height);
+	vkk_renderer_surfaceSize(self->executor,
+	                         _width, _height);
 }
 
 VkRenderPass
@@ -224,7 +222,7 @@ vkk_secondaryRenderer_renderPass(vkk_renderer_t* base)
 	vkk_secondaryRenderer_t* self;
 	self = (vkk_secondaryRenderer_t*) base;
 
-	return vkk_renderer_renderPass(self->primary);
+	return vkk_renderer_renderPass(self->executor);
 }
 
 VkFramebuffer
@@ -235,7 +233,7 @@ vkk_secondaryRenderer_framebuffer(vkk_renderer_t* base)
 	vkk_secondaryRenderer_t* self;
 	self = (vkk_secondaryRenderer_t*) base;
 
-	return vkk_renderer_framebuffer(self->primary);
+	return vkk_renderer_framebuffer(self->executor);
 }
 
 VkCommandBuffer
@@ -247,7 +245,7 @@ vkk_secondaryRenderer_commandBuffer(vkk_renderer_t* base)
 	self = (vkk_secondaryRenderer_t*) base;
 
 	uint32_t swapchain_frame;
-	swapchain_frame = vkk_renderer_swapchainFrame(self->primary);
+	swapchain_frame = vkk_renderer_swapchainFrame(self->executor);
 	return vkk_commandBuffer_get(self->cmd_buffers,
 	                             swapchain_frame);
 }
@@ -260,5 +258,5 @@ vkk_secondaryRenderer_swapchainFrame(vkk_renderer_t* base)
 	vkk_secondaryRenderer_t* self;
 	self = (vkk_secondaryRenderer_t*) base;
 
-	return vkk_renderer_swapchainFrame(self->primary);
+	return vkk_renderer_swapchainFrame(self->executor);
 }

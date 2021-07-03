@@ -27,7 +27,7 @@
 #define LOG_TAG "vkk"
 #include "../libcc/cc_log.h"
 #include "../libcc/cc_memory.h"
-#include "vkk_offscreenRenderer.h"
+#include "vkk_imageRenderer.h"
 #include "vkk_engine.h"
 #include "vkk_image.h"
 #include "vkk_util.h"
@@ -37,13 +37,13 @@
 ***********************************************************/
 
 static int
-vkk_offscreenRenderer_newRenderpass(vkk_renderer_t* base,
+vkk_imageRenderer_newRenderpass(vkk_renderer_t* base,
                                     vkk_imageFormat_e format)
 {
 	ASSERT(base);
 
-	vkk_offscreenRenderer_t* self;
-	self = (vkk_offscreenRenderer_t*) base;
+	vkk_imageRenderer_t* self;
+	self = (vkk_imageRenderer_t*) base;
 
 	vkk_engine_t* engine = base->engine;
 
@@ -123,14 +123,14 @@ vkk_offscreenRenderer_newRenderpass(vkk_renderer_t* base,
 }
 
 static int
-vkk_offscreenRenderer_newDepth(vkk_renderer_t* base,
-                               uint32_t width,
-                               uint32_t height)
+vkk_imageRenderer_newDepth(vkk_renderer_t* base,
+                           uint32_t width,
+                           uint32_t height)
 {
 	ASSERT(base);
 
-	vkk_offscreenRenderer_t* self;
-	self = (vkk_offscreenRenderer_t*) base;
+	vkk_imageRenderer_t* self;
+	self = (vkk_imageRenderer_t*) base;
 
 	vkk_engine_t* engine = base->engine;
 
@@ -146,26 +146,26 @@ vkk_offscreenRenderer_newDepth(vkk_renderer_t* base,
 }
 
 static void
-vkk_offscreenRenderer_deleteDepth(vkk_renderer_t* base)
+vkk_imageRenderer_deleteDepth(vkk_renderer_t* base)
 {
 	ASSERT(base);
 
-	vkk_offscreenRenderer_t* self;
-	self = (vkk_offscreenRenderer_t*) base;
+	vkk_imageRenderer_t* self;
+	self = (vkk_imageRenderer_t*) base;
 
 	vkk_image_delete(&self->depth_image);
 }
 
 static int
-vkk_offscreenRenderer_newFramebuffer(vkk_renderer_t* base,
-                                     uint32_t width,
-                                     uint32_t height,
-                                     vkk_imageFormat_e format)
+vkk_imageRenderer_newFramebuffer(vkk_renderer_t* base,
+                                 uint32_t width,
+                                 uint32_t height,
+                                 vkk_imageFormat_e format)
 {
 	ASSERT(base);
 
-	vkk_offscreenRenderer_t* self;
-	self = (vkk_offscreenRenderer_t*) base;
+	vkk_imageRenderer_t* self;
+	self = (vkk_imageRenderer_t*) base;
 
 	vkk_engine_t* engine = base->engine;
 
@@ -213,12 +213,12 @@ vkk_offscreenRenderer_newFramebuffer(vkk_renderer_t* base,
 }
 
 static void
-vkk_offscreenRenderer_deleteFramebuffer(vkk_renderer_t* base)
+vkk_imageRenderer_deleteFramebuffer(vkk_renderer_t* base)
 {
 	ASSERT(base);
 
-	vkk_offscreenRenderer_t* self;
-	self = (vkk_offscreenRenderer_t*) base;
+	vkk_imageRenderer_t* self;
+	self = (vkk_imageRenderer_t*) base;
 
 	vkk_engine_t* engine = base->engine;
 
@@ -233,15 +233,15 @@ vkk_offscreenRenderer_deleteFramebuffer(vkk_renderer_t* base)
 ***********************************************************/
 
 vkk_renderer_t*
-vkk_offscreenRenderer_new(vkk_engine_t* engine,
-                          uint32_t width, uint32_t height,
-                          vkk_imageFormat_e format)
+vkk_imageRenderer_new(vkk_engine_t* engine,
+                      uint32_t width, uint32_t height,
+                      vkk_imageFormat_e format)
 {
 	ASSERT(engine);
 
-	vkk_offscreenRenderer_t* self;
-	self = (vkk_offscreenRenderer_t*)
-	       CALLOC(1, sizeof(vkk_offscreenRenderer_t));
+	vkk_imageRenderer_t* self;
+	self = (vkk_imageRenderer_t*)
+	       CALLOC(1, sizeof(vkk_imageRenderer_t));
 	if(self == NULL)
 	{
 		LOGE("CALLOC failed");
@@ -249,7 +249,7 @@ vkk_offscreenRenderer_new(vkk_engine_t* engine,
 	}
 
 	vkk_renderer_t* base = &(self->base);
-	vkk_renderer_init(base, VKK_RENDERER_TYPE_OFFSCREEN,
+	vkk_renderer_init(base, VKK_RENDERER_TYPE_IMAGE,
 	                  engine);
 
 	VkFenceCreateInfo f_info =
@@ -265,20 +265,20 @@ vkk_offscreenRenderer_new(vkk_engine_t* engine,
 		goto fail_create_fence;
 	}
 
-	if(vkk_offscreenRenderer_newRenderpass(base, format) == 0)
+	if(vkk_imageRenderer_newRenderpass(base, format) == 0)
 	{
 		goto fail_renderpass;
 	}
 
-	if(vkk_offscreenRenderer_newDepth(base, width,
-	                                  height) == 0)
+	if(vkk_imageRenderer_newDepth(base, width,
+	                              height) == 0)
 	{
 		goto fail_depth;
 	}
 
-	if(vkk_offscreenRenderer_newFramebuffer(base,
-	                                        width, height,
-	                                        format) == 0)
+	if(vkk_imageRenderer_newFramebuffer(base,
+	                                    width, height,
+	                                    format) == 0)
 	{
 		goto fail_framebuffer;
 	}
@@ -295,9 +295,9 @@ vkk_offscreenRenderer_new(vkk_engine_t* engine,
 
 	// failure
 	fail_cmd_buffer:
-		vkk_offscreenRenderer_deleteFramebuffer(base);
+		vkk_imageRenderer_deleteFramebuffer(base);
 	fail_framebuffer:
-		vkk_offscreenRenderer_deleteDepth(base);
+		vkk_imageRenderer_deleteDepth(base);
 	fail_depth:
 		vkDestroyRenderPass(engine->device,
 		                    self->render_pass, NULL);
@@ -308,21 +308,21 @@ vkk_offscreenRenderer_new(vkk_engine_t* engine,
 	return NULL;
 }
 
-void vkk_offscreenRenderer_delete(vkk_renderer_t** _base)
+void vkk_imageRenderer_delete(vkk_renderer_t** _base)
 {
 	ASSERT(_base);
 
 	vkk_renderer_t* base = *_base;
 	if(base)
 	{
-		vkk_offscreenRenderer_t* self;
-		self = (vkk_offscreenRenderer_t*) base;
+		vkk_imageRenderer_t* self;
+		self = (vkk_imageRenderer_t*) base;
 
 		vkk_engine_t* engine = base->engine;
 
 		vkk_commandBuffer_delete(&self->cmd_buffer);
-		vkk_offscreenRenderer_deleteFramebuffer(base);
-		vkk_offscreenRenderer_deleteDepth(base);
+		vkk_imageRenderer_deleteFramebuffer(base);
+		vkk_imageRenderer_deleteDepth(base);
 		vkDestroyRenderPass(engine->device,
 		                    self->render_pass, NULL);
 		vkDestroyFence(engine->device, self->fence, NULL);
@@ -332,17 +332,17 @@ void vkk_offscreenRenderer_delete(vkk_renderer_t** _base)
 }
 
 int
-vkk_offscreenRenderer_begin(vkk_renderer_t* base,
-                            vkk_rendererMode_e mode,
-                            vkk_image_t* image,
-                            float* clear_color)
+vkk_imageRenderer_begin(vkk_renderer_t* base,
+                        vkk_rendererMode_e mode,
+                        vkk_image_t* image,
+                        float* clear_color)
 {
 	ASSERT(base);
 	ASSERT(image);
 	ASSERT(clear_color);
 
-	vkk_offscreenRenderer_t* self;
-	self = (vkk_offscreenRenderer_t*) base;
+	vkk_imageRenderer_t* self;
+	self = (vkk_imageRenderer_t*) base;
 
 	vkk_image_t* src_image = self->src_image;
 
@@ -394,7 +394,7 @@ vkk_offscreenRenderer_begin(vkk_renderer_t* base,
 
 	// the secondary renderers also initialize
 	// viewport and scissor in beginSecondary
-	if(mode == VKK_RENDERER_MODE_PRIMARY)
+	if(mode == VKK_RENDERER_MODE_DRAW)
 	{
 		VkViewport viewport =
 		{
@@ -460,7 +460,7 @@ vkk_offscreenRenderer_begin(vkk_renderer_t* base,
 	};
 
 	VkSubpassContents contents = VK_SUBPASS_CONTENTS_INLINE;
-	if(mode == VKK_RENDERER_MODE_SECONDARY)
+	if(mode == VKK_RENDERER_MODE_EXECUTE)
 	{
 		contents = VK_SUBPASS_CONTENTS_SECONDARY_COMMAND_BUFFERS;
 	}
@@ -472,12 +472,12 @@ vkk_offscreenRenderer_begin(vkk_renderer_t* base,
 	return 1;
 }
 
-void vkk_offscreenRenderer_end(vkk_renderer_t* base)
+void vkk_imageRenderer_end(vkk_renderer_t* base)
 {
 	ASSERT(base);
 
-	vkk_offscreenRenderer_t* self;
-	self = (vkk_offscreenRenderer_t*) base;
+	vkk_imageRenderer_t* self;
+	self = (vkk_imageRenderer_t*) base;
 
 	vkk_engine_t* engine    = base->engine;
 	vkk_image_t*  src_image = self->src_image;
@@ -592,56 +592,56 @@ void vkk_offscreenRenderer_end(vkk_renderer_t* base)
 }
 
 void
-vkk_offscreenRenderer_surfaceSize(vkk_renderer_t* base,
-                                  uint32_t* _width,
-                                  uint32_t* _height)
+vkk_imageRenderer_surfaceSize(vkk_renderer_t* base,
+                              uint32_t* _width,
+                              uint32_t* _height)
 {
 	ASSERT(base);
 	ASSERT(_width);
 	ASSERT(_height);
 
-	vkk_offscreenRenderer_t* self;
-	self = (vkk_offscreenRenderer_t*) base;
+	vkk_imageRenderer_t* self;
+	self = (vkk_imageRenderer_t*) base;
 
 	*_width  = self->src_image->width;
 	*_height = self->src_image->height;
 }
 
 VkRenderPass
-vkk_offscreenRenderer_renderPass(vkk_renderer_t* base)
+vkk_imageRenderer_renderPass(vkk_renderer_t* base)
 {
 	ASSERT(base);
 
-	vkk_offscreenRenderer_t* self;
-	self = (vkk_offscreenRenderer_t*) base;
+	vkk_imageRenderer_t* self;
+	self = (vkk_imageRenderer_t*) base;
 
 	return self->render_pass;
 }
 
 VkFramebuffer
-vkk_offscreenRenderer_framebuffer(vkk_renderer_t* base)
+vkk_imageRenderer_framebuffer(vkk_renderer_t* base)
 {
 	ASSERT(base);
 
-	vkk_offscreenRenderer_t* self;
-	self = (vkk_offscreenRenderer_t*) base;
+	vkk_imageRenderer_t* self;
+	self = (vkk_imageRenderer_t*) base;
 
 	return self->framebuffer;
 }
 
 VkCommandBuffer
-vkk_offscreenRenderer_commandBuffer(vkk_renderer_t* base)
+vkk_imageRenderer_commandBuffer(vkk_renderer_t* base)
 {
 	ASSERT(base);
 
-	vkk_offscreenRenderer_t* self;
-	self = (vkk_offscreenRenderer_t*) base;
+	vkk_imageRenderer_t* self;
+	self = (vkk_imageRenderer_t*) base;
 
 	return vkk_commandBuffer_get(self->cmd_buffer, 0);
 }
 
 uint32_t
-vkk_offscreenRenderer_swapchainFrame(vkk_renderer_t* base)
+vkk_imageRenderer_swapchainFrame(vkk_renderer_t* base)
 {
 	ASSERT(base);
 

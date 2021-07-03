@@ -229,7 +229,7 @@ vkui_sprite_new(vkui_screen_t* screen,
 	}
 
 	self->ub00_mvp = vkk_buffer_new(screen->engine,
-	                                VKK_UPDATE_MODE_DEFAULT,
+	                                VKK_UPDATE_MODE_ASYNCHRONOUS,
 	                                VKK_BUFFER_USAGE_UNIFORM,
 	                                sizeof(cc_mat4f_t),
 	                                NULL);
@@ -239,7 +239,7 @@ vkui_sprite_new(vkui_screen_t* screen,
 	}
 
 	self->vb_color_xyuv = vkk_buffer_new(screen->engine,
-	                                     VKK_UPDATE_MODE_DEFAULT,
+	                                     VKK_UPDATE_MODE_ASYNCHRONOUS,
 	                                     VKK_BUFFER_USAGE_VERTEX,
 	                                     4*sizeof(cc_vec4f_t),
 	                                     XYUV);
@@ -250,7 +250,7 @@ vkui_sprite_new(vkui_screen_t* screen,
 
 
 	self->ub10_color = vkk_buffer_new(screen->engine,
-	                                  VKK_UPDATE_MODE_DEFAULT,
+	                                  VKK_UPDATE_MODE_ASYNCHRONOUS,
 	                                  VKK_BUFFER_USAGE_UNIFORM,
 	                                  sizeof(cc_vec4f_t),
 	                                  color);
@@ -261,7 +261,7 @@ vkui_sprite_new(vkui_screen_t* screen,
 
 	int multiply = 0;
 	self->ub20_multiply = vkk_buffer_new(screen->engine,
-	                                     VKK_UPDATE_MODE_DEFAULT,
+	                                     VKK_UPDATE_MODE_ASYNCHRONOUS,
 	                                     VKK_BUFFER_USAGE_UNIFORM,
 	                                     sizeof(int),
 	                                     &multiply);
