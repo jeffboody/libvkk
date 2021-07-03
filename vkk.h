@@ -143,8 +143,8 @@ typedef enum
 
 typedef enum
 {
-	VKK_RENDERER_MODE_DRAW    = 1,
-	VKK_RENDERER_MODE_EXECUTE = 2,
+	VKK_RENDERER_MODE_DRAW    = 0,
+	VKK_RENDERER_MODE_EXECUTE = 1,
 } vkk_rendererMode_e;
 
 /*
@@ -330,6 +330,12 @@ vkk_renderer_t* vkk_renderer_newImage(vkk_engine_t* engine,
                                       uint32_t width,
                                       uint32_t height,
                                       vkk_imageFormat_e format);
+vkk_renderer_t* vkk_renderer_newImageStream(vkk_renderer_t* consumer,
+                                            uint32_t width,
+                                            uint32_t height,
+                                            vkk_imageFormat_e format,
+                                            int mipmap,
+                                            vkk_stage_e stage);
 vkk_renderer_t* vkk_renderer_newSecondary(vkk_renderer_t* executor);
 void            vkk_renderer_delete(vkk_renderer_t** _self);
 int             vkk_renderer_beginDefault(vkk_renderer_t* self,
@@ -339,6 +345,9 @@ int             vkk_renderer_beginImage(vkk_renderer_t* self,
                                         vkk_rendererMode_e mode,
                                         vkk_image_t* image,
                                         float* clear_color);
+vkk_image_t*    vkk_renderer_beginImageStream(vkk_renderer_t* self,
+                                              vkk_rendererMode_e mode,
+                                              float* clear_color);
 int             vkk_renderer_beginSecondary(vkk_renderer_t* self);
 void            vkk_renderer_end(vkk_renderer_t* self);
 void            vkk_renderer_surfaceSize(vkk_renderer_t* self,

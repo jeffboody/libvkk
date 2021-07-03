@@ -35,6 +35,7 @@
 #include "vkk_engine.h"
 #include "vkk_graphicsPipeline.h"
 #include "vkk_imageRenderer.h"
+#include "vkk_imageStreamRenderer.h"
 #include "vkk_imageUploader.h"
 #include "vkk_image.h"
 #include "vkk_memoryManager.h"
@@ -462,21 +463,21 @@ static int vkk_engine_newDevice(vkk_engine_t* self)
 
 	vkGetDeviceQueue(self->device,
 	                 self->queue_family_index,
-	                 VKK_QUEUE_DEFAULT,
-	                 &(self->queue[VKK_QUEUE_DEFAULT]));
+	                 VKK_QUEUE_FOREGROUND,
+	                 &(self->queue[VKK_QUEUE_FOREGROUND]));
 	if(queue_count == 1)
 	{
 		// multiple queues are desired for priority based
 		// scheduling of rendering tasks
 		LOGW("device only supports a single queue");
-		self->queue[VKK_QUEUE_OFFLINE] = self->queue[VKK_QUEUE_DEFAULT];
+		self->queue[VKK_QUEUE_BACKGROUND] = self->queue[VKK_QUEUE_FOREGROUND];
 	}
 	else
 	{
 		vkGetDeviceQueue(self->device,
 		                 self->queue_family_index,
-		                 VKK_QUEUE_OFFLINE,
-		                 &(self->queue[VKK_QUEUE_OFFLINE]));
+		                 VKK_QUEUE_BACKGROUND,
+		                 &(self->queue[VKK_QUEUE_BACKGROUND]));
 	}
 
 	FREE(qfp);
@@ -819,6 +820,10 @@ vkk_engine_destructRenderer(vkk_engine_t* self, int wait,
 		{
 			vkk_imageRenderer_delete(_renderer);
 		}
+		else if(renderer->type == VKK_RENDERER_TYPE_IMAGESTREAM)
+		{
+			vkk_imageStreamRenderer_delete(_renderer);
+		}
 		else if(renderer->type == VKK_RENDERER_TYPE_SECONDARY)
 		{
 			vkk_secondaryRenderer_t* sec;
@@ -829,7 +834,7 @@ vkk_engine_destructRenderer(vkk_engine_t* self, int wait,
 			}
 			else if(sec->ts != 0.0)
 			{
-				vkk_engine_queueWaitIdle(self, VKK_QUEUE_DEFAULT);
+				vkk_engine_queueWaitIdle(self, VKK_QUEUE_FOREGROUND);
 			}
 
 			vkk_secondaryRenderer_delete(_renderer);
@@ -853,12 +858,12 @@ vkk_engine_destructBuffer(vkk_engine_t* self, int wait,
 		}
 		else if(buffer->ts != 0.0)
 		{
-			vkk_engine_queueWaitIdle(self, VKK_QUEUE_DEFAULT);
+			vkk_engine_queueWaitIdle(self, VKK_QUEUE_FOREGROUND);
 		}
 
 		uint32_t count;
 		count = (buffer->update == VKK_UPDATE_MODE_ASYNCHRONOUS) ?
-		        vkk_engine_swapchainImageCount(self) : 1;
+		        vkk_engine_imageCount(self) : 1;
 		int i;
 		for(i = 0; i < count; ++i)
 		{
@@ -890,7 +895,7 @@ vkk_engine_destructImage(vkk_engine_t* self, int wait,
 		}
 		else if(image->ts != 0.0)
 		{
-			vkk_engine_queueWaitIdle(self, VKK_QUEUE_DEFAULT);
+			vkk_engine_queueWaitIdle(self, VKK_QUEUE_FOREGROUND);
 		}
 
 		vkDestroyImageView(self->device, image->image_view,
@@ -960,7 +965,7 @@ vkk_engine_destructUniformSet(vkk_engine_t* self, int wait,
 		}
 		else if(us->ts != 0.0)
 		{
-			vkk_engine_queueWaitIdle(self, VKK_QUEUE_DEFAULT);
+			vkk_engine_queueWaitIdle(self, VKK_QUEUE_FOREGROUND);
 		}
 
 		vkk_engine_usfLock(self);
@@ -1013,7 +1018,7 @@ vkk_engine_destructGraphicsPipeline(vkk_engine_t* self, int wait,
 		}
 		else if(gp->ts != 0.0)
 		{
-			vkk_engine_queueWaitIdle(self, VKK_QUEUE_DEFAULT);
+			vkk_engine_queueWaitIdle(self, VKK_QUEUE_FOREGROUND);
 		}
 
 		vkDestroyPipeline(self->device,
@@ -1190,7 +1195,7 @@ vkk_engine_t* vkk_engine_new(vkk_platform_t* platform,
 
 	self->version.major = 1;
 	self->version.minor = 1;
-	self->version.patch = 21;
+	self->version.patch = 22;
 
 	// initialize paths
 	// trim tailing '/' character of internal/external path
@@ -1610,22 +1615,23 @@ vkk_engine_uploadImage(vkk_engine_t* self,
 	                                image, pixels);
 }
 
-uint32_t vkk_engine_swapchainImageCount(vkk_engine_t* self)
+uint32_t vkk_engine_imageCount(vkk_engine_t* self)
 {
 	ASSERT(self);
 
-	return vkk_defaultRenderer_swapchainImageCount(self->renderer);
+	return vkk_defaultRenderer_imageCount(self->renderer);
 }
 
 int vkk_engine_queueSubmit(vkk_engine_t* self,
                            uint32_t queue,
                            VkCommandBuffer* cb,
-                           VkSemaphore* semaphore_acquire,
+                           uint32_t wait_count,
+                           VkSemaphore* semaphore_wait,
                            VkSemaphore* semaphore_submit,
                            VkPipelineStageFlags* wait_dst_stage_mask,
                            VkFence fence)
 {
-	// semaphore_acquire, semaphore_submit and
+	// semaphore_wait, semaphore_submit and
 	// wait_dst_stage_mask may be NULL
 	ASSERT(self);
 	ASSERT(queue < VKK_QUEUE_COUNT);
@@ -1635,8 +1641,9 @@ int vkk_engine_queueSubmit(vkk_engine_t* self,
 	{
 		.sType                = VK_STRUCTURE_TYPE_SUBMIT_INFO,
 		.pNext                = NULL,
-		.waitSemaphoreCount   = semaphore_acquire ? 1 : 0,
-		.pWaitSemaphores      = semaphore_acquire,
+		.waitSemaphoreCount   = wait_count,
+		.pWaitSemaphores      = wait_count ?
+		                        semaphore_wait : NULL,
 		.pWaitDstStageMask    = wait_dst_stage_mask,
 		.commandBufferCount   = 1,
 		.pCommandBuffers      = cb,
@@ -1802,7 +1809,7 @@ vkk_engine_attachUniformBuffer(vkk_engine_t* self,
 
 	uint32_t count;
 	count = (us->usf->update == VKK_UPDATE_MODE_ASYNCHRONOUS) ?
-	        vkk_engine_swapchainImageCount(self) : 1;
+	        vkk_engine_imageCount(self) : 1;
 
 	int i;
 	for(i = 0; i < count; ++i)
@@ -1849,7 +1856,7 @@ vkk_engine_attachUniformSampler(vkk_engine_t* self,
 
 	uint32_t count;
 	count = (us->usf->update == VKK_UPDATE_MODE_ASYNCHRONOUS) ?
-	        vkk_engine_swapchainImageCount(self) : 1;
+	        vkk_engine_imageCount(self) : 1;
 
 	VkSampler* samplerp;
 	samplerp = vkk_engine_getSamplerp(self, si);

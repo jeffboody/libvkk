@@ -75,9 +75,9 @@ typedef struct vkk_object_s
 	};
 } vkk_object_t;
 
-#define VKK_QUEUE_DEFAULT 0
-#define VKK_QUEUE_OFFLINE 1
-#define VKK_QUEUE_COUNT   2
+#define VKK_QUEUE_FOREGROUND 0
+#define VKK_QUEUE_BACKGROUND 1
+#define VKK_QUEUE_COUNT      2
 
 typedef struct vkk_engine_s
 {
@@ -178,11 +178,12 @@ void             vkk_engine_mipmapImage(vkk_engine_t* self,
 int              vkk_engine_uploadImage(vkk_engine_t* self,
                                         vkk_image_t* image,
                                         const void* pixels);
-uint32_t         vkk_engine_swapchainImageCount(vkk_engine_t* self);
+uint32_t         vkk_engine_imageCount(vkk_engine_t* self);
 int              vkk_engine_queueSubmit(vkk_engine_t* self,
                                         uint32_t queue,
                                         VkCommandBuffer* cb,
-                                        VkSemaphore* semaphore_acquire,
+                                        uint32_t wait_count,
+                                        VkSemaphore* semaphore_wait,
                                         VkSemaphore* semaphore_submit,
                                         VkPipelineStageFlags* wait_dst_stage_mask,
                                         VkFence fence);

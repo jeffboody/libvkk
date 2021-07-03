@@ -61,6 +61,5 @@ void            vkk_secondaryRenderer_surfaceSize(vkk_renderer_t* base,
 VkRenderPass    vkk_secondaryRenderer_renderPass(vkk_renderer_t* base);
 VkFramebuffer   vkk_secondaryRenderer_framebuffer(vkk_renderer_t* base);
 VkCommandBuffer vkk_secondaryRenderer_commandBuffer(vkk_renderer_t* base);
-uint32_t        vkk_secondaryRenderer_swapchainFrame(vkk_renderer_t* base);
 
 #endif

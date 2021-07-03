@@ -77,6 +77,5 @@ void            vkk_imageRenderer_surfaceSize(vkk_renderer_t* base,
 VkRenderPass    vkk_imageRenderer_renderPass(vkk_renderer_t* base);
 VkFramebuffer   vkk_imageRenderer_framebuffer(vkk_renderer_t* base);
 VkCommandBuffer vkk_imageRenderer_commandBuffer(vkk_renderer_t* base);
-uint32_t        vkk_imageRenderer_swapchainFrame(vkk_renderer_t* base);
 
 #endif

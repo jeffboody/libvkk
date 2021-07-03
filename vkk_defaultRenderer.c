@@ -818,6 +818,9 @@ void vkk_defaultRenderer_delete(vkk_renderer_t** _base)
 
 		vkk_engine_t* engine = base->engine;
 
+		FREE(base->wait_flags);
+		FREE(base->wait_array);
+
 		int i;
 		for(i = 0; i < self->swapchain_image_count; ++i)
 		{
@@ -931,17 +934,6 @@ int vkk_defaultRenderer_recreate(vkk_renderer_t* base)
 	fail_swapchain:
 		vkk_engine_deleteSurface(engine);
 	return 0;
-}
-
-uint32_t
-vkk_defaultRenderer_swapchainImageCount(vkk_renderer_t* base)
-{
-	ASSERT(base);
-
-	vkk_defaultRenderer_t* self;
-	self = (vkk_defaultRenderer_t*) base;
-
-	return self->swapchain_image_count;
 }
 
 double vkk_defaultRenderer_tsCurrent(vkk_renderer_t* base)
@@ -1232,6 +1224,7 @@ void vkk_defaultRenderer_end(vkk_renderer_t* base)
 	vkk_defaultRenderer_endSemaphore(base,
 	                                 &semaphore_acquire,
 	                                 &semaphore_submit);
+	vkk_renderer_addWaitSemaphore(base, semaphore_acquire);
 
 	VkCommandBuffer cb;
 	cb = vkk_commandBuffer_get(self->cmd_buffers,
@@ -1239,16 +1232,14 @@ void vkk_defaultRenderer_end(vkk_renderer_t* base)
 	vkCmdEndRenderPass(cb);
 	vkEndCommandBuffer(cb);
 
-	VkPipelineStageFlags wait_dst_stage_mask;
-	wait_dst_stage_mask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
-
 	VkFence sc_fence;
 	sc_fence = self->swapchain_fences[self->swapchain_frame];
 
-	if(vkk_engine_queueSubmit(engine, VKK_QUEUE_DEFAULT, &cb,
-	                          &semaphore_acquire,
+	if(vkk_engine_queueSubmit(engine, VKK_QUEUE_FOREGROUND, &cb,
+	                          base->wait_count,
+	                          base->wait_array,
 	                          &semaphore_submit,
-	                          &wait_dst_stage_mask,
+	                          base->wait_flags,
 	                          sc_fence) == 0)
 	{
 		return;
@@ -1267,7 +1258,7 @@ void vkk_defaultRenderer_end(vkk_renderer_t* base)
 	};
 
 	VkResult present;
-	present = vkQueuePresentKHR(engine->queue[VKK_QUEUE_DEFAULT],
+	present = vkQueuePresentKHR(engine->queue[VKK_QUEUE_FOREGROUND],
 	                            &p_info);
 	if((present == VK_SUCCESS) ||
 	   (present == VK_SUBOPTIMAL_KHR))
@@ -1335,7 +1326,7 @@ vkk_defaultRenderer_commandBuffer(vkk_renderer_t* base)
 }
 
 uint32_t
-vkk_defaultRenderer_swapchainFrame(vkk_renderer_t* base)
+vkk_defaultRenderer_frame(vkk_renderer_t* base)
 {
 	ASSERT(base);
 
@@ -1343,4 +1334,15 @@ vkk_defaultRenderer_swapchainFrame(vkk_renderer_t* base)
 	self = (vkk_defaultRenderer_t*) base;
 
 	return self->swapchain_frame;
+}
+
+uint32_t
+vkk_defaultRenderer_imageCount(vkk_renderer_t* base)
+{
+	ASSERT(base);
+
+	vkk_defaultRenderer_t* self;
+	self = (vkk_defaultRenderer_t*) base;
+
+	return self->swapchain_image_count;
 }

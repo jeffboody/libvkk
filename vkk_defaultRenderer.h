@@ -80,7 +80,6 @@ vkk_renderer_t* vkk_defaultRenderer_new(vkk_engine_t* engine);
 void            vkk_defaultRenderer_delete(vkk_renderer_t** _base);
 int             vkk_defaultRenderer_resize(vkk_renderer_t* base);
 int             vkk_defaultRenderer_recreate(vkk_renderer_t* base);
-uint32_t        vkk_defaultRenderer_swapchainImageCount(vkk_renderer_t* base);
 double          vkk_defaultRenderer_tsCurrent(vkk_renderer_t* base);
 double          vkk_defaultRenderer_tsExpiredLocked(vkk_renderer_t* base);
 void            vkk_defaultRenderer_deviceWaitIdle(vkk_renderer_t* base);
@@ -99,6 +98,7 @@ void            vkk_defaultRenderer_surfaceSize(vkk_renderer_t* base,
 VkRenderPass    vkk_defaultRenderer_renderPass(vkk_renderer_t* base);
 VkFramebuffer   vkk_defaultRenderer_framebuffer(vkk_renderer_t* base);
 VkCommandBuffer vkk_defaultRenderer_commandBuffer(vkk_renderer_t* base);
-uint32_t        vkk_defaultRenderer_swapchainFrame(vkk_renderer_t* base);
+uint32_t        vkk_defaultRenderer_frame(vkk_renderer_t* base);
+uint32_t        vkk_defaultRenderer_imageCount(vkk_renderer_t* base);
 
 #endif

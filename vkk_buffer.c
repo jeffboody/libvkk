@@ -46,7 +46,7 @@ vkk_buffer_new(vkk_engine_t* engine,
 
 	uint32_t count;
 	count = (update == VKK_UPDATE_MODE_ASYNCHRONOUS) ?
-	        vkk_engine_swapchainImageCount(engine) : 1;
+	        vkk_engine_imageCount(engine) : 1;
 
 	VkBufferUsageFlags usage_map[VKK_BUFFER_USAGE_COUNT] =
 	{

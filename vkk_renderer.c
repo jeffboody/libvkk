@@ -26,12 +26,14 @@
 
 #define LOG_TAG "vkk"
 #include "../libcc/cc_log.h"
+#include "../libcc/cc_memory.h"
 #include "vkk_buffer.h"
 #include "vkk_defaultRenderer.h"
 #include "vkk_engine.h"
 #include "vkk_graphicsPipeline.h"
 #include "vkk_image.h"
 #include "vkk_imageRenderer.h"
+#include "vkk_imageStreamRenderer.h"
 #include "vkk_memoryManager.h"
 #include "vkk_pipelineLayout.h"
 #include "vkk_renderer.h"
@@ -72,7 +74,7 @@ vkk_fillUniformAttachmentArray(vkk_uniformAttachment_t* dst,
 static void
 vkk_renderer_updateUniformBufferRef(vkk_renderer_t* self,
                                     vkk_uniformSet_t* us,
-                                    uint32_t swapchain_frame,
+                                    uint32_t frame,
                                     vkk_buffer_t* buffer,
                                     uint32_t binding)
 {
@@ -84,7 +86,7 @@ vkk_renderer_updateUniformBufferRef(vkk_renderer_t* self,
 
 	uint32_t idx;
 	idx = (buffer->update == VKK_UPDATE_MODE_ASYNCHRONOUS) ?
-	      swapchain_frame : 0;
+	      frame : 0;
 	VkDescriptorBufferInfo db_info =
 	{
 		.buffer  = buffer->buffer[idx],
@@ -93,7 +95,7 @@ vkk_renderer_updateUniformBufferRef(vkk_renderer_t* self,
 	};
 
 	idx = (us->usf->update == VKK_UPDATE_MODE_ASYNCHRONOUS) ?
-	      swapchain_frame : 0;
+	      frame : 0;
 	VkWriteDescriptorSet writes =
 	{
 		.sType            = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
@@ -115,7 +117,7 @@ vkk_renderer_updateUniformBufferRef(vkk_renderer_t* self,
 static void
 vkk_renderer_updateUniformImageRef(vkk_renderer_t* self,
                                    vkk_uniformSet_t* us,
-                                   uint32_t swapchain_frame,
+                                   uint32_t frame,
                                    vkk_samplerInfo_t* si,
                                    vkk_image_t* image,
                                    uint32_t binding)
@@ -144,7 +146,7 @@ vkk_renderer_updateUniformImageRef(vkk_renderer_t* self,
 
 	uint32_t idx;
 	idx = (us->usf->update == VKK_UPDATE_MODE_ASYNCHRONOUS) ?
-	      swapchain_frame : 0;
+	      frame : 0;
 	VkWriteDescriptorSet writes =
 	{
 		.sType            = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
@@ -163,20 +165,65 @@ vkk_renderer_updateUniformImageRef(vkk_renderer_t* self,
 	                       0, NULL);
 }
 
-static vkk_renderer_t*
-vkk_renderer_getUpdater(vkk_renderer_t* self)
+// debug functions only used by ASSERT
+#ifdef ASSERT_DEBUG
+
+static vkk_rendererType_e
+vkk_renderer_getUpdaterType(vkk_renderer_t* self)
 {
 	ASSERT(self);
 
 	if(self->type == VKK_RENDERER_TYPE_SECONDARY)
 	{
-		vkk_secondaryRenderer_t* sec;
-		sec = (vkk_secondaryRenderer_t*) self;
-		return sec->executor;
+		vkk_secondaryRenderer_t* sr;
+		sr = (vkk_secondaryRenderer_t*) self;
+		return vkk_renderer_getUpdaterType(sr->executor);
+	}
+	else if(self->type == VKK_RENDERER_TYPE_IMAGESTREAM)
+	{
+		vkk_imageStreamRenderer_t* isr;
+		isr = (vkk_imageStreamRenderer_t*) self;
+		return vkk_renderer_getUpdaterType(isr->consumer);
 	}
 
-	return self;
+	return self->type;
 }
+
+static int
+vkk_renderer_checkUpdateType(vkk_renderer_t* self,
+                             vkk_buffer_t* buffer)
+{
+	ASSERT(self);
+
+	// 1) update may NOT be STATIC
+	// 2) update may NOT be ASYNCHRONOUS if the updater
+	//    is not the default renderer
+	// 3) update may NOT be SYNCHRONOUS if the updater
+	//    is the default renderer
+	vkk_rendererType_e type;
+	type = vkk_renderer_getUpdaterType(self);
+	if(buffer->update == VKK_UPDATE_MODE_STATIC)
+	{
+		LOGW("invalid static update mode");
+		return 0;
+	}
+	else if((buffer->update == VKK_UPDATE_MODE_ASYNCHRONOUS) &&
+	        (type != VKK_RENDERER_TYPE_DEFAULT))
+	{
+		LOGW("invalid type=%i", type);
+		return 0;
+	}
+	else if((buffer->update == VKK_UPDATE_MODE_SYNCHRONOUS) &&
+	        (type == VKK_RENDERER_TYPE_DEFAULT))
+	{
+		LOGW("invalid type=%i", type);
+		return 0;
+	}
+
+	return 1;
+}
+
+#endif // ASSERT_DEBUG
 
 /***********************************************************
 * protected                                                *
@@ -191,7 +238,96 @@ void vkk_renderer_init(vkk_renderer_t* self,
 
 	self->engine = engine;
 	self->type   = type;
-	self->mode   = VKK_RENDERER_MODE_DRAW;
+}
+
+void vkk_renderer_addWaitSemaphore(vkk_renderer_t* self,
+                                   VkSemaphore semaphore)
+{
+	ASSERT(self);
+
+	// ignore null handle
+	if(semaphore == VK_NULL_HANDLE)
+	{
+		return;
+	}
+
+	// secondary renderer commands are queued by executor
+	if(self->type == VKK_RENDERER_TYPE_SECONDARY)
+	{
+		vkk_secondaryRenderer_t* sr;
+		sr = (vkk_secondaryRenderer_t*) self;
+		vkk_renderer_addWaitSemaphore(sr->executor, semaphore);
+		return;
+	}
+
+	// check for duplicates
+	int i;
+	for(i = 0; i < self->wait_count; ++i)
+	{
+		if(semaphore == self->wait_array[i])
+		{
+			return;
+		}
+	}
+
+	uint32_t sz_array;
+	uint32_t sz_flags;
+	sz_array = (uint32_t)
+	           (MEMSIZEPTR(self->wait_array)/
+	                       sizeof(VkSemaphore));
+	sz_flags = (uint32_t)
+	           (MEMSIZEPTR(self->wait_flags)/
+	                       sizeof(VkPipelineStageFlags));
+
+	// resize the array
+	uint32_t count = self->wait_count + 1;
+	if(sz_array < count)
+	{
+		uint32_t sz = 2*sz_array;
+		if(sz == 0)
+		{
+			sz = 1;
+		}
+
+		VkSemaphore* tmp;
+		tmp = (VkSemaphore*)
+		      REALLOC(self->wait_array,
+		              sz*sizeof(VkSemaphore));
+		if(tmp == NULL)
+		{
+			LOGE("REALLOC failed");
+			return;
+		}
+
+		self->wait_array = tmp;
+	}
+
+	// resize the flags
+	if(sz_flags < count)
+	{
+		uint32_t sz = 2*sz_flags;
+		if(sz == 0)
+		{
+			sz = 1;
+		}
+
+		VkPipelineStageFlags* tmp;
+		tmp = (VkPipelineStageFlags*)
+		      REALLOC(self->wait_flags,
+		              sz*sizeof(VkPipelineStageFlags));
+		if(tmp == NULL)
+		{
+			LOGE("REALLOC failed");
+			return;
+		}
+
+		self->wait_flags = tmp;
+	}
+
+	// append the semaphore
+	self->wait_array[self->wait_count] = semaphore;
+	self->wait_flags[self->wait_count] = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+	self->wait_count                   = count;
 }
 
 VkRenderPass
@@ -207,10 +343,16 @@ vkk_renderer_renderPass(vkk_renderer_t* self)
 	{
 		return vkk_imageRenderer_renderPass(self);
 	}
-	else
+	else if(self->type == VKK_RENDERER_TYPE_IMAGESTREAM)
+	{
+		return vkk_imageStreamRenderer_renderPass(self);
+	}
+	else if(self->type == VKK_RENDERER_TYPE_SECONDARY)
 	{
 		return vkk_secondaryRenderer_renderPass(self);
 	}
+
+	return VK_NULL_HANDLE;
 }
 
 VkFramebuffer
@@ -226,29 +368,16 @@ vkk_renderer_framebuffer(vkk_renderer_t* self)
 	{
 		return vkk_imageRenderer_framebuffer(self);
 	}
-	else
+	else if(self->type == VKK_RENDERER_TYPE_IMAGESTREAM)
+	{
+		return vkk_imageStreamRenderer_framebuffer(self);
+	}
+	else if(self->type == VKK_RENDERER_TYPE_SECONDARY)
 	{
 		return vkk_secondaryRenderer_framebuffer(self);
 	}
-}
 
-uint32_t
-vkk_renderer_swapchainFrame(vkk_renderer_t* self)
-{
-	ASSERT(self);
-
-	if(self->type == VKK_RENDERER_TYPE_DEFAULT)
-	{
-		return vkk_defaultRenderer_swapchainFrame(self);
-	}
-	else if(self->type == VKK_RENDERER_TYPE_IMAGE)
-	{
-		return vkk_imageRenderer_swapchainFrame(self);
-	}
-	else
-	{
-		return vkk_secondaryRenderer_swapchainFrame(self);
-	}
+	return VK_NULL_HANDLE;
 }
 
 VkCommandBuffer
@@ -264,10 +393,67 @@ vkk_renderer_commandBuffer(vkk_renderer_t* self)
 	{
 		return vkk_imageRenderer_commandBuffer(self);
 	}
-	else
+	else if(self->type == VKK_RENDERER_TYPE_IMAGESTREAM)
+	{
+		return vkk_imageStreamRenderer_commandBuffer(self);
+	}
+	else if(self->type == VKK_RENDERER_TYPE_SECONDARY)
 	{
 		return vkk_secondaryRenderer_commandBuffer(self);
 	}
+
+	return VK_NULL_HANDLE;
+}
+
+uint32_t
+vkk_renderer_frame(vkk_renderer_t* self)
+{
+	ASSERT(self);
+
+	// frame is inherited
+	if(self->type == VKK_RENDERER_TYPE_DEFAULT)
+	{
+		return vkk_defaultRenderer_frame(self);
+	}
+	else if(self->type == VKK_RENDERER_TYPE_IMAGESTREAM)
+	{
+		vkk_imageStreamRenderer_t* isr;
+		isr = (vkk_imageStreamRenderer_t*) self;
+		return vkk_renderer_frame(isr->consumer);
+	}
+	else if(self->type == VKK_RENDERER_TYPE_SECONDARY)
+	{
+		vkk_secondaryRenderer_t* sr;
+		sr = (vkk_secondaryRenderer_t*) self;
+		return vkk_renderer_frame(sr->executor);
+	}
+
+	return 0;
+}
+
+uint32_t vkk_renderer_imageCount(vkk_renderer_t* self)
+{
+	ASSERT(self);
+
+	// image count is inherited
+	if(self->type == VKK_RENDERER_TYPE_DEFAULT)
+	{
+		return vkk_defaultRenderer_imageCount(self);
+	}
+	else if(self->type == VKK_RENDERER_TYPE_IMAGESTREAM)
+	{
+		vkk_imageStreamRenderer_t* isr;
+		isr = (vkk_imageStreamRenderer_t*) self;
+		return vkk_renderer_imageCount(isr->consumer);
+	}
+	else if(self->type == VKK_RENDERER_TYPE_SECONDARY)
+	{
+		vkk_secondaryRenderer_t* sr;
+		sr = (vkk_secondaryRenderer_t*) self;
+		return vkk_renderer_imageCount(sr->executor);
+	}
+
+	return 1;
 }
 
 double
@@ -275,23 +461,25 @@ vkk_renderer_tsCurrent(vkk_renderer_t* self)
 {
 	ASSERT(self);
 
-	double ts = 0.0;
+	// timestamp is inherited
 	if(self->type == VKK_RENDERER_TYPE_DEFAULT)
 	{
-		ts = vkk_defaultRenderer_tsCurrent(self);
+		return vkk_defaultRenderer_tsCurrent(self);
+	}
+	else if(self->type == VKK_RENDERER_TYPE_IMAGESTREAM)
+	{
+		vkk_imageStreamRenderer_t* isr;
+		isr = (vkk_imageStreamRenderer_t*) self;
+		return vkk_renderer_tsCurrent(isr->consumer);
 	}
 	else if(self->type == VKK_RENDERER_TYPE_SECONDARY)
 	{
-		vkk_secondaryRenderer_t* sec;
-		sec = (vkk_secondaryRenderer_t*) self;
-
-		if(sec->executor->type == VKK_RENDERER_TYPE_DEFAULT)
-		{
-			ts = vkk_defaultRenderer_tsCurrent(sec->executor);
-		}
+		vkk_secondaryRenderer_t* sr;
+		sr = (vkk_secondaryRenderer_t*) self;
+		return vkk_renderer_tsCurrent(sr->executor);
 	}
 
-	return ts;
+	return 0.0;
 }
 
 /***********************************************************
@@ -307,6 +495,20 @@ vkk_renderer_newImage(vkk_engine_t* engine,
 
 	return vkk_imageRenderer_new(engine, width, height,
 	                             format);
+}
+
+vkk_renderer_t*
+vkk_renderer_newImageStream(vkk_renderer_t* consumer,
+                            uint32_t width,
+                            uint32_t height,
+                            vkk_imageFormat_e format,
+                            int mipmap,
+                            vkk_stage_e stage)
+{
+	ASSERT(consumer);
+
+	return vkk_imageStreamRenderer_new(consumer, width, height,
+	                                   format, mipmap, stage);
 }
 
 vkk_renderer_t*
@@ -343,8 +545,6 @@ int vkk_renderer_beginDefault(vkk_renderer_t* self,
                               float* clear_color)
 {
 	ASSERT(self);
-	ASSERT((mode == VKK_RENDERER_MODE_DRAW) ||
-	       (mode == VKK_RENDERER_MODE_EXECUTE));
 	ASSERT(clear_color);
 	ASSERT(self->type == VKK_RENDERER_TYPE_DEFAULT);
 
@@ -375,8 +575,6 @@ int vkk_renderer_beginImage(vkk_renderer_t* self,
                             float* clear_color)
 {
 	ASSERT(self);
-	ASSERT((mode == VKK_RENDERER_MODE_DRAW) ||
-	       (mode == VKK_RENDERER_MODE_EXECUTE));
 	ASSERT(image);
 	ASSERT(clear_color);
 	ASSERT(self->type == VKK_RENDERER_TYPE_IMAGE);
@@ -400,6 +598,38 @@ int vkk_renderer_beginImage(vkk_renderer_t* self,
 
 	self->mode = mode;
 	return 1;
+}
+
+vkk_image_t*
+vkk_renderer_beginImageStream(vkk_renderer_t* self,
+                              vkk_rendererMode_e mode,
+                              float* clear_color)
+{
+	ASSERT(self);
+	ASSERT(clear_color);
+	ASSERT(self->type == VKK_RENDERER_TYPE_IMAGESTREAM);
+
+	vkk_engine_t* engine = self->engine;
+
+	vkk_engine_rendererLock(engine);
+	if(engine->shutdown)
+	{
+		LOGE("invalid");
+		vkk_engine_rendererUnlock(engine);
+		return NULL;
+	}
+	vkk_engine_rendererUnlock(engine);
+
+	vkk_image_t* image;
+	image = vkk_imageStreamRenderer_begin(self, mode,
+	                                      clear_color);
+	if(image == NULL)
+	{
+		return NULL;
+	}
+
+	self->mode = mode;
+	return image;
 }
 
 int vkk_renderer_beginSecondary(vkk_renderer_t* self)
@@ -433,13 +663,18 @@ void vkk_renderer_end(vkk_renderer_t* self)
 	{
 		vkk_imageRenderer_end(self);
 	}
-	else
+	else if(self->type == VKK_RENDERER_TYPE_IMAGESTREAM)
+	{
+		vkk_imageStreamRenderer_end(self);
+	}
+	else if(self->type == VKK_RENDERER_TYPE_SECONDARY)
 	{
 		vkk_secondaryRenderer_end(self);
 	}
 
-	self->mode = VKK_RENDERER_MODE_DRAW;
-	self->gp   = NULL;
+	self->gp = NULL;
+
+	self->wait_count = 0;
 }
 
 void vkk_renderer_surfaceSize(vkk_renderer_t* self,
@@ -447,6 +682,9 @@ void vkk_renderer_surfaceSize(vkk_renderer_t* self,
                               uint32_t* _height)
 {
 	ASSERT(self);
+
+	*_width  = 0;
+	*_height = 0;
 
 	if(self->type == VKK_RENDERER_TYPE_DEFAULT)
 	{
@@ -456,7 +694,11 @@ void vkk_renderer_surfaceSize(vkk_renderer_t* self,
 	{
 		vkk_imageRenderer_surfaceSize(self, _width, _height);
 	}
-	else
+	else if(self->type == VKK_RENDERER_TYPE_IMAGESTREAM)
+	{
+		vkk_imageStreamRenderer_surfaceSize(self, _width, _height);
+	}
+	else if(self->type == VKK_RENDERER_TYPE_SECONDARY)
 	{
 		vkk_secondaryRenderer_surfaceSize(self, _width, _height);
 	}
@@ -469,42 +711,12 @@ void vkk_renderer_updateBuffer(vkk_renderer_t* self,
 {
 	ASSERT(self);
 	ASSERT(buffer);
-	ASSERT(size > 0);
+	ASSERT((size > 0) && (size <= buffer->size));
 	ASSERT(buf);
 	ASSERT(self->mode == VKK_RENDERER_MODE_DRAW);
+	ASSERT(vkk_renderer_checkUpdateType(self, buffer));
 
 	vkk_engine_t* engine = self->engine;
-
-	if(size > buffer->size)
-	{
-		LOGE("invalid size=%i buffer->size=%i",
-		     (int) size, (int) buffer->size);
-		return;
-	}
-
-	// 1) update may NOT be STATIC
-	// 2) update may NOT be ASYNCHRONOUS if the draw renderer
-	//    is not the default renderer
-	// 3) update may NOT be SYNCHRONOUS if the draw renderer
-	//    is not the image renderer
-	vkk_renderer_t* updater = vkk_renderer_getUpdater(self);
-	if(buffer->update == VKK_UPDATE_MODE_STATIC)
-	{
-		LOGW("invalid static update mode");
-		return;
-	}
-	else if((buffer->update == VKK_UPDATE_MODE_ASYNCHRONOUS) &&
-	        (updater->type != VKK_RENDERER_TYPE_DEFAULT))
-	{
-		LOGW("invalid type=%i", updater->type);
-		return;
-	}
-	else if((buffer->update == VKK_UPDATE_MODE_SYNCHRONOUS) &&
-	        (updater->type != VKK_RENDERER_TYPE_IMAGE))
-	{
-		LOGW("invalid type=%i", updater->type);
-		return;
-	}
 
 	uint32_t idx = 0;
 	if(buffer->update == VKK_UPDATE_MODE_ASYNCHRONOUS)
@@ -514,13 +726,13 @@ void vkk_renderer_updateBuffer(vkk_renderer_t* self,
 		{
 			uint32_t count;
 			count = (buffer->update == VKK_UPDATE_MODE_ASYNCHRONOUS) ?
-			        vkk_engine_swapchainImageCount(engine) : 1;
+			        vkk_engine_imageCount(engine) : 1;
 			buffer->vbib_index = (buffer->vbib_index + 1)%count;
 			idx = buffer->vbib_index;
 		}
 		else
 		{
-			idx = vkk_renderer_swapchainFrame(self);
+			idx = vkk_renderer_frame(self);
 		}
 	}
 
@@ -544,8 +756,7 @@ vkk_renderer_updateUniformSetRefs(vkk_renderer_t* self,
 	vkk_fillUniformAttachmentArray(us->ua_array, ua_count,
 	                               ua_array, usf);
 
-	uint32_t swapchain_frame;
-	swapchain_frame = vkk_renderer_swapchainFrame(self);
+	uint32_t frame = vkk_renderer_frame(self);
 
 	// attach buffers and images
 	uint32_t i;
@@ -553,16 +764,14 @@ vkk_renderer_updateUniformSetRefs(vkk_renderer_t* self,
 	{
 		if(ua_array[i].type == VKK_UNIFORM_TYPE_BUFFER_REF)
 		{
-			vkk_renderer_updateUniformBufferRef(self, us,
-			                                    swapchain_frame,
+			vkk_renderer_updateUniformBufferRef(self, us, frame,
 			                                    ua_array[i].buffer,
 			                                    ua_array[i].binding);
 		}
 		else if(ua_array[i].type == VKK_UNIFORM_TYPE_IMAGE_REF)
 		{
 			uint32_t b = ua_array[i].binding;
-			vkk_renderer_updateUniformImageRef(self, us,
-			                                   swapchain_frame,
+			vkk_renderer_updateUniformImageRef(self, us, frame,
 			                                   &usf->ub_array[b].si,
 			                                   ua_array[i].image,
 			                                   ua_array[i].binding);
@@ -609,32 +818,41 @@ void vkk_renderer_bindUniformSets(vkk_renderer_t* self,
 	int             i;
 	uint32_t        idx;
 	VkDescriptorSet ds[VKK_ENGINE_MAX_USF_COUNT];
-	uint32_t        swapchain_frame;
-	swapchain_frame = vkk_renderer_swapchainFrame(self);
-
+	uint32_t        frame = vkk_renderer_frame(self);
 	for(i = 0; i < us_count; ++i)
 	{
 		idx   = (us_array[i]->usf->update == VKK_UPDATE_MODE_ASYNCHRONOUS) ?
-		        swapchain_frame : 0;
+		        frame : 0;
 		ds[i] = us_array[i]->ds_array[idx];
 
-		// update timestamps
-		if(self->type == VKK_RENDERER_TYPE_DEFAULT)
+		// update timestamps and semaphores
+		int j;
+		for(j = 0; j < us_array[i]->ua_count; ++j)
 		{
-			int j;
-			for(j = 0; j < us_array[i]->ua_count; ++j)
+			vkk_uniformAttachment_t* ua;
+			ua = &(us_array[i]->ua_array[j]);
+
+			if(ts != 0.0)
 			{
-				vkk_uniformAttachment_t* ua;
-				ua = &(us_array[i]->ua_array[j]);
-				if(ua->type == VKK_UNIFORM_TYPE_BUFFER)
+				if((ua->type == VKK_UNIFORM_TYPE_BUFFER) ||
+				   (ua->type == VKK_UNIFORM_TYPE_BUFFER_REF))
 				{
 					ua->buffer->ts = ts;
 				}
-				else if(ua->type == VKK_UNIFORM_TYPE_IMAGE)
+				else if((ua->type == VKK_UNIFORM_TYPE_IMAGE) ||
+				        (ua->type == VKK_UNIFORM_TYPE_IMAGE_REF))
 				{
 					ua->image->ts = ts;
 				}
 			}
+
+			if((ua->type == VKK_UNIFORM_TYPE_IMAGE) ||
+			   (ua->type == VKK_UNIFORM_TYPE_IMAGE_REF))
+			{
+				vkk_renderer_addWaitSemaphore(self,
+				                              ua->image->semaphore);
+			}
+
 			us_array[i]->ts = ts;
 		}
 	}
@@ -854,8 +1072,8 @@ void vkk_renderer_execute(vkk_renderer_t* self,
 	uint32_t i;
 	for(i = 0; i < secondary_count; ++i)
 	{
-		vkk_renderer_t* sec = secondary_array[i];
-		cb_array[i] = vkk_renderer_commandBuffer(sec);
+		vkk_renderer_t* sr = secondary_array[i];
+		cb_array[i] = vkk_renderer_commandBuffer(sr);
 	}
 
 	VkCommandBuffer cb = vkk_renderer_commandBuffer(self);

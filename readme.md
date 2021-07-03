@@ -38,6 +38,7 @@ The graphics features exposed by VKK include.
 * Single header file (vkk.h)
 * Rendering to the display
 * Image rendering (e.g. render to texture)
+* Image stream rendering (e.g. render to texture)
 * Secondary rendering (e.g. render to command buffer)
 * Multithreaded rendering, creation and destruction
 * Graphics pipeline with vertex and fragment shader stages
@@ -583,19 +584,16 @@ the resource file.
 Renderer
 ========
 
-Renderer objects are avilable to the app for three different
-rendering cases. The default renderer allows the app to
-render to the display, the image renderer allows the app
-to render to an image and the secondary renderer allows the
-app to record commands to a secondary command buffer. The
-default renderer object is created/destroyed automatically
-by the engine while the image/secondary renderer objects
-may be created/destroyed by the app.
-
-The vkk\_renderer\_newImage(),
-vkk\_renderer\_newSecondary() and
-vkk\_graphicsPipeline\_delete() functions can be used to
-create/destroy graphics pipeline objects.
+Renderer objects are avilable to the app for several
+different rendering cases. The default renderer allows the
+app to render to the display, the image renderer allows the
+app to render to an image, the image stream renderer allows
+the app to render to a stream of image references and the
+secondary renderer allows the app to record commands to
+secondary command buffers. The default renderer object is
+created/destroyed automatically by the engine while the
+remaining renderer objects may be created/destroyed by the
+following functions.
 
 	typedef enum
 	{
@@ -616,53 +614,87 @@ create/destroy graphics pipeline objects.
 		VKK_IMAGE_FORMAT_DEPTH    = 14,
 	} vkk_imageFormat_e;
 
+	typedef enum
+	{
+		VKK_STAGE_DEPTH = 0,
+		VKK_STAGE_VS    = 1,
+		VKK_STAGE_FS    = 2,
+		VKK_STAGE_VSFS  = 3,
+	} vkk_stage_e;
+
 	vkk_renderer_t* vkk_renderer_newImage(vkk_engine_t* engine,
 	                                      uint32_t width,
 	                                      uint32_t height,
 	                                      vkk_imageFormat_e format);
+	vkk_renderer_t* vkk_renderer_newImageStream(vkk_renderer_t* consumer,
+	                                            uint32_t width,
+	                                            uint32_t height,
+	                                            vkk_imageFormat_e format,
+	                                            int mipmap,
+	                                            vkk_stage_e stage);
 	vkk_renderer_t* vkk_renderer_newSecondary(vkk_renderer_t* executor);
 	void            vkk_renderer_delete(vkk_renderer_t** _self);
 
-The rendering commands are issued between
-vkk\_renderer\_beginDefault(),
-vkk\_renderer\_beginImage(),
-vkk\_renderer\_beginSecondary() and vkk\_renderer\_end()
-functions. If the begin function succeeds then the app
-must also call the end function. The default/image
-renderers accepts a rendering mode which determines the type
-of rendering commands that may be issued. The DRAW
-rendering mode allows all rendering commands except for
-the vkk\_renderer\_execute() function. The EXECUTE
-rendering mode only allows the
-vkk\_renderer\_execute() and
-vkk\_renderer\_surfaceSize() functions.
-The vkk\_renderer\_beginImage() function accepts an
-image that will be used as a render target. Note that the
-depth buffer, viewport and scissor are initialized
-automatically by the begin functions.
+The rendering commands are issued between begin() and
+end() functions. The begin() and end() functions serve as
+synchronization points which greatly simplify the app
+interface when compared with the underlying Vulkan
+implementation. If the begin() function succeeds then the
+app must also call the end() function. When one renderer
+depends on another, its dependent renderer must be started
+first and ended in the reverse order. For example an image
+stream which produces images for the default renderer must
+perform the following sequence.
+
+	vkk_renderer_beginDefault(default, ...);
+	vkk_renderer_beginImageStream(image_stream, ...);
+	...
+	vkk_renderer_end(image_stream);
+	vkk_renderer_end(default);
+
+The drawing commands for the image stream/secondary
+renderers can be issued in a different thread once both
+begin() functions complete.
+
+The rendering mode determines the type of rendering commands
+that may be issued. The DRAW rendering mode allows all
+rendering commands except for the vkk\_renderer\_execute()
+function. The EXECUTE rendering mode only allows the
+vkk\_renderer\_execute() and vkk\_renderer\_surfaceSize()
+functions. The vkk\_renderer\_beginImage() function accepts
+an image that will be used as a render target. Note that
+the depth buffer, viewport and scissor are initialized
+automatically by the begin() functions.
 
 	typedef enum
 	{
-		VKK_RENDERER_MODE_DRAW    = 1,
-		VKK_RENDERER_MODE_EXECUTE = 2,
+		VKK_RENDERER_MODE_DRAW    = 0,
+		VKK_RENDERER_MODE_EXECUTE = 1,
 	} vkk_rendererMode_e;
 
-	int  vkk_renderer_beginDefault(vkk_renderer_t* self,
-	                               vkk_rendererMode_e mode,
-	                               float* clear_color);
-	int  vkk_renderer_beginImage(vkk_renderer_t* self,
-	                             vkk_rendererMode_e mode,
-	                             vkk_image_t* image,
-	                             float* clear_color);
-	int  vkk_renderer_beginSecondary(vkk_renderer_t* self);
-	void vkk_renderer_end(vkk_renderer_t* self);
+	int          vkk_renderer_beginDefault(vkk_renderer_t* self,
+	                                       vkk_rendererMode_e mode,
+	                                       float* clear_color);
+	int          vkk_renderer_beginImage(vkk_renderer_t* self,
+	                                     vkk_rendererMode_e mode,
+	                                     vkk_image_t* image,
+	                                     float* clear_color);
+	vkk_image_t* vkk_renderer_beginImageStream(vkk_renderer_t* self,
+	                                           vkk_rendererMode_e mode,
+	                                           float* clear_color);
+	int          vkk_renderer_beginSecondary(vkk_renderer_t* self);
+	void         vkk_renderer_end(vkk_renderer_t* self);
 
 The image renderer images may only be used as a render
 target for a single image renderer at once. Images must
 not be in use by another renderer (e.g. used between the
-renderer begin/end functions) prior to beginning image
+renderer begin()/end() functions) prior to beginning image
 rendering with the image. Images must match the size and
 format of the image renderer.
+
+The image stream renderer returns an image reference that
+may be used by the consumer for the current frame even
+while the image stream rendering is still in progress.
 
 The app may utilize secondary rendering to optimize
 performance by creating multiple secondary renderers to
@@ -675,7 +707,7 @@ renderer. The commands recorded to the secondary command
 buffer are only valid for the current frame and must be
 re-recorded for subsequent frames. And finally, the
 vkk_renderer\_beginSecondary() function should only be
-called if the corresponding EXECUTE renderer begin
+called if the corresponding EXECUTE renderer begin()
 function was successful.
 
 Renderers may share images, uniform set factories and
@@ -900,21 +932,24 @@ synchronization rules.
 
 1.  Objects may be created from any thread
 2.  Objects may be deleted from any thread as long as any
-    renderer which used the object has already called end
+    renderer which used the object has already called end()
 3.  Objects must not be used by any thread once deleted
 4.  Object deletion is a non-blocking operation
 5.  Images should be created in a worker thread since the
     GPU is required to transfer the pixels and optionally
     mipmap the image
-6.  The rendering begin function may block while waiting for
-    the next framebuffer to become available
+6.  The rendering begin() function may block while waiting
+    for the next framebuffer to become available
 7.  Synchronization across separate renderers is not
     required
 8.  Synchronization for a specific renderer is required when
     called from multiple threads
-9.  Default and secondary renderers complete asynchronously
+9.  The default renderer completes asynchronously
 10. Image renderers completes synchronously
-11. GPU synchronization is handled automatically by the
+11. Image stream and secondary renderers may complete
+    synchronously or asynchronously depending on their
+    corresponding consumer or executor renderers
+12. GPU synchronization is handled automatically by the
     engine
 
 Platform

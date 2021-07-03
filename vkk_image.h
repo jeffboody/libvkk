@@ -47,6 +47,10 @@ typedef struct vkk_image_s
 	VkImage           image;
 	vkk_memory_t*     memory;
 	VkImageView       image_view;
+	VkSemaphore       semaphore;
 } vkk_image_t;
+
+// protected
+int vkk_image_createSemaphore(vkk_image_t* self);
 
 #endif

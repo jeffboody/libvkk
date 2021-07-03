@@ -320,6 +320,9 @@ void vkk_imageRenderer_delete(vkk_renderer_t** _base)
 
 		vkk_engine_t* engine = base->engine;
 
+		FREE(base->wait_flags);
+		FREE(base->wait_array);
+
 		vkk_commandBuffer_delete(&self->cmd_buffer);
 		vkk_imageRenderer_deleteFramebuffer(base);
 		vkk_imageRenderer_deleteDepth(base);
@@ -566,13 +569,11 @@ void vkk_imageRenderer_end(vkk_renderer_t* base)
 
 	vkEndCommandBuffer(cb);
 
-	VkPipelineStageFlags wait_dst_stage_mask;
-	wait_dst_stage_mask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
-
 	vkResetFences(engine->device, 1, &self->fence);
-	if(vkk_engine_queueSubmit(engine, VKK_QUEUE_OFFLINE, &cb,
-	                          NULL, NULL,
-	                          &wait_dst_stage_mask,
+	if(vkk_engine_queueSubmit(engine, VKK_QUEUE_BACKGROUND, &cb,
+	                          base->wait_count,
+	                          base->wait_array,
+	                          NULL, base->wait_flags,
 	                          self->fence) == 0)
 	{
 		LOGW("vkk_engine_queueSubmit failed");
@@ -585,7 +586,7 @@ void vkk_imageRenderer_end(vkk_renderer_t* base)
 	                   timeout) != VK_SUCCESS)
 	{
 		LOGW("vkWaitForFences failed");
-		vkk_engine_queueWaitIdle(engine, VKK_QUEUE_OFFLINE);
+		vkk_engine_queueWaitIdle(engine, VKK_QUEUE_BACKGROUND);
 	}
 
 	self->dst_image = NULL;
@@ -638,12 +639,4 @@ vkk_imageRenderer_commandBuffer(vkk_renderer_t* base)
 	self = (vkk_imageRenderer_t*) base;
 
 	return vkk_commandBuffer_get(self->cmd_buffer, 0);
-}
-
-uint32_t
-vkk_imageRenderer_swapchainFrame(vkk_renderer_t* base)
-{
-	ASSERT(base);
-
-	return 0;
 }

@@ -43,6 +43,7 @@ add_library(vkk
             vkk_graphicsPipeline.c
             vkk_image.c
             vkk_imageRenderer.c
+            vkk_imageStreamRenderer.c
             vkk_imageUploader.c
             vkk_memory.c
             vkk_memoryChunk.c

@@ -393,8 +393,8 @@ vkk_imageUploader_uploadF16(vkk_imageUploader_t* self,
 	vkEndCommandBuffer(cb);
 
 	// submit the commands
-	if(vkk_engine_queueSubmit(engine, VKK_QUEUE_OFFLINE, &cb,
-	                          NULL, NULL, NULL,
+	if(vkk_engine_queueSubmit(engine, VKK_QUEUE_BACKGROUND, &cb,
+	                          0, NULL, NULL, NULL,
 	                          ui->fence) == 0)
 	{
 		goto fail_submit;
@@ -405,7 +405,7 @@ vkk_imageUploader_uploadF16(vkk_imageUploader_t* self,
 	                   timeout) != VK_SUCCESS)
 	{
 		LOGW("vkWaitForFences failed");
-		vkk_engine_queueWaitIdle(engine, VKK_QUEUE_OFFLINE);
+		vkk_engine_queueWaitIdle(engine, VKK_QUEUE_BACKGROUND);
 	}
 
 	vkk_imageUploader_lock(self);
@@ -691,8 +691,8 @@ int vkk_imageUploader_upload(vkk_imageUploader_t* self,
 	vkEndCommandBuffer(cb);
 
 	// submit the commands
-	if(vkk_engine_queueSubmit(engine, VKK_QUEUE_OFFLINE, &cb,
-	                          NULL, NULL, NULL,
+	if(vkk_engine_queueSubmit(engine, VKK_QUEUE_BACKGROUND, &cb,
+	                          0, NULL, NULL, NULL,
 	                          ui->fence) == 0)
 	{
 		goto fail_submit;
@@ -703,7 +703,7 @@ int vkk_imageUploader_upload(vkk_imageUploader_t* self,
 	                   timeout) != VK_SUCCESS)
 	{
 		LOGW("vkWaitForFences failed");
-		vkk_engine_queueWaitIdle(engine, VKK_QUEUE_OFFLINE);
+		vkk_engine_queueWaitIdle(engine, VKK_QUEUE_BACKGROUND);
 	}
 
 	vkk_imageUploader_lock(self);

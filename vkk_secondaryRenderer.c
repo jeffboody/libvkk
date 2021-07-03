@@ -99,6 +99,9 @@ void vkk_secondaryRenderer_delete(vkk_renderer_t** _base)
 		vkk_secondaryRenderer_t* self;
 		self = (vkk_secondaryRenderer_t*) base;
 
+		FREE(base->wait_flags);
+		FREE(base->wait_array);
+
 		vkk_commandBuffer_delete(&self->cmd_buffers);
 		FREE(self);
 		*_base = NULL;
@@ -113,7 +116,7 @@ int vkk_secondaryRenderer_begin(vkk_renderer_t* base)
 	self = (vkk_secondaryRenderer_t*) base;
 
 	uint32_t swapchain_frame;
-	swapchain_frame = vkk_renderer_swapchainFrame(self->executor);
+	swapchain_frame = vkk_renderer_frame(self->executor);
 
 	VkCommandBuffer cb;
 	cb = vkk_commandBuffer_get(self->cmd_buffers,
@@ -245,18 +248,7 @@ vkk_secondaryRenderer_commandBuffer(vkk_renderer_t* base)
 	self = (vkk_secondaryRenderer_t*) base;
 
 	uint32_t swapchain_frame;
-	swapchain_frame = vkk_renderer_swapchainFrame(self->executor);
+	swapchain_frame = vkk_renderer_frame(self->executor);
 	return vkk_commandBuffer_get(self->cmd_buffers,
 	                             swapchain_frame);
-}
-
-uint32_t
-vkk_secondaryRenderer_swapchainFrame(vkk_renderer_t* base)
-{
-	ASSERT(base);
-
-	vkk_secondaryRenderer_t* self;
-	self = (vkk_secondaryRenderer_t*) base;
-
-	return vkk_renderer_swapchainFrame(self->executor);
 }

@@ -34,12 +34,13 @@
 
 typedef enum
 {
-	VKK_RENDERER_TYPE_DEFAULT   = 0,
-	VKK_RENDERER_TYPE_IMAGE     = 1,
-	VKK_RENDERER_TYPE_SECONDARY = 2,
+	VKK_RENDERER_TYPE_DEFAULT     = 0,
+	VKK_RENDERER_TYPE_IMAGE       = 1,
+	VKK_RENDERER_TYPE_IMAGESTREAM = 2,
+	VKK_RENDERER_TYPE_SECONDARY   = 3,
 } vkk_rendererType_e;
 
-#define VKK_RENDERER_TYPE_COUNT 3
+#define VKK_RENDERER_TYPE_COUNT 4
 
 typedef struct vkk_renderer_s
 {
@@ -50,6 +51,13 @@ typedef struct vkk_renderer_s
 
 	// currently bound graphics pipeline
 	vkk_graphicsPipeline_t* gp;
+
+	// semaphore and flag references are allocated on demand
+	// and must be deleted by the renderer which inherits
+	// from the base
+	uint32_t              wait_count;
+	VkSemaphore*          wait_array;
+	VkPipelineStageFlags* wait_flags;
 } vkk_renderer_t;
 
 // protected functions
@@ -57,10 +65,13 @@ typedef struct vkk_renderer_s
 void            vkk_renderer_init(vkk_renderer_t* self,
                                   vkk_rendererType_e type,
                                   vkk_engine_t* engine);
+void            vkk_renderer_addWaitSemaphore(vkk_renderer_t* self,
+                                              VkSemaphore semaphore);
 VkRenderPass    vkk_renderer_renderPass(vkk_renderer_t* self);
 VkFramebuffer   vkk_renderer_framebuffer(vkk_renderer_t* self);
-uint32_t        vkk_renderer_swapchainFrame(vkk_renderer_t* self);
 VkCommandBuffer vkk_renderer_commandBuffer(vkk_renderer_t* self);
+uint32_t        vkk_renderer_frame(vkk_renderer_t* self);
+uint32_t        vkk_renderer_imageCount(vkk_renderer_t* self);
 double          vkk_renderer_tsCurrent(vkk_renderer_t* self);
 
 #endif

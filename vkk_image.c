@@ -32,6 +32,33 @@
 #include "vkk_util.h"
 
 /***********************************************************
+* protected                                                *
+***********************************************************/
+
+int vkk_image_createSemaphore(vkk_image_t* self)
+{
+	ASSERT(self);
+
+	vkk_engine_t* engine = self->engine;
+
+	VkSemaphoreCreateInfo sa_info =
+	{
+		.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO,
+		.pNext = NULL,
+		.flags = 0
+	};
+
+	if(vkCreateSemaphore(engine->device, &sa_info, NULL,
+	                     &self->semaphore) != VK_SUCCESS)
+	{
+		LOGE("vkCreateSemaphore failed");
+		return 0;
+	}
+
+	return 1;
+}
+
+/***********************************************************
 * public                                                   *
 ***********************************************************/
 
@@ -232,6 +259,10 @@ vkk_image_t* vkk_image_new(vkk_engine_t* engine,
 		}
 	}
 
+	// semaphore is created on demand and is used for
+	// synchronization with the image stream renderer
+	self->semaphore = VK_NULL_HANDLE;
+
 	// success
 	return self;
 
@@ -258,6 +289,11 @@ void vkk_image_delete(vkk_image_t** _self)
 	vkk_image_t* self = *_self;
 	if(self)
 	{
+		vkk_engine_t* engine = self->engine;
+
+		vkDestroySemaphore(engine->device,
+		                   self->semaphore,
+		                   NULL);
 		vkk_engine_deleteObject(self->engine,
 		                        VKK_OBJECT_TYPE_IMAGE,
 		                        (void*) self);

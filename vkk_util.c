@@ -56,7 +56,7 @@ void vkk_util_imageMemoryBarrier(vkk_image_t* image,
 
 	// save the new layout
 	int i;
-	for(i = baseMipLevel; i < levelCount; ++i)
+	for(i = baseMipLevel; i < baseMipLevel + levelCount; ++i)
 	{
 		image->layout_array[i] = newLayout;
 	}
