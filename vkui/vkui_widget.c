@@ -721,6 +721,17 @@ void vkui_widget_draw(vkui_widget_t* self)
 		                          sizeof(cc_vec4f_t),
 		                          (const void*) &self->color);
 
+		vkk_uniformAttachment_t ua =
+		{
+			.binding = 1,
+			.type    = VKK_UNIFORM_TYPE_IMAGE_REF,
+			.image   = screen->img21
+		};
+
+		vkk_renderer_updateUniformSetRefs(screen->renderer,
+		                                  screen->us2_multiplyImage,
+		                                  1, &ua);
+
 		vkui_screen_scissor(screen, &rect_border_clip);
 		vkui_screen_bind(screen, VKUI_SCREEN_BIND_COLOR);
 		vkk_uniformSet_t* us_array[] =

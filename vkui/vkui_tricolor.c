@@ -205,6 +205,17 @@ void vkui_tricolor_drawBuffer(vkui_tricolor_t* self,
 
 	vkui_screen_t* screen = self->screen;
 
+	vkk_uniformAttachment_t ua =
+	{
+		.binding = 1,
+		.type    = VKK_UNIFORM_TYPE_IMAGE_REF,
+		.image   = screen->img21
+	};
+
+	vkk_renderer_updateUniformSetRefs(screen->renderer,
+	                                  screen->us2_multiplyImage,
+	                                  1, &ua);
+
 	cc_vec2f_t ab =
 	{
 		.x = self->a,
@@ -236,6 +247,17 @@ void vkui_tricolor_drawRect(vkui_tricolor_t* self)
 
 	vkui_screen_t* screen = self->screen;
 	cc_rect1f_t*   rect   = &self->rect;
+
+	vkk_uniformAttachment_t ua =
+	{
+		.binding = 1,
+		.type    = VKK_UNIFORM_TYPE_IMAGE_REF,
+		.image   = screen->img21
+	};
+
+	vkk_renderer_updateUniformSetRefs(screen->renderer,
+	                                  screen->us2_multiplyImage,
+	                                  1, &ua);
 
 	cc_vec2f_t ab =
 	{
