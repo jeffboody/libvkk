@@ -44,7 +44,7 @@ The graphics features exposed by VKK include.
 * Graphics pipeline with vertex and fragment shader stages
 * Graphics memory is automatically pooled and suballocated
 * Shader support for uniform buffers and images
-* 2D images with optional mipmapping are supported
+* 2D and 3D images with optional mipmapping are supported
 * Triangles are the only primitive supported
 * Transparency, depth clearing, viewport and scissors
 
@@ -153,7 +153,7 @@ transparency blending.
 		unsigned int mipmap:1;
 		unsigned int filter_linear:1;
 		unsigned int target:1;
-		unsigned int target:1;
+		unsigned int target_blend:1;
 		unsigned int pad:17;
 	} vkk_imageCaps_t;
 
@@ -170,8 +170,8 @@ The vkk\_engine\_platformCmd() function allows the app to
 send commands to the platform. There are commands to turn
 on/off device sensors, play sounds, show the soft keyboard,
 load a URL in a browser and request platform permissions. On
-Linux, all commands are currently ignored except the EXIT
-command.
+Linux, all commands are currently ignored except the
+VKK\_PLATFORM\_CMD\_EXIT command.
 
 	typedef enum vkk_platformCmd_s
 	{
@@ -252,15 +252,14 @@ Images
 ======
 
 Image objects may be created by the app for textures and
-image rendering. The image formats exposed include
-RGBA8888, RGBA4444, RGB888, RGB565, RG88 and R8. However,
-you must query the image capabilities to determine if the
-image format is supported. The DEPTH format and stage are
-only used internally by the engine. Images whose width and
-height are a power-of-two may be mipmapped. The stage flag
-indicates if the image will be used as a texture for vertex
-shaders and/or fragment shaders. The pixels may be NULL for
-image rendering.
+image rendering. However, you must query the image
+capabilities to determine if the image format is supported.
+The VKK\_IMAGE\_FORMAT\_DEPTH format and stage are only
+used internally by the engine. Images whose width, height
+and depth are a power-of-two may be mipmapped. The stage
+flag indicates if the image will be used as a texture for
+vertex shaders and/or fragment shaders. The pixels may be
+NULL for image rendering.
 
 The vkk\_image\_new() and vkk\_image\_delete() functions can
 be used to create/destroy image objects. Note that the F16
@@ -372,7 +371,7 @@ functions can be used to create/destroy uniform set objects.
 It is important to note that a uniform set implements the
 update mode defined by the uniform set factory. The uniform
 buffers attached to the uniform set must have the same update
-mode or be STATIC.
+mode or be VKK\_UPDATE\_MODE\_STATIC.
 
 See the _Renderer_ section for details on binding uniform
 sets and updating uniform set references.
@@ -391,7 +390,7 @@ A uniformBinding is required for every buffer, image, buffer
 reference and image reference in the set. The stage flag
 indicates if the uniform will be used by vertex shaders
 and/or fragment shaders. When the uniform binding type is
-IMAGE or IMAGE\_REF then the app must also specify the
+for an image then the app must also specify the
 sampler filtering and mipmapping modes.
 
 	typedef enum
@@ -657,9 +656,10 @@ renderers can be issued in a different thread once both
 begin() functions complete.
 
 The rendering mode determines the type of rendering commands
-that may be issued. The DRAW rendering mode allows all
-rendering commands except for the vkk\_renderer\_execute()
-function. The EXECUTE rendering mode only allows the
+that may be issued. The VKK\_RENDERER\_MODE\_DRAW rendering
+mode allows all rendering commands except for the
+vkk\_renderer\_execute() function. The
+VKK\_RENDERER\_MODE\_EXECUTE rendering mode only allows the
 vkk\_renderer\_execute() and vkk\_renderer\_surfaceSize()
 functions. The vkk\_renderer\_beginImage() function accepts
 an image that will be used as a render target. Note that
@@ -699,21 +699,17 @@ while the image stream rendering is still in progress.
 The app may utilize secondary rendering to optimize
 performance by creating multiple secondary renderers to
 record various parts of the scene in parallel. The drawing
-doesn't actually occur until the secondary renderers are
-drawn into an EXECUTE renderer with the
-vkk\_renderer\_execute() function. A secondary
-renderer may only be drawn once per frame into an EXECUTE
-renderer. The commands recorded to the secondary command
-buffer are only valid for the current frame and must be
-re-recorded for subsequent frames. And finally, the
-vkk_renderer\_beginSecondary() function should only be
-called if the corresponding EXECUTE renderer begin()
-function was successful.
+doesn't actually occur until the secondary renderers
+commands are executeted by the vkk\_renderer\_execute()
+function. A secondary renderer may only be drawn once per
+frame into the execute renderer. The commands recorded to
+the secondary command buffer are only valid for the current
+frame and must be re-recorded for subsequent frames.
 
 Renderers may share images, uniform set factories and
 pipeline layouts. Renderers may share buffers and uniform
-sets only when update is set to STATIC. Renderers may not
-share graphics pipelines.
+sets only when update is set to VKK\_UPDATE\_MODE\_STATIC.
+Renderers may not share graphics pipelines.
 
 The vkk\_renderer\_surfaceSize() function allows the app to
 query the renderer for the surface size.
@@ -723,20 +719,18 @@ query the renderer for the surface size.
 	                              uint32_t* _height);
 
 The vkk\_renderer\_updateBuffer() function may be used to
-update uniform, vertex and index buffers. The default
-renderer may only update buffers when the update mode is set
-to ASYNCHRONOUS and image renderers may only update buffers
-when the update mode is set to SYNCHRONOUS. When a uniform
-buffer is declared with an update mode of ASYNCHRONOUS or
-SYNCHRONOUS then the app must update the buffer once and only
-once every frame. The app must update the entire uniform
-buffer. The rules for updating a vertex/index buffer are
-subtly different. When a vertex/index buffer is declared
-with an update mode of ASYNCHRONOUS or SYNCHRONOUS then the
-app may update the buffer zero or one time per frame. The
-app may update a subset of the vertex/index buffer. The
-partial updates for vertex/index buffers allows the app to
-avoid reallocating a vertex/index buffer per frame when the
+update uniform, vertex and index buffers. A buffer is
+considered updatable when its update mode is not
+VKK\_UPDATE\_MODE\_STATIC. Uniform buffers which are
+updatable must be updated once and only once per frame and
+the entire buffer must be updated. The rules for updating a
+vertex/index buffer are subtly different. When a
+vertex/index buffer is updatable then the app may update
+the buffer zero or one time per frame. The app may update a
+subset of the vertex/index buffer but only the portion of
+the buffer which was updated is valid. The partial updates
+for vertex/index buffers allows the app to avoid
+reallocating a vertex/index buffer per frame when the
 underlying geometry may be changing shape.
 
 	void vkk_renderer_updateBuffer(vkk_renderer_t* self,
@@ -745,10 +739,9 @@ underlying geometry may be changing shape.
 	                               const void* buf);
 
 The vkk\_renderer\_updateUniformSetRefs() function may be
-used to update references for a uniform set (BUFFER\_REF
-and IMAGE\_REF). When a uniform set includes such a
-reference then they must be updated once and only once per
-frame.
+used to update uniform set references. When a uniform set
+includes such a reference then they must be updated once
+and only once per frame.
 
 	typedef enum
 	{
@@ -788,8 +781,12 @@ order and without gaps. If a shader requires sets
 { 0, 1, 3 } then the vkk\_renderer\_bindUniformSets()
 function must be called twice with the uniform sets { 0, 1 }
 and { 3 } to meet the requirements of the underlying Vulkan
-API. Only the uniform sets for the shaders referenced by the
-current graphics pipeline need to be bound.
+API. Only the uniform sets for the shaders referenced by
+the current graphics pipeline need to be bound.
+
+Note that _Qualcomm_ devices seem to drop rendering
+commands when the set indexes are not continuous so it is
+recommended to bind unused sets to avoid this scenario.
 
 	void vkk_renderer_bindUniformSets(vkk_renderer_t* self,
 	                                  uint32_t us_count,
@@ -816,9 +813,9 @@ functions.
 	                          uint32_t height);
 
 The following drawing functions may be called by the app to
-issue drawing commands or submit secondary command buffers.
-Note that the vertex format of the vertex buffer must match
-the currently bound graphics pipeline.
+issue drawing commands. Note that the vertex format of the
+vertex buffer must match the currently bound graphics
+pipeline.
 
 	typedef enum
 	{
@@ -836,6 +833,10 @@ the currently bound graphics pipeline.
 	                              vkk_indexType_e index_type,
 	                              vkk_buffer_t* index_buffer,
 	                              vkk_buffer_t** vertex_buffers);
+
+The following execute function may be called by the app to
+issue drawing commands stored in secondary command buffers.
+
 	void vkk_renderer_execute(vkk_renderer_t* self,
 	                          uint32_t secondary_count,
 	                          vkk_renderer_t** secondary_array);
