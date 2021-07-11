@@ -825,7 +825,7 @@ void vkk_renderer_bindUniformSets(vkk_renderer_t* self,
 		        frame : 0;
 		ds[i] = us_array[i]->ds_array[idx];
 
-		// update timestamps and semaphores
+		// update timestamps
 		int j;
 		for(j = 0; j < us_array[i]->ua_count; ++j)
 		{
@@ -844,13 +844,6 @@ void vkk_renderer_bindUniformSets(vkk_renderer_t* self,
 				{
 					ua->image->ts = ts;
 				}
-			}
-
-			if((ua->type == VKK_UNIFORM_TYPE_IMAGE) ||
-			   (ua->type == VKK_UNIFORM_TYPE_IMAGE_REF))
-			{
-				vkk_renderer_addWaitSemaphore(self,
-				                              ua->image->semaphore);
 			}
 
 			us_array[i]->ts = ts;

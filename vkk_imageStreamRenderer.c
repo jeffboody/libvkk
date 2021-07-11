@@ -574,6 +574,9 @@ vkk_imageStreamRenderer_begin(vkk_renderer_t* base,
 
 	vkCmdBeginRenderPass(cb, &rp_info, contents);
 
+	vkk_renderer_addWaitSemaphore(self->consumer,
+	                              image->semaphore);
+
 	return image;
 }
 
