@@ -657,8 +657,8 @@ vkk_imageStreamRenderer_renderPass(vkk_renderer_t* base)
 {
 	ASSERT(base);
 
-	vkk_defaultRenderer_t* self;
-	self = (vkk_defaultRenderer_t*) base;
+	vkk_imageStreamRenderer_t* self;
+	self = (vkk_imageStreamRenderer_t*) base;
 
 	return self->render_pass;
 }
