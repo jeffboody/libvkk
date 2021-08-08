@@ -53,6 +53,7 @@ typedef enum vkk_platformCmd_s
 	VKK_PLATFORM_CMD_WRITE_STORAGE_PERM       = 18,
 	VKK_PLATFORM_CMD_SOFTKEY_HIDE             = 19,
 	VKK_PLATFORM_CMD_SOFTKEY_SHOW             = 20,
+	VKK_PLATFORM_CMD_DOCUMENT_OPEN_TREE       = 21,
 } vkk_platformCmd_e;
 
 /*
@@ -62,23 +63,24 @@ typedef enum vkk_platformCmd_s
 // type
 typedef enum
 {
-	VKK_EVENT_TYPE_UNDEFINED         = -1,
-	VKK_EVENT_TYPE_ACCELEROMETER     = 0,
-	VKK_EVENT_TYPE_ACTION_DOWN       = 1,
-	VKK_EVENT_TYPE_ACTION_MOVE       = 2,
-	VKK_EVENT_TYPE_ACTION_UP         = 3,
-	VKK_EVENT_TYPE_AXIS_MOVE         = 4,
-	VKK_EVENT_TYPE_BUTTON_DOWN       = 5,
-	VKK_EVENT_TYPE_BUTTON_UP         = 6,
-	VKK_EVENT_TYPE_DENSITY           = 7,
-	VKK_EVENT_TYPE_GPS               = 8,
-	VKK_EVENT_TYPE_GYROSCOPE         = 9,
-	VKK_EVENT_TYPE_KEY_DOWN          = 10,
-	VKK_EVENT_TYPE_KEY_UP            = 11,
-	VKK_EVENT_TYPE_MAGNETOMETER      = 12,
-	VKK_EVENT_TYPE_CONTENT_RECT      = 13,
-	VKK_EVENT_TYPE_PERMISSION_STATUS = 14,
-	VKK_EVENT_TYPE_LOW_MEMORY        = 15,
+	VKK_EVENT_TYPE_UNDEFINED          = -1,
+	VKK_EVENT_TYPE_ACCELEROMETER      = 0,
+	VKK_EVENT_TYPE_ACTION_DOWN        = 1,
+	VKK_EVENT_TYPE_ACTION_MOVE        = 2,
+	VKK_EVENT_TYPE_ACTION_UP          = 3,
+	VKK_EVENT_TYPE_AXIS_MOVE          = 4,
+	VKK_EVENT_TYPE_BUTTON_DOWN        = 5,
+	VKK_EVENT_TYPE_BUTTON_UP          = 6,
+	VKK_EVENT_TYPE_DENSITY            = 7,
+	VKK_EVENT_TYPE_DOCUMENT_OPEN_TREE = 8,
+	VKK_EVENT_TYPE_GPS                = 9,
+	VKK_EVENT_TYPE_GYROSCOPE          = 10,
+	VKK_EVENT_TYPE_KEY_DOWN           = 11,
+	VKK_EVENT_TYPE_KEY_UP             = 12,
+	VKK_EVENT_TYPE_MAGNETOMETER       = 13,
+	VKK_EVENT_TYPE_CONTENT_RECT       = 14,
+	VKK_EVENT_TYPE_PERMISSION_STATUS  = 15,
+	VKK_EVENT_TYPE_LOW_MEMORY         = 16,
 } vkk_eventType_e;
 
 // max actions supported
@@ -195,6 +197,11 @@ typedef struct
 
 typedef struct
 {
+	char uri[256];
+} vkk_eventDocument_t;
+
+typedef struct
+{
 	double lat;
 	double lon;
 	float  accuracy;
@@ -260,6 +267,7 @@ typedef struct
 		vkk_eventAxis_t          axis;
 		vkk_eventButton_t        button;
 		float                    density;
+		vkk_eventDocument_t      document;
 		vkk_eventGps_t           gps;
 		vkk_eventGyroscope_t     gyroscope;
 		vkk_eventKey_t           key;
