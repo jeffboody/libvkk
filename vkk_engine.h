@@ -90,6 +90,10 @@ typedef struct vkk_engine_s
 
 	vkk_version_t version;
 
+	// app info
+	char app_name[256];
+	vkk_version_t app_version;
+
 	char internal_path[256];
 	char external_path[256];
 

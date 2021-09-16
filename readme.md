@@ -92,7 +92,14 @@ the engine version.
 	} vkk_version_t;
 
 	void vkk_engine_version(vkk_engine_t* self,
-	                        vkk_version_t* version);
+	                        const vkk_version_t** version);
+
+The vkk\_engine\_appInfo() function allows the app to query
+the app info which was passed to the platform.
+
+	void vkk_engine_appInfo(vkk_engine_t* self,
+	                        const char** app_name,
+	                        const vkk_version_t** app_version);
 
 The vkk\_engine\_internalPath() and
 vkk\_engine\_externalPath() functions provide a locations
@@ -718,6 +725,18 @@ query the renderer for the surface size.
 	void vkk_renderer_surfaceSize(vkk_renderer_t* self,
 	                              uint32_t* _width,
 	                              uint32_t* _height);
+
+The vkk\_renderer\_updateMode() function may be used to
+query the non-static update mode supported by the renderer.
+
+	typedef enum
+	{
+		VKK_UPDATE_MODE_STATIC       = 0,
+		VKK_UPDATE_MODE_ASYNCHRONOUS = 1,
+		VKK_UPDATE_MODE_SYNCHRONOUS  = 2,
+	} vkk_updateMode_e;
+
+	vkk_updateMode_e vkk_renderer_updateMode(vkk_renderer_t* self);
 
 The vkk\_renderer\_updateBuffer() function may be used to
 update uniform, vertex and index buffers. A buffer is

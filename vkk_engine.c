@@ -1087,13 +1087,24 @@ vkk_engine_runDestructFn(int tid, void* owner, void* task)
 ***********************************************************/
 
 void vkk_engine_version(vkk_engine_t* self,
-                        vkk_version_t* version)
+                        const vkk_version_t** version)
 {
 	ASSERT(self);
 	ASSERT(version);
 
-	memcpy((void*) version, (const void*) &self->version,
-	       sizeof(vkk_version_t));
+	*version = &self->version;
+}
+
+void vkk_engine_appInfo(vkk_engine_t* self,
+                        const char** app_name,
+                        const vkk_version_t** app_version)
+{
+	ASSERT(self);
+	ASSERT(app_name);
+	ASSERT(app_version);
+
+	*app_name    = self->app_name;
+	*app_version = &self->app_version;
 }
 
 const char* vkk_engine_internalPath(vkk_engine_t* self)
@@ -1195,7 +1206,13 @@ vkk_engine_t* vkk_engine_new(vkk_platform_t* platform,
 
 	self->version.major = 1;
 	self->version.minor = 1;
-	self->version.patch = 27;
+	self->version.patch = 28;
+
+	// app info
+	snprintf(self->app_name, 256, "%s", app_name);
+	memcpy((void*) &self->app_version,
+	       (const void*) app_version,
+	       sizeof(vkk_version_t));
 
 	// initialize paths
 	// trim tailing '/' character of internal/external path

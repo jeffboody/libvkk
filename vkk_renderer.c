@@ -704,6 +704,36 @@ void vkk_renderer_surfaceSize(vkk_renderer_t* self,
 	}
 }
 
+vkk_updateMode_e
+vkk_renderer_updateMode(vkk_renderer_t* self)
+{
+	ASSERT(self);
+
+	if(self->type == VKK_RENDERER_TYPE_DEFAULT)
+	{
+		return VKK_UPDATE_MODE_ASYNCHRONOUS;
+	}
+	else if(self->type == VKK_RENDERER_TYPE_IMAGE)
+	{
+		return VKK_UPDATE_MODE_SYNCHRONOUS;
+	}
+	else if(self->type == VKK_RENDERER_TYPE_IMAGESTREAM)
+	{
+		vkk_imageStreamRenderer_t* isr;
+		isr = (vkk_imageStreamRenderer_t*) self;
+		return vkk_renderer_updateMode(isr->consumer);
+	}
+	else if(self->type == VKK_RENDERER_TYPE_SECONDARY)
+	{
+		vkk_secondaryRenderer_t* sr;
+		sr = (vkk_secondaryRenderer_t*) self;
+		return vkk_renderer_updateMode(sr->executor);
+	}
+
+	LOGE("invalid type=%i", self->type);
+	return VKK_UPDATE_MODE_STATIC;
+}
+
 void vkk_renderer_updateBuffer(vkk_renderer_t* self,
                                vkk_buffer_t* buffer,
                                size_t size,

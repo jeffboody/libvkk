@@ -237,7 +237,10 @@ typedef struct
  */
 
 void            vkk_engine_version(vkk_engine_t* self,
-                                   vkk_version_t* version);
+                                   const vkk_version_t** version);
+void            vkk_engine_appInfo(vkk_engine_t* self,
+                                   const char** app_name,
+                                   const vkk_version_t** app_version);
 const char*     vkk_engine_internalPath(vkk_engine_t* self);
 const char*     vkk_engine_externalPath(vkk_engine_t* self);
 void            vkk_engine_meminfo(vkk_engine_t* self,
@@ -326,69 +329,70 @@ void                    vkk_graphicsPipeline_delete(vkk_graphicsPipeline_t** _se
  * rendering API
  */
 
-vkk_renderer_t* vkk_renderer_newImage(vkk_engine_t* engine,
+vkk_renderer_t*  vkk_renderer_newImage(vkk_engine_t* engine,
+                                       uint32_t width,
+                                       uint32_t height,
+                                       vkk_imageFormat_e format);
+vkk_renderer_t*  vkk_renderer_newImageStream(vkk_renderer_t* consumer,
+                                             uint32_t width,
+                                             uint32_t height,
+                                             vkk_imageFormat_e format,
+                                             int mipmap,
+                                             vkk_stage_e stage);
+vkk_renderer_t*  vkk_renderer_newSecondary(vkk_renderer_t* executor);
+void             vkk_renderer_delete(vkk_renderer_t** _self);
+int              vkk_renderer_beginDefault(vkk_renderer_t* self,
+                                           vkk_rendererMode_e mode,
+                                           float* clear_color);
+int              vkk_renderer_beginImage(vkk_renderer_t* self,
+                                         vkk_rendererMode_e mode,
+                                         vkk_image_t* image,
+                                         float* clear_color);
+vkk_image_t*     vkk_renderer_beginImageStream(vkk_renderer_t* self,
+                                               vkk_rendererMode_e mode,
+                                               float* clear_color);
+int              vkk_renderer_beginSecondary(vkk_renderer_t* self);
+void             vkk_renderer_end(vkk_renderer_t* self);
+void             vkk_renderer_surfaceSize(vkk_renderer_t* self,
+                                          uint32_t* _width,
+                                          uint32_t* _height);
+vkk_updateMode_e vkk_renderer_updateMode(vkk_renderer_t* self);
+void             vkk_renderer_updateBuffer(vkk_renderer_t* self,
+                                           vkk_buffer_t* buffer,
+                                           size_t size,
+                                           const void* buf);
+void             vkk_renderer_updateUniformSetRefs(vkk_renderer_t* self,
+                                                   vkk_uniformSet_t* us,
+                                                   uint32_t ua_count,
+                                                   vkk_uniformAttachment_t* ua_array);
+void             vkk_renderer_bindGraphicsPipeline(vkk_renderer_t* self,
+                                                   vkk_graphicsPipeline_t* gp);
+void             vkk_renderer_bindUniformSets(vkk_renderer_t* self,
+                                              uint32_t us_count,
+                                              vkk_uniformSet_t** us_array);
+void             vkk_renderer_clearDepth(vkk_renderer_t* self);
+void             vkk_renderer_viewport(vkk_renderer_t* self,
+                                       float x,
+                                       float y,
+                                       float width,
+                                       float height);
+void             vkk_renderer_scissor(vkk_renderer_t* self,
+                                      uint32_t x,
+                                      uint32_t y,
                                       uint32_t width,
-                                      uint32_t height,
-                                      vkk_imageFormat_e format);
-vkk_renderer_t* vkk_renderer_newImageStream(vkk_renderer_t* consumer,
-                                            uint32_t width,
-                                            uint32_t height,
-                                            vkk_imageFormat_e format,
-                                            int mipmap,
-                                            vkk_stage_e stage);
-vkk_renderer_t* vkk_renderer_newSecondary(vkk_renderer_t* executor);
-void            vkk_renderer_delete(vkk_renderer_t** _self);
-int             vkk_renderer_beginDefault(vkk_renderer_t* self,
-                                          vkk_rendererMode_e mode,
-                                          float* clear_color);
-int             vkk_renderer_beginImage(vkk_renderer_t* self,
-                                        vkk_rendererMode_e mode,
-                                        vkk_image_t* image,
-                                        float* clear_color);
-vkk_image_t*    vkk_renderer_beginImageStream(vkk_renderer_t* self,
-                                              vkk_rendererMode_e mode,
-                                              float* clear_color);
-int             vkk_renderer_beginSecondary(vkk_renderer_t* self);
-void            vkk_renderer_end(vkk_renderer_t* self);
-void            vkk_renderer_surfaceSize(vkk_renderer_t* self,
-                                         uint32_t* _width,
-                                         uint32_t* _height);
-void            vkk_renderer_updateBuffer(vkk_renderer_t* self,
-                                          vkk_buffer_t* buffer,
-                                          size_t size,
-                                          const void* buf);
-void            vkk_renderer_updateUniformSetRefs(vkk_renderer_t* self,
-                                                  vkk_uniformSet_t* us,
-                                                  uint32_t ua_count,
-                                                  vkk_uniformAttachment_t* ua_array);
-void            vkk_renderer_bindGraphicsPipeline(vkk_renderer_t* self,
-                                                  vkk_graphicsPipeline_t* gp);
-void            vkk_renderer_bindUniformSets(vkk_renderer_t* self,
-                                             uint32_t us_count,
-                                             vkk_uniformSet_t** us_array);
-void            vkk_renderer_clearDepth(vkk_renderer_t* self);
-void            vkk_renderer_viewport(vkk_renderer_t* self,
-                                      float x,
-                                      float y,
-                                      float width,
-                                      float height);
-void            vkk_renderer_scissor(vkk_renderer_t* self,
-                                     uint32_t x,
-                                     uint32_t y,
-                                     uint32_t width,
-                                     uint32_t height);
-void            vkk_renderer_draw(vkk_renderer_t* self,
-                                  uint32_t vertex_count,
-                                  uint32_t vertex_buffer_count,
-                                  vkk_buffer_t** vertex_buffers);
-void            vkk_renderer_drawIndexed(vkk_renderer_t* self,
-                                         uint32_t index_count,
-                                         uint32_t vertex_buffer_count,
-                                         vkk_indexType_e index_type,
-                                         vkk_buffer_t* index_buffer,
-                                         vkk_buffer_t** vertex_buffers);
-void            vkk_renderer_execute(vkk_renderer_t* self,
-                                     uint32_t secondary_count,
-                                     vkk_renderer_t** secondary_array);
+                                      uint32_t height);
+void             vkk_renderer_draw(vkk_renderer_t* self,
+                                   uint32_t vertex_count,
+                                   uint32_t vertex_buffer_count,
+                                   vkk_buffer_t** vertex_buffers);
+void             vkk_renderer_drawIndexed(vkk_renderer_t* self,
+                                          uint32_t index_count,
+                                          uint32_t vertex_buffer_count,
+                                          vkk_indexType_e index_type,
+                                          vkk_buffer_t* index_buffer,
+                                          vkk_buffer_t** vertex_buffers);
+void             vkk_renderer_execute(vkk_renderer_t* self,
+                                      uint32_t secondary_count,
+                                      vkk_renderer_t** secondary_array);
 
 #endif
