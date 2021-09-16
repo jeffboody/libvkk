@@ -209,16 +209,13 @@ vkk_memoryManager_alloc(vkk_memoryManager_t* self,
 	// find an existing pool
 	int locked       = 0;
 	int pool_created = 0;
-	cc_mapIter_t      miterator;
 	cc_mapIter_t*     miter;
 	vkk_memoryPool_t* pool;
 	while(locked == 0)
 	{
-		miter = &miterator;
-		pool  = (vkk_memoryPool_t*)
-		        cc_map_findp(self->pools, miter,
+		miter = cc_map_findp(self->pools,
 		                     sizeof(vkk_memoryPoolKey_t), &key);
-		if(pool == NULL)
+		if(miter == NULL)
 		{
 			// otherwise create a new pool
 			uint32_t count = computePoolCount((size_t) stride);
@@ -229,11 +226,17 @@ vkk_memoryManager_alloc(vkk_memoryManager_t* self,
 			}
 			pool_created = 1;
 
-			if(cc_map_addp(self->pools, (const void*) pool,
-			               sizeof(vkk_memoryPoolKey_t), &key) == 0)
+			miter = cc_map_addp(self->pools, (const void*) pool,
+			                    sizeof(vkk_memoryPoolKey_t),
+			                    &key);
+			if(miter == NULL)
 			{
 				goto fail_add;
 			}
+		}
+		else
+		{
+			pool = (vkk_memoryPool_t*) cc_map_val(miter);
 		}
 
 		locked = vkk_memoryManager_poolLock(self, pool);
@@ -257,8 +260,6 @@ vkk_memoryManager_alloc(vkk_memoryManager_t* self,
 	{
 		if(pool_created)
 		{
-			cc_map_findp(self->pools, miter,
-			             sizeof(vkk_memoryPoolKey_t), &key);
 			cc_map_remove(self->pools, &miter);
 		}
 	}
@@ -516,13 +517,12 @@ void vkk_memoryManager_free(vkk_memoryManager_t* self,
 		if(vkk_memoryPool_free(pool, self->shutdown,
 		                       _memory, &chunk))
 		{
-			cc_mapIter_t  miterator;
-			cc_mapIter_t* miter = &miterator;
+			cc_mapIter_t* miter;
+			miter = cc_map_findp(self->pools,
+			                     sizeof(vkk_memoryPoolKey_t), &key);
 
 			vkk_memoryPool_t* tmp;
-			tmp = (vkk_memoryPool_t*)
-			      cc_map_findp(self->pools, miter,
-			                   sizeof(vkk_memoryPoolKey_t), &key);
+			tmp = (vkk_memoryPool_t*) cc_map_val(miter);
 			assert(tmp == pool);
 
 			cc_map_remove(self->pools, &miter);
@@ -607,9 +607,7 @@ void vkk_memoryManager_meminfo(vkk_memoryManager_t* self,
 		     (int) self->count_chunks, (int) self->count_slots,
 		     (int) self->size_chunks, (int) self->size_slots);
 
-		cc_mapIter_t  miterator;
-		cc_mapIter_t* miter;
-		miter = cc_map_head(self->pools, &miterator);
+		cc_mapIter_t* miter = cc_map_head(self->pools);
 		while(miter)
 		{
 			vkk_memoryPool_t* pool;

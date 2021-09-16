@@ -733,9 +733,8 @@ void vkui_screen_delete(vkui_screen_t** _self)
 		vkui_font_delete(&self->font_array[1]);
 		vkui_font_delete(&self->font_array[0]);
 
-		cc_mapIter_t  miterator;
 		cc_mapIter_t* miter;
-		miter = cc_map_head(self->sprite_map, &miterator);
+		miter = cc_map_head(self->sprite_map);
 		while(miter)
 		{
 			vkk_image_t* image;
@@ -1161,13 +1160,10 @@ vkui_screen_spriteImage(vkui_screen_t* self,
 	ASSERT(self);
 	ASSERT(name);
 
-	vkk_image_t* image;
-	cc_mapIter_t miter;
-	image = (vkk_image_t*)
-	        cc_map_find(self->sprite_map, &miter, name);
-	if(image)
+	cc_mapIter_t* miter = cc_map_find(self->sprite_map, name);
+	if(miter)
 	{
-		return image;
+		return (vkk_image_t*) cc_map_val(miter);;
 	}
 
 	pak_file_t* pak;
@@ -1285,6 +1281,7 @@ vkui_screen_spriteImage(vkui_screen_t* self,
 		goto fail_size;
 	}
 
+	vkk_image_t* image;
 	image = vkk_image_new(self->engine,
 	                      tex->width, tex->height, 1,
 	                      image_format, 0, VKK_STAGE_FS,
@@ -1295,7 +1292,7 @@ vkui_screen_spriteImage(vkui_screen_t* self,
 	}
 
 	if(cc_map_add(self->sprite_map, (const void*) image,
-	              name) == 0)
+	              name) == NULL)
 	{
 		goto fail_add;
 	}

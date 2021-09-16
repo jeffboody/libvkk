@@ -1206,7 +1206,7 @@ vkk_engine_t* vkk_engine_new(vkk_platform_t* platform,
 
 	self->version.major = 1;
 	self->version.minor = 1;
-	self->version.patch = 28;
+	self->version.patch = 29;
 
 	// app info
 	snprintf(self->app_name, 256, "%s", app_name);
@@ -1425,9 +1425,7 @@ void vkk_engine_delete(vkk_engine_t** _self)
 		vkk_defaultRenderer_delete(&self->renderer);
 		cc_jobq_delete(&self->jobq_destruct);
 
-		cc_mapIter_t  miterator;
-		cc_mapIter_t* miter;
-		miter = cc_map_head(self->samplers, &miterator);
+		cc_mapIter_t* miter = cc_map_head(self->samplers);
 		while(miter)
 		{
 			VkSampler* samplerp;
@@ -1438,7 +1436,7 @@ void vkk_engine_delete(vkk_engine_t** _self)
 		}
 		cc_map_delete(&self->samplers);
 
-		miter = cc_map_head(self->shader_modules, &miterator);
+		miter = cc_map_head(self->shader_modules);
 		while(miter)
 		{
 			VkShaderModule sm;
@@ -1955,12 +1953,12 @@ vkk_engine_getShaderModule(vkk_engine_t* self,
 
 	vkk_engine_utilityLock(self);
 
-	cc_mapIter_t miter;
+	cc_mapIter_t* miter;
 	VkShaderModule sm;
-	sm = (VkShaderModule)
-	     cc_map_find(self->shader_modules, &miter, fname);
-	if(sm != VK_NULL_HANDLE)
+	miter = cc_map_find(self->shader_modules, fname);
+	if(miter)
 	{
+		sm = (VkShaderModule) cc_map_val(miter);
 		vkk_engine_utilityUnlock(self);
 		return sm;
 	}
@@ -1992,7 +1990,7 @@ vkk_engine_getShaderModule(vkk_engine_t* self,
 	}
 
 	if(cc_map_add(self->shader_modules, (const void*) sm,
-	              fname) == 0)
+	              fname) == NULL)
 	{
 		vkk_engine_utilityUnlock(self);
 		goto fail_add;
@@ -2023,13 +2021,13 @@ vkk_engine_getSamplerp(vkk_engine_t* self,
 	vkk_engine_utilityLock(self);
 
 	// reuse existing sampler
-	cc_mapIter_t miter;
-	VkSampler*   samplerp;
-	samplerp = (VkSampler*)
-	           cc_map_findp(self->samplers, &miter,
-	                        sizeof(vkk_samplerInfo_t), si);
-	if(samplerp != NULL)
+	cc_mapIter_t* miter;
+	VkSampler*    samplerp;
+	miter = cc_map_findp(self->samplers,
+	                     sizeof(vkk_samplerInfo_t), si);
+	if(miter)
 	{
+		samplerp = (VkSampler*) cc_map_val(miter);
 		vkk_engine_utilityUnlock(self);
 		return samplerp;
 	}
@@ -2088,7 +2086,7 @@ vkk_engine_getSamplerp(vkk_engine_t* self,
 	}
 
 	if(cc_map_addp(self->samplers, (const void*) samplerp,
-	               sizeof(vkk_samplerInfo_t), si) == 0)
+	               sizeof(vkk_samplerInfo_t), si) == NULL)
 	{
 		goto fail_add;
 	}
