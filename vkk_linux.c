@@ -537,6 +537,11 @@ static void vkk_platform_delete(vkk_platform_t** _self)
 			self->paused = 1;
 		}
 
+		if(self->joy)
+		{
+			SDL_JoystickClose(self->joy);
+		}
+
 		vkk_engine_shutdown(self->engine);
 		(*onDestroy)(&self->priv);
 		vkk_engine_delete(&self->engine);
@@ -659,6 +664,138 @@ int main(int argc, char** argv)
 				                         se.tfinger.fingerId,
 				                         platform->width*se.tfinger.x,
 				                         platform->height*se.tfinger.y);
+			}
+			else if(se.type == SDL_JOYAXISMOTION)
+			{
+				LOGD("SDL_JOYAXISMOTION which=%u, axis=%u, value=%i",
+				     (uint32_t) se.jaxis.which,
+				     (uint32_t) se.jaxis.axis,
+				     (int) se.jaxis.value);
+
+				int ignore = 0;
+
+				int id = se.jaxis.which;
+				vkk_event_t ve =
+				{
+					.type = VKK_EVENT_TYPE_AXIS_MOVE,
+					.ts   = cc_timestamp(),
+					.axis =
+					{
+						.id = id
+					}
+				};
+
+				if(id != platform->joy_id)
+				{
+					// unknown id
+					ignore = 1;
+				}
+
+				// scale axis value from -1.0f to 1.0f
+				ve.axis.value = (float) se.jaxis.value;
+				if(ve.axis.value < 0.0f)
+				{
+					ve.axis.value /= 32768.0f;
+				}
+				else
+				{
+					ve.axis.value /= 32767.0f;
+				}
+
+				// assign axis using ipega joystick layout
+				// note that the trigger resting position is -32768
+				uint32_t axis = se.jaxis.axis;
+				if(axis == 0)
+				{
+					ve.axis.axis = VKK_AXIS_X1;
+				}
+				else if(axis == 1)
+				{
+					ve.axis.axis = VKK_AXIS_Y1;
+				}
+				else if(axis == 3)
+				{
+					ve.axis.axis = VKK_AXIS_X2;
+				}
+				else if(axis == 4)
+				{
+					ve.axis.axis = VKK_AXIS_Y2;
+				}
+				else if(axis == 5)
+				{
+					ve.axis.axis  = VKK_AXIS_RT;
+					ve.axis.value = (ve.axis.value + 1.0f)/2.0f;
+				}
+				else if(axis == 2)
+				{
+					ve.axis.axis  = VKK_AXIS_LT;
+					ve.axis.value = (ve.axis.value + 1.0f)/2.0f;
+				}
+				else
+				{
+					// unknown axis
+					ignore = 1;
+				}
+
+				if(ignore == 0)
+				{
+					(*onEvent)(platform->priv, &ve);
+				}
+			}
+			else if(se.type == SDL_JOYBALLMOTION)
+			{
+				LOGD("SDL_JOYBALLMOTION which=%u, ball=%u, xrel=%i, yrel=%i",
+				     (uint32_t) se.jball.which,
+				     (uint32_t) se.jball.ball,
+				     (int) se.jball.xrel,
+				     (int) se.jball.yrel);
+			}
+			else if(se.type == SDL_JOYHATMOTION)
+			{
+				LOGD("SDL_JOYHATMOTION which=%u, hat=%u, value=%u",
+				     (uint32_t) se.jhat.which,
+				     (uint32_t) se.jhat.hat,
+				     (uint32_t) se.jhat.value);
+			}
+			else if(se.type == SDL_JOYBUTTONDOWN)
+			{
+				LOGD("SDL_JOYBUTTONDOWN which=%u, button=%u, state=%u",
+				     (uint32_t) se.jbutton.which,
+				     (uint32_t) se.jbutton.button,
+				     (uint32_t) se.jbutton.state);
+			}
+			else if(se.type == SDL_JOYBUTTONUP)
+			{
+				LOGD("SDL_JOYBUTTONUP which=%u, button=%u, state=%u",
+				     (uint32_t) se.jbutton.which,
+				     (uint32_t) se.jbutton.button,
+				     (uint32_t) se.jbutton.state);
+			}
+			else if(se.type == SDL_JOYDEVICEADDED)
+			{
+				LOGD("SDL_JOYDEVICEADDED which=%u",
+				     (uint32_t) se.jdevice.which);
+
+				if(platform->joy == NULL)
+				{
+					platform->joy = SDL_JoystickOpen(se.jdevice.which);
+					if(platform->joy)
+					{
+						platform->joy_id = se.jdevice.which;
+					}
+				}
+			}
+			else if(se.type == SDL_JOYDEVICEREMOVED)
+			{
+				LOGD("SDL_JOYDEVICEREMOVED which=%u",
+				     (uint32_t) se.jdevice.which);
+
+				if(platform->joy &&
+				   (se.jdevice.which == platform->joy_id))
+				{
+					SDL_JoystickClose(platform->joy);
+					platform->joy = NULL;
+				}
 			}
 			else if((se.type == SDL_WINDOWEVENT) &&
 			        (se.window.event == SDL_WINDOWEVENT_RESIZED))

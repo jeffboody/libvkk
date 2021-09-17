@@ -35,6 +35,9 @@ typedef struct vkk_platform_s
 
 	vkk_engine_t* engine;
 	void*         priv;
+
+	int           joy_id;
+	SDL_Joystick* joy;
 } vkk_platform_t;
 
 void vkk_platform_cmd(vkk_platform_t* self,
