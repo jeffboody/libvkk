@@ -1086,9 +1086,10 @@ Java_com_jeffboody_vkk_VKKNativeActivity_NativeMagnetometer(JNIEnv* env,
 }
 
 JNIEXPORT void JNICALL
-Java_com_jeffboody_vkk_VKKNativeActivity_NativeDocumentOpenTree(JNIEnv* env,
-                                                                jobject obj,
-                                                                jstring uri)
+Java_com_jeffboody_vkk_VKKNativeActivity_NativeDocument(JNIEnv* env,
+                                                        jobject obj,
+                                                        jstring uri,
+                                                        jint fd)
 {
 	ASSERT(env);
 	ASSERT(uri);
@@ -1096,8 +1097,9 @@ Java_com_jeffboody_vkk_VKKNativeActivity_NativeDocumentOpenTree(JNIEnv* env,
 	if(platform)
 	{
 		vkk_event_t* e = vkk_platform_dequeue(platform);
-		e->type        = VKK_EVENT_TYPE_DOCUMENT_OPEN_TREE;
+		e->type        = VKK_EVENT_TYPE_DOCUMENT;
 		e->ts          = cc_timestamp();
+		e->document.fd = fd;
 
 		const char* curi = (*env)->GetStringUTFChars(env, uri, NULL);
 		snprintf(e->document.uri, 256, "%s", curi);

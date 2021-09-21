@@ -51,7 +51,8 @@ typedef enum vkk_platformCmd_s
 	VKK_PLATFORM_CMD_FINE_LOCATION_PERM = 16,
 	VKK_PLATFORM_CMD_SOFTKEY_HIDE       = 17,
 	VKK_PLATFORM_CMD_SOFTKEY_SHOW       = 18,
-	VKK_PLATFORM_CMD_DOCUMENT_OPEN_TREE = 19,
+	VKK_PLATFORM_CMD_DOCUMENT_CREATE    = 19,
+	VKK_PLATFORM_CMD_DOCUMENT_OPEN      = 20,
 } vkk_platformCmd_e;
 
 /*
@@ -61,24 +62,24 @@ typedef enum vkk_platformCmd_s
 // type
 typedef enum
 {
-	VKK_EVENT_TYPE_UNDEFINED          = -1,
-	VKK_EVENT_TYPE_ACCELEROMETER      = 0,
-	VKK_EVENT_TYPE_ACTION_DOWN        = 1,
-	VKK_EVENT_TYPE_ACTION_MOVE        = 2,
-	VKK_EVENT_TYPE_ACTION_UP          = 3,
-	VKK_EVENT_TYPE_AXIS_MOVE          = 4,
-	VKK_EVENT_TYPE_BUTTON_DOWN        = 5,
-	VKK_EVENT_TYPE_BUTTON_UP          = 6,
-	VKK_EVENT_TYPE_DENSITY            = 7,
-	VKK_EVENT_TYPE_DOCUMENT_OPEN_TREE = 8,
-	VKK_EVENT_TYPE_GPS                = 9,
-	VKK_EVENT_TYPE_GYROSCOPE          = 10,
-	VKK_EVENT_TYPE_KEY_DOWN           = 11,
-	VKK_EVENT_TYPE_KEY_UP             = 12,
-	VKK_EVENT_TYPE_MAGNETOMETER       = 13,
-	VKK_EVENT_TYPE_CONTENT_RECT       = 14,
-	VKK_EVENT_TYPE_PERMISSION_STATUS  = 15,
-	VKK_EVENT_TYPE_LOW_MEMORY         = 16,
+	VKK_EVENT_TYPE_UNDEFINED         = -1,
+	VKK_EVENT_TYPE_ACCELEROMETER     = 0,
+	VKK_EVENT_TYPE_ACTION_DOWN       = 1,
+	VKK_EVENT_TYPE_ACTION_MOVE       = 2,
+	VKK_EVENT_TYPE_ACTION_UP         = 3,
+	VKK_EVENT_TYPE_AXIS_MOVE         = 4,
+	VKK_EVENT_TYPE_BUTTON_DOWN       = 5,
+	VKK_EVENT_TYPE_BUTTON_UP         = 6,
+	VKK_EVENT_TYPE_DENSITY           = 7,
+	VKK_EVENT_TYPE_DOCUMENT          = 8,
+	VKK_EVENT_TYPE_GPS               = 9,
+	VKK_EVENT_TYPE_GYROSCOPE         = 10,
+	VKK_EVENT_TYPE_KEY_DOWN          = 11,
+	VKK_EVENT_TYPE_KEY_UP            = 12,
+	VKK_EVENT_TYPE_MAGNETOMETER      = 13,
+	VKK_EVENT_TYPE_CONTENT_RECT      = 14,
+	VKK_EVENT_TYPE_PERMISSION_STATUS = 15,
+	VKK_EVENT_TYPE_LOW_MEMORY        = 16,
 } vkk_eventType_e;
 
 // max actions supported
@@ -196,6 +197,7 @@ typedef struct
 typedef struct
 {
 	char uri[256];
+	int  fd;
 } vkk_eventDocument_t;
 
 typedef struct

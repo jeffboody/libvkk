@@ -182,32 +182,49 @@ VKK\_PLATFORM\_CMD\_EXIT command.
 
 	typedef enum vkk_platformCmd_s
 	{
-		VKK_PLATFORM_CMD_ACCELEROMETER_OFF        = 1,
-		VKK_PLATFORM_CMD_ACCELEROMETER_ON         = 2,
-		VKK_PLATFORM_CMD_CHECK_PERMISSIONS        = 3,
-		VKK_PLATFORM_CMD_EXIT                     = 4,
-		VKK_PLATFORM_CMD_GPS_OFF                  = 5,
-		VKK_PLATFORM_CMD_GPS_ON                   = 6,
-		VKK_PLATFORM_CMD_GPS_RECORD               = 7,
-		VKK_PLATFORM_CMD_GPS_PAUSE                = 8,
-		VKK_PLATFORM_CMD_GYROSCOPE_OFF            = 9,
-		VKK_PLATFORM_CMD_GYROSCOPE_ON             = 10,
-		VKK_PLATFORM_CMD_LOADURL                  = 11,
-		VKK_PLATFORM_CMD_MAGNETOMETER_OFF         = 12,
-		VKK_PLATFORM_CMD_MAGNETOMETER_ON          = 13,
-		VKK_PLATFORM_CMD_PLAY_CLICK               = 14,
-		VKK_PLATFORM_CMD_PLAY_NOTIFY              = 15,
-		VKK_PLATFORM_CMD_FINE_LOCATION_PERM       = 16,
-		VKK_PLATFORM_CMD_READ_STORAGE_PERM        = 17,
-		VKK_PLATFORM_CMD_WRITE_STORAGE_PERM       = 18,
-		VKK_PLATFORM_CMD_SOFTKEY_HIDE             = 19,
-		VKK_PLATFORM_CMD_SOFTKEY_SHOW             = 20,
-		VKK_PLATFORM_CMD_DOCUMENT_OPEN_TREE       = 21,
+		VKK_PLATFORM_CMD_ACCELEROMETER_OFF  = 1,
+		VKK_PLATFORM_CMD_ACCELEROMETER_ON   = 2,
+		VKK_PLATFORM_CMD_CHECK_PERMISSIONS  = 3,
+		VKK_PLATFORM_CMD_EXIT               = 4,
+		VKK_PLATFORM_CMD_GPS_OFF            = 5,
+		VKK_PLATFORM_CMD_GPS_ON             = 6,
+		VKK_PLATFORM_CMD_GPS_RECORD         = 7,
+		VKK_PLATFORM_CMD_GPS_PAUSE          = 8,
+		VKK_PLATFORM_CMD_GYROSCOPE_OFF      = 9,
+		VKK_PLATFORM_CMD_GYROSCOPE_ON       = 10,
+		VKK_PLATFORM_CMD_LOADURL            = 11,
+		VKK_PLATFORM_CMD_MAGNETOMETER_OFF   = 12,
+		VKK_PLATFORM_CMD_MAGNETOMETER_ON    = 13,
+		VKK_PLATFORM_CMD_PLAY_CLICK         = 14,
+		VKK_PLATFORM_CMD_PLAY_NOTIFY        = 15,
+		VKK_PLATFORM_CMD_FINE_LOCATION_PERM = 16,
+		VKK_PLATFORM_CMD_SOFTKEY_HIDE       = 17,
+		VKK_PLATFORM_CMD_SOFTKEY_SHOW       = 18,
+		VKK_PLATFORM_CMD_DOCUMENT_CREATE    = 19,
+		VKK_PLATFORM_CMD_DOCUMENT_OPEN      = 20,
 	} vkk_platformCmd_e;
 
 	void vkk_engine_platformCmd(vkk_engine_t* self,
 	                            vkk_platformCmd_e cmd,
 	                            const char* msg);
+
+Some commands accept a message in the form of a json string
+for additional arguments as follows.
+
+	VKK_PLATFORM_CMD_LOADURL
+	{"url":"https://www.google.com"}
+
+	VKK_PLATFORM_CMD_DOCUMENT_CREATE
+	# title is optional
+	# r=read, w=write, t=trim, a=append
+	{"title":"test.txt",
+	 "type":"text:plain",
+	 "mode":"r|w|wt|wa|rw|rwt"}
+
+	VKK_PLATFORM_CMD_DOCUMENT_OPEN
+	# r=read, w=write, t=trim, a=append
+	{"type":"text:plain",
+	 "mode":"r|w|wt|wa|rw|rwt"}
 
 See the _Renderer_ secton for more details on the default
 renderer.
@@ -1019,24 +1036,24 @@ changes to screen density, the content rect and permissions.
 
 	typedef enum
 	{
-		VKK_EVENT_TYPE_UNDEFINED          = -1,
-		VKK_EVENT_TYPE_ACCELEROMETER      = 0,
-		VKK_EVENT_TYPE_ACTION_DOWN        = 1,
-		VKK_EVENT_TYPE_ACTION_MOVE        = 2,
-		VKK_EVENT_TYPE_ACTION_UP          = 3,
-		VKK_EVENT_TYPE_AXIS_MOVE          = 4,
-		VKK_EVENT_TYPE_BUTTON_DOWN        = 5,
-		VKK_EVENT_TYPE_BUTTON_UP          = 6,
-		VKK_EVENT_TYPE_DENSITY            = 7,
-		VKK_EVENT_TYPE_DOCUMENT_OPEN_TREE = 8,
-		VKK_EVENT_TYPE_GPS                = 9,
-		VKK_EVENT_TYPE_GYROSCOPE          = 10,
-		VKK_EVENT_TYPE_KEY_DOWN           = 11,
-		VKK_EVENT_TYPE_KEY_UP             = 12,
-		VKK_EVENT_TYPE_MAGNETOMETER       = 13,
-		VKK_EVENT_TYPE_CONTENT_RECT       = 14,
-		VKK_EVENT_TYPE_PERMISSION_STATUS  = 15,
-		VKK_EVENT_TYPE_LOW_MEMORY         = 16,
+		VKK_EVENT_TYPE_UNDEFINED         = -1,
+		VKK_EVENT_TYPE_ACCELEROMETER     = 0,
+		VKK_EVENT_TYPE_ACTION_DOWN       = 1,
+		VKK_EVENT_TYPE_ACTION_MOVE       = 2,
+		VKK_EVENT_TYPE_ACTION_UP         = 3,
+		VKK_EVENT_TYPE_AXIS_MOVE         = 4,
+		VKK_EVENT_TYPE_BUTTON_DOWN       = 5,
+		VKK_EVENT_TYPE_BUTTON_UP         = 6,
+		VKK_EVENT_TYPE_DENSITY           = 7,
+		VKK_EVENT_TYPE_DOCUMENT          = 8,
+		VKK_EVENT_TYPE_GPS               = 9,
+		VKK_EVENT_TYPE_GYROSCOPE         = 10,
+		VKK_EVENT_TYPE_KEY_DOWN          = 11,
+		VKK_EVENT_TYPE_KEY_UP            = 12,
+		VKK_EVENT_TYPE_MAGNETOMETER      = 13,
+		VKK_EVENT_TYPE_CONTENT_RECT      = 14,
+		VKK_EVENT_TYPE_PERMISSION_STATUS = 15,
+		VKK_EVENT_TYPE_LOW_MEMORY        = 16,
 	} vkk_eventType_e;
 
 	typedef struct
@@ -1069,6 +1086,7 @@ changes to screen density, the content rect and permissions.
 	typedef struct
 	{
 		char uri[256];
+		int  fd;
 	} vkk_eventDocument_t;
 
 	typedef struct
