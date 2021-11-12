@@ -38,6 +38,8 @@ typedef struct
 	vkk_image_t*         depth_image;
 	VkFramebuffer*       framebuffers;
 	vkk_commandBuffer_t* cmd_buffers;
+
+	double ts;
 } vkk_imageStreamRenderer_t;
 
 /*

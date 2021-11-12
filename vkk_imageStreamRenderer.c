@@ -577,6 +577,9 @@ vkk_imageStreamRenderer_begin(vkk_renderer_t* base,
 	vkk_renderer_addWaitSemaphore(self->consumer,
 	                              image->semaphore);
 
+	// update timestamp
+	self->ts = vkk_renderer_tsCurrent(self->consumer);
+
 	return image;
 }
 

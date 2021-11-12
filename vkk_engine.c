@@ -822,6 +822,17 @@ vkk_engine_destructRenderer(vkk_engine_t* self, int wait,
 		}
 		else if(renderer->type == VKK_RENDERER_TYPE_IMAGESTREAM)
 		{
+			vkk_imageStreamRenderer_t* isr;
+			isr = (vkk_imageStreamRenderer_t*) renderer;
+			if(wait)
+			{
+				vkk_engine_rendererWaitForTimestamp(self, isr->ts);
+			}
+			else if(isr->ts != 0.0)
+			{
+				vkk_engine_queueWaitIdle(self, VKK_QUEUE_FOREGROUND);
+			}
+
 			vkk_imageStreamRenderer_delete(_renderer);
 		}
 		else if(renderer->type == VKK_RENDERER_TYPE_SECONDARY)
@@ -1206,7 +1217,7 @@ vkk_engine_t* vkk_engine_new(vkk_platform_t* platform,
 
 	self->version.major = 1;
 	self->version.minor = 1;
-	self->version.patch = 31;
+	self->version.patch = 32;
 
 	// app info
 	snprintf(self->app_name, 256, "%s", app_name);
