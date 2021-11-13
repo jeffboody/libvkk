@@ -733,7 +733,8 @@ frame and must be re-recorded for subsequent frames.
 
 Renderers may share images, uniform set factories and
 pipeline layouts. Renderers may share buffers and uniform
-sets only when update is set to VKK\_UPDATE\_MODE\_STATIC.
+sets when update is set to VKK\_UPDATE\_MODE\_STATIC or
+when one renderer is the consumer/executor of the other.
 Renderers may not share graphics pipelines.
 
 The vkk\_renderer\_surfaceSize() function allows the app to
