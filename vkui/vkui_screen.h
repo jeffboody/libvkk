@@ -108,7 +108,7 @@ typedef struct vkui_screen_s
 	cc_map_t* sprite_map;
 
 	// font
-	vkui_font_t* font_array[2];
+	vkui_font_t* font_array[3];
 
 	// text vb
 	cc_multimap_t* map_text_vb;

@@ -648,6 +648,14 @@ vkui_screen_new(vkk_engine_t* engine,
 		goto fail_font_array1;
 	}
 
+	self->font_array[2] = vkui_font_new(self, resource,
+	                                    "vkui/fonts/BarlowSemiCondensed-Medium-32.texz",
+	                                    "vkui/fonts/BarlowSemiCondensed-Medium-32.xml");
+	if(self->font_array[2] == NULL)
+	{
+		goto fail_font_array2;
+	}
+
 	self->map_text_vb = cc_multimap_new(NULL);
 	if(self->map_text_vb == NULL)
 	{
@@ -659,6 +667,8 @@ vkui_screen_new(vkk_engine_t* engine,
 
 	// failure
 	fail_map_text_vb:
+		vkui_font_delete(&self->font_array[2]);
+	fail_font_array2:
 		vkui_font_delete(&self->font_array[1]);
 	fail_font_array1:
 		vkui_font_delete(&self->font_array[0]);
@@ -730,6 +740,7 @@ void vkui_screen_delete(vkui_screen_t** _self)
 		}
 		cc_multimap_delete(&self->map_text_vb);
 
+		vkui_font_delete(&self->font_array[2]);
 		vkui_font_delete(&self->font_array[1]);
 		vkui_font_delete(&self->font_array[0]);
 

@@ -18,6 +18,8 @@ pak -a $1 vkui/fonts/BarlowSemiCondensed-Bold-64.texz
 pak -a $1 vkui/fonts/BarlowSemiCondensed-Bold-64.xml
 pak -a $1 vkui/fonts/BarlowSemiCondensed-Regular-64.texz
 pak -a $1 vkui/fonts/BarlowSemiCondensed-Regular-64.xml
+pak -a $1 vkui/fonts/BarlowSemiCondensed-Medium-32.texz
+pak -a $1 vkui/fonts/BarlowSemiCondensed-Medium-32.xml
 
 # icons
 pak -a $1 vkui/icons/ic_check_box_outline_blank_white_24dp.texz
