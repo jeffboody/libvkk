@@ -350,6 +350,16 @@ static int vkk_engine_getPhysicalDevice(vkk_engine_t* self)
 		}
 	}
 
+	// query device capabilities
+	VkPhysicalDeviceFeatures   pdf;
+	VkPhysicalDeviceProperties pdp;
+	vkGetPhysicalDeviceFeatures(self->physical_device, &pdf);
+	vkGetPhysicalDeviceProperties(self->physical_device, &pdp);
+	if(pdf.samplerAnisotropy)
+	{
+		self->max_anisotropy = pdp.limits.maxSamplerAnisotropy;
+	}
+
 	return 1;
 }
 
@@ -440,6 +450,11 @@ static int vkk_engine_newDevice(vkk_engine_t* self)
 		.pQueuePriorities = queue_priority
 	};
 
+	VkPhysicalDeviceFeatures pdf =
+	{
+		.samplerAnisotropy = VK_TRUE,
+	};
+
 	VkDeviceCreateInfo dc_info =
 	{
 		.sType                   = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO,
@@ -451,7 +466,8 @@ static int vkk_engine_newDevice(vkk_engine_t* self)
 		.ppEnabledLayerNames     = NULL,
 		.enabledExtensionCount   = extension_count,
 		.ppEnabledExtensionNames = extension_names,
-		.pEnabledFeatures        = NULL
+		.pEnabledFeatures        = self->max_anisotropy ?
+		                           &pdf : NULL
 	};
 
 	if(vkCreateDevice(self->physical_device, &dc_info,
@@ -1159,6 +1175,13 @@ void vkk_engine_imageCaps(vkk_engine_t* self,
 	*caps = self->image_caps_array[format];
 }
 
+float vkk_engine_maxAnisotropy(vkk_engine_t* self)
+{
+	ASSERT(self);
+
+	return self->max_anisotropy;
+}
+
 vkk_renderer_t*
 vkk_engine_defaultRenderer(vkk_engine_t* self)
 {
@@ -1217,7 +1240,7 @@ vkk_engine_t* vkk_engine_new(vkk_platform_t* platform,
 
 	self->version.major = 1;
 	self->version.minor = 1;
-	self->version.patch = 32;
+	self->version.patch = 33;
 
 	// app info
 	snprintf(self->app_name, 256, "%s", app_name);
@@ -2055,6 +2078,12 @@ vkk_engine_getSamplerp(vkk_engine_t* self,
 		VK_SAMPLER_MIPMAP_MODE_LINEAR
 	};
 
+	VkBool32 anisotropyEnable = VK_FALSE;
+	if(si->anisotropy)
+	{
+		anisotropyEnable = VK_TRUE;
+	}
+
 	// Note: the maxLod represents the maximum number of mip
 	// levels that can be supported and is just used to clamp
 	// the computed maxLod for a particular texture.
@@ -2072,8 +2101,8 @@ vkk_engine_getSamplerp(vkk_engine_t* self,
 		.addressModeV            = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE,
 		.addressModeW            = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE,
 		.mipLodBias              = 0.0f,
-		.anisotropyEnable        = VK_FALSE,
-		.maxAnisotropy           = 0.0f,
+		.anisotropyEnable        = anisotropyEnable,
+		.maxAnisotropy           = si->max_aniostropy,
 		.compareEnable           = VK_FALSE,
 		.compareOp               = VK_COMPARE_OP_NEVER,
 		.minLod                  = 0.0f,

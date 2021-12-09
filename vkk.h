@@ -199,6 +199,8 @@ typedef struct
 	vkk_samplerFilter_e     min_filter;
 	vkk_samplerFilter_e     mag_filter;
 	vkk_samplerMipmapMode_e mipmap_mode;
+	int                     anisotropy;
+	float                   max_aniostropy;
 } vkk_samplerInfo_t;
 
 typedef struct
@@ -251,6 +253,7 @@ void            vkk_engine_meminfo(vkk_engine_t* self,
 void            vkk_engine_imageCaps(vkk_engine_t* self,
                                      vkk_imageFormat_e format,
                                      vkk_imageCaps_t* caps);
+float           vkk_engine_maxAnisotropy(vkk_engine_t* self);
 vkk_renderer_t* vkk_engine_defaultRenderer(vkk_engine_t* self);
 void            vkk_engine_platformCmd(vkk_engine_t* self,
                                        vkk_platformCmd_e cmd,

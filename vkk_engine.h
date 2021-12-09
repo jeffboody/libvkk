@@ -131,6 +131,9 @@ typedef struct vkk_engine_s
 	VkSurfaceKHR     surface;
 	VkPhysicalDevice physical_device;
 
+	// device capabilities
+	float max_anisotropy;
+
 	// device state
 	VkDevice device;
 	uint32_t queue_family_index;
