@@ -414,10 +414,12 @@ onInputEvent(struct android_app* app, AInputEvent* event)
 			                   AMOTION_EVENT_AXIS_BRAKE);
 		}
 
+		double ns = (double) AMotionEvent_getEventTime(event);
+		double ts = ns/1000000000.0;
 		vkk_event_t ve =
 		{
 			.type = VKK_EVENT_TYPE_AXIS_MOVE,
-			.ts   = cc_timestamp(),
+			.ts   = ts,
 			.axis =
 			{
 				.id = id,

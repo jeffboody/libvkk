@@ -299,8 +299,9 @@ typedef struct
 {
 	vkk_platform_t* platform;
 
-	int             count;
 	vkk_eventType_e type;
+	double          ts;
+	int             count;
 	int             id[4];
 	float           x[4];
 	float           y[4];
@@ -314,8 +315,8 @@ vkk_platformTouch_init(vkk_platformTouch_t* self,
 	ASSERT(platform);
 
 	self->platform = platform;
-	self->count    = 0;
 	self->type     = VKK_EVENT_TYPE_UNDEFINED;
+	self->count    = 0;
 }
 
 static void
@@ -334,7 +335,7 @@ vkk_platformTouch_event(vkk_platformTouch_t* self)
 	vkk_event_t ve =
 	{
 		.type    = self->type,
-		.ts      = cc_timestamp(),
+		.ts      = self->ts,
 		.action  =
 		{
 			.count = self->count,
@@ -372,6 +373,7 @@ vkk_platformTouch_event(vkk_platformTouch_t* self)
 static void
 vkk_platformTouch_action(vkk_platformTouch_t* self,
                          vkk_eventType_e type,
+                         double ts,
                          int id,
                          float x, float y)
 {
@@ -412,6 +414,7 @@ vkk_platformTouch_action(vkk_platformTouch_t* self,
 
 	// add the event
 	int count = self->count;
+	self->ts        = ts;
 	self->id[count] = id;
 	self->x[count]  = x;
 	self->y[count]  = y;
@@ -615,10 +618,13 @@ int main(int argc, char** argv)
 				{
 					type = VKK_EVENT_TYPE_KEY_DOWN;
 				}
+
+				double ms = ((double) se.key.timestamp);
+				double ts = ms/1000.0;
 				vkk_event_t ve =
 				{
 					.type = type,
-					.ts   = cc_timestamp(),
+					.ts   = ts,
 					.key  =
 					{
 						.keycode = keycode,
@@ -642,10 +648,12 @@ int main(int argc, char** argv)
 					type = VKK_EVENT_TYPE_ACTION_MOVE;
 				}
 
+				double ms = (double) se.button.timestamp;
+				double ts = ms/1000.0;
 				vkk_event_t ve =
 				{
 					.type    = type,
-					.ts      = cc_timestamp(),
+					.ts      = ts,
 					.action  =
 					{
 						.count = 1,
@@ -673,7 +681,10 @@ int main(int argc, char** argv)
 				{
 					type = VKK_EVENT_TYPE_ACTION_MOVE;
 				}
-				vkk_platformTouch_action(&t, type,
+
+				double ms = (double) se.tfinger.timestamp;
+				double ts = ms/1000.0;
+				vkk_platformTouch_action(&t, type, ts,
 				                         se.tfinger.fingerId,
 				                         platform->width*se.tfinger.x,
 				                         platform->height*se.tfinger.y);
@@ -687,11 +698,13 @@ int main(int argc, char** argv)
 
 				int ignore = 0;
 
-				int id = se.jaxis.which;
+				int    id = se.jaxis.which;
+				double ms = (double) se.jaxis.timestamp;
+				double ts = ms/1000.0;
 				vkk_event_t ve =
 				{
 					.type = VKK_EVENT_TYPE_AXIS_MOVE,
-					.ts   = cc_timestamp(),
+					.ts   = ts,
 					.axis =
 					{
 						.id = id
@@ -777,10 +790,12 @@ int main(int argc, char** argv)
 				     (uint32_t) se.jbutton.button,
 				     (uint32_t) se.jbutton.state);
 
+				double ms = (double) se.jbutton.timestamp;
+				double ts = ms/1000.0;
 				vkk_event_t ve =
 				{
 					.type   = VKK_EVENT_TYPE_BUTTON_DOWN,
-					.ts     = cc_timestamp(),
+					.ts     = ts,
 					.button =
 					{
 						.id = se.jbutton.which
@@ -800,10 +815,12 @@ int main(int argc, char** argv)
 				     (uint32_t) se.jbutton.button,
 				     (uint32_t) se.jbutton.state);
 
+				double ms = (double) se.jbutton.timestamp;
+				double ts = ms/1000.0;
 				vkk_event_t ve =
 				{
 					.type   = VKK_EVENT_TYPE_BUTTON_UP,
-					.ts     = cc_timestamp(),
+					.ts     = ts,
 					.button =
 					{
 						.id = se.jbutton.which
