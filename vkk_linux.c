@@ -580,6 +580,19 @@ int main(int argc, char** argv)
 		return EXIT_FAILURE;
 	}
 
+	vkk_button_e button_map[] =
+	{
+		VKK_BUTTON_A,
+		VKK_BUTTON_B,
+		VKK_BUTTON_X,
+		VKK_BUTTON_Y,
+		VKK_BUTTON_L1,
+		VKK_BUTTON_R1,
+	};
+
+	int button_count = (int) (sizeof(button_map)/
+	                          sizeof(vkk_button_e));
+
 	vkk_platformTouch_t t;
 	vkk_platformTouch_init(&t, platform);
 	while(platform->running)
@@ -763,6 +776,22 @@ int main(int argc, char** argv)
 				     (uint32_t) se.jbutton.which,
 				     (uint32_t) se.jbutton.button,
 				     (uint32_t) se.jbutton.state);
+
+				vkk_event_t ve =
+				{
+					.type   = VKK_EVENT_TYPE_BUTTON_DOWN,
+					.ts     = cc_timestamp(),
+					.button =
+					{
+						.id = se.jbutton.which
+					}
+				};
+
+				if(se.jbutton.button < button_count)
+				{
+					ve.button.button = button_map[se.jbutton.button];
+					(*onEvent)(platform->priv, &ve);
+				}
 			}
 			else if(se.type == SDL_JOYBUTTONUP)
 			{
@@ -770,6 +799,22 @@ int main(int argc, char** argv)
 				     (uint32_t) se.jbutton.which,
 				     (uint32_t) se.jbutton.button,
 				     (uint32_t) se.jbutton.state);
+
+				vkk_event_t ve =
+				{
+					.type   = VKK_EVENT_TYPE_BUTTON_UP,
+					.ts     = cc_timestamp(),
+					.button =
+					{
+						.id = se.jbutton.which
+					}
+				};
+
+				if(se.jbutton.button < button_count)
+				{
+					ve.button.button = button_map[se.jbutton.button];
+					(*onEvent)(platform->priv, &ve);
+				}
 			}
 			else if(se.type == SDL_JOYDEVICEADDED)
 			{
