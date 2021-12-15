@@ -1240,7 +1240,7 @@ vkk_engine_t* vkk_engine_new(vkk_platform_t* platform,
 
 	self->version.major = 1;
 	self->version.minor = 1;
-	self->version.patch = 33;
+	self->version.patch = 34;
 
 	// app info
 	snprintf(self->app_name, 256, "%s", app_name);
@@ -2106,7 +2106,7 @@ vkk_engine_getSamplerp(vkk_engine_t* self,
 		.compareEnable           = VK_FALSE,
 		.compareOp               = VK_COMPARE_OP_NEVER,
 		.minLod                  = 0.0f,
-		.maxLod                  = 1024.0f,
+		.maxLod                  = VK_LOD_CLAMP_NONE,
 		.borderColor             = VK_BORDER_COLOR_FLOAT_OPAQUE_WHITE,
 		.unnormalizedCoordinates = VK_FALSE
 	};
