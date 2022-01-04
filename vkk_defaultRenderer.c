@@ -211,7 +211,7 @@ vkk_defaultRenderer_newSwapchain(vkk_renderer_t* base)
 		.queueFamilyIndexCount = 1,
 		.pQueueFamilyIndices   = &engine->queue_family_index,
 		.preTransform          = preTransform,
-		.compositeAlpha        = VK_COMPOSITE_ALPHA_INHERIT_BIT_KHR,
+		.compositeAlpha        = VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR,
 		.presentMode           = present_mode,
 		.clipped               = VK_TRUE,
 		.oldSwapchain          = VK_NULL_HANDLE
