@@ -906,8 +906,13 @@ int vkui_screen_pointerUp(vkui_screen_t* self,
 	ASSERT(self);
 
 	int touch = self->pointer_state != VKUI_WIDGET_POINTER_UP;
-	if(self->top_widget &&
-	   (self->pointer_state == VKUI_WIDGET_POINTER_DOWN))
+	if(self->move_widget)
+	{
+		vkui_widget_click(self->move_widget,
+		                  VKUI_WIDGET_POINTER_UP, x, y);
+	}
+	else if(self->top_widget &&
+	        (self->pointer_state == VKUI_WIDGET_POINTER_DOWN))
 	{
 		vkui_widget_click(self->top_widget,
 		                  VKUI_WIDGET_POINTER_UP, x, y);

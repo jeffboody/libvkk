@@ -615,8 +615,13 @@ int vkui_widget_click(vkui_widget_t* self, int state,
 		return 0;
 	}
 
-	if((cc_rect1f_contains(&self->rect_clip, x, y) == 0) ||
-	   (cc_rect1f_contains(&self->rect_border, x, y) == 0))
+	if((self == self->screen->move_widget) &&
+	   (state == VKUI_WIDGET_POINTER_UP))
+	{
+		// skip contains check
+	}
+	else if((cc_rect1f_contains(&self->rect_clip, x, y) == 0) ||
+	        (cc_rect1f_contains(&self->rect_border, x, y) == 0))
 	{
 		// x, y is outside intersection of rect_border and rect_clip
 		return 0;
