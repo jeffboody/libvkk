@@ -27,7 +27,7 @@
 #define LOG_TAG "vkui"
 #include "../../libcc/cc_log.h"
 #include "../../libcc/cc_memory.h"
-#include "../../libpak/pak_file.h"
+#include "../../libbfs/bfs_file.h"
 #include "../../texgz/texgz_tex.h"
 #include "../../libxmlstream/xml_istream.h"
 #include "vkui_font.h"
@@ -127,35 +127,48 @@ vkui_font_parseXml(vkui_font_t* self, const char* resource,
 	ASSERT(resource);
 	ASSERT(key);
 
-	pak_file_t* pak = pak_file_open(resource, PAK_FLAG_READ);
-	if(pak == NULL)
+	bfs_file_t* bfs;
+	bfs = bfs_file_open(resource, 1, BFS_MODE_RDONLY);
+	if(bfs == NULL)
 	{
 		return 0;
 	}
 
-	int size = pak_file_seek(pak, key);
-	if(size == 0)
+	size_t size = 0;
+	void*  data = NULL;
+	if(bfs_file_blobGet(bfs, 0, key,
+	                    &size, &data) == 0)
 	{
-		goto fail_seek;
+		goto fail_get;
 	}
 
-	if(xml_istream_parseFile((void*) self,
-	                         vkui_font_parseStart,
-	                         vkui_font_parseEnd,
-	                         pak->f, size) == 0)
+	// check for empty data
+	if(size == 0)
+	{
+		goto fail_empty;
+	}
+
+	if(xml_istream_parseBuffer((void*) self,
+	                           vkui_font_parseStart,
+	                           vkui_font_parseEnd,
+	                           (const char*) data,
+	                           size) == 0)
 	{
 		goto fail_parse;
 	}
 
-	pak_file_close(&pak);
+	FREE(data);
+	bfs_file_close(&bfs);
 
 	// success
 	return 1;
 
 	// failure
 	fail_parse:
-	fail_seek:
-		pak_file_close(&pak);
+	fail_empty:
+		FREE(data);
+	fail_get:
+		bfs_file_close(&bfs);
 	return 0;
 }
 

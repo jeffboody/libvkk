@@ -96,7 +96,7 @@ typedef struct vkui_screen_s
 	float  pointer_vx;
 	float  pointer_vy;
 
-	// resource.pak
+	// recource.bfs
 	char resource[256];
 
 	// sound fx

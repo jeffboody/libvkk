@@ -31,7 +31,7 @@
 #include "../../libcc/math/cc_vec2f.h"
 #include "../../libcc/cc_memory.h"
 #include "../../libcc/cc_log.h"
-#include "../../libpak/pak_file.h"
+#include "../../libbfs/bfs_file.h"
 #include "../../texgz/texgz_png.h"
 #include "../../texgz/texgz_jpeg.h"
 #include "vkui_screen.h"
@@ -1182,32 +1182,39 @@ vkui_screen_spriteImage(vkui_screen_t* self,
 		return (vkk_image_t*) cc_map_val(miter);;
 	}
 
-	pak_file_t* pak;
-	pak = pak_file_open(self->resource, PAK_FLAG_READ);
-	if(pak == NULL)
+	bfs_file_t* bfs;
+	bfs = bfs_file_open(self->resource, 1, BFS_MODE_RDONLY);
+	if(bfs == NULL)
 	{
 		return NULL;
 	}
 
-	int size = pak_file_seek(pak, name);
+	size_t size = 0;
+	void*  data = NULL;
+	if(bfs_file_blobGet(bfs, 0, name,
+	                    &size, &data) == 0)
+	{
+		goto fail_get;
+	}
+
+	// check for empty data
 	if(size == 0)
 	{
-		LOGE("invalid %s", name);
-		goto fail_seek;
+		goto fail_empty;
 	}
 
 	texgz_tex_t* tex = NULL;
 	if(strstr(name, ".png"))
 	{
-		tex = texgz_png_importf(pak->f, (size_t) size);
+		tex = texgz_png_importd(size, data);
 	}
 	else if(strstr(name, ".jpg"))
 	{
-		tex = texgz_jpeg_importf(pak->f, TEXGZ_RGB);
+		tex = texgz_jpeg_importd(size, data, TEXGZ_RGB);
 	}
 	else if(strstr(name, ".texz"))
 	{
-		tex = texgz_tex_importf(pak->f, (size_t) size);
+		tex = texgz_tex_importd(size, data);
 	}
 	else
 	{
@@ -1321,7 +1328,9 @@ vkui_screen_spriteImage(vkui_screen_t* self,
 	{
 		texgz_tex_delete(&tex);
 	}
-	pak_file_close(&pak);
+
+	FREE(data);
+	bfs_file_close(&bfs);
 
 	// success
 	return image;
@@ -1334,7 +1343,9 @@ vkui_screen_spriteImage(vkui_screen_t* self,
 	fail_format:
 		texgz_tex_delete(&tex);
 	fail_tex:
-	fail_seek:
-		pak_file_close(&pak);
+	fail_empty:
+		FREE(data);
+	fail_get:
+		bfs_file_close(&bfs);
 	return NULL;
 }

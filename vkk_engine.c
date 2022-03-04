@@ -28,7 +28,7 @@
 #define LOG_TAG "vkk"
 #include "../libcc/cc_log.h"
 #include "../libcc/cc_memory.h"
-#include "../libpak/pak_file.h"
+#include "../libbfs/bfs_file.h"
 #include "vkk_buffer.h"
 #include "vkk_commandBuffer.h"
 #include "vkk_defaultRenderer.h"
@@ -683,51 +683,42 @@ vkk_engine_importShaderModule(vkk_engine_t* self,
 	ASSERT(_size);
 
 	char resource[256];
-	snprintf(resource, 256, "%s/resource.pak",
+	snprintf(resource, 256, "%s/resource.bfs",
 	         self->internal_path);
 
-	pak_file_t* pak;
-	pak = pak_file_open(resource, PAK_FLAG_READ);
-	if(pak == NULL)
+	bfs_file_t* bfs;
+	bfs = bfs_file_open(resource, 1, BFS_MODE_RDONLY);
+	if(bfs == NULL)
 	{
 		return NULL;
 	}
 
-	size_t size = (size_t) pak_file_seek(pak, fname);
+	size_t size = 0;
+	void*  code = NULL;
+	if(bfs_file_blobGet(bfs, 0, fname,
+	                    &size, &code) == 0)
+	{
+		goto fail_get;
+	}
+
 	if((size == 0) || ((size % 4) != 0))
 	{
 		LOGE("invalid fname=%s, size=%u", fname, (unsigned int) size);
 		goto fail_size;
 	}
 
-	uint32_t* code;
-	code = (uint32_t*)
-	       CALLOC(size/4, sizeof(uint32_t));
-	if(code == NULL)
-	{
-		LOGE("CALLOC failed");
-		goto fail_alloc;
-	}
-
-	if(fread((void*) code, size, 1, pak->f) != 1)
-	{
-		LOGE("fread failed");
-		goto fail_code;
-	}
-
-	pak_file_close(&pak);
+	bfs_file_close(&bfs);
 
 	*_size = size;
 
 	// success
-	return code;
+	return (uint32_t*) code;
 
 	// failure
-	fail_code:
-		FREE(code);
-	fail_alloc:
 	fail_size:
-		pak_file_close(&pak);
+		FREE(code);
+	fail_get:
+		bfs_file_close(&bfs);
 	return NULL;
 }
 

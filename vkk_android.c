@@ -1235,11 +1235,16 @@ void android_main(struct android_app* app)
 	// implement APP_CMD_CONTENT_RECT_CHANGED
 	app->activity->callbacks->onContentRectChanged = onContentRectChanged;
 
-	// update resource.pak
+	// remove resource.pak
 	char fname[256];
 	snprintf(fname, 256, "%s/resource.pak",
 	         app->activity->internalDataPath);
-	if(updateResource(app, "resource.pak", fname) == 0)
+	unlink(fname);
+
+	// update resource.bfs
+	snprintf(fname, 256, "%s/resource.bfs",
+	         app->activity->internalDataPath);
+	if(updateResource(app, "resource.bfs", fname) == 0)
 	{
 		check_memory();
 		return;

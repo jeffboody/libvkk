@@ -71,7 +71,6 @@ target_link_libraries(vkk
 
                       # Submodule libraries
                       cc
-                      pak
                       texgz
                       xmlstream
 
