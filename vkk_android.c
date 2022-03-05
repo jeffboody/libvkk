@@ -1111,6 +1111,29 @@ Java_com_jeffboody_vkk_VKKNativeActivity_NativeDocument(JNIEnv* env,
 	}
 }
 
+JNIEXPORT void JNICALL
+Java_com_jeffboody_vkk_VKKNativeActivity_NativeMemoryInfo(JNIEnv* env,
+                                                          jobject obj,
+                                                          jdouble available,
+                                                          jdouble threshold,
+                                                          jdouble total,
+                                                          jint    low)
+{
+	ASSERT(env);
+
+	if(platform)
+	{
+		vkk_event_t* e           = vkk_platform_dequeue(platform);
+		e->type                  = VKK_EVENT_TYPE_MEMORY_INFO;
+		e->ts                    = cc_timestamp();
+		e->memory_info.available = (size_t) available;
+		e->memory_info.threshold = (size_t) threshold;
+		e->memory_info.total     = (size_t) total;
+		e->memory_info.low       = low;
+		vkk_platform_enqueue(platform);
+	}
+}
+
 /***********************************************************
 * utility functions                                        *
 ***********************************************************/

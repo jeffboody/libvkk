@@ -202,6 +202,7 @@ VKK\_PLATFORM\_CMD\_EXIT command.
 		VKK_PLATFORM_CMD_SOFTKEY_SHOW       = 18,
 		VKK_PLATFORM_CMD_DOCUMENT_CREATE    = 19,
 		VKK_PLATFORM_CMD_DOCUMENT_OPEN      = 20,
+		VKK_PLATFORM_CMD_MEMORY_INFO        = 21,
 	} vkk_platformCmd_e;
 
 	void vkk_engine_platformCmd(vkk_engine_t* self,
@@ -1055,6 +1056,7 @@ changes to screen density, the content rect and permissions.
 		VKK_EVENT_TYPE_CONTENT_RECT      = 14,
 		VKK_EVENT_TYPE_PERMISSION_STATUS = 15,
 		VKK_EVENT_TYPE_LOW_MEMORY        = 16,
+		VKK_EVENT_TYPE_MEMORY_INFO       = 17,
 	} vkk_eventType_e;
 
 	typedef struct
@@ -1147,6 +1149,14 @@ changes to screen density, the content rect and permissions.
 
 	typedef struct
 	{
+		size_t available;
+		size_t threshold;
+		size_t total;
+		int    low;
+	} vkk_eventMemoryInfo_t;
+
+	typedef struct
+	{
 		vkk_eventType_e type;
 		double ts;
 		union
@@ -1163,6 +1173,7 @@ changes to screen density, the content rect and permissions.
 			vkk_eventMagnetometer_t  magnetometer;
 			vkk_eventContentRect_t   content_rect;
 			vkk_eventPermission_t    permission;
+			vkk_eventMemoryInfo_t    memory_info;
 		};
 	} vkk_event_t;
 
