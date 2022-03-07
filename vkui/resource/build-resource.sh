@@ -14,15 +14,15 @@ bfs $1 blobSet vkui/shaders/tricolor_frag.spv
 rm vkui/shaders/*.spv
 
 # font
-bfs $1 blobSet vkui/fonts/BarlowSemiCondensed-Bold-64.texz
+bfs $1 blobSet vkui/fonts/BarlowSemiCondensed-Bold-64.png
 bfs $1 blobSet vkui/fonts/BarlowSemiCondensed-Bold-64.xml
-bfs $1 blobSet vkui/fonts/BarlowSemiCondensed-Regular-64.texz
+bfs $1 blobSet vkui/fonts/BarlowSemiCondensed-Regular-64.png
 bfs $1 blobSet vkui/fonts/BarlowSemiCondensed-Regular-64.xml
-bfs $1 blobSet vkui/fonts/BarlowSemiCondensed-Medium-32.texz
+bfs $1 blobSet vkui/fonts/BarlowSemiCondensed-Medium-32.png
 bfs $1 blobSet vkui/fonts/BarlowSemiCondensed-Medium-32.xml
 
 # icons
-bfs $1 blobSet vkui/icons/ic_check_box_outline_blank_white_24dp.texz
-bfs $1 blobSet vkui/icons/ic_check_box_white_24dp.texz
-bfs $1 blobSet vkui/icons/ic_radio_button_checked_white_24dp.texz
-bfs $1 blobSet vkui/icons/ic_radio_button_unchecked_white_24dp.texz
+bfs $1 blobSet vkui/icons/ic_check_box_outline_blank_white_24dp.png
+bfs $1 blobSet vkui/icons/ic_check_box_white_24dp.png
+bfs $1 blobSet vkui/icons/ic_radio_button_checked_white_24dp.png
+bfs $1 blobSet vkui/icons/ic_radio_button_unchecked_white_24dp.png

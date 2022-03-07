@@ -633,7 +633,7 @@ vkui_screen_new(vkk_engine_t* engine,
 	}
 
 	self->font_array[0] = vkui_font_new(self, resource,
-	                                    "vkui/fonts/BarlowSemiCondensed-Regular-64.texz",
+	                                    "vkui/fonts/BarlowSemiCondensed-Regular-64.png",
 	                                    "vkui/fonts/BarlowSemiCondensed-Regular-64.xml");
 	if(self->font_array[0] == NULL)
 	{
@@ -641,7 +641,7 @@ vkui_screen_new(vkk_engine_t* engine,
 	}
 
 	self->font_array[1] = vkui_font_new(self, resource,
-	                                    "vkui/fonts/BarlowSemiCondensed-Bold-64.texz",
+	                                    "vkui/fonts/BarlowSemiCondensed-Bold-64.png",
 	                                    "vkui/fonts/BarlowSemiCondensed-Bold-64.xml");
 	if(self->font_array[1] == NULL)
 	{
@@ -649,7 +649,7 @@ vkui_screen_new(vkk_engine_t* engine,
 	}
 
 	self->font_array[2] = vkui_font_new(self, resource,
-	                                    "vkui/fonts/BarlowSemiCondensed-Medium-32.texz",
+	                                    "vkui/fonts/BarlowSemiCondensed-Medium-32.png",
 	                                    "vkui/fonts/BarlowSemiCondensed-Medium-32.xml");
 	if(self->font_array[2] == NULL)
 	{

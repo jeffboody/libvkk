@@ -396,8 +396,8 @@ vkui_font_render(vkui_font_t* self, const char* s)
 	int height = vkui_font_height(self);
 	texgz_tex_t* tex = texgz_tex_new(width, height,
 	                                 width, height,
-	                                 TEXGZ_UNSIGNED_BYTE,
-	                                 TEXGZ_ALPHA,
+	                                 self->tex->type,
+	                                 self->tex->format,
 	                                 NULL);
 	if(tex == NULL)
 	{
