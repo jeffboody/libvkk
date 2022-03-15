@@ -565,8 +565,8 @@ int vkk_imageUploader_upload(vkk_imageUploader_t* self,
 	vkk_uploaderBuffer_t* ub;
 	cc_multimapIter_t     miterator;
 	cc_multimapIter_t*    miter = &miterator;
-	if(cc_multimap_findf(self->buffer_map, miter,
-	                     "%u", (uint32_t) size))
+	if(cc_multimap_findp(self->buffer_map, miter,
+	                     sizeof(size_t), &size))
 	{
 		ub = (vkk_uploaderBuffer_t*)
 		     cc_multimap_remove(self->buffer_map, &miter);
@@ -713,8 +713,8 @@ int vkk_imageUploader_upload(vkk_imageUploader_t* self,
 		vkk_uploaderInstance_delete(&ui);
 	}
 
-	if(cc_multimap_addf(self->buffer_map, (const void*) ub,
-	                    "%u", (uint32_t) size) == 0)
+	if(cc_multimap_addp(self->buffer_map, (const void*) ub,
+	                    sizeof(size_t), &size) == 0)
 	{
 		vkk_uploaderBuffer_delete(&ub);
 	}

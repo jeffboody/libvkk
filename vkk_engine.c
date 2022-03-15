@@ -1231,7 +1231,7 @@ vkk_engine_t* vkk_engine_new(vkk_platform_t* platform,
 
 	self->version.major = 1;
 	self->version.minor = 1;
-	self->version.patch = 36;
+	self->version.patch = 37;
 
 	// app info
 	snprintf(self->app_name, 256, "%s", app_name);

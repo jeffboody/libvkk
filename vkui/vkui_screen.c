@@ -1124,7 +1124,7 @@ vkui_screen_font(vkui_screen_t* self, int font_type)
 }
 
 vkk_buffer_t*
-vkui_screen_textVb(vkui_screen_t* self, uint32_t size,
+vkui_screen_textVb(vkui_screen_t* self, size_t size,
                    vkk_buffer_t* vb)
 {
 	// vb may be NULL
@@ -1134,9 +1134,9 @@ vkui_screen_textVb(vkui_screen_t* self, uint32_t size,
 	if(vb)
 	{
 		size_t sz = vkk_buffer_size(vb);
-		if(cc_multimap_addf(self->map_text_vb,
+		if(cc_multimap_addp(self->map_text_vb,
 		                    (const void*) vb,
-		                    "%i", (int) sz) == 0)
+		                    sizeof(size_t), &sz) == 0)
 		{
 			LOGE("buffer size=%i leaked", (int) sz);
 			return NULL;
@@ -1152,8 +1152,8 @@ vkui_screen_textVb(vkui_screen_t* self, uint32_t size,
 	// reuse an existing buffer
 	cc_multimapIter_t  miterator;
 	cc_multimapIter_t* miter = &miterator;
-	if(cc_multimap_findf(self->map_text_vb, miter,
-	                     "%i", (int) size))
+	if(cc_multimap_findp(self->map_text_vb, miter,
+	                     sizeof(size_t), &size))
 	{
 		vb = (vkk_buffer_t*)
 		     cc_multimap_remove(self->map_text_vb, &miter);

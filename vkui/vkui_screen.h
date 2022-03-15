@@ -137,7 +137,7 @@ void          vkui_screen_playClick(vkui_screen_t* self);
 vkui_font_t*  vkui_screen_font(vkui_screen_t* self,
                                int font_type);
 vkk_buffer_t* vkui_screen_textVb(vkui_screen_t* self,
-                                 uint32_t size,
+                                 size_t size,
                                  vkk_buffer_t* vb);
 
 vkk_image_t*
