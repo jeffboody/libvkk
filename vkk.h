@@ -200,7 +200,7 @@ typedef struct
 	vkk_samplerFilter_e     mag_filter;
 	vkk_samplerMipmapMode_e mipmap_mode;
 	int                     anisotropy;
-	float                   max_aniostropy;
+	float                   max_anisotropy;
 } vkk_samplerInfo_t;
 
 typedef struct

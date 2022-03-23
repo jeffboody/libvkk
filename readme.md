@@ -452,6 +452,8 @@ sampler filtering and mipmapping modes.
 		vkk_samplerFilter_e     min_filter;
 		vkk_samplerFilter_e     mag_filter;
 		vkk_samplerMipmapMode_e mipmap_mode;
+		int                     anisotropy;
+		float                   max_anisotropy;
 	} vkk_samplerInfo_t;
 
 	typedef struct
