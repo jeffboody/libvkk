@@ -34,6 +34,15 @@ typedef struct vkui_radiobox_s
 	vkui_radiolist_t* parent;
 } vkui_radiobox_t;
 
-void vkui_radiobox_refresh(vkui_radiobox_t* self);
+
+vkui_radiobox_t* vkui_radiobox_new(vkui_screen_t* screen,
+                                   size_t wsize,
+                                   vkui_bulletboxStyle_t* bulletbox_style,
+                                   int value,
+                                   vkui_radiolist_t* parent);
+void             vkui_radiobox_delete(vkui_radiobox_t** _self);
+void             vkui_radiobox_label(vkui_radiobox_t* self,
+                                     const char* fmt, ...);
+void             vkui_radiobox_refresh(vkui_radiobox_t* self);
 
 #endif

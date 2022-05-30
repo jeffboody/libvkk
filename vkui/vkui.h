@@ -309,16 +309,6 @@ cc_listIter_t*  vkui_listbox_head(vkui_listbox_t* self);
 vkui_widget_t*  vkui_listbox_remove(vkui_listbox_t* self,
                                     cc_listIter_t** _iter);
 
-// radiobox
-vkui_radiobox_t* vkui_radiobox_new(vkui_screen_t* screen,
-                                   size_t wsize,
-                                   vkui_bulletboxStyle_t* bulletbox_style,
-                                   int value,
-                                   vkui_radiolist_t* parent);
-void             vkui_radiobox_delete(vkui_radiobox_t** _self);
-void             vkui_radiobox_label(vkui_radiobox_t* self,
-                                     const char* fmt, ...);
-
 // radiolist
 vkui_radiolist_t* vkui_radiolist_new(vkui_screen_t* screen,
                                      size_t wsize,
