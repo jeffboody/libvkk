@@ -104,6 +104,9 @@ typedef struct vkui_screen_s
 	void* sound_fx;
 	vkui_screen_playClickFn playClick;
 
+	// widget style used by helper functions
+	vkui_widgetStyle_t widget_style;
+
 	// sprite images
 	cc_map_t* sprite_map;
 

@@ -109,6 +109,30 @@ vkui_checkbox_new(vkui_screen_t* screen, size_t wsize,
 	return self;
 }
 
+vkui_checkbox_t*
+vkui_checkbox_newPageItem(vkui_screen_t* screen,
+                          size_t wsize,
+                          int* pvalue)
+{
+	ASSERT(screen);
+	ASSERT(pvalue);
+
+	vkui_bulletboxStyle_t style =
+	{
+		.text_style =
+		{
+			.font_type = VKUI_TEXT_FONTTYPE_REGULAR,
+			.size      = VKUI_TEXT_SIZE_MEDIUM,
+			.spacing   = VKUI_TEXT_SPACING_MEDIUM
+		}
+	};
+	vkui_screen_colorPageItem(screen, &style.color_icon);
+	vkui_screen_colorPageItem(screen, &style.text_style.color);
+
+	return vkui_checkbox_new(screen, wsize, &style,
+	                         pvalue);
+}
+
 void vkui_checkbox_delete(vkui_checkbox_t** _self)
 {
 	ASSERT(_self);

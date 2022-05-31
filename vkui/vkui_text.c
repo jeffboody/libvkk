@@ -354,6 +354,24 @@ vkui_text_keyPress(vkui_widget_t* widget, void* priv,
 	return 1;
 }
 
+static int
+clickEntry(vkui_widget_t* widget, void* priv,
+           int state, float x, float y)
+{
+	ASSERT(widget);
+	ASSERT(priv);
+
+	vkui_screen_t* screen = widget->screen;
+	if(state == VKUI_WIDGET_POINTER_UP)
+	{
+		vkk_engine_platformCmd(screen->engine,
+		                       VKK_PLATFORM_CMD_SOFTKEY_SHOW,
+		                       NULL);
+		vkui_screen_focus(screen, widget);
+	}
+	return 1;
+}
+
 /***********************************************************
 * public                                                   *
 ***********************************************************/
@@ -512,6 +530,141 @@ vkui_text_new(vkui_screen_t* screen, size_t wsize,
 	fail_ub00_mvp:
 		vkui_widget_delete((vkui_widget_t**) &self);
 	return NULL;
+}
+
+vkui_text_t*
+vkui_text_newPageHeading(vkui_screen_t* screen)
+{
+	ASSERT(screen);
+
+	vkui_textLayout_t layout =
+	{
+		.border = VKUI_WIDGET_BORDER_NONE,
+	};
+
+	vkui_textStyle_t style =
+	{
+		.font_type = VKUI_TEXT_FONTTYPE_BOLD,
+		.size      = VKUI_TEXT_SIZE_MEDIUM,
+		.spacing   = VKUI_TEXT_SPACING_MEDIUM
+	};
+	vkui_screen_colorPageHeading(screen, &style.color);
+
+	vkui_textFn_t fn =
+	{
+		.enter_fn = NULL
+	};
+
+	cc_vec4f_t clear =
+	{
+		.a = 0.0f,
+	};
+
+	return vkui_text_new(screen, 0, &layout, &style,
+	                     &fn, &clear);
+}
+
+vkui_text_t*
+vkui_text_newPageTextEntry(vkui_screen_t* screen,
+                           void* priv,
+                           vkui_text_enterFn enter_fn)
+{
+	// priv may be NULL
+	ASSERT(screen);
+	ASSERT(enter_fn);
+
+	vkui_textLayout_t layout =
+	{
+		.border   = VKUI_WIDGET_BORDER_LARGE,
+		.wrapx    = VKUI_WIDGET_WRAP_STRETCH_PARENT,
+		.stretchx = 1.0f
+	};
+
+	vkui_textStyle_t style =
+	{
+		.font_type = VKUI_TEXT_FONTTYPE_REGULAR,
+		.size      = VKUI_TEXT_SIZE_MEDIUM,
+		.spacing   = VKUI_TEXT_SPACING_MEDIUM
+	};
+	vkui_screen_colorPageItem(screen, &style.color);
+
+	vkui_textFn_t fn =
+	{
+		.fn =
+		{
+			.priv     = priv,
+			.click_fn = clickEntry
+		},
+		.enter_fn = enter_fn
+	};
+
+	cc_vec4f_t fill;
+	vkui_screen_colorPageEntry(screen, &fill);
+
+	return vkui_text_new(screen, 0, &layout, &style,
+	                     &fn, &fill);
+}
+
+vkui_text_t*
+vkui_text_newInfoHeading(vkui_screen_t* screen)
+{
+	ASSERT(screen);
+
+	vkui_textLayout_t layout =
+	{
+		.border = VKUI_WIDGET_BORDER_NONE,
+	};
+
+	vkui_textStyle_t style =
+	{
+		.font_type = VKUI_TEXT_FONTTYPE_BOLD,
+		.size      = VKUI_TEXT_SIZE_SMALL,
+	};
+	vkui_screen_colorPageHeading(screen, &style.color);
+
+	vkui_textFn_t fn =
+	{
+		.enter_fn = NULL
+	};
+
+	cc_vec4f_t clear =
+	{
+		.a = 0.0f,
+	};
+
+	return vkui_text_new(screen, 0, &layout, &style,
+	                     &fn, &clear);
+}
+
+vkui_text_t*
+vkui_text_newInfoItem(vkui_screen_t* screen)
+{
+	ASSERT(screen);
+
+	vkui_textLayout_t layout =
+	{
+		.border = VKUI_WIDGET_BORDER_NONE,
+	};
+
+	vkui_textStyle_t style =
+	{
+		.font_type = VKUI_TEXT_FONTTYPE_REGULAR,
+		.size      = VKUI_TEXT_SIZE_SMALL,
+	};
+	vkui_screen_colorPageItem(screen, &style.color);
+
+	vkui_textFn_t fn =
+	{
+		.enter_fn = NULL
+	};
+
+	cc_vec4f_t clear =
+	{
+		.a = 0.0f,
+	};
+
+	return vkui_text_new(screen, 0, &layout, &style,
+	                     &fn, &clear);
 }
 
 void vkui_text_delete(vkui_text_t** _self)

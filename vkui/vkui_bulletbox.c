@@ -257,6 +257,60 @@ vkui_bulletbox_new(vkui_screen_t* screen, size_t wsize,
 	return NULL;
 }
 
+vkui_bulletbox_t*
+vkui_bulletbox_newPageItem(vkui_screen_t* screen,
+                           size_t wsize,
+                           vkui_widgetFn_t* fn,
+                           const char** sprite_array)
+{
+	ASSERT(screen);
+	ASSERT(fn);
+	ASSERT(sprite_array);
+
+	vkui_bulletboxStyle_t style =
+	{
+		.text_style =
+		{
+			.font_type = VKUI_TEXT_FONTTYPE_REGULAR,
+			.size      = VKUI_TEXT_SIZE_MEDIUM,
+			.spacing   = VKUI_TEXT_SPACING_MEDIUM
+		}
+	};
+	vkui_screen_colorPageItem(screen, &style.color_icon);
+	vkui_screen_colorPageItem(screen, &style.text_style.color);
+
+	return vkui_bulletbox_new(screen, wsize,
+	                          VKUI_WIDGET_ANCHOR_TL, fn,
+	                          &style, sprite_array);
+}
+
+vkui_bulletbox_t*
+vkui_bulletbox_newFooterItem(vkui_screen_t* screen,
+                             size_t wsize,
+                             vkui_widgetFn_t* fn,
+                             const char** sprite_array)
+{
+	ASSERT(screen);
+	ASSERT(fn);
+	ASSERT(sprite_array);
+
+	vkui_bulletboxStyle_t style =
+	{
+		.text_style =
+		{
+			.font_type = VKUI_TEXT_FONTTYPE_BOLD,
+			.size      = VKUI_TEXT_SIZE_MEDIUM,
+			.spacing   = VKUI_TEXT_SPACING_LARGE
+		}
+	};
+	vkui_screen_colorFooterItem(screen, &style.color_icon);
+	vkui_screen_colorFooterItem(screen, &style.text_style.color);
+
+	return vkui_bulletbox_new(screen, wsize,
+	                          VKUI_WIDGET_ANCHOR_TC, fn,
+	                          &style, sprite_array);
+}
+
 void vkui_bulletbox_delete(vkui_bulletbox_t** _self)
 {
 	ASSERT(_self);

@@ -113,6 +113,40 @@ vkui_radiolist_new(vkui_screen_t* screen, size_t wsize,
 	return self;
 }
 
+vkui_radiolist_t*
+vkui_radiolist_newPageItem(vkui_screen_t* screen,
+                           int* pvalue)
+{
+	ASSERT(screen);
+	ASSERT(pvalue);
+
+	vkui_widgetLayout_t list_layout =
+	{
+		.wrapx    = VKUI_WIDGET_WRAP_STRETCH_PARENT,
+		.stretchx = 1.0f,
+	};
+
+	vkui_widgetScroll_t scroll =
+	{
+		.scroll_bar = 0
+	};
+
+	vkui_bulletboxStyle_t style =
+	{
+		.text_style =
+		{
+			.font_type = VKUI_TEXT_FONTTYPE_REGULAR,
+			.size      = VKUI_TEXT_SIZE_MEDIUM,
+			.spacing   = VKUI_TEXT_SPACING_MEDIUM
+		}
+	};
+	vkui_screen_colorPageItem(screen, &style.color_icon);
+	vkui_screen_colorPageItem(screen, &style.text_style.color);
+
+	return vkui_radiolist_new(screen, 0, &list_layout,
+	                          &scroll, &style, pvalue);
+}
+
 void vkui_radiolist_delete(vkui_radiolist_t** _self)
 {
 	ASSERT(_self);

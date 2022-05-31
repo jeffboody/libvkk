@@ -179,6 +179,29 @@ vkui_hline_new(vkui_screen_t* screen, size_t wsize, int size,
 	return NULL;
 }
 
+vkui_hline_t*
+vkui_hline_newPageItem(vkui_screen_t* screen)
+{
+	ASSERT(screen);
+
+	cc_vec4f_t color = { .a = 0.0f };
+
+	return vkui_hline_new(screen, 0,
+	                      VKUI_HLINE_SIZE_SMALL, &color);
+}
+
+vkui_hline_t*
+vkui_hline_newInfoItem(vkui_screen_t* screen)
+{
+	ASSERT(screen);
+
+	cc_vec4f_t color;
+	vkui_screen_colorPageItem(screen, &color);
+
+	return vkui_hline_new(screen, 0,
+	                      VKUI_HLINE_SIZE_SMALL, &color);
+}
+
 void vkui_hline_delete(vkui_hline_t** _self)
 {
 	ASSERT(_self);

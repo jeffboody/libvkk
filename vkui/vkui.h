@@ -204,6 +204,14 @@ typedef struct vkui_viewboxStyle_s
 	vkui_bulletboxStyle_t bulletbox_style;
 } vkui_viewboxStyle_t;
 
+typedef struct vkui_widgetStyle_s
+{
+	cc_vec4f_t color_primary;
+	cc_vec4f_t color_secondary;
+	cc_vec4f_t color_text;
+	cc_vec4f_t color_background;
+} vkui_widgetStyle_t;
+
 /*
  * screen API
  */
@@ -212,7 +220,8 @@ vkui_screen_t* vkui_screen_new(vkk_engine_t* engine,
                                vkk_renderer_t* renderer,
                                const char* resource,
                                void* sound_fx,
-                               vkui_screen_playClickFn playClick);
+                               vkui_screen_playClickFn playClick,
+                               vkui_widgetStyle_t* widget_style);
 void           vkui_screen_delete(vkui_screen_t** _self);
 vkui_widget_t* vkui_screen_top(vkui_screen_t* self,
                                vkui_widget_t* top);
@@ -239,6 +248,14 @@ int            vkui_screen_pointerMove(vkui_screen_t* self,
 int            vkui_screen_keyPress(vkui_screen_t* self,
                                     int keycode, int meta);
 void           vkui_screen_draw(vkui_screen_t* self);
+void           vkui_screen_colorPageItem(vkui_screen_t* self,
+                                         cc_vec4f_t* color);
+void           vkui_screen_colorPageHeading(vkui_screen_t* self,
+                                            cc_vec4f_t* color);
+void           vkui_screen_colorPageEntry(vkui_screen_t* self,
+                                          cc_vec4f_t* color);
+void           vkui_screen_colorFooterItem(vkui_screen_t* self,
+                                           cc_vec4f_t* color);
 
 /*
  * widget API
@@ -251,6 +268,14 @@ vkui_bulletbox_t* vkui_bulletbox_new(vkui_screen_t* screen,
                                      vkui_widgetFn_t* fn,
                                      vkui_bulletboxStyle_t* bulletbox_style,
                                      const char** sprite_array);
+vkui_bulletbox_t* vkui_bulletbox_newPageItem(vkui_screen_t* screen,
+                                             size_t wsize,
+                                             vkui_widgetFn_t* fn,
+                                             const char** sprite_array);
+vkui_bulletbox_t* vkui_bulletbox_newFooterItem(vkui_screen_t* screen,
+                                               size_t wsize,
+                                               vkui_widgetFn_t* fn,
+                                               const char** sprite_array);
 void              vkui_bulletbox_delete(vkui_bulletbox_t** _self);
 void              vkui_bulletbox_select(vkui_bulletbox_t* self,
                                         uint32_t index);
@@ -266,6 +291,9 @@ vkui_checkbox_t* vkui_checkbox_new(vkui_screen_t* screen,
                                    size_t wsize,
                                    vkui_bulletboxStyle_t* bulletbox_style,
                                    int* pvalue);
+vkui_checkbox_t* vkui_checkbox_newPageItem(vkui_screen_t* screen,
+                                           size_t wsize,
+                                           int* pvalue);
 void             vkui_checkbox_delete(vkui_checkbox_t** _self);
 void             vkui_checkbox_label(vkui_checkbox_t* self,
                                      const char* fmt, ...);
@@ -275,6 +303,8 @@ vkui_hline_t* vkui_hline_new(vkui_screen_t* screen,
                              size_t wsize,
                              int size,
                              cc_vec4f_t* color);
+vkui_hline_t* vkui_hline_newPageItem(vkui_screen_t* screen);
+vkui_hline_t* vkui_hline_newInfoItem(vkui_screen_t* screen);
 void          vkui_hline_delete(vkui_hline_t** _self);
 
 // layer
@@ -316,11 +346,13 @@ vkui_radiolist_t* vkui_radiolist_new(vkui_screen_t* screen,
                                      vkui_widgetScroll_t* scroll,
                                      vkui_bulletboxStyle_t* bulletbox_style,
                                      int* pvalue);
-void            vkui_radiolist_delete(vkui_radiolist_t** _self);
-void            vkui_radiolist_clear(vkui_radiolist_t* self);
-void            vkui_radiolist_add(vkui_radiolist_t* self,
-                                   int value,
-                                   const char* fmt, ...);
+vkui_radiolist_t* vkui_radiolist_newPageItem(vkui_screen_t* screen,
+                                             int* pvalue);
+void              vkui_radiolist_delete(vkui_radiolist_t** _self);
+void              vkui_radiolist_clear(vkui_radiolist_t* self);
+void              vkui_radiolist_add(vkui_radiolist_t* self,
+                                     int value,
+                                     const char* fmt, ...);
 
 // sprite
 vkui_sprite_t* vkui_sprite_new(vkui_screen_t* screen,
@@ -346,11 +378,17 @@ vkui_text_t* vkui_text_new(vkui_screen_t* screen,
                            vkui_textStyle_t* text_style,
                            vkui_textFn_t* text_fn,
                            cc_vec4f_t* color_fill);
-void        vkui_text_delete(vkui_text_t** _self);
-void        vkui_text_color(vkui_text_t* self,
-                            cc_vec4f_t* color);
-int         vkui_text_label(vkui_text_t* self,
-                            const char* fmt, ...);
+vkui_text_t* vkui_text_newPageHeading(vkui_screen_t* screen);
+vkui_text_t* vkui_text_newPageTextEntry(vkui_screen_t* screen,
+                                        void* priv,
+                                        vkui_text_enterFn enter_fn);
+vkui_text_t* vkui_text_newInfoHeading(vkui_screen_t* screen);
+vkui_text_t* vkui_text_newInfoItem(vkui_screen_t* screen);
+void         vkui_text_delete(vkui_text_t** _self);
+void         vkui_text_color(vkui_text_t* self,
+                             cc_vec4f_t* color);
+int          vkui_text_label(vkui_text_t* self,
+                             const char* fmt, ...);
 
 // textbox
 vkui_textbox_t* vkui_textbox_new(vkui_screen_t* screen,

@@ -221,12 +221,14 @@ vkui_screen_new(vkk_engine_t* engine,
                 vkk_renderer_t* renderer,
                 const char* resource,
                 void* sound_fx,
-                vkui_screen_playClickFn playClick)
+                vkui_screen_playClickFn playClick,
+                vkui_widgetStyle_t* widget_style)
 {
 	ASSERT(engine);
 	ASSERT(resource);
 	ASSERT(sound_fx);
 	ASSERT(playClick);
+	ASSERT(widget_style);
 
 	vkui_screen_t* self;
 	self = (vkui_screen_t*) CALLOC(1, sizeof(vkui_screen_t));
@@ -244,6 +246,8 @@ vkui_screen_new(vkk_engine_t* engine,
 	self->sound_fx      = sound_fx;
 	self->playClick     = playClick;
 
+	memcpy(&self->widget_style, widget_style,
+	       sizeof(vkui_widgetStyle_t));
 	snprintf(self->resource, 256, "%s", resource);
 
 	self->renderer = renderer;
@@ -1113,6 +1117,54 @@ void vkui_screen_draw(vkui_screen_t* self)
 		(*playClick)(self->sound_fx);
 		self->clicked = 0;
 	}
+}
+
+void vkui_screen_colorPageItem(vkui_screen_t* self,
+                               cc_vec4f_t* color)
+{
+	ASSERT(self);
+	ASSERT(color);
+
+	// https://material.io/design/color/dark-theme.html
+	vkui_widgetStyle_t* s = &self->widget_style;
+	cc_vec4f_t*         c = &s->color_text;
+	cc_vec4f_load(color, c->r, c->g, c->b, 0.6f);
+}
+
+void vkui_screen_colorPageHeading(vkui_screen_t* self,
+                                  cc_vec4f_t* color)
+{
+	ASSERT(self);
+	ASSERT(color);
+
+	// https://material.io/design/color/dark-theme.html
+	vkui_widgetStyle_t* s = &self->widget_style;
+	cc_vec4f_t*         c = &s->color_text;
+	cc_vec4f_load(color, c->r, c->g, c->b, 0.87f);
+}
+
+void vkui_screen_colorPageEntry(vkui_screen_t* self,
+                                cc_vec4f_t* color)
+{
+	ASSERT(self);
+	ASSERT(color);
+
+	// https://material.io/design/color/dark-theme.html
+	vkui_widgetStyle_t* s = &self->widget_style;
+	cc_vec4f_t*         c = &s->color_secondary;
+	cc_vec4f_load(color, c->r, c->g, c->b, 0.38f);
+}
+
+void vkui_screen_colorFooterItem(vkui_screen_t* self,
+                                 cc_vec4f_t* color)
+{
+	ASSERT(self);
+	ASSERT(color);
+
+	// https://material.io/design/color/dark-theme.html
+	vkui_widgetStyle_t* s = &self->widget_style;
+	cc_vec4f_t*         c = &s->color_primary;
+	cc_vec4f_load(color, c->r, c->g, c->b, 0.87f);
 }
 
 vkui_font_t*
