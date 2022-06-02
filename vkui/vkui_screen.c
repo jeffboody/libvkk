@@ -1167,6 +1167,18 @@ void vkui_screen_colorFooterItem(vkui_screen_t* self,
 	cc_vec4f_load(color, c->r, c->g, c->b, 0.87f);
 }
 
+void vkui_screen_colorBackground(vkui_screen_t* self,
+                                 cc_vec4f_t* color)
+{
+	ASSERT(self);
+	ASSERT(color);
+
+	// https://material.io/design/color/dark-theme.html
+	vkui_widgetStyle_t* s = &self->widget_style;
+	cc_vec4f_t*         c = &s->color_background;
+	cc_vec4f_load(color, c->r, c->g, c->b, 1.0f);
+}
+
 vkui_font_t*
 vkui_screen_font(vkui_screen_t* self, int font_type)
 {

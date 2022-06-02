@@ -13,6 +13,7 @@ if(VKK_USE_VKUI)
         vkui/vkui_listbox.c
         vkui/vkui_screen.c
         vkui/vkui_sprite.c
+        vkui/vkui_statusBar.c
         vkui/vkui_radiobox.c
         vkui/vkui_radiolist.c
         vkui/vkui_textbox.c

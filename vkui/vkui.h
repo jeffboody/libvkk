@@ -96,9 +96,9 @@ typedef struct vkui_checkbox_s     vkui_checkbox_t;
 typedef struct vkui_hline_s        vkui_hline_t;
 typedef struct vkui_layer_s        vkui_layer_t;
 typedef struct vkui_listbox_s      vkui_listbox_t;
-typedef struct vkui_radiobox_s     vkui_radiobox_t;
 typedef struct vkui_radiolist_s    vkui_radiolist_t;
 typedef struct vkui_sprite_s       vkui_sprite_t;
+typedef struct vkui_statusBar_s    vkui_statusBar_t;
 typedef struct vkui_text_s         vkui_text_t;
 typedef struct vkui_textbox_s      vkui_textbox_t;
 typedef struct vkui_viewbox_s      vkui_viewbox_t;
@@ -255,6 +255,8 @@ void           vkui_screen_colorPageHeading(vkui_screen_t* self,
 void           vkui_screen_colorPageEntry(vkui_screen_t* self,
                                           cc_vec4f_t* color);
 void           vkui_screen_colorFooterItem(vkui_screen_t* self,
+                                           cc_vec4f_t* color);
+void           vkui_screen_colorBackground(vkui_screen_t* self,
                                            cc_vec4f_t* color);
 
 /*
@@ -416,5 +418,14 @@ void            vkui_viewbox_select(vkui_viewbox_t* self,
                                     uint32_t index);
 void            vkui_viewbox_label(vkui_viewbox_t* self,
                                    const char* fmt, ...);
+
+// statusBar
+vkui_statusBar_t* vkui_statusBar_new(vkui_screen_t* screen,
+                                     size_t wsize,
+                                     vkui_widgetFn_t* widget_fn);
+void              vkui_statusBar_delete(vkui_statusBar_t** _self);
+void              vkui_statusBar_add(vkui_statusBar_t* self,
+                                     vkui_widget_t* widget);
+void              vkui_statusBar_clear(vkui_statusBar_t* self);
 
 #endif

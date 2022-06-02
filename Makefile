@@ -30,6 +30,7 @@ ifeq ($(VKK_USE_VKUI),1)
 		vkui/vkui_listbox   \
 		vkui/vkui_screen    \
 		vkui/vkui_sprite    \
+		vkui/vkui_statusBar \
 		vkui/vkui_radiobox  \
 		vkui/vkui_radiolist \
 		vkui/vkui_textbox   \
