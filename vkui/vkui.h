@@ -94,6 +94,7 @@ typedef struct vkui_screen_s vkui_screen_t;
 typedef struct vkui_bulletbox_s    vkui_bulletbox_t;
 typedef struct vkui_checkbox_s     vkui_checkbox_t;
 typedef struct vkui_hline_s        vkui_hline_t;
+typedef struct vkui_infoPanel_s    vkui_infoPanel_t;
 typedef struct vkui_layer_s        vkui_layer_t;
 typedef struct vkui_listbox_s      vkui_listbox_t;
 typedef struct vkui_radiolist_s    vkui_radiolist_t;
@@ -427,5 +428,14 @@ void              vkui_statusBar_delete(vkui_statusBar_t** _self);
 void              vkui_statusBar_add(vkui_statusBar_t* self,
                                      vkui_widget_t* widget);
 void              vkui_statusBar_clear(vkui_statusBar_t* self);
+
+// infoPanel
+vkui_infoPanel_t* vkui_infoPanel_new(vkui_screen_t* screen,
+                                     size_t wsize,
+                                     vkui_widgetFn_t* widget_fn);
+void              vkui_infoPanel_delete(vkui_infoPanel_t** _self);
+void              vkui_infoPanel_add(vkui_infoPanel_t* self,
+                                     vkui_widget_t* widget);
+void              vkui_infoPanel_clear(vkui_infoPanel_t* self);
 
 #endif
