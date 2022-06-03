@@ -165,6 +165,7 @@ typedef struct vkui_widgetFn_s
 	void*                 priv;
 	vkui_widget_clickFn   click_fn;
 	vkui_widget_refreshFn refresh_fn;
+	char                  msg[256];
 } vkui_widgetFn_t;
 
 typedef struct vkui_textLayout_s

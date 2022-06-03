@@ -29,6 +29,7 @@
 #include "../../libcc/math/cc_rect12f.h"
 #include "../../libcc/cc_memory.h"
 #include "../../libcc/cc_log.h"
+#include "../vkk_platform.h"
 #include "vkui_screen.h"
 #include "vkui_widget.h"
 #include "vkui.h"
@@ -635,6 +636,28 @@ int vkui_widget_click(vkui_widget_t* self, int state,
 	}
 
 	return clicked;
+}
+
+int vkui_widget_clickUrlFn(vkui_widget_t* widget,
+                           void* priv, int state,
+                           float x, float y)
+{
+	// priv may be NULL
+	ASSERT(widget);
+
+	vkui_screen_t* screen = widget->screen;
+	vkk_engine_t*  engine = screen->engine;
+
+	if(state == VKUI_WIDGET_POINTER_UP)
+	{
+		char msg[256];
+		snprintf(msg, 256, "{\"url\":\"%s\"}",
+		         widget->fn.msg);
+		vkk_engine_platformCmd(engine,
+		                       VKK_PLATFORM_CMD_LOADURL,
+		                       msg);
+	}
+	return 1;
 }
 
 int vkui_widget_keyPress(vkui_widget_t* self,

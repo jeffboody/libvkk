@@ -159,6 +159,9 @@ void           vkui_widget_layoutAnchor(vkui_widget_t* self,
 int            vkui_widget_click(vkui_widget_t* self,
                                  int state,
                                  float x, float y);
+int            vkui_widget_clickUrlFn(vkui_widget_t* widget,
+                                      void* priv, int state,
+                                      float x, float y);
 int            vkui_widget_keyPress(vkui_widget_t* self,
                                     int keycode, int meta);
 void           vkui_widget_drag(vkui_widget_t* self,
