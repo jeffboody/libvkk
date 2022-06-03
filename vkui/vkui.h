@@ -255,6 +255,8 @@ void           vkui_screen_colorPageHeading(vkui_screen_t* self,
                                             cc_vec4f_t* color);
 void           vkui_screen_colorPageEntry(vkui_screen_t* self,
                                           cc_vec4f_t* color);
+void           vkui_screen_colorStatusIcon(vkui_screen_t* self,
+                                           cc_vec4f_t* color);
 void           vkui_screen_colorFooterItem(vkui_screen_t* self,
                                            cc_vec4f_t* color);
 void           vkui_screen_colorBackground(vkui_screen_t* self,
@@ -364,6 +366,10 @@ vkui_sprite_t* vkui_sprite_new(vkui_screen_t* screen,
                                vkui_widgetFn_t* fn,
                                cc_vec4f_t* color,
                                const char** sprite_array);
+vkui_sprite_t* vkui_sprite_newStatusIcon(vkui_screen_t* screen,
+                                         size_t wsize,
+                                         vkui_widgetFn_t* fn,
+                                         const char** sprite_array);
 void          vkui_sprite_delete(vkui_sprite_t** _self);
 void          vkui_sprite_select(vkui_sprite_t* self,
                                  uint32_t index);

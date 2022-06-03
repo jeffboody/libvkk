@@ -349,6 +349,32 @@ vkui_sprite_new(vkui_screen_t* screen,
 	return NULL;
 }
 
+vkui_sprite_t*
+vkui_sprite_newStatusIcon(vkui_screen_t* screen,
+                          size_t wsize,
+                          vkui_widgetFn_t* fn,
+                          const char** sprite_array)
+{
+	ASSERT(screen);
+	ASSERT(fn);
+	ASSERT(sprite_array);
+
+	vkui_widgetLayout_t sprite_layout =
+	{
+		.border   = VKUI_WIDGET_BORDER_SMALL,
+		.wrapx    = VKUI_WIDGET_WRAP_STRETCH_TEXT_VSMALL,
+		.wrapy    = VKUI_WIDGET_WRAP_STRETCH_TEXT_VSMALL,
+		.stretchx = 1.0f,
+		.stretchy = 1.0f
+	};
+
+	cc_vec4f_t color;
+	vkui_screen_colorStatusIcon(screen, &color);
+
+	return vkui_sprite_new(screen, wsize, &sprite_layout,
+	                       fn, &color, sprite_array);
+}
+
 void vkui_sprite_delete(vkui_sprite_t** _self)
 {
 	ASSERT(_self);
