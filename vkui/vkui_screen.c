@@ -1143,6 +1143,15 @@ void vkui_screen_colorPageHeading(vkui_screen_t* self,
 	cc_vec4f_load(color, c->r, c->g, c->b, 0.87f);
 }
 
+void vkui_screen_colorPageBanner(vkui_screen_t* self,
+                                 cc_vec4f_t* color)
+{
+	ASSERT(self);
+	ASSERT(color);
+
+	cc_vec4f_load(color, 1.0f, 1.0f, 1.0f, 1.0f);
+}
+
 void vkui_screen_colorPageEntry(vkui_screen_t* self,
                                 cc_vec4f_t* color)
 {
