@@ -372,6 +372,9 @@ vkui_sprite_t* vkui_sprite_new(vkui_screen_t* screen,
 vkui_sprite_t* vkui_sprite_newPageBanner(vkui_screen_t* screen,
                                          vkui_widgetFn_t* fn,
                                          const char** sprite_array);
+vkui_sprite_t* vkui_sprite_newSidebarBanner(vkui_screen_t* screen,
+                                            vkui_widgetFn_t* fn,
+                                            const char** sprite_array);
 vkui_sprite_t* vkui_sprite_newStatusIcon(vkui_screen_t* screen,
                                          size_t wsize,
                                          vkui_widgetFn_t* fn,

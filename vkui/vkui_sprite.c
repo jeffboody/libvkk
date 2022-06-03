@@ -375,6 +375,31 @@ vkui_sprite_newPageBanner(vkui_screen_t* screen,
 }
 
 vkui_sprite_t*
+vkui_sprite_newSidebarBanner(vkui_screen_t* screen,
+                             vkui_widgetFn_t* fn,
+                             const char** sprite_array)
+{
+	ASSERT(screen);
+	ASSERT(fn);
+	ASSERT(sprite_array);
+
+	vkui_widgetLayout_t sprite_layout =
+	{
+		.anchor   = VKUI_WIDGET_ANCHOR_TC,
+		.wrapx    = VKUI_WIDGET_WRAP_STRETCH_TEXT_VLARGE,
+		.wrapy    = VKUI_WIDGET_WRAP_STRETCH_TEXT_VLARGE,
+		.stretchx = 2.5f,
+		.stretchy = 2.5f
+	};
+
+	cc_vec4f_t color;
+	vkui_screen_colorPageBanner(screen, &color);
+
+	return vkui_sprite_new(screen, 0, &sprite_layout,
+	                       fn, &color, sprite_array);
+}
+
+vkui_sprite_t*
 vkui_sprite_newStatusIcon(vkui_screen_t* screen,
                           size_t wsize,
                           vkui_widgetFn_t* fn,
