@@ -380,6 +380,39 @@ vkui_textbox_newPageButton(vkui_screen_t* screen,
 	                        &scroll, fn, &style);
 }
 
+vkui_textbox_t*
+vkui_textbox_newPageParagraph(vkui_screen_t* screen)
+{
+	ASSERT(screen);
+
+	vkui_widgetLayout_t layout =
+	{
+		.wrapx    = VKUI_WIDGET_WRAP_STRETCH_PARENT,
+		.stretchx = 1.0f,
+	};
+
+	vkui_widgetScroll_t scroll =
+	{
+		.scroll_bar = 0
+	};
+
+	vkui_widgetFn_t fn =
+	{
+		.priv = NULL
+	};
+
+	vkui_textStyle_t style =
+	{
+		.font_type = VKUI_TEXT_FONTTYPE_REGULAR,
+		.size      = VKUI_TEXT_SIZE_MEDIUM,
+		.spacing   = VKUI_TEXT_SPACING_MEDIUM
+	};
+	vkui_screen_colorPageItem(screen, &style.color);
+
+	return vkui_textbox_new(screen, 0, &layout,
+	                        &scroll, &fn, &style);
+}
+
 void vkui_textbox_delete(vkui_textbox_t** _self)
 {
 	ASSERT(_self);

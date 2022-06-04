@@ -419,10 +419,11 @@ vkui_textbox_t* vkui_textbox_new(vkui_screen_t* screen,
                                  vkui_textStyle_t* text_style);
 vkui_textbox_t* vkui_textbox_newPageButton(vkui_screen_t* screen,
                                            vkui_widgetFn_t* fn);
-void           vkui_textbox_delete(vkui_textbox_t** _self);
-void           vkui_textbox_clear(vkui_textbox_t* self);
-void           vkui_textbox_printf(vkui_textbox_t* self,
-                                   const char* fmt, ...);
+vkui_textbox_t* vkui_textbox_newPageParagraph(vkui_screen_t* screen);
+void            vkui_textbox_delete(vkui_textbox_t** _self);
+void            vkui_textbox_clear(vkui_textbox_t* self);
+void            vkui_textbox_printf(vkui_textbox_t* self,
+                                    const char* fmt, ...);
 
 // viewbox
 vkui_viewbox_t* vkui_viewbox_new(vkui_screen_t* screen,
