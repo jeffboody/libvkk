@@ -20,8 +20,8 @@ if(VKK_USE_VKUI)
         vkui/vkui_textbox.c
         vkui/vkui_text.c
         vkui/vkui_tricolor.c
-        vkui/vkui_viewbox.c
-        vkui/vkui_widget.c)
+        vkui/vkui_widget.c
+        vkui/vkui_window.c)
 endif()
 
 # native_app_glue

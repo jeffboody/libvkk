@@ -29,7 +29,7 @@
 #include "../../libcc/cc_log.h"
 #include "vkui_bulletbox.h"
 #include "vkui_screen.h"
-#include "vkui_viewbox.h"
+#include "vkui_window.h"
 #include "vkui_widget.h"
 
 /***********************************************************
@@ -37,16 +37,16 @@
 ***********************************************************/
 
 static void
-vkui_viewbox_size(vkui_widget_t* widget, float* w, float* h)
+vkui_window_size(vkui_widget_t* widget, float* w, float* h)
 {
 	ASSERT(widget);
 	ASSERT(w);
 	ASSERT(h);
 
-	vkui_viewbox_t* self   = (vkui_viewbox_t*) widget;
-	vkui_widget_t*  bullet = (vkui_widget_t*) self->bullet;
-	vkui_widget_t*  body   = self->body;
-	vkui_widget_t*  footer = self->footer;
+	vkui_window_t* self   = (vkui_window_t*) widget;
+	vkui_widget_t* bullet = (vkui_widget_t*) self->bullet;
+	vkui_widget_t* body   = self->body;
+	vkui_widget_t* footer = self->footer;
 
 	float wmax     = 0.0f;
 	float hsum     = 0.0f;
@@ -97,16 +97,16 @@ vkui_viewbox_size(vkui_widget_t* widget, float* w, float* h)
 }
 
 static int
-vkui_viewbox_click(vkui_widget_t* widget, void* priv,
-                   int state, float x, float y)
+vkui_window_click(vkui_widget_t* widget, void* priv,
+                  int state, float x, float y)
 {
 	// priv may be NULL
 	ASSERT(widget);
 
-	vkui_viewbox_t* self = (vkui_viewbox_t*) widget;
-	vkui_widget_t*  bullet = (vkui_widget_t*) self->bullet;
-	vkui_widget_t*  body   = (vkui_widget_t*) self->body;
-	vkui_widget_t*  footer = (vkui_widget_t*) self->footer;
+	vkui_window_t* self = (vkui_window_t*) widget;
+	vkui_widget_t* bullet = (vkui_widget_t*) self->bullet;
+	vkui_widget_t* body   = (vkui_widget_t*) self->body;
+	vkui_widget_t* footer = (vkui_widget_t*) self->footer;
 	if(vkui_widget_click(bullet, state, x, y) ||
 	   vkui_widget_click(body, state, x, y)   ||
 	   (footer && vkui_widget_click(footer, state, x, y)))
@@ -123,13 +123,13 @@ vkui_viewbox_click(vkui_widget_t* widget, void* priv,
 }
 
 static void
-vkui_viewbox_layout(vkui_widget_t* widget,
-                    int dragx, int dragy)
+vkui_window_layout(vkui_widget_t* widget,
+                   int dragx, int dragy)
 {
 	ASSERT(widget);
 
 	vkui_widgetLayout_t* layout = &widget->layout;
-	vkui_viewbox_t*      self   = (vkui_viewbox_t*) widget;
+	vkui_window_t*       self   = (vkui_window_t*) widget;
 	vkui_widget_t*       bullet = (vkui_widget_t*) self->bullet;
 	vkui_widget_t*       body   = self->body;
 	vkui_widget_t*       footer = self->footer;
@@ -213,12 +213,12 @@ vkui_viewbox_layout(vkui_widget_t* widget,
 }
 
 static void
-vkui_viewbox_drag(vkui_widget_t* widget, float x, float y,
-                  float dx, float dy)
+vkui_window_drag(vkui_widget_t* widget, float x, float y,
+                 float dx, float dy)
 {
 	ASSERT(widget);
 
-	vkui_viewbox_t* self = (vkui_viewbox_t*) widget;
+	vkui_window_t* self = (vkui_window_t*) widget;
 	vkui_widget_drag((vkui_widget_t*) self->bullet,
 	                 x, y, dx, dy);
 	vkui_widget_drag(self->body, x, y, dx, dy);
@@ -229,21 +229,21 @@ vkui_viewbox_drag(vkui_widget_t* widget, float x, float y,
 }
 
 static void
-vkui_viewbox_scrollTop(vkui_widget_t* widget)
+vkui_window_scrollTop(vkui_widget_t* widget)
 {
 	ASSERT(widget);
 
-	vkui_viewbox_t* self = (vkui_viewbox_t*) widget;
+	vkui_window_t* self = (vkui_window_t*) widget;
 
 	vkui_widget_scrollTop(self->body);
 }
 
 static void
-vkui_viewbox_draw(vkui_widget_t* widget)
+vkui_window_draw(vkui_widget_t* widget)
 {
 	ASSERT(widget);
 
-	vkui_viewbox_t* self = (vkui_viewbox_t*) widget;
+	vkui_window_t* self = (vkui_window_t*) widget;
 
 	vkui_widget_draw((vkui_widget_t*) self->bullet);
 	vkui_widget_draw(self->body);
@@ -254,12 +254,12 @@ vkui_viewbox_draw(vkui_widget_t* widget)
 }
 
 static void
-vkui_viewbox_refresh(vkui_widget_t* widget, void* priv)
+vkui_window_refresh(vkui_widget_t* widget, void* priv)
 {
 	// priv may be NULL
 	ASSERT(widget);
 
-	vkui_viewbox_t* self = (vkui_viewbox_t*) widget;
+	vkui_window_t* self = (vkui_window_t*) widget;
 	vkui_widget_refresh((vkui_widget_t*) self->bullet);
 	vkui_widget_refresh(self->body);
 	if(self->footer)
@@ -272,14 +272,14 @@ vkui_viewbox_refresh(vkui_widget_t* widget, void* priv)
 * public                                                   *
 ***********************************************************/
 
-vkui_viewbox_t*
-vkui_viewbox_new(vkui_screen_t* screen, size_t wsize,
-                 vkui_widgetLayout_t* layout,
-                 vkui_widgetFn_t* fn,
-                 vkui_viewboxStyle_t* style,
-                 const char** sprite_array,
-                 vkui_widget_t* body,
-                 vkui_widget_t* footer)
+vkui_window_t*
+vkui_window_new(vkui_screen_t* screen, size_t wsize,
+                vkui_widgetLayout_t* layout,
+                vkui_widgetFn_t* fn,
+                vkui_windowStyle_t* style,
+                const char** sprite_array,
+                vkui_widget_t* body,
+                vkui_widget_t* footer)
 {
 	// footer may be NULL
 	ASSERT(screen);
@@ -291,7 +291,7 @@ vkui_viewbox_new(vkui_screen_t* screen, size_t wsize,
 
 	if(wsize == 0)
 	{
-		wsize = sizeof(vkui_viewbox_t);
+		wsize = sizeof(vkui_window_t);
 	}
 
 	vkui_widgetScroll_t scroll =
@@ -301,17 +301,17 @@ vkui_viewbox_new(vkui_screen_t* screen, size_t wsize,
 
 	vkui_widgetFn_t viewbox_fn =
 	{
-		.click_fn   = vkui_viewbox_click,
-		.refresh_fn = vkui_viewbox_refresh
+		.click_fn   = vkui_window_click,
+		.refresh_fn = vkui_window_refresh
 	};
 
 	vkui_widgetPrivFn_t priv_fn =
 	{
-		.size_fn      = vkui_viewbox_size,
-		.layout_fn    = vkui_viewbox_layout,
-		.drag_fn      = vkui_viewbox_drag,
-		.scrollTop_fn = vkui_viewbox_scrollTop,
-		.draw_fn      = vkui_viewbox_draw,
+		.size_fn      = vkui_window_size,
+		.layout_fn    = vkui_window_layout,
+		.drag_fn      = vkui_window_drag,
+		.scrollTop_fn = vkui_window_scrollTop,
+		.draw_fn      = vkui_window_draw,
 	};
 
 	cc_vec4f_t clear =
@@ -319,8 +319,8 @@ vkui_viewbox_new(vkui_screen_t* screen, size_t wsize,
 		.a = 0.0f
 	};
 
-	vkui_viewbox_t* self;
-	self = (vkui_viewbox_t*)
+	vkui_window_t* self;
+	self = (vkui_window_t*)
 	       vkui_widget_new(screen, wsize, &clear,
 	                       layout, &scroll, &viewbox_fn,
 	                       &priv_fn);
@@ -366,11 +366,11 @@ vkui_viewbox_new(vkui_screen_t* screen, size_t wsize,
 	return NULL;
 }
 
-void vkui_viewbox_delete(vkui_viewbox_t** _self)
+void vkui_window_delete(vkui_window_t** _self)
 {
 	ASSERT(_self);
 
-	vkui_viewbox_t* self = *_self;
+	vkui_window_t* self = *_self;
 	if(self)
 	{
 		vkui_bulletbox_delete(&self->bullet);
@@ -378,16 +378,16 @@ void vkui_viewbox_delete(vkui_viewbox_t** _self)
 	}
 }
 
-void vkui_viewbox_select(vkui_viewbox_t* self,
-                         uint32_t index)
+void vkui_window_select(vkui_window_t* self,
+                        uint32_t index)
 {
 	ASSERT(self);
 
 	vkui_bulletbox_select(self->bullet, index);
 }
 
-void vkui_viewbox_label(vkui_viewbox_t* self,
-                        const char* fmt, ...)
+void vkui_window_label(vkui_window_t* self,
+                       const char* fmt, ...)
 {
 	ASSERT(self);
 	ASSERT(fmt);

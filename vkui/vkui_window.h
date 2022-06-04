@@ -21,19 +21,19 @@
  *
  */
 
-#ifndef vkui_viewbox_H
-#define vkui_viewbox_H
+#ifndef vkui_window_H
+#define vkui_window_H
 
 #include "vkui_widget.h"
 #include "vkui.h"
 
-typedef struct vkui_viewbox_s
+typedef struct vkui_window_s
 {
 	vkui_widget_t     widget;
 	vkui_bulletbox_t* bullet;
 	vkui_widget_t*    body;
 	vkui_widget_t*    footer;
 	int               transparent;
-} vkui_viewbox_t;
+} vkui_window_t;
 
 #endif

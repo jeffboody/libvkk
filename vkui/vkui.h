@@ -102,9 +102,9 @@ typedef struct vkui_sprite_s       vkui_sprite_t;
 typedef struct vkui_statusBar_s    vkui_statusBar_t;
 typedef struct vkui_text_s         vkui_text_t;
 typedef struct vkui_textbox_s      vkui_textbox_t;
-typedef struct vkui_viewbox_s      vkui_viewbox_t;
 typedef struct vkui_widget_s       vkui_widget_t;
 typedef struct vkui_widgetLayout_s vkui_widgetLayout_t;
+typedef struct vkui_window_s       vkui_window_t;
 
 /*
  * function calllbacks
@@ -198,13 +198,13 @@ typedef struct vkui_bulletboxStyle_s
 	vkui_textStyle_t text_style;
 } vkui_bulletboxStyle_t;
 
-typedef struct vkui_viewboxStyle_s
+typedef struct vkui_windowStyle_s
 {
 	cc_vec4f_t color_header;
 	cc_vec4f_t color_body;
 	cc_vec4f_t color_footer;
 	vkui_bulletboxStyle_t bulletbox_style;
-} vkui_viewboxStyle_t;
+} vkui_windowStyle_t;
 
 typedef struct vkui_widgetStyle_s
 {
@@ -422,19 +422,19 @@ void            vkui_textbox_printf(vkui_textbox_t* self,
                                     const char* fmt, ...);
 
 // viewbox
-vkui_viewbox_t* vkui_viewbox_new(vkui_screen_t* screen,
-                                 size_t wsize,
-                                 vkui_widgetLayout_t* layout,
-                                 vkui_widgetFn_t* fn,
-                                 vkui_viewboxStyle_t* viewbox_style,
-                                 const char** sprite_array,
-                                 vkui_widget_t* body,
-                                 vkui_widget_t* footer);
-void            vkui_viewbox_delete(vkui_viewbox_t** _self);
-void            vkui_viewbox_select(vkui_viewbox_t* self,
-                                    uint32_t index);
-void            vkui_viewbox_label(vkui_viewbox_t* self,
-                                   const char* fmt, ...);
+vkui_window_t* vkui_window_new(vkui_screen_t* screen,
+                               size_t wsize,
+                               vkui_widgetLayout_t* layout,
+                               vkui_widgetFn_t* fn,
+                               vkui_windowStyle_t* viewbox_style,
+                               const char** sprite_array,
+                               vkui_widget_t* body,
+                               vkui_widget_t* footer);
+void           vkui_window_delete(vkui_window_t** _self);
+void           vkui_window_select(vkui_window_t* self,
+                                  uint32_t index);
+void           vkui_window_label(vkui_window_t* self,
+                                 const char* fmt, ...);
 
 // statusBar
 vkui_statusBar_t* vkui_statusBar_new(vkui_screen_t* screen,

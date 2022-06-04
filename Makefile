@@ -37,8 +37,8 @@ ifeq ($(VKK_USE_VKUI),1)
 		vkui/vkui_textbox   \
 		vkui/vkui_text      \
 		vkui/vkui_tricolor  \
-		vkui/vkui_viewbox   \
-		vkui/vkui_widget
+		vkui/vkui_widget    \
+		vkui/vkui_window
 endif
 SOURCE  = $(CLASSES:%=%.c)
 OBJECTS = $(SOURCE:.c=.o)
