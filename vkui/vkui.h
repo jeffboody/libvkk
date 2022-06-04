@@ -279,11 +279,9 @@ vkui_bulletbox_t* vkui_bulletbox_new(vkui_screen_t* screen,
                                      vkui_bulletboxStyle_t* bulletbox_style,
                                      const char** sprite_array);
 vkui_bulletbox_t* vkui_bulletbox_newPageItem(vkui_screen_t* screen,
-                                             size_t wsize,
                                              vkui_widgetFn_t* fn,
                                              const char** sprite_array);
 vkui_bulletbox_t* vkui_bulletbox_newFooterItem(vkui_screen_t* screen,
-                                               size_t wsize,
                                                vkui_widgetFn_t* fn,
                                                const char** sprite_array);
 void              vkui_bulletbox_delete(vkui_bulletbox_t** _self);
@@ -302,7 +300,6 @@ vkui_checkbox_t* vkui_checkbox_new(vkui_screen_t* screen,
                                    vkui_bulletboxStyle_t* bulletbox_style,
                                    int* pvalue);
 vkui_checkbox_t* vkui_checkbox_newPageItem(vkui_screen_t* screen,
-                                           size_t wsize,
                                            int* pvalue);
 void             vkui_checkbox_delete(vkui_checkbox_t** _self);
 void             vkui_checkbox_label(vkui_checkbox_t* self,
@@ -378,7 +375,6 @@ vkui_sprite_t* vkui_sprite_newSidebarBanner(vkui_screen_t* screen,
                                             vkui_widgetFn_t* fn,
                                             const char** sprite_array);
 vkui_sprite_t* vkui_sprite_newStatusIcon(vkui_screen_t* screen,
-                                         size_t wsize,
                                          vkui_widgetFn_t* fn,
                                          const char** sprite_array);
 void          vkui_sprite_delete(vkui_sprite_t** _self);

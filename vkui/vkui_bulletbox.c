@@ -259,7 +259,6 @@ vkui_bulletbox_new(vkui_screen_t* screen, size_t wsize,
 
 vkui_bulletbox_t*
 vkui_bulletbox_newPageItem(vkui_screen_t* screen,
-                           size_t wsize,
                            vkui_widgetFn_t* fn,
                            const char** sprite_array)
 {
@@ -279,14 +278,13 @@ vkui_bulletbox_newPageItem(vkui_screen_t* screen,
 	vkui_screen_colorPageItem(screen, &style.color_icon);
 	vkui_screen_colorPageItem(screen, &style.text_style.color);
 
-	return vkui_bulletbox_new(screen, wsize,
+	return vkui_bulletbox_new(screen, 0,
 	                          VKUI_WIDGET_ANCHOR_TL, fn,
 	                          &style, sprite_array);
 }
 
 vkui_bulletbox_t*
 vkui_bulletbox_newFooterItem(vkui_screen_t* screen,
-                             size_t wsize,
                              vkui_widgetFn_t* fn,
                              const char** sprite_array)
 {
@@ -306,7 +304,7 @@ vkui_bulletbox_newFooterItem(vkui_screen_t* screen,
 	vkui_screen_colorFooterItem(screen, &style.color_icon);
 	vkui_screen_colorFooterItem(screen, &style.text_style.color);
 
-	return vkui_bulletbox_new(screen, wsize,
+	return vkui_bulletbox_new(screen, 0,
 	                          VKUI_WIDGET_ANCHOR_TC, fn,
 	                          &style, sprite_array);
 }

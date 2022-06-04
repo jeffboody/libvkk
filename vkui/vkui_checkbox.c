@@ -111,7 +111,6 @@ vkui_checkbox_new(vkui_screen_t* screen, size_t wsize,
 
 vkui_checkbox_t*
 vkui_checkbox_newPageItem(vkui_screen_t* screen,
-                          size_t wsize,
                           int* pvalue)
 {
 	ASSERT(screen);
@@ -129,7 +128,7 @@ vkui_checkbox_newPageItem(vkui_screen_t* screen,
 	vkui_screen_colorPageItem(screen, &style.color_icon);
 	vkui_screen_colorPageItem(screen, &style.text_style.color);
 
-	return vkui_checkbox_new(screen, wsize, &style,
+	return vkui_checkbox_new(screen, 0, &style,
 	                         pvalue);
 }
 
