@@ -350,9 +350,9 @@ vkui_sprite_new(vkui_screen_t* screen,
 }
 
 vkui_sprite_t*
-vkui_sprite_newPageBanner(vkui_screen_t* screen,
-                          vkui_widgetFn_t* fn,
-                          const char** sprite_array)
+vkui_sprite_newPageImage(vkui_screen_t* screen,
+                         vkui_widgetFn_t* fn,
+                         const char** sprite_array)
 {
 	ASSERT(screen);
 	ASSERT(fn);
@@ -368,16 +368,16 @@ vkui_sprite_newPageBanner(vkui_screen_t* screen,
 	};
 
 	cc_vec4f_t color;
-	vkui_screen_colorPageBanner(screen, &color);
+	vkui_screen_colorPageImage(screen, &color);
 
 	return vkui_sprite_new(screen, 0, &sprite_layout,
 	                       fn, &color, sprite_array);
 }
 
 vkui_sprite_t*
-vkui_sprite_newSidebarBanner(vkui_screen_t* screen,
-                             vkui_widgetFn_t* fn,
-                             const char** sprite_array)
+vkui_sprite_newSidebarImage(vkui_screen_t* screen,
+                            vkui_widgetFn_t* fn,
+                            const char** sprite_array)
 {
 	ASSERT(screen);
 	ASSERT(fn);
@@ -393,7 +393,7 @@ vkui_sprite_newSidebarBanner(vkui_screen_t* screen,
 	};
 
 	cc_vec4f_t color;
-	vkui_screen_colorPageBanner(screen, &color);
+	vkui_screen_colorPageImage(screen, &color);
 
 	return vkui_sprite_new(screen, 0, &sprite_layout,
 	                       fn, &color, sprite_array);

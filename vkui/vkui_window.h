@@ -31,8 +31,9 @@ typedef struct vkui_window_s
 {
 	vkui_widget_t     widget;
 	vkui_bulletbox_t* bullet;
-	vkui_widget_t*    body;
-	vkui_widget_t*    footer;
+	vkui_listbox_t*   page;
+	vkui_layer_t*     workspace;
+	vkui_listbox_t*   footer;
 	int               transparent;
 } vkui_window_t;
 

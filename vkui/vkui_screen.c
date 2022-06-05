@@ -1143,8 +1143,8 @@ void vkui_screen_colorPageHeading(vkui_screen_t* self,
 	cc_vec4f_load(color, c->r, c->g, c->b, 0.87f);
 }
 
-void vkui_screen_colorPageBanner(vkui_screen_t* self,
-                                 cc_vec4f_t* color)
+void vkui_screen_colorPageImage(vkui_screen_t* self,
+                                cc_vec4f_t* color)
 {
 	ASSERT(self);
 	ASSERT(color);
@@ -1174,6 +1174,30 @@ void vkui_screen_colorPageEntry(vkui_screen_t* self,
 	vkui_widgetStyle_t* s = &self->widget_style;
 	cc_vec4f_t*         c = &s->color_secondary;
 	cc_vec4f_load(color, c->r, c->g, c->b, 0.38f);
+}
+
+void vkui_screen_colorBanner(vkui_screen_t* self,
+                             cc_vec4f_t* color)
+{
+	ASSERT(self);
+	ASSERT(color);
+
+	// https://material.io/design/color/dark-theme.html
+	vkui_widgetStyle_t* s = &self->widget_style;
+	cc_vec4f_t*         c = &s->color_secondary;
+	cc_vec4f_load(color, c->r, c->g, c->b, 1.0f);
+}
+
+void vkui_screen_colorBannerText(vkui_screen_t* self,
+                                 cc_vec4f_t* color)
+{
+	ASSERT(self);
+	ASSERT(color);
+
+	// https://material.io/design/color/dark-theme.html
+	vkui_widgetStyle_t* s = &self->widget_style;
+	cc_vec4f_t*         c = &s->color_primary;
+	cc_vec4f_load(color, c->r, c->g, c->b, 0.87f);
 }
 
 void vkui_screen_colorStatusIcon(vkui_screen_t* self,
@@ -1210,6 +1234,27 @@ void vkui_screen_colorBackground(vkui_screen_t* self,
 	vkui_widgetStyle_t* s = &self->widget_style;
 	cc_vec4f_t*         c = &s->color_background;
 	cc_vec4f_load(color, c->r, c->g, c->b, 1.0f);
+}
+
+void vkui_screen_colorScroll0(vkui_screen_t* self,
+                              cc_vec4f_t* color)
+{
+	ASSERT(self);
+	ASSERT(color);
+
+	vkui_screen_colorBackground(self, color);
+}
+
+void vkui_screen_colorScroll1(vkui_screen_t* self,
+                              cc_vec4f_t* color)
+{
+	ASSERT(self);
+	ASSERT(color);
+
+	// https://material.io/design/color/dark-theme.html
+	vkui_widgetStyle_t* s = &self->widget_style;
+	cc_vec4f_t*         c = &s->color_primary;
+	cc_vec4f_load(color, c->r, c->g, c->b, 0.87f);
 }
 
 vkui_font_t*

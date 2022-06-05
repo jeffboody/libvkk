@@ -83,6 +83,12 @@
 #define VKUI_WIDGET_BORDER_MEDIUM 0x22
 #define VKUI_WIDGET_BORDER_LARGE  0x44
 
+#define VKUI_WINDOW_FLAG_POPUP       0x01
+#define VKUI_WINDOW_FLAG_SIDEBAR     0x02
+#define VKUI_WINDOW_FLAG_WORKSPACE   0x04
+#define VKUI_WINDOW_FLAG_FOOTER      0x08
+#define VKUI_WINDOW_FLAG_TRANSPARENT 0x10
+
 /*
  * opaque objects
  */
@@ -198,14 +204,6 @@ typedef struct vkui_bulletboxStyle_s
 	vkui_textStyle_t text_style;
 } vkui_bulletboxStyle_t;
 
-typedef struct vkui_windowStyle_s
-{
-	cc_vec4f_t color_header;
-	cc_vec4f_t color_body;
-	cc_vec4f_t color_footer;
-	vkui_bulletboxStyle_t bulletbox_style;
-} vkui_windowStyle_t;
-
 typedef struct vkui_widgetStyle_s
 {
 	cc_vec4f_t color_primary;
@@ -213,6 +211,13 @@ typedef struct vkui_widgetStyle_s
 	cc_vec4f_t color_text;
 	cc_vec4f_t color_background;
 } vkui_widgetStyle_t;
+
+typedef struct vkui_windowInfo_s
+{
+	uint32_t        flags;
+	const char*     label;
+	vkui_widgetFn_t fn;
+} vkui_windowInfo_t;
 
 /*
  * screen API
@@ -254,18 +259,26 @@ void           vkui_screen_colorPageItem(vkui_screen_t* self,
                                          cc_vec4f_t* color);
 void           vkui_screen_colorPageHeading(vkui_screen_t* self,
                                             cc_vec4f_t* color);
-void           vkui_screen_colorPageBanner(vkui_screen_t* self,
-                                           cc_vec4f_t* color);
+void           vkui_screen_colorPageImage(vkui_screen_t* self,
+                                          cc_vec4f_t* color);
 void           vkui_screen_colorPageLink(vkui_screen_t* self,
                                          cc_vec4f_t* color);
 void           vkui_screen_colorPageEntry(vkui_screen_t* self,
                                           cc_vec4f_t* color);
+void           vkui_screen_colorBanner(vkui_screen_t* self,
+                                       cc_vec4f_t* color);
+void           vkui_screen_colorBannerText(vkui_screen_t* self,
+                                           cc_vec4f_t* color);
 void           vkui_screen_colorStatusIcon(vkui_screen_t* self,
                                            cc_vec4f_t* color);
 void           vkui_screen_colorFooterItem(vkui_screen_t* self,
                                            cc_vec4f_t* color);
 void           vkui_screen_colorBackground(vkui_screen_t* self,
                                            cc_vec4f_t* color);
+void           vkui_screen_colorScroll0(vkui_screen_t* self,
+                                        cc_vec4f_t* color);
+void           vkui_screen_colorScroll1(vkui_screen_t* self,
+                                        cc_vec4f_t* color);
 
 /*
  * widget API
@@ -368,12 +381,12 @@ vkui_sprite_t* vkui_sprite_new(vkui_screen_t* screen,
                                vkui_widgetFn_t* fn,
                                cc_vec4f_t* color,
                                const char** sprite_array);
-vkui_sprite_t* vkui_sprite_newPageBanner(vkui_screen_t* screen,
-                                         vkui_widgetFn_t* fn,
-                                         const char** sprite_array);
-vkui_sprite_t* vkui_sprite_newSidebarBanner(vkui_screen_t* screen,
-                                            vkui_widgetFn_t* fn,
-                                            const char** sprite_array);
+vkui_sprite_t* vkui_sprite_newPageImage(vkui_screen_t* screen,
+                                        vkui_widgetFn_t* fn,
+                                        const char** sprite_array);
+vkui_sprite_t* vkui_sprite_newSidebarImage(vkui_screen_t* screen,
+                                           vkui_widgetFn_t* fn,
+                                           const char** sprite_array);
 vkui_sprite_t* vkui_sprite_newStatusIcon(vkui_screen_t* screen,
                                          vkui_widgetFn_t* fn,
                                          const char** sprite_array);
@@ -421,20 +434,18 @@ void            vkui_textbox_clear(vkui_textbox_t* self);
 void            vkui_textbox_printf(vkui_textbox_t* self,
                                     const char* fmt, ...);
 
-// viewbox
-vkui_window_t* vkui_window_new(vkui_screen_t* screen,
-                               size_t wsize,
-                               vkui_widgetLayout_t* layout,
-                               vkui_widgetFn_t* fn,
-                               vkui_windowStyle_t* viewbox_style,
-                               const char** sprite_array,
-                               vkui_widget_t* body,
-                               vkui_widget_t* footer);
-void           vkui_window_delete(vkui_window_t** _self);
-void           vkui_window_select(vkui_window_t* self,
-                                  uint32_t index);
-void           vkui_window_label(vkui_window_t* self,
-                                 const char* fmt, ...);
+// window
+vkui_window_t*  vkui_window_new(vkui_screen_t* screen,
+                                size_t wsize,
+                                vkui_windowInfo_t* info);
+void            vkui_window_delete(vkui_window_t** _self);
+void            vkui_window_select(vkui_window_t* self,
+                                   uint32_t index);
+void            vkui_window_label(vkui_window_t* self,
+                                  const char* fmt, ...);
+vkui_listbox_t* vkui_window_page(vkui_window_t* self);
+vkui_layer_t*   vkui_window_workspace(vkui_window_t* self);
+vkui_listbox_t* vkui_window_footer(vkui_window_t* self);
 
 // statusBar
 vkui_statusBar_t* vkui_statusBar_new(vkui_screen_t* screen,

@@ -26,3 +26,5 @@ bfs $1 blobSet vkui/icons/ic_check_box_outline_blank_white_24dp.png
 bfs $1 blobSet vkui/icons/ic_check_box_white_24dp.png
 bfs $1 blobSet vkui/icons/ic_radio_button_checked_white_24dp.png
 bfs $1 blobSet vkui/icons/ic_radio_button_unchecked_white_24dp.png
+bfs $1 blobSet vkui/icons/ic_arrow_back_white_24dp.png
+bfs $1 blobSet vkui/icons/ic_cancel_white_24dp.png
