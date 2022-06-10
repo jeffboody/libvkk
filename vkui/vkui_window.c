@@ -36,18 +36,6 @@
 * private                                                  *
 ***********************************************************/
 
-static vkui_widget_t*
-vkui_window_body(vkui_window_t* self)
-{
-	ASSERT(self);
-
-	if(self->page)
-	{
-		return (vkui_widget_t*) self->page;
-	}
-	return (vkui_widget_t*) self->workspace;
-}
-
 static int
 vkui_window_click(vkui_widget_t* widget, void* priv,
                   int state, float x, float y)
@@ -55,12 +43,16 @@ vkui_window_click(vkui_widget_t* widget, void* priv,
 	// priv may be NULL
 	ASSERT(widget);
 
-	vkui_window_t* self = (vkui_window_t*) widget;
-	vkui_widget_t* bullet    = (vkui_widget_t*) self->bullet;
-	vkui_widget_t* body      = vkui_window_body(self);
-	vkui_widget_t* footer    = (vkui_widget_t*) self->footer;
-	if(vkui_widget_click(bullet, state, x, y) ||
-	   vkui_widget_click(body, state, x, y)   ||
+	vkui_window_t* self   = (vkui_window_t*) widget;
+	vkui_widget_t* title  = (vkui_widget_t*) self->title;
+	vkui_widget_t* page   = (vkui_widget_t*) self->page;
+	vkui_widget_t* layer0 = (vkui_widget_t*) self->layer0;
+	vkui_widget_t* layer1 = (vkui_widget_t*) self->layer1;
+	vkui_widget_t* footer = (vkui_widget_t*) self->footer;
+	if((title  && vkui_widget_click(title,  state, x, y)) ||
+	   (page   && vkui_widget_click(page,   state, x, y)) ||
+	   (layer0 && vkui_widget_click(layer0, state, x, y)) ||
+	   (layer1 && vkui_widget_click(layer1, state, x, y)) ||
 	   (footer && vkui_widget_click(footer, state, x, y)))
 	{
 		return 1;
@@ -80,13 +72,31 @@ vkui_window_refresh(vkui_widget_t* widget, void* priv)
 	// priv may be NULL
 	ASSERT(widget);
 
-	vkui_window_t* self = (vkui_window_t*) widget;
-	vkui_widget_t* body = vkui_window_body(self);
-	vkui_widget_refresh((vkui_widget_t*) self->bullet);
-	vkui_widget_refresh(body);
-	if(self->footer)
+	vkui_window_t* self   = (vkui_window_t*) widget;
+	vkui_widget_t* title  = (vkui_widget_t*) self->title;
+	vkui_widget_t* page   = (vkui_widget_t*) self->page;
+	vkui_widget_t* layer0 = (vkui_widget_t*) self->layer0;
+	vkui_widget_t* layer1 = (vkui_widget_t*) self->layer1;
+	vkui_widget_t* footer = (vkui_widget_t*) self->footer;
+	if(title)
 	{
-		vkui_widget_refresh((vkui_widget_t*) self->footer);
+		vkui_widget_refresh(title);
+	}
+	if(page)
+	{
+		vkui_widget_refresh(page);
+	}
+	if(layer0)
+	{
+		vkui_widget_refresh(layer0);
+	}
+	if(layer1)
+	{
+		vkui_widget_refresh(layer1);
+	}
+	if(footer)
+	{
+		vkui_widget_refresh(footer);
 	}
 }
 
@@ -98,56 +108,113 @@ vkui_window_size(vkui_widget_t* widget, float* w, float* h)
 	ASSERT(h);
 
 	vkui_window_t* self   = (vkui_window_t*) widget;
-	vkui_widget_t* bullet = (vkui_widget_t*) self->bullet;
-	vkui_widget_t* body   = vkui_window_body(self);
+	vkui_widget_t* title  = (vkui_widget_t*) self->title;
+	vkui_widget_t* page   = (vkui_widget_t*) self->page;
+	vkui_widget_t* layer0 = (vkui_widget_t*) self->layer0;
+	vkui_widget_t* layer1 = (vkui_widget_t*) self->layer1;
 	vkui_widget_t* footer = (vkui_widget_t*) self->footer;
 
-	float wmax     = 0.0f;
-	float hsum     = 0.0f;
-	float bullet_w = *w;
-	float bullet_h = *h;
+	float wmax = 0.0f;
+	float hsum = 0.0f;
 
-	// layout bullet
-	vkui_widget_layoutSize(bullet, &bullet_w, &bullet_h);
-	wmax = bullet_w;
-	hsum = bullet_h;
+	// layout title
+	float tmp_w = *w;
+	float tmp_h = *h;
+	if(title)
+	{
+		vkui_widget_layoutSize(title, &tmp_w, &tmp_h);
+		wmax = tmp_w;
+		hsum = tmp_h;
+	}
 
 	// layout footer
 	if(footer)
 	{
-		float footer_w = *w;
-		float footer_h = *h - hsum;
-		if(footer_h < 0.0f)
+		tmp_w = *w;
+		tmp_h = *h - hsum;
+		if(tmp_h < 0.0f)
 		{
-			footer_h = 0.0f;
+			tmp_h = 0.0f;
 		}
 
-		vkui_widget_layoutSize(footer, &footer_w, &footer_h);
-		if(footer_w > wmax)
+		vkui_widget_layoutSize(footer, &tmp_w, &tmp_h);
+		if(tmp_w > wmax)
 		{
-			wmax = footer_w;
+			wmax = tmp_w;
 		}
 
-		hsum += footer_h;
+		hsum += tmp_h;
 	}
 
-	// layout body
-	float body_w = *w;
-	float body_h = *h - hsum;
-	if(body_h < 0.0f)
+	// layout page
+	float hbody = 0.0f;
+	if(page)
 	{
-		body_h = 0.0f;
-	}
-	vkui_widget_layoutSize(body, &body_w, &body_h);
+		tmp_w = *w;
+		tmp_h = *h - hsum;
+		if(tmp_h < 0.0f)
+		{
+			tmp_h = 0.0f;
+		}
+		vkui_widget_layoutSize(page, &tmp_w, &tmp_h);
 
-	if(body_w > wmax)
-	{
-		wmax = body_w;
+		if(tmp_w > wmax)
+		{
+			wmax = tmp_w;
+		}
+
+		if(tmp_h > hbody)
+		{
+			hbody = tmp_h;
+		}
 	}
-	hsum += body_h;
+
+	// layout layer0
+	if(layer0)
+	{
+		tmp_w = *w;
+		tmp_h = *h - hsum;
+		if(tmp_h < 0.0f)
+		{
+			tmp_h = 0.0f;
+		}
+		vkui_widget_layoutSize(layer0, &tmp_w, &tmp_h);
+
+		if(tmp_w > wmax)
+		{
+			wmax = tmp_w;
+		}
+
+		if(tmp_h > hbody)
+		{
+			hbody = tmp_h;
+		}
+	}
+
+	// layout layer1
+	if(layer1)
+	{
+		tmp_w = *w;
+		tmp_h = *h - hsum;
+		if(tmp_h < 0.0f)
+		{
+			tmp_h = 0.0f;
+		}
+		vkui_widget_layoutSize(layer1, &tmp_w, &tmp_h);
+
+		if(tmp_w > wmax)
+		{
+			wmax = tmp_w;
+		}
+
+		if(tmp_h > hbody)
+		{
+			hbody = tmp_h;
+		}
+	}
 
 	*w = wmax;
-	*h = hsum;
+	*h = hsum + hbody;
 }
 
 static void
@@ -158,67 +225,84 @@ vkui_window_layout(vkui_widget_t* widget,
 
 	vkui_widgetLayout_t* layout = &widget->layout;
 	vkui_window_t*       self   = (vkui_window_t*) widget;
-	vkui_widget_t*       bullet = (vkui_widget_t*) self->bullet;
-	vkui_widget_t*       body   = vkui_window_body(self);
+	vkui_widget_t*       title  = (vkui_widget_t*) self->title;
+	vkui_widget_t*       page   = (vkui_widget_t*) self->page;
+	vkui_widget_t*       layer0 = (vkui_widget_t*) self->layer0;
+	vkui_widget_t*       layer1 = (vkui_widget_t*) self->layer1;
 	vkui_widget_t*       footer = (vkui_widget_t*) self->footer;
 
 	// note that the window layout is a bit unique because
-	// the top/bottom borders are inserted between header/body
+	// the top/bottom borders are inserted between title/body
 	// and footer/body rather than at the absolute top/bottom
-
-	// initialize the layout
-	float x  = 0.0f;
-	float y  = 0.0f;
-	float t  = self->widget.rect_border.t;
-	float l  = self->widget.rect_draw.l;
-	float w  = self->widget.rect_draw.w;
-	float h  = self->widget.rect_border.h;
-	float bullet_h = bullet->rect_border.h;
-	float footer_h = 0.0f;
-	cc_rect1f_t rect_clip;
-	cc_rect1f_t rect_draw;
-
-	// layout bullet
-	rect_draw.t = t;
-	rect_draw.l = l;
-	rect_draw.w = w;
-	rect_draw.h = bullet_h;
-	vkui_widget_layoutAnchor(bullet, &rect_draw, &x, &y);
-	cc_rect1f_intersect(&rect_draw,
-	                    &self->widget.rect_clip,
-	                    &rect_clip);
-	vkui_widget_layoutXYClip(bullet, x, y, &rect_clip,
-	                         dragx, dragy);
-
-	// get separator size
 	float h_bo = 0.0f;
 	float v_bo = 0.0f;
 	vkui_screen_layoutBorder(widget->screen,
 	                         layout->border,
 	                         &h_bo, &v_bo);
 
-	// layout body
+	// initialize the layout
+	float t = self->widget.rect_border.t;
+	float l = self->widget.rect_draw.l;
+	float w = self->widget.rect_draw.w;
+	float h = self->widget.rect_border.h;
+
+	// layout title
+	float x;
+	float y;
+	float title_h = 0.0f;
+	cc_rect1f_t rect_clip;
+	cc_rect1f_t rect_draw;
+	if(title)
+	{
+		title_h     = title->rect_border.h;
+		rect_draw.t = t;
+		rect_draw.l = l;
+		rect_draw.w = w;
+		rect_draw.h = title_h;
+		vkui_widget_layoutAnchor(title, &rect_draw, &x, &y);
+		cc_rect1f_intersect(&rect_draw,
+		                    &self->widget.rect_clip,
+		                    &rect_clip);
+		vkui_widget_layoutXYClip(title, x, y, &rect_clip,
+		                         dragx, dragy);
+	}
+
+	// init footer
+	float footer_h = 0.0f;
 	if(footer)
 	{
 		footer_h = footer->rect_border.h;
-		rect_draw.t = t + bullet_h + v_bo;
-		rect_draw.h = h - bullet_h - footer_h - 2.0f*v_bo;
 	}
-	else
-	{
-		rect_draw.t = t + bullet_h + v_bo;
-		rect_draw.h = h - bullet_h - 2.0f*v_bo;
-	}
-	vkui_widget_layoutAnchor(body, &rect_draw, &x, &y);
-	cc_rect1f_intersect(&rect_draw,
-	                    &self->widget.rect_clip,
-	                    &rect_clip);
-	vkui_widget_layoutXYClip(body, x, y, &rect_clip,
-	                         dragx, dragy);
 
-	// tricolor values
-	float a = bullet->rect_border.t + bullet->rect_border.h;
-	float b = widget->rect_border.t + widget->rect_border.h;
+	// layout page
+	if(page)
+	{
+		rect_draw.t = t + title_h + v_bo;
+		rect_draw.l = l;
+		rect_draw.w = w;
+		rect_draw.h = h - title_h - footer_h - 2.0f*v_bo;
+		vkui_widget_layoutAnchor(page, &rect_draw, &x, &y);
+		cc_rect1f_intersect(&rect_draw,
+		                    &self->widget.rect_clip,
+		                    &rect_clip);
+		vkui_widget_layoutXYClip(page, x, y, &rect_clip,
+		                         dragx, dragy);
+	}
+
+	// layout layer1
+	if(layer1)
+	{
+		rect_draw.t = t + title_h + v_bo;
+		rect_draw.l = l;
+		rect_draw.w = w;
+		rect_draw.h = h - title_h - footer_h - 2.0f*v_bo;
+		vkui_widget_layoutAnchor(layer1, &rect_draw, &x, &y);
+		cc_rect1f_intersect(&rect_draw,
+		                    &self->widget.rect_clip,
+		                    &rect_clip);
+		vkui_widget_layoutXYClip(layer1, x, y, &rect_clip,
+		                         dragx, dragy);
+	}
 
 	// layout footer
 	if(footer)
@@ -233,10 +317,26 @@ vkui_window_layout(vkui_widget_t* widget,
 		                    &rect_clip);
 		vkui_widget_layoutXYClip(footer, x, y, &rect_clip,
 		                         dragx, dragy);
-
-		b = footer->rect_border.t;
 	}
 
+	// layout layer0
+	if(layer0)
+	{
+		rect_draw.t = t + title_h;
+		rect_draw.l = self->widget.rect_border.l;
+		rect_draw.w = self->widget.rect_border.w;
+		rect_draw.h = h - title_h - footer_h;
+		vkui_widget_layoutAnchor(layer0, &rect_draw, &x, &y);
+		cc_rect1f_intersect(&rect_draw,
+		                    &self->widget.rect_clip,
+		                    &rect_clip);
+		vkui_widget_layoutXYClip(layer0, x, y, &rect_clip,
+		                         dragx, dragy);
+	}
+
+	// tricolor values
+	float a = t + title_h;
+	float b = t + h - footer_h;
 	vkui_widget_tricolorAB(widget, a, b);
 }
 
@@ -246,14 +346,32 @@ vkui_window_drag(vkui_widget_t* widget, float x, float y,
 {
 	ASSERT(widget);
 
-	vkui_window_t* self = (vkui_window_t*) widget;
-	vkui_widget_t* body = vkui_window_body(self);
-	vkui_widget_drag((vkui_widget_t*) self->bullet,
-	                 x, y, dx, dy);
-	vkui_widget_drag(body, x, y, dx, dy);
-	if(self->footer)
+	vkui_window_t* self   = (vkui_window_t*) widget;
+	vkui_widget_t* title  = (vkui_widget_t*) self->title;
+	vkui_widget_t* page   = (vkui_widget_t*) self->page;
+	vkui_widget_t* layer0 = (vkui_widget_t*) self->layer0;
+	vkui_widget_t* layer1 = (vkui_widget_t*) self->layer1;
+	vkui_widget_t* footer = (vkui_widget_t*) self->footer;
+
+	if(title)
 	{
-		vkui_widget_drag((vkui_widget_t*) self->footer, x, y, dx, dy);
+		vkui_widget_drag(title, x, y, dx, dy);
+	}
+	if(page)
+	{
+		vkui_widget_drag(page, x, y, dx, dy);
+	}
+	if(layer0)
+	{
+		vkui_widget_drag(layer0, x, y, dx, dy);
+	}
+	if(layer1)
+	{
+		vkui_widget_drag(layer1, x, y, dx, dy);
+	}
+	if(footer)
+	{
+		vkui_widget_drag(footer, x, y, dx, dy);
 	}
 }
 
@@ -262,10 +380,23 @@ vkui_window_scrollTop(vkui_widget_t* widget)
 {
 	ASSERT(widget);
 
-	vkui_window_t* self = (vkui_window_t*) widget;
-	vkui_widget_t* body = vkui_window_body(self);
+	vkui_window_t* self   = (vkui_window_t*) widget;
+	vkui_widget_t* page   = (vkui_widget_t*) self->page;
+	vkui_widget_t* layer0 = (vkui_widget_t*) self->layer0;
+	vkui_widget_t* layer1 = (vkui_widget_t*) self->layer1;
 
-	vkui_widget_scrollTop(body);
+	if(page)
+	{
+		vkui_widget_scrollTop(page);
+	}
+	if(layer0)
+	{
+		vkui_widget_scrollTop(layer0);
+	}
+	if(layer1)
+	{
+		vkui_widget_scrollTop(layer1);
+	}
 }
 
 static void
@@ -273,14 +404,32 @@ vkui_window_draw(vkui_widget_t* widget)
 {
 	ASSERT(widget);
 
-	vkui_window_t* self = (vkui_window_t*) widget;
-	vkui_widget_t* body = vkui_window_body(self);
+	vkui_window_t* self   = (vkui_window_t*) widget;
+	vkui_widget_t* title  = (vkui_widget_t*) self->title;
+	vkui_widget_t* page   = (vkui_widget_t*) self->page;
+	vkui_widget_t* layer0 = (vkui_widget_t*) self->layer0;
+	vkui_widget_t* layer1 = (vkui_widget_t*) self->layer1;
+	vkui_widget_t* footer = (vkui_widget_t*) self->footer;
 
-	vkui_widget_draw((vkui_widget_t*) self->bullet);
-	vkui_widget_draw((vkui_widget_t*) body);
-	if(self->footer)
+	if(title)
 	{
-		vkui_widget_draw((vkui_widget_t*) self->footer);
+		vkui_widget_draw(title);
+	}
+	if(page)
+	{
+		vkui_widget_draw(page);
+	}
+	if(layer0)
+	{
+		vkui_widget_draw(layer0);
+	}
+	if(layer1)
+	{
+		vkui_widget_draw(layer1);
+	}
+	if(footer)
+	{
+		vkui_widget_draw(footer);
 	}
 }
 
@@ -318,14 +467,14 @@ vkui_window_newPage(vkui_screen_t* screen,
 	vkui_screen_colorScroll1(screen, &scroll.color1);
 
 	vkui_widgetLayout_t* layout = &layout_default;
-	if(flags & VKUI_WINDOW_FLAG_POPUP)
+	if(flags & VKUI_WINDOW_FLAG_PAGE_SIDEBAR)
+	{
+		layout = &layout_sidebar;
+	}
+	else if(flags & VKUI_WINDOW_FLAG_PAGE_POPUP)
 	{
 		layout            = &layout_popup;
 		scroll.scroll_bar = 0;
-	}
-	else if(flags & VKUI_WINDOW_FLAG_SIDEBAR)
-	{
-		layout = &layout_sidebar;
 	}
 
 	vkui_widgetFn_t empty_fn =
@@ -345,13 +494,13 @@ vkui_window_newPage(vkui_screen_t* screen,
 }
 
 static vkui_layer_t*
-vkui_window_newWorkspace(vkui_screen_t* screen)
+vkui_window_newLayer(vkui_screen_t* screen, int border)
 {
 	ASSERT(screen);
 
 	vkui_widgetLayout_t layout =
 	{
-		.border   = VKUI_WIDGET_BORDER_LARGE,
+		.border   = border,
 		.wrapx    = VKUI_WIDGET_WRAP_STRETCH_PARENT,
 		.wrapy    = VKUI_WIDGET_WRAP_STRETCH_PARENT,
 		.stretchx = 1.0f,
@@ -412,12 +561,23 @@ vkui_window_new(vkui_screen_t* screen,
 	ASSERT(screen);
 	ASSERT(info);
 
-	// check for invalid flag combinations
-	if((info->flags & VKUI_WINDOW_FLAG_WORKSPACE) &&
-	   ((info->flags & VKUI_WINDOW_FLAG_POPUP)   ||
-	    (info->flags & VKUI_WINDOW_FLAG_SIDEBAR)))
+	// check for valid page flags
+	int page_count = 0;
+	if(info->flags & VKUI_WINDOW_FLAG_PAGE_DEFAULT)
 	{
-		LOGE("invalid flags=%u", info->flags);
+		++page_count;
+	}
+	if(info->flags & VKUI_WINDOW_FLAG_PAGE_SIDEBAR)
+	{
+		++page_count;
+	}
+	if(info->flags & VKUI_WINDOW_FLAG_PAGE_POPUP)
+	{
+		++page_count;
+	}
+	if(page_count > 1)
+	{
+		LOGE("invalid flags=0x%X", info->flags);
 		return NULL;
 	}
 
@@ -455,13 +615,13 @@ vkui_window_new(vkui_screen_t* screen,
 	};
 
 	vkui_widgetLayout_t* layout = &layout_default;
-	if(info->flags & VKUI_WINDOW_FLAG_POPUP)
-	{
-		layout = &layout_popup;
-	}
-	else if(info->flags & VKUI_WINDOW_FLAG_SIDEBAR)
+	if(info->flags & VKUI_WINDOW_FLAG_PAGE_SIDEBAR)
 	{
 		layout = &layout_sidebar;
+	}
+	else if(info->flags & VKUI_WINDOW_FLAG_PAGE_POPUP)
+	{
+		layout = &layout_popup;
 	}
 
 	vkui_widgetScroll_t scroll =
@@ -514,7 +674,7 @@ vkui_window_new(vkui_screen_t* screen,
 		goto fail_tricolor;
 	}
 
-	vkui_bulletboxStyle_t bulletbox_style =
+	vkui_bulletboxStyle_t title_style =
 	{
 		.text_style =
 		{
@@ -523,8 +683,8 @@ vkui_window_new(vkui_screen_t* screen,
 			.spacing   = VKUI_TEXT_SPACING_LARGE
 		}
 	};
-	vkui_screen_colorBannerText(screen, &bulletbox_style.color_icon);
-	vkui_screen_colorBannerText(screen, &bulletbox_style.text_style.color);
+	vkui_screen_colorBannerText(screen, &title_style.color_icon);
+	vkui_screen_colorBannerText(screen, &title_style.text_style.color);
 
 	const char* sprite_array_back[] =
 	{
@@ -539,46 +699,57 @@ vkui_window_new(vkui_screen_t* screen,
 	};
 
 	const char** sprite_array = sprite_array_back;
-	if((info->flags & VKUI_WINDOW_FLAG_POPUP) ||
-	   (info->flags & VKUI_WINDOW_FLAG_SIDEBAR))
+	if((info->flags & VKUI_WINDOW_FLAG_PAGE_POPUP) ||
+	   (info->flags & VKUI_WINDOW_FLAG_PAGE_SIDEBAR))
 	{
 		sprite_array = sprite_array_cancel;
 	}
 
-	self->bullet = vkui_bulletbox_new(screen, 0,
-	                                  VKUI_WIDGET_ANCHOR_TL,
-	                                  &info->fn,
-	                                  &bulletbox_style,
-	                                  sprite_array);
-	if(self->bullet == NULL)
+	if(info->flags & VKUI_WINDOW_FLAG_TITLE)
 	{
-		goto fail_bullet;
-	}
-	vkui_window_label(self, "%s", info->label);
-
-	if(color_background.a == 0.0f)
-	{
-		self->transparent = 1;
-	}
-
-	if(info->flags & VKUI_WINDOW_FLAG_WORKSPACE)
-	{
-		self->workspace = vkui_window_newWorkspace(screen);
-		if(self->workspace == NULL)
+		self->title = vkui_bulletbox_new(screen, 0,
+		                                 VKUI_WIDGET_ANCHOR_TL,
+		                                 &info->fn,
+		                                 &title_style,
+		                                 sprite_array);
+		if(self->title == NULL)
 		{
-			goto fail_body;
+			goto fail_title;
 		}
+		vkui_window_label(self, "%s", info->label);
 	}
-	else
+
+	if((info->flags & VKUI_WINDOW_FLAG_PAGE_DEFAULT) ||
+	   (info->flags & VKUI_WINDOW_FLAG_PAGE_SIDEBAR) ||
+	   (info->flags & VKUI_WINDOW_FLAG_PAGE_POPUP))
 	{
 		self->page = vkui_window_newPage(screen, info->flags);
 		if(self->page == NULL)
 		{
-			goto fail_body;
+			goto fail_page;
 		}
 	}
 
-	// add optional footer
+	if(info->flags & VKUI_WINDOW_FLAG_LAYER0)
+	{
+		self->layer0 = vkui_window_newLayer(screen,
+		                                    VKUI_WIDGET_BORDER_NONE);
+		if(self->layer0 == NULL)
+		{
+			goto fail_layer0;
+		}
+	}
+
+	if(info->flags & VKUI_WINDOW_FLAG_LAYER1)
+	{
+		self->layer1 = vkui_window_newLayer(screen,
+		                                    VKUI_WIDGET_BORDER_LARGE);
+		if(self->layer1 == NULL)
+		{
+			goto fail_layer1;
+		}
+	}
+
 	if(info->flags & VKUI_WINDOW_FLAG_FOOTER)
 	{
 		self->footer = vkui_window_newFooter(screen);
@@ -588,16 +759,24 @@ vkui_window_new(vkui_screen_t* screen,
 		}
 	}
 
+	if(color_background.a == 0.0f)
+	{
+		self->transparent = 1;
+	}
+
 	// success
 	return self;
 
 	// failure
 	fail_footer:
-		vkui_layer_delete(&self->workspace);
+		vkui_layer_delete(&self->layer1);
+	fail_layer1:
+		vkui_layer_delete(&self->layer0);
+	fail_layer0:
 		vkui_listbox_delete(&self->page);
-	fail_body:
-		vkui_bulletbox_delete(&self->bullet);
-	fail_bullet:
+	fail_page:
+		vkui_bulletbox_delete(&self->title);
+	fail_title:
 	fail_tricolor:
 		vkui_widget_delete((vkui_widget_t**) &self);
 	return NULL;
@@ -611,9 +790,10 @@ void vkui_window_delete(vkui_window_t** _self)
 	if(self)
 	{
 		vkui_listbox_delete(&self->footer);
-		vkui_layer_delete(&self->workspace);
+		vkui_layer_delete(&self->layer1);
+		vkui_layer_delete(&self->layer0);
 		vkui_listbox_delete(&self->page);
-		vkui_bulletbox_delete(&self->bullet);
+		vkui_bulletbox_delete(&self->title);
 		vkui_widget_delete((vkui_widget_t**) _self);
 	}
 }
@@ -623,7 +803,10 @@ void vkui_window_select(vkui_window_t* self,
 {
 	ASSERT(self);
 
-	vkui_bulletbox_select(self->bullet, index);
+	if(self->title)
+	{
+		vkui_bulletbox_select(self->title, index);
+	}
 }
 
 void vkui_window_label(vkui_window_t* self,
@@ -632,14 +815,17 @@ void vkui_window_label(vkui_window_t* self,
 	ASSERT(self);
 	ASSERT(fmt);
 
-	// decode string
-	char    string[256];
-	va_list argptr;
-	va_start(argptr, fmt);
-	vsnprintf(string, 256, fmt, argptr);
-	va_end(argptr);
+	if(self->title)
+	{
+		// decode string
+		char    string[256];
+		va_list argptr;
+		va_start(argptr, fmt);
+		vsnprintf(string, 256, fmt, argptr);
+		va_end(argptr);
 
-	vkui_bulletbox_label(self->bullet, "%s", string);
+		vkui_bulletbox_label(self->title, "%s", string);
+	}
 }
 
 vkui_listbox_t* vkui_window_page(vkui_window_t* self)
@@ -649,11 +835,18 @@ vkui_listbox_t* vkui_window_page(vkui_window_t* self)
 	return self->page;
 }
 
-vkui_layer_t* vkui_window_workspace(vkui_window_t* self)
+vkui_layer_t* vkui_window_layer0(vkui_window_t* self)
 {
 	ASSERT(self);
 
-	return self->workspace;
+	return self->layer0;
+}
+
+vkui_layer_t* vkui_window_layer1(vkui_window_t* self)
+{
+	ASSERT(self);
+
+	return self->layer1;
 }
 
 vkui_listbox_t* vkui_window_footer(vkui_window_t* self)

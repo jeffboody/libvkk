@@ -83,11 +83,14 @@
 #define VKUI_WIDGET_BORDER_MEDIUM 0x22
 #define VKUI_WIDGET_BORDER_LARGE  0x44
 
-#define VKUI_WINDOW_FLAG_POPUP       0x01
-#define VKUI_WINDOW_FLAG_SIDEBAR     0x02
-#define VKUI_WINDOW_FLAG_WORKSPACE   0x04
-#define VKUI_WINDOW_FLAG_FOOTER      0x08
-#define VKUI_WINDOW_FLAG_TRANSPARENT 0x10
+#define VKUI_WINDOW_FLAG_TITLE        0x01
+#define VKUI_WINDOW_FLAG_PAGE_DEFAULT 0x02
+#define VKUI_WINDOW_FLAG_PAGE_SIDEBAR 0x04
+#define VKUI_WINDOW_FLAG_PAGE_POPUP   0x08
+#define VKUI_WINDOW_FLAG_LAYER0       0x10
+#define VKUI_WINDOW_FLAG_LAYER1       0x20
+#define VKUI_WINDOW_FLAG_FOOTER       0x40
+#define VKUI_WINDOW_FLAG_TRANSPARENT  0x80
 
 /*
  * opaque objects
@@ -444,7 +447,8 @@ void            vkui_window_select(vkui_window_t* self,
 void            vkui_window_label(vkui_window_t* self,
                                   const char* fmt, ...);
 vkui_listbox_t* vkui_window_page(vkui_window_t* self);
-vkui_layer_t*   vkui_window_workspace(vkui_window_t* self);
+vkui_layer_t*   vkui_window_layer0(vkui_window_t* self);
+vkui_layer_t*   vkui_window_layer1(vkui_window_t* self);
 vkui_listbox_t* vkui_window_footer(vkui_window_t* self);
 
 // statusBar
