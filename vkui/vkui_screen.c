@@ -1305,6 +1305,18 @@ void vkui_screen_colorBannerText(vkui_screen_t* self,
 	cc_vec4f_load(color, c->r, c->g, c->b, 0.87f);
 }
 
+void vkui_screen_colorActionIcon(vkui_screen_t* self,
+                                 cc_vec4f_t* color)
+{
+	ASSERT(self);
+	ASSERT(color);
+
+	// https://material.io/design/color/dark-theme.html
+	vkui_widgetStyle_t* s = &self->widget_style;
+	cc_vec4f_t*         c = &s->color_text;
+	cc_vec4f_load(color, c->r, c->g, c->b, 0.87f);
+}
+
 void vkui_screen_colorStatusIcon(vkui_screen_t* self,
                                  cc_vec4f_t* color)
 {

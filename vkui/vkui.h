@@ -279,6 +279,8 @@ void           vkui_screen_colorBanner(vkui_screen_t* self,
                                        cc_vec4f_t* color);
 void           vkui_screen_colorBannerText(vkui_screen_t* self,
                                            cc_vec4f_t* color);
+void           vkui_screen_colorActionIcon(vkui_screen_t* self,
+                                           cc_vec4f_t* color);
 void           vkui_screen_colorStatusIcon(vkui_screen_t* self,
                                            cc_vec4f_t* color);
 void           vkui_screen_colorFooterItem(vkui_screen_t* self,
@@ -397,6 +399,9 @@ vkui_sprite_t* vkui_sprite_newPageImage(vkui_screen_t* screen,
 vkui_sprite_t* vkui_sprite_newSidebarImage(vkui_screen_t* screen,
                                            vkui_widgetFn_t* fn,
                                            const char** sprite_array);
+vkui_sprite_t* vkui_sprite_newActionIcon(vkui_screen_t* screen,
+                                         vkui_widgetFn_t* fn,
+                                         const char** sprite_array);
 vkui_sprite_t* vkui_sprite_newStatusIcon(vkui_screen_t* screen,
                                          vkui_widgetFn_t* fn,
                                          const char** sprite_array);

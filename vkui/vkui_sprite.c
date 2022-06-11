@@ -400,6 +400,31 @@ vkui_sprite_newSidebarImage(vkui_screen_t* screen,
 }
 
 vkui_sprite_t*
+vkui_sprite_newActionIcon(vkui_screen_t* screen,
+                          vkui_widgetFn_t* fn,
+                          const char** sprite_array)
+{
+	ASSERT(screen);
+	ASSERT(fn);
+	ASSERT(sprite_array);
+
+	vkui_widgetLayout_t sprite_layout =
+	{
+		.border   = VKUI_WIDGET_BORDER_MEDIUM,
+		.wrapx    = VKUI_WIDGET_WRAP_STRETCH_TEXT_VMEDIUM,
+		.wrapy    = VKUI_WIDGET_WRAP_STRETCH_TEXT_VMEDIUM,
+		.stretchx = 1.0f,
+		.stretchy = 1.0f
+	};
+
+	cc_vec4f_t color;
+	vkui_screen_colorActionIcon(screen, &color);
+
+	return vkui_sprite_new(screen, 0, &sprite_layout,
+	                       fn, &color, sprite_array);
+}
+
+vkui_sprite_t*
 vkui_sprite_newStatusIcon(vkui_screen_t* screen,
                           vkui_widgetFn_t* fn,
                           const char** sprite_array)
