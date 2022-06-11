@@ -798,6 +798,15 @@ void vkui_window_delete(vkui_window_t** _self)
 	}
 }
 
+void vkui_window_focus(vkui_window_t* self,
+                       vkui_widget_t* focus)
+{
+	// focus may be NULL
+	ASSERT(self);
+
+	self->focus = focus;
+}
+
 void vkui_window_select(vkui_window_t* self,
                         uint32_t index)
 {

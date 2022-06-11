@@ -169,9 +169,10 @@ typedef struct vkui_widgetScroll_s
 
 typedef struct vkui_widgetFn_s
 {
-	// priv and functions may be NULL
+	// priv, arg, msg and functions may be NULL
 
 	void*                 priv;
+	void*                 arg;
 	vkui_widget_clickFn   click_fn;
 	vkui_widget_refreshFn refresh_fn;
 	char                  msg[256];
@@ -235,6 +236,12 @@ vkui_screen_t* vkui_screen_new(vkk_engine_t* engine,
 void           vkui_screen_delete(vkui_screen_t** _self);
 vkui_widget_t* vkui_screen_top(vkui_screen_t* self,
                                vkui_widget_t* top);
+vkui_window_t* vkui_screen_windowPeek(vkui_screen_t* self);
+void           vkui_screen_windowPush(vkui_screen_t* self,
+                                      vkui_window_t* window);
+int            vkui_screen_windowPop(vkui_screen_t* self);
+void           vkui_screen_windowReset(vkui_screen_t* self,
+                                       vkui_window_t* window);
 void           vkui_screen_contentRect(vkui_screen_t* self,
                                        int t, int l,
                                        int b, int r);
@@ -442,6 +449,8 @@ vkui_window_t*  vkui_window_new(vkui_screen_t* screen,
                                 size_t wsize,
                                 vkui_windowInfo_t* info);
 void            vkui_window_delete(vkui_window_t** _self);
+void            vkui_window_focus(vkui_window_t* self,
+                                  vkui_widget_t* focus);
 void            vkui_window_select(vkui_window_t* self,
                                    uint32_t index);
 void            vkui_window_label(vkui_window_t* self,

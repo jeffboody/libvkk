@@ -223,7 +223,6 @@ void vkui_widget_delete(vkui_widget_t** _self)
 	if(self)
 	{
 		vkui_screen_t* screen = self->screen;
-		ASSERT(self != screen->top_widget);
 
 		if(vkui_widget_hasFocus(self))
 		{

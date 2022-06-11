@@ -31,11 +31,13 @@
 #include "../../libcc/math/cc_vec2f.h"
 #include "../../libcc/cc_memory.h"
 #include "../../libcc/cc_log.h"
+#include "../../libvkk/vkk_platform.h"
 #include "../../libbfs/bfs_file.h"
 #include "../../texgz/texgz_png.h"
 #include "../../texgz/texgz_jpeg.h"
 #include "vkui_screen.h"
 #include "vkui_widget.h"
+#include "vkui_window.h"
 
 /***********************************************************
 * protected                                                *
@@ -630,6 +632,12 @@ vkui_screen_new(vkk_engine_t* engine,
 		goto fail_us3_tricolor;
 	}
 
+	self->window_stack = cc_list_new();
+	if(self->window_stack == NULL)
+	{
+		goto fail_window_stack;
+	}
+
 	self->sprite_map = cc_map_new();
 	if(self->sprite_map == NULL)
 	{
@@ -679,6 +687,8 @@ vkui_screen_new(vkk_engine_t* engine,
 	fail_font_array0:
 		cc_map_delete(&self->sprite_map);
 	fail_sprite_map:
+		cc_list_delete(&self->window_stack);
+	fail_window_stack:
 		vkk_uniformSet_delete(&self->us3_tricolor);
 	fail_us3_tricolor:
 		vkk_uniformSet_delete(&self->us2_multiplyImage);
@@ -759,6 +769,8 @@ void vkui_screen_delete(vkui_screen_t** _self)
 		}
 		cc_map_delete(&self->sprite_map);
 
+		cc_list_discard(self->window_stack);
+		cc_list_delete(&self->window_stack);
 		vkk_uniformSet_delete(&self->us3_tricolor);
 		vkk_uniformSet_delete(&self->us2_multiplyImage);
 		vkk_uniformSet_delete(&self->us1_color);
@@ -785,20 +797,99 @@ void vkui_screen_delete(vkui_screen_t** _self)
 	}
 }
 
-vkui_widget_t*
-vkui_screen_top(vkui_screen_t* self, vkui_widget_t* top)
+vkui_window_t* vkui_screen_windowPeek(vkui_screen_t* self)
 {
 	ASSERT(self);
 
-	if(self->top_widget == top)
+	return (vkui_window_t*)
+	       cc_list_peekTail(self->window_stack);
+}
+
+void vkui_screen_windowPush(vkui_screen_t* self,
+                            vkui_window_t* window)
+{
+	ASSERT(self);
+	ASSERT(window);
+
+	if(vkui_screen_windowPeek(self) == window)
 	{
-		return NULL;
+		return;
 	}
 
-	vkui_widget_t* prev = self->top_widget;
-	self->top_widget    = top;
-	self->dirty         = 1;
-	return prev;
+	self->dirty = 1;
+
+	if(window)
+	{
+		cc_list_append(self->window_stack, NULL,
+		               (const void*) window);
+
+		// reset scroll bar
+		vkui_widget_scrollTop((vkui_widget_t*) window);
+
+		// reset focus
+		if(window->focus)
+		{
+			vkk_engine_platformCmd(self->engine,
+			                       VKK_PLATFORM_CMD_SOFTKEY_SHOW,
+			                       NULL);
+			vkui_screen_focus(self, window->focus);
+			return;
+		}
+	}
+
+	// default focus state
+	vkk_engine_platformCmd(self->engine,
+	                       VKK_PLATFORM_CMD_SOFTKEY_HIDE,
+	                       NULL);
+	vkui_screen_focus(self, NULL);
+}
+
+int vkui_screen_windowPop(vkui_screen_t* self)
+{
+	ASSERT(self);
+
+	cc_listIter_t* iter;
+	iter = cc_list_tail(self->window_stack);
+	if((iter == NULL) ||
+	   (cc_list_size(self->window_stack) <= 1))
+	{
+		return 0;
+	}
+
+	self->dirty = 1;
+
+	cc_list_remove(self->window_stack, &iter);
+
+	// default focus state
+	vkk_engine_platformCmd(self->engine,
+	                       VKK_PLATFORM_CMD_SOFTKEY_HIDE,
+	                       NULL);
+	vkui_screen_focus(self, NULL);
+
+	return 1;
+}
+
+void vkui_screen_windowReset(vkui_screen_t* self,
+                             vkui_window_t* window)
+{
+	// window may be NULL
+	ASSERT(self);
+
+	// check if window already active
+	if(vkui_screen_windowPeek(self) == window)
+	{
+		return;
+	}
+
+	self->dirty = 1;
+
+	// reset window stack
+	cc_list_discard(self->window_stack);
+
+	if(window)
+	{
+		vkui_screen_windowPush(self, window);
+	}
 }
 
 void vkui_screen_contentRect(vkui_screen_t* self,
@@ -882,14 +973,17 @@ int vkui_screen_pointerDown(vkui_screen_t* self,
 {
 	ASSERT(self);
 
-	if((self->top_widget == NULL) ||
+	vkui_widget_t* top_widget;
+	top_widget = (vkui_widget_t*)
+	             vkui_screen_windowPeek(self);
+	if((top_widget == NULL) ||
 	   (self->pointer_state != VKUI_WIDGET_POINTER_UP))
 	{
 		// ignore
 		return 0;
 	}
 
-	if(vkui_widget_click(self->top_widget,
+	if(vkui_widget_click(top_widget,
 	                     VKUI_WIDGET_POINTER_DOWN, x, y))
 	{
 		self->pointer_state = VKUI_WIDGET_POINTER_DOWN;
@@ -909,16 +1003,20 @@ int vkui_screen_pointerUp(vkui_screen_t* self,
 {
 	ASSERT(self);
 
+	vkui_widget_t* top_widget;
+	top_widget = (vkui_widget_t*)
+	             vkui_screen_windowPeek(self);
+
 	int touch = self->pointer_state != VKUI_WIDGET_POINTER_UP;
 	if(self->move_widget)
 	{
 		vkui_widget_click(self->move_widget,
 		                  VKUI_WIDGET_POINTER_UP, x, y);
 	}
-	else if(self->top_widget &&
+	else if(top_widget &&
 	        (self->pointer_state == VKUI_WIDGET_POINTER_DOWN))
 	{
-		vkui_widget_click(self->top_widget,
+		vkui_widget_click(top_widget,
 		                  VKUI_WIDGET_POINTER_UP, x, y);
 	}
 	self->pointer_state = VKUI_WIDGET_POINTER_UP;
@@ -933,7 +1031,10 @@ int vkui_screen_pointerMove(vkui_screen_t* self,
 {
 	ASSERT(self);
 
-	if((self->top_widget == NULL) ||
+	vkui_widget_t* top_widget;
+	top_widget = (vkui_widget_t*)
+	             vkui_screen_windowPeek(self);
+	if((top_widget == NULL) ||
 	   (self->pointer_state == VKUI_WIDGET_POINTER_UP))
 	{
 		// ignore
@@ -1014,14 +1115,16 @@ void vkui_screen_draw(vkui_screen_t* self)
 		self->dirty = 1;
 	}
 
-	vkui_widget_t* top = self->top_widget;
-	if(top == NULL)
+	vkui_widget_t* top_widget;
+	top_widget = (vkui_widget_t*)
+	             vkui_screen_windowPeek(self);
+	if(top_widget == NULL)
 	{
 		// ignore
 		return;
 	}
 
-	vkui_widget_refresh(top);
+	vkui_widget_refresh(top_widget);
 
 	// dragging
 	float w  = (float) self->w;
@@ -1048,7 +1151,7 @@ void vkui_screen_draw(vkui_screen_t* self)
 
 		// TODO - change drag to return status for
 		// bump animation and to minimize dirty updates
-		vkui_widget_drag(self->top_widget,
+		vkui_widget_drag(top_widget,
 		                 x, y, vx*dt, vy*dt);
 
 		// update the speed
@@ -1092,8 +1195,10 @@ void vkui_screen_draw(vkui_screen_t* self)
 
 		float layout_w = clip.w;
 		float layout_h = clip.h;
-		vkui_widget_layoutSize(top, &layout_w, &layout_h);
-		vkui_widget_layoutXYClip(top, clip.l, clip.t, &clip, 1, 1);
+		vkui_widget_layoutSize(top_widget,
+		                       &layout_w, &layout_h);
+		vkui_widget_layoutXYClip(top_widget, clip.l,
+		                         clip.t, &clip, 1, 1);
 		self->dirty = 0;
 	}
 
@@ -1107,7 +1212,7 @@ void vkui_screen_draw(vkui_screen_t* self)
 	                      0.0f, 0.0f, (float) w, (float) h);
 	vkk_renderer_scissor(self->renderer,
 	                     0, 0, w, h);
-	vkui_widget_draw(self->top_widget);
+	vkui_widget_draw(top_widget);
 	vkui_screen_bind(self, VKUI_SCREEN_BIND_NONE);
 
 	// play sound fx

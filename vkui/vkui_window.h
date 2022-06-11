@@ -35,6 +35,7 @@ typedef struct vkui_window_s
 	vkui_layer_t*     layer0;
 	vkui_layer_t*     layer1;
 	vkui_listbox_t*   footer;
+	vkui_widget_t*    focus;
 	int               transparent;
 } vkui_window_t;
 
