@@ -5,6 +5,7 @@ add_compile_options(-Wall -DVK_USE_PLATFORM_ANDROID_KHR)
 
 if(VKK_USE_VKUI)
     set(SOURCE_VKUI
+        vkui/vkui_actionBar.c
         vkui/vkui_bulletbox.c
         vkui/vkui_checkbox.c
         vkui/vkui_font.c

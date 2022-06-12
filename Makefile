@@ -22,6 +22,7 @@ CLASSES = \
 	vkk_util
 ifeq ($(VKK_USE_VKUI),1)
 	CLASSES += \
+		vkui/vkui_actionBar \
 		vkui/vkui_bulletbox \
 		vkui/vkui_checkbox  \
 		vkui/vkui_font      \

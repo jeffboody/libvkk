@@ -100,6 +100,7 @@
 typedef struct vkui_screen_s vkui_screen_t;
 
 // widgets
+typedef struct vkui_actionBar_s    vkui_actionBar_t;
 typedef struct vkui_bulletbox_s    vkui_bulletbox_t;
 typedef struct vkui_checkbox_s     vkui_checkbox_t;
 typedef struct vkui_hline_s        vkui_hline_t;
@@ -279,8 +280,10 @@ void           vkui_screen_colorBanner(vkui_screen_t* self,
                                        cc_vec4f_t* color);
 void           vkui_screen_colorBannerText(vkui_screen_t* self,
                                            cc_vec4f_t* color);
-void           vkui_screen_colorActionIcon(vkui_screen_t* self,
-                                           cc_vec4f_t* color);
+void           vkui_screen_colorActionIcon0(vkui_screen_t* self,
+                                            cc_vec4f_t* color);
+void           vkui_screen_colorActionIcon1(vkui_screen_t* self,
+                                            cc_vec4f_t* color);
 void           vkui_screen_colorStatusIcon(vkui_screen_t* self,
                                            cc_vec4f_t* color);
 void           vkui_screen_colorFooterItem(vkui_screen_t* self,
@@ -464,6 +467,19 @@ vkui_listbox_t* vkui_window_page(vkui_window_t* self);
 vkui_layer_t*   vkui_window_layer0(vkui_window_t* self);
 vkui_layer_t*   vkui_window_layer1(vkui_window_t* self);
 vkui_listbox_t* vkui_window_footer(vkui_window_t* self);
+
+// actionBar
+vkui_actionBar_t* vkui_actionBar_new(vkui_screen_t* screen,
+                                     size_t wsize,
+                                     vkui_widget_refreshFn refresh_fn);
+void              vkui_actionBar_delete(vkui_actionBar_t** _self);
+vkui_listbox_t*   vkui_actionBar_actions(vkui_actionBar_t* self);
+int               vkui_actionBar_popup(vkui_actionBar_t* self,
+                                       vkui_sprite_t* action,
+                                       vkui_window_t* popup);
+int               vkui_actionBar_clickPopupFn(vkui_widget_t* widget,
+                                              void* priv, int state,
+                                              float x, float y);
 
 // statusBar
 vkui_statusBar_t* vkui_statusBar_new(vkui_screen_t* screen,

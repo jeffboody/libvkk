@@ -418,7 +418,7 @@ vkui_sprite_newActionIcon(vkui_screen_t* screen,
 	};
 
 	cc_vec4f_t color;
-	vkui_screen_colorActionIcon(screen, &color);
+	vkui_screen_colorActionIcon0(screen, &color);
 
 	return vkui_sprite_new(screen, 0, &sprite_layout,
 	                       fn, &color, sprite_array);
