@@ -32,14 +32,16 @@
 ***********************************************************/
 
 static vkui_listbox_t*
-vkui_actionBar_newActions(vkui_screen_t* screen)
+vkui_actionBar_newActions(vkui_screen_t* screen,
+                          int anchor,
+                          int orientation)
 {
 	ASSERT(self);
 
 	vkui_widgetLayout_t layout =
 	{
 		.border = VKUI_WIDGET_BORDER_MEDIUM,
-		.anchor = VKUI_WIDGET_ANCHOR_TC
+		.anchor = anchor
 	};
 
 	vkui_widgetScroll_t scroll =
@@ -57,7 +59,7 @@ vkui_actionBar_newActions(vkui_screen_t* screen)
 
 	return vkui_listbox_new(screen, 0, &layout,
 	                        &scroll, &fn,
-	                        VKUI_LISTBOX_ORIENTATION_HORIZONTAL,
+	                        orientation,
 	                        &color);
 }
 
@@ -74,6 +76,7 @@ vkui_actionBar_newSpace(vkui_screen_t* screen)
 	vkui_widgetLayout_t layout =
 	{
 		.border   = VKUI_WIDGET_BORDER_NONE,
+		.anchor   = VKUI_WIDGET_ANCHOR_CC,
 		.wrapx    = VKUI_WIDGET_WRAP_STRETCH_TEXT_VMEDIUM,
 		.wrapy    = VKUI_WIDGET_WRAP_STRETCH_TEXT_VMEDIUM,
 		.stretchx = 0.4f,
@@ -106,6 +109,8 @@ vkui_actionBar_newSpace(vkui_screen_t* screen)
 vkui_actionBar_t*
 vkui_actionBar_new(vkui_screen_t* screen,
                    size_t wsize,
+                   int anchor,
+                   int orientation,
                    vkui_widget_refreshFn refresh_fn)
 {
 	// refresh_fn may be NULL
@@ -118,7 +123,7 @@ vkui_actionBar_new(vkui_screen_t* screen,
 
 	vkui_widgetLayout_t layout =
 	{
-		.anchor = VKUI_WIDGET_ANCHOR_BC
+		.anchor = anchor
 	};
 
 	vkui_widgetScroll_t scroll =
@@ -140,14 +145,27 @@ vkui_actionBar_new(vkui_screen_t* screen,
 	self = (vkui_actionBar_t*)
 	       vkui_listbox_new(screen, wsize,
 	                        &layout, &scroll, &fn,
-	                        VKUI_LISTBOX_ORIENTATION_VERTICAL,
+	                        1 - orientation,
 	                        &clear);
 	if(self == NULL)
 	{
 		return NULL;
 	}
 
-	self->actions = vkui_actionBar_newActions(screen);
+	if((anchor == VKUI_WIDGET_ANCHOR_TL) ||
+	   (anchor == VKUI_WIDGET_ANCHOR_TC) ||
+	   (anchor == VKUI_WIDGET_ANCHOR_CL) ||
+	   ((anchor      == VKUI_WIDGET_ANCHOR_BL) &&
+	    (orientation == VKUI_LISTBOX_ORIENTATION_VERTICAL)) ||
+	   ((anchor      == VKUI_WIDGET_ANCHOR_TR) &&
+	    (orientation == VKUI_LISTBOX_ORIENTATION_HORIZONTAL)))
+	{
+		self->forward = 1;
+	}
+
+	self->actions = vkui_actionBar_newActions(screen,
+	                                          anchor,
+	                                          orientation);
 	if(self->actions == NULL)
 	{
 		goto fail_actions;
@@ -238,9 +256,18 @@ int vkui_actionBar_popup(vkui_actionBar_t* self,
 
 		self->selected = action;
 
-		vkui_listbox_add(listbox, (vkui_widget_t*) popup);
-		vkui_listbox_add(listbox, (vkui_widget_t*) self->space);
-		vkui_listbox_add(listbox, (vkui_widget_t*) self->actions);
+		if(self->forward)
+		{
+			vkui_listbox_add(listbox, (vkui_widget_t*) self->actions);
+			vkui_listbox_add(listbox, (vkui_widget_t*) self->space);
+			vkui_listbox_add(listbox, (vkui_widget_t*) popup);
+		}
+		else
+		{
+			vkui_listbox_add(listbox, (vkui_widget_t*) popup);
+			vkui_listbox_add(listbox, (vkui_widget_t*) self->space);
+			vkui_listbox_add(listbox, (vkui_widget_t*) self->actions);
+		}
 	}
 
 	return 1;

@@ -448,6 +448,7 @@ vkui_window_newPage(vkui_screen_t* screen,
 
 	vkui_widgetLayout_t layout_popup =
 	{
+		.anchor   = VKUI_WIDGET_ANCHOR_CC,
 		.wrapx    = VKUI_WIDGET_WRAP_STRETCH_PARENT,
 		.stretchx = 1.0f,
 	};

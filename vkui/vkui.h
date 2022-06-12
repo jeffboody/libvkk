@@ -471,6 +471,8 @@ vkui_listbox_t* vkui_window_footer(vkui_window_t* self);
 // actionBar
 vkui_actionBar_t* vkui_actionBar_new(vkui_screen_t* screen,
                                      size_t wsize,
+                                     int anchor,
+                                     int orientation,
                                      vkui_widget_refreshFn refresh_fn);
 void              vkui_actionBar_delete(vkui_actionBar_t** _self);
 vkui_listbox_t*   vkui_actionBar_actions(vkui_actionBar_t* self);

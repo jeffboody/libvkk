@@ -33,6 +33,7 @@ typedef struct vkui_actionBar_s
 	vkui_listbox_t* actions;
 	vkui_widget_t*  space;
 	vkui_sprite_t*  selected;
+	int             forward;
 } vkui_actionBar_t;
 
 #endif
