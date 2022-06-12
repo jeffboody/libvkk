@@ -219,7 +219,8 @@ void vkui_screen_playClick(vkui_screen_t* self)
 ***********************************************************/
 
 vkui_screen_t*
-vkui_screen_new(vkk_engine_t* engine,
+vkui_screen_new(size_t wsize,
+                vkk_engine_t* engine,
                 vkk_renderer_t* renderer,
                 const char* resource,
                 void* sound_fx,
@@ -232,8 +233,13 @@ vkui_screen_new(vkk_engine_t* engine,
 	ASSERT(playClick);
 	ASSERT(widget_style);
 
+	if(wsize == 0)
+	{
+		wsize = sizeof(vkui_screen_t);
+	}
+
 	vkui_screen_t* self;
-	self = (vkui_screen_t*) CALLOC(1, sizeof(vkui_screen_t));
+	self = (vkui_screen_t*) CALLOC(1, wsize);
 	if(self == NULL)
 	{
 		LOGE("CALLOC failed");

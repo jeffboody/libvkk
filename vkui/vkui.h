@@ -228,7 +228,8 @@ typedef struct vkui_windowInfo_s
  * screen API
  */
 
-vkui_screen_t* vkui_screen_new(vkk_engine_t* engine,
+vkui_screen_t* vkui_screen_new(size_t wsize,
+                               vkk_engine_t* engine,
                                vkk_renderer_t* renderer,
                                const char* resource,
                                void* sound_fx,
