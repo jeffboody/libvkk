@@ -29,7 +29,7 @@
 
 typedef struct vkui_hline_s
 {
-	vkui_widget_t  widget;
+	vkui_widget_t  base;
 	vkui_widget_t* line;
 
 	int size;

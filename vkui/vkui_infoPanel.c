@@ -75,12 +75,14 @@ void vkui_infoPanel_add(vkui_infoPanel_t* self,
 	ASSERT(self);
 	ASSERT(widget);
 
-	vkui_listbox_add(&self->listbox, widget);
+	vkui_listbox_t* base = &self->base;
+	vkui_listbox_add(base, widget);
 }
 
 void vkui_infoPanel_clear(vkui_infoPanel_t* self)
 {
 	ASSERT(self);
 
-	vkui_listbox_clear(&self->listbox);
+	vkui_listbox_t* base = &self->base;
+	vkui_listbox_clear(base);
 }

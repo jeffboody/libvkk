@@ -29,7 +29,7 @@
 
 typedef struct vkui_radiolist_s
 {
-	vkui_listbox_t listbox;
+	vkui_listbox_t base;
 
 	// bulletbox properties
 	vkui_bulletboxStyle_t bulletbox_style;

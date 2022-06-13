@@ -30,7 +30,7 @@
 
 typedef struct vkui_textbox_s
 {
-	vkui_listbox_t listbox;
+	vkui_listbox_t base;
 
 	// cached strings to reflow text
 	cc_list_t* strings;

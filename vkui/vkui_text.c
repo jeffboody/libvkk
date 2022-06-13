@@ -47,8 +47,8 @@ vkui_text_resize(vkui_text_t* self, size_t size)
 {
 	ASSERT(self);
 
-	vkui_widget_t* widget = (vkui_widget_t*) self;
-	vkui_screen_t* screen = widget->screen;
+	vkui_widget_t* base   = &self->base;
+	vkui_screen_t* screen = base->screen;
 
 	if(self->size >= size)
 	{
@@ -234,9 +234,9 @@ vkui_text_addc(vkui_text_t* self, char c, int i,
 	ASSERT(self);
 
 	float             offset = *_offset;
-	vkui_widget_t*    widget = (vkui_widget_t*) self;
+	vkui_widget_t*    base   = &self->base;
 	vkui_textStyle_t* style  = &self->style;
-	vkui_screen_t*    screen = widget->screen;
+	vkui_screen_t*    screen = base->screen;
 	vkui_font_t*      font   = vkui_screen_font(screen,
 	                                            style->font_type);
 
@@ -674,8 +674,8 @@ void vkui_text_delete(vkui_text_t** _self)
 	vkui_text_t* self = *_self;
 	if(self)
 	{
-		vkui_widget_t* widget = (vkui_widget_t*) self;
-		vkui_screen_t* screen = widget->screen;
+		vkui_widget_t* base   = &self->base;
+		vkui_screen_t* screen = base->screen;
 
 		vkk_uniformSet_delete(&self->us2_multiplyImage);
 		vkk_buffer_delete(&self->ub20_multiply);
@@ -696,9 +696,9 @@ int vkui_text_width(vkui_text_t* self, int cursor)
 {
 	ASSERT(self);
 
-	vkui_widget_t*    widget = (vkui_widget_t*) self;
+	vkui_widget_t*    base   = &self->base;
 	vkui_textStyle_t* style  = &self->style;
-	vkui_screen_t*    screen = widget->screen;
+	vkui_screen_t*    screen = base->screen;
 	vkui_font_t*      font   = vkui_screen_font(screen,
 	                                            style->font_type);
 
@@ -722,9 +722,9 @@ int vkui_text_height(vkui_text_t* self)
 {
 	ASSERT(self);
 
-	vkui_widget_t*    widget = (vkui_widget_t*) self;
+	vkui_widget_t*    base   = &self->base;
 	vkui_textStyle_t* style  = &self->style;
-	vkui_screen_t*    screen = widget->screen;
+	vkui_screen_t*    screen = base->screen;
 	vkui_font_t*      font   = vkui_screen_font(screen,
 	                                            style->font_type);
 	return vkui_font_height(font);
@@ -744,8 +744,8 @@ vkui_text_label(vkui_text_t* self, const char* fmt, ...)
 	ASSERT(self);
 	ASSERT(fmt);
 
-	vkui_widget_t* widget = (vkui_widget_t*) self;
-	vkui_screen_t* screen = widget->screen;
+	vkui_widget_t* base   = &self->base;
+	vkui_screen_t* screen = base->screen;
 
 	// decode string
 	char tmp_string[256];

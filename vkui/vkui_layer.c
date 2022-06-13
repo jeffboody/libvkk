@@ -222,7 +222,9 @@ vkui_layer_new(vkui_screen_t* screen, size_t wsize,
 	{
 		return NULL;
 	}
-	vkui_widget_soundFx((vkui_widget_t*) self, 0);
+
+	vkui_widget_t* base = &self->base;
+	vkui_widget_soundFx(base, 0);
 
 	self->list = cc_list_new();
 	if(self->list == NULL)
@@ -255,11 +257,11 @@ void vkui_layer_clear(vkui_layer_t* self)
 {
 	ASSERT(self);
 
-	vkui_widget_t* widget = (vkui_widget_t*) self;
+	vkui_widget_t* base = &self->base;
 
 	cc_list_discard(self->list);
-	vkui_widget_scrollTop(widget);
-	vkui_screen_dirty(widget->screen);
+	vkui_widget_scrollTop(base);
+	vkui_screen_dirty(base->screen);
 }
 
 int vkui_layer_add(vkui_layer_t* self,
@@ -293,10 +295,10 @@ vkui_widget_t* vkui_layer_remove(vkui_layer_t* self,
 	ASSERT(self);
 	ASSERT(_iter);
 
-	vkui_widget_t* widget = (vkui_widget_t*) self;
+	vkui_widget_t* base = &self->base;
 
-	vkui_widget_scrollTop(widget);
-	vkui_screen_dirty(widget->screen);
+	vkui_widget_scrollTop(base);
+	vkui_screen_dirty(base->screen);
 
 	return (vkui_widget_t*)
 	       cc_list_remove(self->list, _iter);

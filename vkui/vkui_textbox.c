@@ -44,8 +44,8 @@ vkui_textbox_print(vkui_textbox_t* self, const char* string)
 	ASSERT(self);
 	ASSERT(string);
 
-	vkui_widget_t*  widget  = (vkui_widget_t*) self;
-	vkui_listbox_t* listbox = (vkui_listbox_t*) self;
+	vkui_widget_t*  widget = (vkui_widget_t*) self;
+	vkui_listbox_t* base   = &self->base;
 
 	vkui_textLayout_t text_layout =
 	{
@@ -85,7 +85,7 @@ vkui_textbox_print(vkui_textbox_t* self, const char* string)
 		return;
 	}
 
-	if(vkui_listbox_add(listbox, (vkui_widget_t*) text) == 0)
+	if(vkui_listbox_add(base, (vkui_widget_t*) text) == 0)
 	{
 		goto fail_add;
 	}
@@ -154,7 +154,7 @@ vkui_textbox_reflow(vkui_widget_t* widget, float w, float h)
 	ASSERT(widget);
 
 	vkui_textbox_t*   self       = (vkui_textbox_t*) widget;
-	vkui_listbox_t*   listbox    = (vkui_listbox_t*) self;
+	vkui_listbox_t*   base       = &self->base;
 	vkui_textStyle_t* text_style = &self->text_style;
 
 	// subtract the spacing which is added when
@@ -186,12 +186,12 @@ vkui_textbox_reflow(vkui_widget_t* widget, float w, float h)
 
 	// clear the text
 	cc_listIter_t* iter;
-	iter = vkui_listbox_head(listbox);
+	iter = vkui_listbox_head(base);
 	while(iter)
 	{
 		vkui_text_t* text;
 		text = (vkui_text_t*)
-		       vkui_listbox_remove(listbox, &iter);
+		       vkui_listbox_remove(base, &iter);
 		vkui_text_delete(&text);
 	}
 
@@ -316,17 +316,15 @@ vkui_textbox_new(vkui_screen_t* screen, size_t wsize,
 		return NULL;
 	}
 
-	vkui_widget_t* widget = (vkui_widget_t*) self;
-
 	// optionially set the reflow function
+	vkui_widget_t* widget = (vkui_widget_t*) self;
 	if(layout->wrapx != VKUI_WIDGET_WRAP_SHRINK)
 	{
 		vkui_widget_privReflowFn(widget, vkui_textbox_reflow);
 	}
 
 	// enable sound effects since textbox derives from listbox
-	vkui_widget_soundFx((vkui_widget_t*) self,
-	                    fn->click_fn ? 1 : 0);
+	vkui_widget_soundFx(widget, fn->click_fn ? 1 : 0);
 
 	self->strings = cc_list_new();
 	if(self->strings == NULL)
@@ -431,16 +429,16 @@ void vkui_textbox_clear(vkui_textbox_t* self)
 {
 	ASSERT(self);
 
-	vkui_listbox_t* listbox = (vkui_listbox_t*) self;
+	vkui_listbox_t* base = &self->base;
 
 	// clear the text
 	cc_listIter_t* iter;
-	iter = vkui_listbox_head(listbox);
+	iter = vkui_listbox_head(base);
 	while(iter)
 	{
 		vkui_text_t* text;
 		text = (vkui_text_t*)
-		       vkui_listbox_remove(listbox, &iter);
+		       vkui_listbox_remove(base, &iter);
 		vkui_text_delete(&text);
 	}
 

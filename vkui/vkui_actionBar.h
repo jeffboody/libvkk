@@ -29,7 +29,7 @@
 
 typedef struct vkui_actionBar_s
 {
-	vkui_listbox_t  listbox;
+	vkui_listbox_t  base;
 	vkui_listbox_t* actions;
 	vkui_widget_t*  space;
 	vkui_sprite_t*  selected;

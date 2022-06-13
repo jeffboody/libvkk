@@ -125,7 +125,8 @@ void vkui_radiobox_label(vkui_radiobox_t* self,
 	vsnprintf(string, 256, fmt, argptr);
 	va_end(argptr);
 
-	vkui_bulletbox_label(&self->bullet, "%s", string);
+	vkui_bulletbox_t* base = &self->base;
+	vkui_bulletbox_label(base, "%s", string);
 }
 
 void vkui_radiobox_refresh(vkui_radiobox_t* self)
@@ -133,13 +134,13 @@ void vkui_radiobox_refresh(vkui_radiobox_t* self)
 	ASSERT(self);
 
 	vkui_radiolist_t* parent = self->parent;
-	vkui_bulletbox_t* bullet = &(self->bullet);
+	vkui_bulletbox_t* base   = &self->base;
 	if(self->value == parent->value)
 	{
-		vkui_bulletbox_select(bullet, 1);
+		vkui_bulletbox_select(base, 1);
 	}
 	else
 	{
-		vkui_bulletbox_select(bullet, 0);
+		vkui_bulletbox_select(base, 0);
 	}
 }

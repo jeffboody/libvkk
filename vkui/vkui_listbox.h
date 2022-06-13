@@ -30,9 +30,10 @@
 
 typedef struct vkui_listbox_s
 {
-	vkui_widget_t widget;
+	vkui_widget_t base;
 	cc_list_t*    list;
-	int           orientation;
+
+	int orientation;
 } vkui_listbox_t;
 
 #endif

@@ -29,7 +29,8 @@
 
 typedef struct vkui_checkbox_s
 {
-	vkui_bulletbox_t bullet;
+	vkui_bulletbox_t base;
+
 	int* pvalue;
 } vkui_checkbox_t;
 

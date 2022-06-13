@@ -30,7 +30,7 @@
 
 typedef struct vkui_sprite_s
 {
-	vkui_widget_t widget;
+	vkui_widget_t base;
 
 	// properties
 	uint32_t count;

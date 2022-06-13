@@ -29,7 +29,7 @@
 
 typedef struct vkui_text_s
 {
-	vkui_widget_t widget;
+	vkui_widget_t base;
 
 	// text properties
 	vkui_text_enterFn enter_fn;

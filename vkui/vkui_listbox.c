@@ -203,12 +203,14 @@ vkui_listbox_layoutVerticalShrink(vkui_listbox_t* self,
 {
 	ASSERT(self);
 
+	vkui_widget_t* base = &self->base;
+
 	// initialize the layout
 	float x = 0.0f;
 	float y = 0.0f;
-	float t = self->widget.rect_draw.t;
-	float l = self->widget.rect_draw.l;
-	float w = self->widget.rect_draw.w;
+	float t = base->rect_draw.t;
+	float l = base->rect_draw.l;
+	float w = base->rect_draw.w;
 	cc_rect1f_t rect_clip;
 	cc_rect1f_t rect_draw;
 
@@ -228,7 +230,7 @@ vkui_listbox_layoutVerticalShrink(vkui_listbox_t* self,
 
 		vkui_widget_layoutAnchor(child, &rect_draw, &x, &y);
 		cc_rect1f_intersect(&rect_draw,
-		                    &self->widget.rect_clip,
+		                    &base->rect_clip,
 		                    &rect_clip);
 		vkui_widget_layoutXYClip(child, x, y, &rect_clip,
 		                         dragx, dragy);
@@ -243,13 +245,15 @@ vkui_listbox_layoutVerticalStretch(vkui_listbox_t* self,
 {
 	ASSERT(self);
 
+	vkui_widget_t* base = &self->base;
+
 	// initialize the layout
 	float x   = 0.0f;
 	float y   = 0.0f;
-	float t   = self->widget.rect_draw.t;
-	float l   = self->widget.rect_draw.l;
-	float w   = self->widget.rect_draw.w;
-	float h   = self->widget.rect_draw.h;
+	float t   = base->rect_draw.t;
+	float l   = base->rect_draw.l;
+	float w   = base->rect_draw.w;
+	float h   = base->rect_draw.h;
 	float cnt = (float) cc_list_size(self->list);
 	float dh  = h/cnt;
 	cc_rect1f_t rect_clip;
@@ -269,7 +273,7 @@ vkui_listbox_layoutVerticalStretch(vkui_listbox_t* self,
 
 		vkui_widget_layoutAnchor(child, &rect_draw, &x, &y);
 		cc_rect1f_intersect(&rect_draw,
-		                    &self->widget.rect_clip,
+		                    &base->rect_clip,
 		                    &rect_clip);
 		vkui_widget_layoutXYClip(child, x, y, &rect_clip,
 		                         dragx, dragy);
@@ -284,12 +288,14 @@ vkui_listbox_layoutHorizontalShrink(vkui_listbox_t* self,
 {
 	ASSERT(self);
 
+	vkui_widget_t* base = &self->base;
+
 	// initialize the layout
 	float x = 0.0f;
 	float y = 0.0f;
-	float t = self->widget.rect_draw.t;
-	float l = self->widget.rect_draw.l;
-	float h = self->widget.rect_draw.h;
+	float t = base->rect_draw.t;
+	float l = base->rect_draw.l;
+	float h = base->rect_draw.h;
 	cc_rect1f_t rect_clip;
 	cc_rect1f_t rect_draw;
 
@@ -309,7 +315,7 @@ vkui_listbox_layoutHorizontalShrink(vkui_listbox_t* self,
 
 		vkui_widget_layoutAnchor(child, &rect_draw, &x, &y);
 		cc_rect1f_intersect(&rect_draw,
-		                    &self->widget.rect_clip,
+		                    &base->rect_clip,
 		                    &rect_clip);
 		vkui_widget_layoutXYClip(child, x, y, &rect_clip,
 		                         dragx, dragy);
@@ -324,13 +330,15 @@ vkui_listbox_layoutHorizontalStretch(vkui_listbox_t* self,
 {
 	ASSERT(self);
 
+	vkui_widget_t* base = &self->base;
+
 	// initialize the layout
 	float x   = 0.0f;
 	float y   = 0.0f;
-	float t   = self->widget.rect_draw.t;
-	float l   = self->widget.rect_draw.l;
-	float w   = self->widget.rect_draw.w;
-	float h   = self->widget.rect_draw.h;
+	float t   = base->rect_draw.t;
+	float l   = base->rect_draw.l;
+	float w   = base->rect_draw.w;
+	float h   = base->rect_draw.h;
 	float cnt = (float) cc_list_size(self->list);
 	float dw  = w/cnt;
 	cc_rect1f_t rect_clip;
@@ -350,7 +358,7 @@ vkui_listbox_layoutHorizontalStretch(vkui_listbox_t* self,
 
 		vkui_widget_layoutAnchor(child, &rect_draw, &x, &y);
 		cc_rect1f_intersect(&rect_draw,
-		                    &self->widget.rect_clip,
+		                    &base->rect_clip,
 		                    &rect_clip);
 		vkui_widget_layoutXYClip(child, x, y, &rect_clip,
 		                         dragx, dragy);
@@ -496,7 +504,9 @@ vkui_listbox_new(vkui_screen_t* screen, size_t wsize,
 	{
 		return NULL;
 	}
-	vkui_widget_soundFx((vkui_widget_t*) self, 0);
+
+	vkui_widget_t* base = &self->base;
+	vkui_widget_soundFx(base, 0);
 
 	self->list = cc_list_new();
 	if(self->list == NULL)
@@ -531,11 +541,11 @@ void vkui_listbox_clear(vkui_listbox_t* self)
 {
 	ASSERT(self);
 
-	vkui_widget_t* widget = (vkui_widget_t*) self;
+	vkui_widget_t* base = &self->base;
 
 	cc_list_discard(self->list);
-	vkui_widget_scrollTop(widget);
-	vkui_screen_dirty(widget->screen);
+	vkui_widget_scrollTop(base);
+	vkui_screen_dirty(base->screen);
 }
 
 int vkui_listbox_add(vkui_listbox_t* self,
@@ -583,16 +593,16 @@ cc_listIter_t* vkui_listbox_head(vkui_listbox_t* self)
 	return cc_list_head(self->list);
 }
 
-vkui_widget_t*  vkui_listbox_remove(vkui_listbox_t* self,
-                                    cc_listIter_t** _iter)
+vkui_widget_t* vkui_listbox_remove(vkui_listbox_t* self,
+                                   cc_listIter_t** _iter)
 {
 	ASSERT(self);
 	ASSERT(_iter);
 
-	vkui_widget_t* widget = (vkui_widget_t*) self;
+	vkui_widget_t* base = &self->base;
 
-	vkui_widget_scrollTop(widget);
-	vkui_screen_dirty(widget->screen);
+	vkui_widget_scrollTop(base);
+	vkui_screen_dirty(base->screen);
 
 	return (vkui_widget_t*)
 	       cc_list_remove(self->list, _iter);

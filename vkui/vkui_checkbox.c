@@ -57,9 +57,9 @@ vkui_checkbox_refresh(vkui_widget_t* widget, void* priv)
 	// priv may be NULL
 	ASSERT(widget);
 
-	vkui_checkbox_t*  self   = (vkui_checkbox_t*) widget;
-	vkui_bulletbox_t* bullet = &(self->bullet);
-	vkui_bulletbox_select(bullet, *(self->pvalue));
+	vkui_checkbox_t*  self = (vkui_checkbox_t*) widget;
+	vkui_bulletbox_t* base = &self->base;
+	vkui_bulletbox_select(base, *(self->pvalue));
 }
 
 /***********************************************************
@@ -157,5 +157,6 @@ void vkui_checkbox_label(vkui_checkbox_t* self,
 	vsnprintf(string, 256, fmt, argptr);
 	va_end(argptr);
 
-	vkui_bulletbox_label(&self->bullet, "%s", string);
+	vkui_bulletbox_t* base = &self->base;
+	vkui_bulletbox_label(base, "%s", string);
 }

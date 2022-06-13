@@ -506,5 +506,6 @@ void vkui_sprite_fill(vkui_sprite_t* self,
 	ASSERT(self);
 	ASSERT(color);
 
-	vkui_widget_color((vkui_widget_t*) self, color);
+	vkui_widget_t* base = &self->base;
+	vkui_widget_color(base, color);
 }

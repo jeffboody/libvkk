@@ -44,14 +44,14 @@ vkui_radiolist_refresh(vkui_widget_t* widget, void* priv)
 	ASSERT(widget);
 	ASSERT(priv == NULL);
 
-	vkui_radiolist_t* self    = (vkui_radiolist_t*) widget;
-	vkui_listbox_t*   listbox = (vkui_listbox_t*) self;
+	vkui_radiolist_t* self = (vkui_radiolist_t*) widget;
+	vkui_listbox_t*   base = &self->base;
 
 	if(self->value != *(self->pvalue))
 	{
 		self->value = *(self->pvalue);
 
-		cc_listIter_t* iter = cc_list_head(listbox->list);
+		cc_listIter_t* iter = cc_list_head(base->list);
 		while(iter)
 		{
 			vkui_radiobox_t* rb;
@@ -164,15 +164,15 @@ void vkui_radiolist_clear(vkui_radiolist_t* self)
 {
 	ASSERT(self);
 
-	vkui_listbox_t* listbox = (vkui_listbox_t*) self;
+	vkui_listbox_t* base = &self->base;
 
 	cc_listIter_t* iter;
-	iter = vkui_listbox_head(listbox);
+	iter = vkui_listbox_head(base);
 	while(iter)
 	{
 		vkui_radiobox_t* rb;
 		rb = (vkui_radiobox_t*)
-		     vkui_listbox_remove(listbox, &iter);
+		     vkui_listbox_remove(base, &iter);
 		vkui_radiobox_delete(&rb);
 	}
 }
@@ -200,8 +200,8 @@ void vkui_radiolist_add(vkui_radiolist_t* self, int value,
 		return;
 	}
 
-	vkui_listbox_t* listbox = (vkui_listbox_t*) self;
-	if(vkui_listbox_add(listbox, (vkui_widget_t*) rb) == 0)
+	vkui_listbox_t* base = &self->base;
+	if(vkui_listbox_add(base, (vkui_widget_t*) rb) == 0)
 	{
 		goto fail_add;
 	}

@@ -29,7 +29,8 @@
 
 typedef struct vkui_radiobox_s
 {
-	vkui_bulletbox_t  bullet;
+	vkui_bulletbox_t base;
+
 	int               value;
 	vkui_radiolist_t* parent;
 } vkui_radiobox_t;

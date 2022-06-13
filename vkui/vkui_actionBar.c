@@ -139,8 +139,8 @@ vkui_actionBar_new(vkui_screen_t* screen,
 		goto fail_space;
 	}
 
-	vkui_listbox_t* listbox = (vkui_listbox_t*) self;
-	vkui_listbox_add(listbox, (vkui_widget_t*) self->actions);
+	vkui_listbox_t* base = &self->base;
+	vkui_listbox_add(base, (vkui_widget_t*) self->actions);
 
 	// success
 	return self;
@@ -160,9 +160,9 @@ void vkui_actionBar_delete(vkui_actionBar_t** _self)
 	vkui_actionBar_t* self = *_self;
 	if(self)
 	{
-		vkui_listbox_t* listbox = (vkui_listbox_t*) self;
+		vkui_listbox_t* base = &self->base;
 
-		vkui_listbox_clear(listbox);
+		vkui_listbox_clear(base);
 		vkui_widget_delete(&self->space);
 		vkui_listbox_delete(&self->actions);
 		vkui_listbox_delete((vkui_listbox_t**) _self);
@@ -184,9 +184,9 @@ int vkui_actionBar_popup(vkui_actionBar_t* self,
 	// action and popup may be NULL
 	ASSERT(self);
 
-	vkui_widget_t*  widget  = (vkui_widget_t*) self;
-	vkui_screen_t*  screen  = widget->screen;
-	vkui_listbox_t* listbox = (vkui_listbox_t*) self;
+	vkui_widget_t*  widget = (vkui_widget_t*) self;
+	vkui_screen_t*  screen = widget->screen;
+	vkui_listbox_t* base   = &self->base;
 
 	if((self->selected == NULL) &&
 	   (action == NULL) && (popup == NULL))
@@ -202,13 +202,13 @@ int vkui_actionBar_popup(vkui_actionBar_t* self,
 	}
 
 	// toggle the popup selected
-	vkui_listbox_clear(listbox);
+	vkui_listbox_clear(base);
 	if((action == NULL) || (popup == NULL) ||
 	   (action == self->selected))
 	{
 		self->selected = NULL;
 
-		vkui_listbox_add(listbox, (vkui_widget_t*) self->actions);
+		vkui_listbox_add(base, (vkui_widget_t*) self->actions);
 	}
 	else
 	{
@@ -220,15 +220,15 @@ int vkui_actionBar_popup(vkui_actionBar_t* self,
 
 		if(self->forward)
 		{
-			vkui_listbox_add(listbox, (vkui_widget_t*) self->actions);
-			vkui_listbox_add(listbox, (vkui_widget_t*) self->space);
-			vkui_listbox_add(listbox, (vkui_widget_t*) popup);
+			vkui_listbox_add(base, (vkui_widget_t*) self->actions);
+			vkui_listbox_add(base, (vkui_widget_t*) self->space);
+			vkui_listbox_add(base, (vkui_widget_t*) popup);
 		}
 		else
 		{
-			vkui_listbox_add(listbox, (vkui_widget_t*) popup);
-			vkui_listbox_add(listbox, (vkui_widget_t*) self->space);
-			vkui_listbox_add(listbox, (vkui_widget_t*) self->actions);
+			vkui_listbox_add(base, (vkui_widget_t*) popup);
+			vkui_listbox_add(base, (vkui_widget_t*) self->space);
+			vkui_listbox_add(base, (vkui_widget_t*) self->actions);
 		}
 	}
 

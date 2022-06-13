@@ -29,8 +29,7 @@
 
 typedef struct vkui_bulletbox_s
 {
-	vkui_widget_t widget;
-
+	vkui_widget_t  base;
 	vkui_sprite_t* icon;
 	vkui_text_t*   text;
 } vkui_bulletbox_t;

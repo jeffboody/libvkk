@@ -29,7 +29,7 @@
 
 typedef struct vkui_statusBar_s
 {
-	vkui_listbox_t listbox;
+	vkui_listbox_t base;
 } vkui_statusBar_t;
 
 #endif

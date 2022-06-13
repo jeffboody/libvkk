@@ -30,7 +30,7 @@
 
 typedef struct vkui_layer_s
 {
-	vkui_widget_t widget;
+	vkui_widget_t base;
 	cc_list_t*    list;
 } vkui_layer_t;
 

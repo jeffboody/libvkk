@@ -225,6 +225,7 @@ vkui_window_layout(vkui_widget_t* widget,
 
 	vkui_widgetLayout_t* layout = &widget->layout;
 	vkui_window_t*       self   = (vkui_window_t*) widget;
+	vkui_widget_t*       base   = &self->base;
 	vkui_widget_t*       title  = (vkui_widget_t*) self->title;
 	vkui_widget_t*       page   = (vkui_widget_t*) self->page;
 	vkui_widget_t*       layer0 = (vkui_widget_t*) self->layer0;
@@ -241,10 +242,10 @@ vkui_window_layout(vkui_widget_t* widget,
 	                         &h_bo, &v_bo);
 
 	// initialize the layout
-	float t = self->widget.rect_border.t;
-	float l = self->widget.rect_draw.l;
-	float w = self->widget.rect_draw.w;
-	float h = self->widget.rect_border.h;
+	float t = base->rect_border.t;
+	float l = base->rect_draw.l;
+	float w = base->rect_draw.w;
+	float h = base->rect_border.h;
 
 	// layout title
 	float x;
@@ -261,7 +262,7 @@ vkui_window_layout(vkui_widget_t* widget,
 		rect_draw.h = title_h;
 		vkui_widget_layoutAnchor(title, &rect_draw, &x, &y);
 		cc_rect1f_intersect(&rect_draw,
-		                    &self->widget.rect_clip,
+		                    &base->rect_clip,
 		                    &rect_clip);
 		vkui_widget_layoutXYClip(title, x, y, &rect_clip,
 		                         dragx, dragy);
@@ -283,7 +284,7 @@ vkui_window_layout(vkui_widget_t* widget,
 		rect_draw.h = h - title_h - footer_h - 2.0f*v_bo;
 		vkui_widget_layoutAnchor(page, &rect_draw, &x, &y);
 		cc_rect1f_intersect(&rect_draw,
-		                    &self->widget.rect_clip,
+		                    &base->rect_clip,
 		                    &rect_clip);
 		vkui_widget_layoutXYClip(page, x, y, &rect_clip,
 		                         dragx, dragy);
@@ -298,7 +299,7 @@ vkui_window_layout(vkui_widget_t* widget,
 		rect_draw.h = h - title_h - footer_h - 2.0f*v_bo;
 		vkui_widget_layoutAnchor(layer1, &rect_draw, &x, &y);
 		cc_rect1f_intersect(&rect_draw,
-		                    &self->widget.rect_clip,
+		                    &base->rect_clip,
 		                    &rect_clip);
 		vkui_widget_layoutXYClip(layer1, x, y, &rect_clip,
 		                         dragx, dragy);
@@ -313,7 +314,7 @@ vkui_window_layout(vkui_widget_t* widget,
 		rect_draw.h = footer_h;
 		vkui_widget_layoutAnchor(footer, &rect_draw, &x, &y);
 		cc_rect1f_intersect(&rect_draw,
-		                    &self->widget.rect_clip,
+		                    &base->rect_clip,
 		                    &rect_clip);
 		vkui_widget_layoutXYClip(footer, x, y, &rect_clip,
 		                         dragx, dragy);
@@ -323,12 +324,12 @@ vkui_window_layout(vkui_widget_t* widget,
 	if(layer0)
 	{
 		rect_draw.t = t + title_h;
-		rect_draw.l = self->widget.rect_border.l;
-		rect_draw.w = self->widget.rect_border.w;
+		rect_draw.l = base->rect_border.l;
+		rect_draw.w = base->rect_border.w;
 		rect_draw.h = h - title_h - footer_h;
 		vkui_widget_layoutAnchor(layer0, &rect_draw, &x, &y);
 		cc_rect1f_intersect(&rect_draw,
-		                    &self->widget.rect_clip,
+		                    &base->rect_clip,
 		                    &rect_clip);
 		vkui_widget_layoutXYClip(layer0, x, y, &rect_clip,
 		                         dragx, dragy);
@@ -655,7 +656,8 @@ vkui_window_new(vkui_screen_t* screen,
 		return NULL;
 	}
 
-	vkui_widget_soundFx((vkui_widget_t*) self, 0);
+	vkui_widget_t* base = &self->base;
+	vkui_widget_soundFx(base, 0);
 
 	cc_vec4f_t color_banner;
 	cc_vec4f_t color_background;
@@ -667,7 +669,7 @@ vkui_window_new(vkui_screen_t* screen,
 		color_background.a = 0.0f;
 	}
 
-	if(vkui_widget_tricolor((vkui_widget_t*) self,
+	if(vkui_widget_tricolor(base,
 	                        &color_banner,
 	                        &color_background,
 	                        &color_banner) == 0)
