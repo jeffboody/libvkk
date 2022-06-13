@@ -146,6 +146,7 @@ vkui_widget_t* vkui_widget_new(vkui_screen_t* screen,
                                vkui_widgetScroll_t* scroll,
                                vkui_widgetFn_t* fn,
                                vkui_widgetPrivFn_t* priv_fn);
+vkui_widget_t* vkui_widget_newSpace(vkui_screen_t* screen);
 void           vkui_widget_delete(vkui_widget_t** _self);
 void           vkui_widget_layoutXYClip(vkui_widget_t* self,
                                         float x, float y,

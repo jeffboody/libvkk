@@ -25,6 +25,7 @@
 
 #define LOG_TAG "vkui"
 #include "../../libcc/cc_log.h"
+#include "../../libvkk/vkui/vkui_widget.h"
 #include "vkui_actionBar.h"
 
 /***********************************************************
@@ -61,45 +62,6 @@ vkui_actionBar_newActions(vkui_screen_t* screen,
 	                        &scroll, &fn,
 	                        orientation,
 	                        &color);
-}
-
-static vkui_widget_t*
-vkui_actionBar_newSpace(vkui_screen_t* screen)
-{
-	ASSERT(self);
-
-	cc_vec4f_t clear =
-	{
-		.a=0.0f
-	};
-
-	vkui_widgetLayout_t layout =
-	{
-		.border   = VKUI_WIDGET_BORDER_NONE,
-		.anchor   = VKUI_WIDGET_ANCHOR_CC,
-		.wrapx    = VKUI_WIDGET_WRAP_STRETCH_TEXT_VMEDIUM,
-		.wrapy    = VKUI_WIDGET_WRAP_STRETCH_TEXT_VMEDIUM,
-		.stretchx = 0.4f,
-		.stretchy = 0.4f
-	};
-
-	vkui_widgetScroll_t scroll =
-	{
-		.scroll_bar = 0
-	};
-
-	vkui_widgetFn_t fn =
-	{
-		.priv = NULL
-	};
-
-	vkui_widgetPrivFn_t priv_fn =
-	{
-		.draw_fn = NULL
-	};
-
-	return vkui_widget_new(screen, 0, &clear, &layout,
-	                       &scroll, &fn, &priv_fn);
 }
 
 /***********************************************************
@@ -171,7 +133,7 @@ vkui_actionBar_new(vkui_screen_t* screen,
 		goto fail_actions;
 	}
 
-	self->space = vkui_actionBar_newSpace(screen);
+	self->space = vkui_widget_newSpace(screen);
 	if(self->space == NULL)
 	{
 		goto fail_space;

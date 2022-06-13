@@ -215,6 +215,45 @@ vkui_widget_new(vkui_screen_t* screen, size_t wsize,
 	return NULL;
 }
 
+vkui_widget_t*
+vkui_widget_newSpace(vkui_screen_t* screen)
+{
+	ASSERT(screen);
+
+	cc_vec4f_t clear =
+	{
+		.a=0.0f
+	};
+
+	vkui_widgetLayout_t layout =
+	{
+		.border   = VKUI_WIDGET_BORDER_NONE,
+		.anchor   = VKUI_WIDGET_ANCHOR_CC,
+		.wrapx    = VKUI_WIDGET_WRAP_STRETCH_TEXT_VMEDIUM,
+		.wrapy    = VKUI_WIDGET_WRAP_STRETCH_TEXT_VMEDIUM,
+		.stretchx = 0.4f,
+		.stretchy = 0.4f
+	};
+
+	vkui_widgetScroll_t scroll =
+	{
+		.scroll_bar = 0
+	};
+
+	vkui_widgetFn_t fn =
+	{
+		.priv = NULL
+	};
+
+	vkui_widgetPrivFn_t priv_fn =
+	{
+		.draw_fn = NULL
+	};
+
+	return vkui_widget_new(screen, 0, &clear, &layout,
+	                       &scroll, &fn, &priv_fn);
+}
+
 void vkui_widget_delete(vkui_widget_t** _self)
 {
 	ASSERT(_self);
