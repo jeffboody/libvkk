@@ -122,13 +122,11 @@ typedef struct vkui_window_s       vkui_window_t;
 
 typedef void (*vkui_screen_playClickFn)(void* sound_fx);
 typedef void (*vkui_text_enterFn)(vkui_widget_t* widget,
-                                  void* priv,
                                   const char* string);
 typedef int (*vkui_widget_clickFn)(vkui_widget_t* widget,
-                                   void* priv, int state,
+                                   int state,
                                    float x, float y);
-typedef void (*vkui_widget_refreshFn)(vkui_widget_t* widget,
-                                      void* priv);
+typedef void (*vkui_widget_refreshFn)(vkui_widget_t* widget);
 
 /*
  * parameter structures
@@ -174,9 +172,9 @@ typedef struct vkui_widgetFn_s
 
 	void*                 priv;
 	void*                 arg;
+	char                  msg[256];
 	vkui_widget_clickFn   click_fn;
 	vkui_widget_refreshFn refresh_fn;
-	char                  msg[256];
 } vkui_widgetFn_t;
 
 typedef struct vkui_textLayout_s
@@ -481,7 +479,7 @@ int               vkui_actionBar_popup(vkui_actionBar_t* self,
                                        vkui_sprite_t* action,
                                        vkui_window_t* popup);
 int               vkui_actionBar_clickPopupFn(vkui_widget_t* widget,
-                                              void* priv, int state,
+                                              int state,
                                               float x, float y);
 
 // statusBar

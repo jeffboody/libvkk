@@ -36,10 +36,9 @@
 ***********************************************************/
 
 static int
-vkui_radiobox_click(vkui_widget_t* widget, void* priv,
+vkui_radiobox_click(vkui_widget_t* widget,
                    int state, float x, float y)
 {
-	// priv may be NULL
 	ASSERT(widget);
 
 	vkui_radiobox_t* self = (vkui_radiobox_t*) widget;

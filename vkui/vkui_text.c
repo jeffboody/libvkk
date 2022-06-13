@@ -276,10 +276,9 @@ vkui_text_addc(vkui_text_t* self, char c, int i,
 }
 
 static int
-vkui_text_keyPress(vkui_widget_t* widget, void* priv,
+vkui_text_keyPress(vkui_widget_t* widget,
                    int keycode, int meta)
 {
-	// priv may be NULL
 	ASSERT(widget);
 
 	vkui_text_t*   self   = (vkui_text_t*) widget;
@@ -296,7 +295,7 @@ vkui_text_keyPress(vkui_widget_t* widget, void* priv,
 	size_t size = len + 1;
 	if(keycode == VKK_KEYCODE_ENTER)
 	{
-		(*enter_fn)(widget, priv, self->string);
+		(*enter_fn)(widget, self->string);
 	}
 	else if(keycode == VKK_KEYCODE_ESCAPE)
 	{
@@ -355,11 +354,10 @@ vkui_text_keyPress(vkui_widget_t* widget, void* priv,
 }
 
 static int
-clickEntry(vkui_widget_t* widget, void* priv,
+clickEntry(vkui_widget_t* widget,
            int state, float x, float y)
 {
 	ASSERT(widget);
-	ASSERT(priv);
 
 	vkui_screen_t* screen = widget->screen;
 	if(state == VKUI_WIDGET_POINTER_UP)

@@ -666,7 +666,7 @@ int vkui_widget_click(vkui_widget_t* self, int state,
 		return 0;
 	}
 
-	int clicked = (*click_fn)(self, fn->priv, state, x, y);
+	int clicked = (*click_fn)(self, state, x, y);
 	if(clicked && self->sound_fx &&
 	   (state == VKUI_WIDGET_POINTER_UP))
 	{
@@ -677,10 +677,9 @@ int vkui_widget_click(vkui_widget_t* self, int state,
 }
 
 int vkui_widget_clickUrlFn(vkui_widget_t* widget,
-                           void* priv, int state,
+                           int state,
                            float x, float y)
 {
-	// priv may be NULL
 	ASSERT(widget);
 
 	vkui_screen_t* screen = widget->screen;
@@ -690,7 +689,7 @@ int vkui_widget_clickUrlFn(vkui_widget_t* widget,
 	{
 		char msg[256];
 		snprintf(msg, 256, "{\"url\":\"%s\"}",
-		         widget->fn.msg);
+		         vkui_widget_widgetFnMsg(widget));
 		vkk_engine_platformCmd(engine,
 		                       VKK_PLATFORM_CMD_LOADURL,
 		                       msg);
@@ -703,16 +702,14 @@ int vkui_widget_keyPress(vkui_widget_t* self,
 {
 	ASSERT(self);
 
-	vkui_widgetFn_t*     fn      = &self->fn;
-	vkui_widgetPrivFn_t* priv_fn = &self->priv_fn;
-
+	vkui_widgetPrivFn_t*   priv_fn     = &self->priv_fn;
 	vkui_widget_keyPressFn keyPress_fn = priv_fn->keyPress_fn;
 	if(keyPress_fn == NULL)
 	{
 		return 0;
 	}
 
-	return (*keyPress_fn)(self, fn->priv, keycode, meta);
+	return (*keyPress_fn)(self, keycode, meta);
 }
 
 void vkui_widget_drag(vkui_widget_t* self,
@@ -872,7 +869,7 @@ void vkui_widget_refresh(vkui_widget_t* self)
 	vkui_widget_refreshFn refresh_fn = fn->refresh_fn;
 	if(refresh_fn)
 	{
-		(*refresh_fn)(self, fn->priv);
+		(*refresh_fn)(self);
 	}
 }
 
@@ -962,4 +959,25 @@ vkui_widget_privReflowFn(vkui_widget_t* self,
 	ASSERT(priv_fn->reflow_fn == NULL);
 
 	priv_fn->reflow_fn = reflow_fn;
+}
+
+void* vkui_widget_widgetFnPriv(vkui_widget_t* self)
+{
+	ASSERT(self);
+
+	return self->fn.priv;
+}
+
+void* vkui_widget_widgetFnArg(vkui_widget_t* self)
+{
+	ASSERT(self);
+
+	return self->fn.arg;
+}
+
+const char* vkui_widget_widgetFnMsg(vkui_widget_t* self)
+{
+	ASSERT(self);
+
+	return self->fn.msg;
 }

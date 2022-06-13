@@ -173,10 +173,9 @@ vkui_listbox_size(vkui_widget_t* widget, float* w, float* h)
 }
 
 static int
-vkui_listbox_click(vkui_widget_t* widget, void* priv,
+vkui_listbox_click(vkui_widget_t* widget,
                    int state, float x, float y)
 {
-	// priv may be NULL
 	ASSERT(widget);
 
 	vkui_listbox_t* self = (vkui_listbox_t*) widget;
@@ -438,9 +437,8 @@ static void vkui_listbox_draw(vkui_widget_t* widget)
 }
 
 static void
-vkui_listbox_refresh(vkui_widget_t* widget, void* priv)
+vkui_listbox_refresh(vkui_widget_t* widget)
 {
-	// priv may be NULL
 	ASSERT(widget);
 
 	vkui_listbox_t* self = (vkui_listbox_t*) widget;

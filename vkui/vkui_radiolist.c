@@ -39,10 +39,9 @@
 ***********************************************************/
 
 static void
-vkui_radiolist_refresh(vkui_widget_t* widget, void* priv)
+vkui_radiolist_refresh(vkui_widget_t* widget)
 {
 	ASSERT(widget);
-	ASSERT(priv == NULL);
 
 	vkui_radiolist_t* self = (vkui_radiolist_t*) widget;
 	vkui_listbox_t*   base = &self->base;

@@ -72,11 +72,10 @@ vkui_layer_size(vkui_widget_t* widget, float* w, float* h)
 }
 
 static int
-vkui_layer_click(vkui_widget_t* widget, void* priv,
+vkui_layer_click(vkui_widget_t* widget,
                  int state, float x, float y)
 {
 	ASSERT(widget);
-	ASSERT(priv == NULL);
 
 	// send events front-to-back
 	vkui_layer_t*  self = (vkui_layer_t*) widget;
@@ -161,10 +160,9 @@ static void vkui_layer_draw(vkui_widget_t* widget)
 }
 
 static void
-vkui_layer_refresh(vkui_widget_t* widget, void* priv)
+vkui_layer_refresh(vkui_widget_t* widget)
 {
 	ASSERT(widget);
-	ASSERT(priv == NULL);
 
 	vkui_layer_t*  self = (vkui_layer_t*) widget;
 	cc_listIter_t* iter = cc_list_head(self->list);

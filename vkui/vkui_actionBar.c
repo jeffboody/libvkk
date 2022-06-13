@@ -236,18 +236,19 @@ int vkui_actionBar_popup(vkui_actionBar_t* self,
 }
 
 int vkui_actionBar_clickPopupFn(vkui_widget_t* widget,
-                                void* priv, int state,
+                                int state,
                                 float x, float y)
 {
 	ASSERT(widget);
-	ASSERT(priv);
 
 	vkui_actionBar_t* ab;
 	vkui_sprite_t*    action;
 	vkui_window_t**   _popup;
-	ab     = (vkui_actionBar_t*) priv;
+	ab     = (vkui_actionBar_t*)
+	         vkui_widget_widgetFnPriv(widget);
 	action = (vkui_sprite_t*) widget;
-	_popup = (vkui_window_t**) widget->fn.arg;
+	_popup = (vkui_window_t**)
+	         vkui_widget_widgetFnArg(widget);
 	if(state == VKUI_WIDGET_POINTER_UP)
 	{
 		if((ab == NULL) || (_popup == NULL))

@@ -50,7 +50,7 @@ typedef void (*vkui_widget_sizeFn)(vkui_widget_t* widget,
 typedef void (*vkui_widget_aspectRatioFn)(vkui_widget_t* widget,
                                           float* ar);
 typedef int  (*vkui_widget_keyPressFn)(vkui_widget_t* widget,
-                                       void* priv, int keycode, int meta);
+                                       int keycode, int meta);
 typedef void (*vkui_widget_layoutFn)(vkui_widget_t* widget,
                                      int dragx, int dragy);
 typedef void (*vkui_widget_dragFn)(vkui_widget_t* widget,
@@ -161,7 +161,7 @@ int            vkui_widget_click(vkui_widget_t* self,
                                  int state,
                                  float x, float y);
 int            vkui_widget_clickUrlFn(vkui_widget_t* widget,
-                                      void* priv, int state,
+                                      int state,
                                       float x, float y);
 int            vkui_widget_keyPress(vkui_widget_t* self,
                                     int keycode, int meta);
@@ -184,5 +184,8 @@ void           vkui_widget_scrollTop(vkui_widget_t* self);
 int            vkui_widget_hasFocus(vkui_widget_t* self);
 void           vkui_widget_privReflowFn(vkui_widget_t* self,
                                         vkui_widget_reflowFn reflow_fn);
+void*          vkui_widget_widgetFnPriv(vkui_widget_t* self);
+void*          vkui_widget_widgetFnArg(vkui_widget_t* self);
+const char*    vkui_widget_widgetFnMsg(vkui_widget_t* self);
 
 #endif

@@ -37,10 +37,9 @@
 ***********************************************************/
 
 static int
-vkui_window_click(vkui_widget_t* widget, void* priv,
+vkui_window_click(vkui_widget_t* widget,
                   int state, float x, float y)
 {
-	// priv may be NULL
 	ASSERT(widget);
 
 	vkui_window_t* self   = (vkui_window_t*) widget;
@@ -67,9 +66,8 @@ vkui_window_click(vkui_widget_t* widget, void* priv,
 }
 
 static void
-vkui_window_refresh(vkui_widget_t* widget, void* priv)
+vkui_window_refresh(vkui_widget_t* widget)
 {
-	// priv may be NULL
 	ASSERT(widget);
 
 	vkui_window_t* self   = (vkui_window_t*) widget;

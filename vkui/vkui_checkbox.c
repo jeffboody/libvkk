@@ -37,10 +37,9 @@
 ***********************************************************/
 
 static int
-vkui_checkbox_click(vkui_widget_t* widget, void* priv,
+vkui_checkbox_click(vkui_widget_t* widget,
                     int state, float x, float y)
 {
-	// priv may be NULL
 	ASSERT(widget);
 
 	vkui_checkbox_t* self = (vkui_checkbox_t*) widget;
@@ -52,9 +51,8 @@ vkui_checkbox_click(vkui_widget_t* widget, void* priv,
 }
 
 static void
-vkui_checkbox_refresh(vkui_widget_t* widget, void* priv)
+vkui_checkbox_refresh(vkui_widget_t* widget)
 {
-	// priv may be NULL
 	ASSERT(widget);
 
 	vkui_checkbox_t*  self = (vkui_checkbox_t*) widget;
