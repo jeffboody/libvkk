@@ -24,8 +24,6 @@
 #ifndef vkui_text_H
 #define vkui_text_H
 
-#include "vkui.h"
-
 #define VKUI_TEXT_FONTTYPE_REGULAR 0
 #define VKUI_TEXT_FONTTYPE_BOLD    1
 #define VKUI_TEXT_FONTTYPE_MEDIUM  2

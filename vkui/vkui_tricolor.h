@@ -26,7 +26,6 @@
 
 #include "../../libcc/math/cc_rect12f.h"
 #include "../../libcc/math/cc_vec4f.h"
-#include "vkui.h"
 
 typedef struct vkui_tricolor_s
 {

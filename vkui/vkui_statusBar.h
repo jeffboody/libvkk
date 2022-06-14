@@ -24,8 +24,6 @@
 #ifndef vkui_statusBar_H
 #define vkui_statusBar_H
 
-#include "vkui.h"
-
 typedef struct vkui_statusBar_s
 {
 	vkui_listbox_t base;

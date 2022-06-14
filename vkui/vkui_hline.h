@@ -24,8 +24,6 @@
 #ifndef vkui_hline_H
 #define vkui_hline_H
 
-#include "vkui.h"
-
 #define VKUI_HLINE_SIZE_SMALL  0
 #define VKUI_HLINE_SIZE_MEDIUM 1
 #define VKUI_HLINE_SIZE_LARGE  2

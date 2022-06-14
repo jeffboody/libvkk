@@ -24,8 +24,6 @@
 #ifndef vkui_window_H
 #define vkui_window_H
 
-#include "vkui.h"
-
 #define VKUI_WINDOW_FLAG_TITLE        0x01
 #define VKUI_WINDOW_FLAG_PAGE_DEFAULT 0x02
 #define VKUI_WINDOW_FLAG_PAGE_SIDEBAR 0x04

@@ -24,8 +24,6 @@
 #ifndef vkui_checkbox_H
 #define vkui_checkbox_H
 
-#include "vkui.h"
-
 typedef struct vkui_checkbox_s
 {
 	vkui_bulletbox_t base;

@@ -25,7 +25,6 @@
 #define vkui_listbox_H
 
 #include "../../libcc/cc_list.h"
-#include "vkui.h"
 
 #define VKUI_LISTBOX_ORIENTATION_VERTICAL   0
 #define VKUI_LISTBOX_ORIENTATION_HORIZONTAL 1

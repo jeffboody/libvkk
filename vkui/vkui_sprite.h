@@ -24,8 +24,6 @@
 #ifndef vkui_sprite_H
 #define vkui_sprite_H
 
-#include "vkui.h"
-
 typedef struct vkui_sprite_s
 {
 	vkui_widget_t base;

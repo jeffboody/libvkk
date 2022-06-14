@@ -1,25 +1,25 @@
 TARGET  = libvkk.a
 CLASSES = \
-	vkk_buffer              \
-	vkk_commandBuffer       \
-	vkk_defaultRenderer     \
-	vkk_engine              \
-	vkk_graphicsPipeline    \
-	vkk_image               \
-	vkk_imageRenderer       \
-	vkk_imageStreamRenderer \
-	vkk_imageUploader       \
-	vkk_linux               \
-	vkk_memory              \
-	vkk_memoryChunk         \
-	vkk_memoryManager       \
-	vkk_memoryPool          \
-	vkk_pipelineLayout      \
-	vkk_renderer            \
-	vkk_secondaryRenderer   \
-	vkk_uniformSet          \
-	vkk_uniformSetFactory   \
-	vkk_util
+	platform/vkk_linux           \
+	core/vkk_buffer              \
+	core/vkk_commandBuffer       \
+	core/vkk_defaultRenderer     \
+	core/vkk_engine              \
+	core/vkk_graphicsPipeline    \
+	core/vkk_image               \
+	core/vkk_imageRenderer       \
+	core/vkk_imageStreamRenderer \
+	core/vkk_imageUploader       \
+	core/vkk_memory              \
+	core/vkk_memoryChunk         \
+	core/vkk_memoryManager       \
+	core/vkk_memoryPool          \
+	core/vkk_pipelineLayout      \
+	core/vkk_renderer            \
+	core/vkk_secondaryRenderer   \
+	core/vkk_uniformSet          \
+	core/vkk_uniformSetFactory   \
+	core/vkk_util
 ifeq ($(VKK_USE_VKUI),1)
 	CLASSES += \
 		vkui/vkui_actionBar \
@@ -46,7 +46,7 @@ OBJECTS = $(SOURCE:.c=.o)
 HFILES  = vkk.h $(CLASSES:%=%.h)
 ifeq ($(VKK_USE_VKUI),1)
 	HFILES += \
-		vkui/vkui.h
+		vkui.h
 endif
 OPT     = -O2 -Wall -Wno-format-truncation
 CFLAGS   = $(OPT) -I$(VULKAN_SDK)/include `sdl2-config --cflags`

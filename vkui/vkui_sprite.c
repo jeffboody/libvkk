@@ -30,7 +30,7 @@
 #include "../../libcc/math/cc_mat4f.h"
 #include "../../libcc/cc_memory.h"
 #include "../../libcc/cc_log.h"
-#include "vkui.h"
+#include "../vkui.h"
 
 static const float XYUV[] =
 {

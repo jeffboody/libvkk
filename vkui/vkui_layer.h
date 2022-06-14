@@ -25,7 +25,6 @@
 #define vkui_layer_H
 
 #include "../../libcc/cc_list.h"
-#include "vkui.h"
 
 typedef struct vkui_layer_s
 {

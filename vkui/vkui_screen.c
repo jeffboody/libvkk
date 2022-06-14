@@ -35,7 +35,7 @@
 #include "../../libbfs/bfs_file.h"
 #include "../../texgz/texgz_png.h"
 #include "../../texgz/texgz_jpeg.h"
-#include "vkui.h"
+#include "../vkui.h"
 
 /***********************************************************
 * protected                                                *

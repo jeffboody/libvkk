@@ -25,7 +25,6 @@
 #define vkui_textbox_H
 
 #include "../../libcc/cc_list.h"
-#include "vkui.h"
 
 typedef struct vkui_textbox_s
 {

@@ -27,7 +27,7 @@
 #include "../../libcc/math/cc_rect12f.h"
 #include "../../libcc/cc_map.h"
 #include "../../libcc/cc_multimap.h"
-#include "vkui.h"
+#include "../vkui.h"
 
 #define VKUI_SCREEN_SCALE_XSMALL 1
 #define VKUI_SCREEN_SCALE_SMALL  2

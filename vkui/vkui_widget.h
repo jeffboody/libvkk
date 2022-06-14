@@ -26,7 +26,6 @@
 
 #include "../../libcc/math/cc_rect12f.h"
 #include "../../libcc/math/cc_vec4f.h"
-#include "vkui.h"
 
 #define VKUI_WIDGET_ANCHOR_TL 0
 #define VKUI_WIDGET_ANCHOR_TC 1

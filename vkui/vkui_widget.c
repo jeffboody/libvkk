@@ -30,7 +30,7 @@
 #include "../../libcc/cc_memory.h"
 #include "../../libcc/cc_log.h"
 #include "../vkk_platform.h"
-#include "vkui.h"
+#include "../vkui.h"
 
 /***********************************************************
 * private                                                  *

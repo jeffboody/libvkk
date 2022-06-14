@@ -38,26 +38,26 @@ add_library(vkk
             STATIC
 
             # Source
-            vkk_android.c
-            vkk_buffer.c
-            vkk_commandBuffer.c
-            vkk_defaultRenderer.c
-            vkk_engine.c
-            vkk_graphicsPipeline.c
-            vkk_image.c
-            vkk_imageRenderer.c
-            vkk_imageStreamRenderer.c
-            vkk_imageUploader.c
-            vkk_memory.c
-            vkk_memoryChunk.c
-            vkk_memoryManager.c
-            vkk_memoryPool.c
-            vkk_pipelineLayout.c
-            vkk_renderer.c
-            vkk_secondaryRenderer.c
-            vkk_uniformSet.c
-            vkk_uniformSetFactory.c
-            vkk_util.c
+            platform/vkk_android.c
+            core/vkk_buffer.c
+            core/vkk_commandBuffer.c
+            core/vkk_defaultRenderer.c
+            core/vkk_engine.c
+            core/vkk_graphicsPipeline.c
+            core/vkk_image.c
+            core/vkk_imageRenderer.c
+            core/vkk_imageStreamRenderer.c
+            core/vkk_imageUploader.c
+            core/vkk_memory.c
+            core/vkk_memoryChunk.c
+            core/vkk_memoryManager.c
+            core/vkk_memoryPool.c
+            core/vkk_pipelineLayout.c
+            core/vkk_renderer.c
+            core/vkk_secondaryRenderer.c
+            core/vkk_uniformSet.c
+            core/vkk_uniformSetFactory.c
+            core/vkk_util.c
             ${SOURCE_VKUI})
 
 # Includes

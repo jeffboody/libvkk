@@ -27,7 +27,6 @@
 #include "../../libcc/math/cc_rect12f.h"
 #include "../../texgz/texgz_tex.h"
 #include "../vkk.h"
-#include "vkui.h"
 
 // define cursor as ASCII unit separator
 #define VKUI_FONT_CURSOR 31

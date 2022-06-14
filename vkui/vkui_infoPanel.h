@@ -24,8 +24,6 @@
 #ifndef vkui_infoPanel_H
 #define vkui_infoPanel_H
 
-#include "vkui.h"
-
 typedef struct vkui_infoPanel_s
 {
 	vkui_listbox_t base;
