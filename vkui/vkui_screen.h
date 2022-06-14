@@ -131,8 +131,6 @@ vkui_screen_t* vkui_screen_new(size_t wsize,
                                vkui_screen_playClickFn playClick,
                                vkui_widgetStyle_t* widget_style);
 void           vkui_screen_delete(vkui_screen_t** _self);
-vkui_widget_t* vkui_screen_top(vkui_screen_t* self,
-                               vkui_widget_t* top);
 vkui_window_t* vkui_screen_windowPeek(vkui_screen_t* self);
 void           vkui_screen_windowPush(vkui_screen_t* self,
                                       vkui_window_t* window);
