@@ -30,8 +30,7 @@
 #include "../../libbfs/bfs_file.h"
 #include "../../texgz/texgz_tex.h"
 #include "../../libxmlstream/xml_istream.h"
-#include "vkui_font.h"
-#include "vkui_screen.h"
+#include "vkui.h"
 
 /***********************************************************
 * private                                                  *

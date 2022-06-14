@@ -24,7 +24,6 @@
 #ifndef vkui_radiolist_H
 #define vkui_radiolist_H
 
-#include "vkui_listbox.h"
 #include "vkui.h"
 
 typedef struct vkui_radiolist_s
@@ -39,7 +38,20 @@ typedef struct vkui_radiolist_s
 	int  value;
 } vkui_radiolist_t;
 
-void vkui_radiolist_value(vkui_radiolist_t* self,
-                          int value);
+vkui_radiolist_t* vkui_radiolist_new(vkui_screen_t* screen,
+                                     size_t wsize,
+                                     vkui_widgetLayout_t* layout,
+                                     vkui_widgetScroll_t* scroll,
+                                     vkui_bulletboxStyle_t* bulletbox_style,
+                                     int* pvalue);
+vkui_radiolist_t* vkui_radiolist_newPageItem(vkui_screen_t* screen,
+                                             int* pvalue);
+void              vkui_radiolist_delete(vkui_radiolist_t** _self);
+void              vkui_radiolist_clear(vkui_radiolist_t* self);
+void              vkui_radiolist_add(vkui_radiolist_t* self,
+                                     int value,
+                                     const char* fmt, ...);
+void              vkui_radiolist_value(vkui_radiolist_t* self,
+                                       int value);
 
 #endif

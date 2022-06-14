@@ -24,8 +24,6 @@
 #ifndef vkui_sprite_H
 #define vkui_sprite_H
 
-#include "../vkk.h"
-#include "vkui_widget.h"
 #include "vkui.h"
 
 typedef struct vkui_sprite_s
@@ -49,5 +47,33 @@ typedef struct vkui_sprite_s
 	vkk_uniformSet_t* us1_color;
 	vkk_uniformSet_t* us2_multiplyImage;
 } vkui_sprite_t;
+
+vkui_sprite_t* vkui_sprite_new(vkui_screen_t* screen,
+                               size_t wsize,
+                               vkui_widgetLayout_t* layout,
+                               vkui_widgetFn_t* fn,
+                               cc_vec4f_t* color,
+                               const char** sprite_array);
+vkui_sprite_t* vkui_sprite_newPageImage(vkui_screen_t* screen,
+                                        vkui_widgetFn_t* fn,
+                                        const char** sprite_array);
+vkui_sprite_t* vkui_sprite_newSidebarImage(vkui_screen_t* screen,
+                                           vkui_widgetFn_t* fn,
+                                           const char** sprite_array);
+vkui_sprite_t* vkui_sprite_newActionIcon(vkui_screen_t* screen,
+                                         vkui_widgetFn_t* fn,
+                                         const char** sprite_array);
+vkui_sprite_t* vkui_sprite_newStatusIcon(vkui_screen_t* screen,
+                                         vkui_widgetFn_t* fn,
+                                         const char** sprite_array);
+void          vkui_sprite_delete(vkui_sprite_t** _self);
+void          vkui_sprite_select(vkui_sprite_t* self,
+                                 uint32_t index);
+void          vkui_sprite_rotate(vkui_sprite_t* self,
+                                 float theta);
+void          vkui_sprite_color(vkui_sprite_t* self,
+                                cc_vec4f_t* color);
+void          vkui_sprite_fill(vkui_sprite_t* self,
+                               cc_vec4f_t* color);
 
 #endif

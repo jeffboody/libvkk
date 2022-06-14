@@ -24,12 +24,19 @@
 #ifndef vkui_infoPanel_H
 #define vkui_infoPanel_H
 
-#include "vkui_listbox.h"
 #include "vkui.h"
 
 typedef struct vkui_infoPanel_s
 {
 	vkui_listbox_t base;
 } vkui_infoPanel_t;
+
+vkui_infoPanel_t* vkui_infoPanel_new(vkui_screen_t* screen,
+                                     size_t wsize,
+                                     vkui_widgetFn_t* widget_fn);
+void              vkui_infoPanel_delete(vkui_infoPanel_t** _self);
+void              vkui_infoPanel_add(vkui_infoPanel_t* self,
+                                     vkui_widget_t* widget);
+void              vkui_infoPanel_clear(vkui_infoPanel_t* self);
 
 #endif

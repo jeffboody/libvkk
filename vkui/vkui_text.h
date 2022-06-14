@@ -24,8 +24,48 @@
 #ifndef vkui_text_H
 #define vkui_text_H
 
-#include "vkui_widget.h"
 #include "vkui.h"
+
+#define VKUI_TEXT_FONTTYPE_REGULAR 0
+#define VKUI_TEXT_FONTTYPE_BOLD    1
+#define VKUI_TEXT_FONTTYPE_MEDIUM  2
+
+#define VKUI_TEXT_SIZE_XSMALL -1
+#define VKUI_TEXT_SIZE_SMALL  0
+#define VKUI_TEXT_SIZE_MEDIUM 1
+#define VKUI_TEXT_SIZE_LARGE  2
+
+#define VKUI_TEXT_SPACING_NONE   0x00
+#define VKUI_TEXT_SPACING_SMALL  0x10
+#define VKUI_TEXT_SPACING_MEDIUM 0x20
+#define VKUI_TEXT_SPACING_LARGE  0x40
+
+typedef void (*vkui_text_enterFn)(vkui_widget_t* widget,
+                                  const char* string);
+
+typedef struct vkui_textLayout_s
+{
+	int   border;
+	int   anchor;
+	int   wrapx;
+	float stretchx;
+} vkui_textLayout_t;
+
+typedef struct vkui_textFn_s
+{
+	// functions may be NULL
+
+	vkui_widgetFn_t   fn;
+	vkui_text_enterFn enter_fn;
+} vkui_textFn_t;
+
+typedef struct vkui_textStyle_s
+{
+	int        font_type;
+	int        size;
+	int        spacing;
+	cc_vec4f_t color;
+} vkui_textStyle_t;
 
 typedef struct vkui_text_s
 {
@@ -50,7 +90,24 @@ typedef struct vkui_text_s
 	vkk_uniformSet_t* us1_color;
 } vkui_text_t;
 
-int vkui_text_width(vkui_text_t* self, int cursor);
-int vkui_text_height(vkui_text_t* self);
+vkui_text_t* vkui_text_new(vkui_screen_t* screen,
+                           size_t wsize,
+                           vkui_textLayout_t* text_layout,
+                           vkui_textStyle_t* text_style,
+                           vkui_textFn_t* text_fn,
+                           cc_vec4f_t* color_fill);
+vkui_text_t* vkui_text_newPageHeading(vkui_screen_t* screen);
+vkui_text_t* vkui_text_newPageTextEntry(vkui_screen_t* screen,
+                                        void* priv,
+                                        vkui_text_enterFn enter_fn);
+vkui_text_t* vkui_text_newInfoHeading(vkui_screen_t* screen);
+vkui_text_t* vkui_text_newInfoItem(vkui_screen_t* screen);
+void         vkui_text_delete(vkui_text_t** _self);
+void         vkui_text_color(vkui_text_t* self,
+                             cc_vec4f_t* color);
+int          vkui_text_label(vkui_text_t* self,
+                             const char* fmt, ...);
+int          vkui_text_width(vkui_text_t* self, int cursor);
+int          vkui_text_height(vkui_text_t* self);
 
 #endif

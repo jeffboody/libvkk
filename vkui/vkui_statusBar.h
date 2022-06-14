@@ -24,12 +24,19 @@
 #ifndef vkui_statusBar_H
 #define vkui_statusBar_H
 
-#include "vkui_listbox.h"
 #include "vkui.h"
 
 typedef struct vkui_statusBar_s
 {
 	vkui_listbox_t base;
 } vkui_statusBar_t;
+
+vkui_statusBar_t* vkui_statusBar_new(vkui_screen_t* screen,
+                                     size_t wsize,
+                                     vkui_widgetFn_t* widget_fn);
+void              vkui_statusBar_delete(vkui_statusBar_t** _self);
+void              vkui_statusBar_add(vkui_statusBar_t* self,
+                                     vkui_widget_t* widget);
+void              vkui_statusBar_clear(vkui_statusBar_t* self);
 
 #endif

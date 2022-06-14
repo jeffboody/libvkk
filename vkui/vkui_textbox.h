@@ -25,7 +25,6 @@
 #define vkui_textbox_H
 
 #include "../../libcc/cc_list.h"
-#include "vkui_listbox.h"
 #include "vkui.h"
 
 typedef struct vkui_textbox_s
@@ -41,5 +40,19 @@ typedef struct vkui_textbox_s
 	// text properties
 	vkui_textStyle_t text_style;
 } vkui_textbox_t;
+
+vkui_textbox_t* vkui_textbox_new(vkui_screen_t* screen,
+                                 size_t wsize,
+                                 vkui_widgetLayout_t* layout,
+                                 vkui_widgetScroll_t* scroll,
+                                 vkui_widgetFn_t* fn,
+                                 vkui_textStyle_t* text_style);
+vkui_textbox_t* vkui_textbox_newPageButton(vkui_screen_t* screen,
+                                           vkui_widgetFn_t* fn);
+vkui_textbox_t* vkui_textbox_newPageParagraph(vkui_screen_t* screen);
+void            vkui_textbox_delete(vkui_textbox_t** _self);
+void            vkui_textbox_clear(vkui_textbox_t* self);
+void            vkui_textbox_printf(vkui_textbox_t* self,
+                                    const char* fmt, ...);
 
 #endif

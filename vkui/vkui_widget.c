@@ -30,8 +30,6 @@
 #include "../../libcc/cc_memory.h"
 #include "../../libcc/cc_log.h"
 #include "../vkk_platform.h"
-#include "vkui_screen.h"
-#include "vkui_widget.h"
 #include "vkui.h"
 
 /***********************************************************

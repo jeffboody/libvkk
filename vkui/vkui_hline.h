@@ -24,8 +24,11 @@
 #ifndef vkui_hline_H
 #define vkui_hline_H
 
-#include "vkui_widget.h"
 #include "vkui.h"
+
+#define VKUI_HLINE_SIZE_SMALL  0
+#define VKUI_HLINE_SIZE_MEDIUM 1
+#define VKUI_HLINE_SIZE_LARGE  2
 
 typedef struct vkui_hline_s
 {
@@ -34,5 +37,13 @@ typedef struct vkui_hline_s
 
 	int size;
 } vkui_hline_t;
+
+vkui_hline_t* vkui_hline_new(vkui_screen_t* screen,
+                             size_t wsize,
+                             int size,
+                             cc_vec4f_t* color);
+vkui_hline_t* vkui_hline_newPageItem(vkui_screen_t* screen);
+vkui_hline_t* vkui_hline_newInfoItem(vkui_screen_t* screen);
+void          vkui_hline_delete(vkui_hline_t** _self);
 
 #endif

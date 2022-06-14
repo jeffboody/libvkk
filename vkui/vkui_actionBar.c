@@ -25,8 +25,7 @@
 
 #define LOG_TAG "vkui"
 #include "../../libcc/cc_log.h"
-#include "../../libvkk/vkui/vkui_widget.h"
-#include "vkui_actionBar.h"
+#include "vkui.h"
 
 /***********************************************************
 * private                                                  *

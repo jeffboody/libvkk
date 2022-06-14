@@ -25,7 +25,6 @@
 #define vkui_layer_H
 
 #include "../../libcc/cc_list.h"
-#include "vkui_widget.h"
 #include "vkui.h"
 
 typedef struct vkui_layer_s
@@ -33,5 +32,17 @@ typedef struct vkui_layer_s
 	vkui_widget_t base;
 	cc_list_t*    list;
 } vkui_layer_t;
+
+vkui_layer_t*  vkui_layer_new(vkui_screen_t* screen,
+                              size_t wsize,
+                              vkui_widgetLayout_t* layout,
+                              cc_vec4f_t* color);
+void           vkui_layer_delete(vkui_layer_t** _self);
+void           vkui_layer_clear(vkui_layer_t* self);
+int            vkui_layer_add(vkui_layer_t* self,
+                              vkui_widget_t* widget);
+cc_listIter_t* vkui_layer_head(vkui_layer_t* self);
+vkui_widget_t* vkui_layer_remove(vkui_layer_t* self,
+                                 cc_listIter_t** _iter);
 
 #endif

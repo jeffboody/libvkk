@@ -25,8 +25,10 @@
 #define vkui_listbox_H
 
 #include "../../libcc/cc_list.h"
-#include "vkui_widget.h"
 #include "vkui.h"
+
+#define VKUI_LISTBOX_ORIENTATION_VERTICAL   0
+#define VKUI_LISTBOX_ORIENTATION_HORIZONTAL 1
 
 typedef struct vkui_listbox_s
 {
@@ -35,5 +37,23 @@ typedef struct vkui_listbox_s
 
 	int orientation;
 } vkui_listbox_t;
+
+vkui_listbox_t* vkui_listbox_new(vkui_screen_t* screen,
+                                 size_t wsize,
+                                 vkui_widgetLayout_t* layout,
+                                 vkui_widgetScroll_t* scroll,
+                                 vkui_widgetFn_t* fn,
+                                 int orientation,
+                                 cc_vec4f_t* color);
+void            vkui_listbox_delete(vkui_listbox_t** _self);
+void            vkui_listbox_clear(vkui_listbox_t* self);
+int             vkui_listbox_add(vkui_listbox_t* self,
+                                 vkui_widget_t* widget);
+int             vkui_listbox_addSorted(vkui_listbox_t* self,
+                                       cc_listcmp_fn compare,
+                                       vkui_widget_t* widget);
+cc_listIter_t*  vkui_listbox_head(vkui_listbox_t* self);
+vkui_widget_t*  vkui_listbox_remove(vkui_listbox_t* self,
+                                    cc_listIter_t** _iter);
 
 #endif

@@ -24,7 +24,6 @@
 #ifndef vkui_checkbox_H
 #define vkui_checkbox_H
 
-#include "vkui_bulletbox.h"
 #include "vkui.h"
 
 typedef struct vkui_checkbox_s
@@ -33,5 +32,15 @@ typedef struct vkui_checkbox_s
 
 	int* pvalue;
 } vkui_checkbox_t;
+
+vkui_checkbox_t* vkui_checkbox_new(vkui_screen_t* screen,
+                                   size_t wsize,
+                                   vkui_bulletboxStyle_t* bulletbox_style,
+                                   int* pvalue);
+vkui_checkbox_t* vkui_checkbox_newPageItem(vkui_screen_t* screen,
+                                           int* pvalue);
+void             vkui_checkbox_delete(vkui_checkbox_t** _self);
+void             vkui_checkbox_label(vkui_checkbox_t* self,
+                                     const char* fmt, ...);
 
 #endif

@@ -34,9 +34,7 @@
 #include "../../libcc/cc_log.h"
 #include "../../libcc/cc_timestamp.h"
 #include "../vkk_platform.h"
-#include "vkui_font.h"
-#include "vkui_screen.h"
-#include "vkui_text.h"
+#include "vkui.h"
 
 /***********************************************************
 * private                                                  *

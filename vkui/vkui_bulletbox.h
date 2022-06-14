@@ -24,8 +24,13 @@
 #ifndef vkui_bulletbox_H
 #define vkui_bulletbox_H
 
-#include "vkui_widget.h"
-#include "vkui.h"
+#include "../../libcc/math/cc_vec4f.h"
+
+typedef struct vkui_bulletboxStyle_s
+{
+	cc_vec4f_t       color_icon;
+	vkui_textStyle_t text_style;
+} vkui_bulletboxStyle_t;
 
 typedef struct vkui_bulletbox_s
 {
@@ -33,5 +38,27 @@ typedef struct vkui_bulletbox_s
 	vkui_sprite_t* icon;
 	vkui_text_t*   text;
 } vkui_bulletbox_t;
+
+vkui_bulletbox_t* vkui_bulletbox_new(vkui_screen_t* screen,
+                                     size_t wsize,
+                                     int anchor,
+                                     vkui_widgetFn_t* fn,
+                                     vkui_bulletboxStyle_t* bulletbox_style,
+                                     const char** sprite_array);
+vkui_bulletbox_t* vkui_bulletbox_newPageItem(vkui_screen_t* screen,
+                                             vkui_widgetFn_t* fn,
+                                             const char** sprite_array);
+vkui_bulletbox_t* vkui_bulletbox_newFooterItem(vkui_screen_t* screen,
+                                               vkui_widgetFn_t* fn,
+                                               const char** sprite_array);
+void              vkui_bulletbox_delete(vkui_bulletbox_t** _self);
+void              vkui_bulletbox_select(vkui_bulletbox_t* self,
+                                        uint32_t index);
+void              vkui_bulletbox_colorIcon(vkui_bulletbox_t* self,
+                                           cc_vec4f_t* color);
+void              vkui_bulletbox_colorText(vkui_bulletbox_t* self,
+                                           cc_vec4f_t* color);
+void              vkui_bulletbox_label(vkui_bulletbox_t* self,
+                                       const char* fmt, ...);
 
 #endif

@@ -24,7 +24,6 @@
 #ifndef vkui_radiobox_H
 #define vkui_radiobox_H
 
-#include "vkui_bulletbox.h"
 #include "vkui.h"
 
 typedef struct vkui_radiobox_s

@@ -26,20 +26,20 @@
 
 #include "../../libcc/math/cc_rect12f.h"
 #include "../../texgz/texgz_tex.h"
-#include "vkui_sprite.h"
+#include "../vkk.h"
 #include "vkui.h"
 
 // define cursor as ASCII unit separator
 #define VKUI_FONT_CURSOR 31
 
-typedef struct
+typedef struct vkui_fontcoords_s
 {
 	int x;
 	int y;
 	int w;
 } vkui_fontcoords_t;
 
-typedef struct
+typedef struct vkui_font_s
 {
 	texgz_tex_t* tex;
 

@@ -27,15 +27,21 @@
 #include "../../libcc/math/cc_rect12f.h"
 #include "../../libcc/cc_map.h"
 #include "../../libcc/cc_multimap.h"
-#include "vkui_font.h"
-#include "vkui_sprite.h"
 #include "vkui.h"
+
+#define VKUI_SCREEN_SCALE_XSMALL 1
+#define VKUI_SCREEN_SCALE_SMALL  2
+#define VKUI_SCREEN_SCALE_MEDIUM 3
+#define VKUI_SCREEN_SCALE_LARGE  4
+#define VKUI_SCREEN_SCALE_XLARGE 5
 
 #define VKUI_SCREEN_BIND_NONE     0
 #define VKUI_SCREEN_BIND_COLOR    1
 #define VKUI_SCREEN_BIND_IMAGE    2
 #define VKUI_SCREEN_BIND_TEXT     3
 #define VKUI_SCREEN_BIND_TRICOLOR 4
+
+typedef void (*vkui_screen_playClickFn)(void* sound_fx);
 
 typedef struct vkui_screen_s
 {
@@ -117,6 +123,73 @@ typedef struct vkui_screen_s
 	cc_multimap_t* map_text_vb;
 } vkui_screen_t;
 
+vkui_screen_t* vkui_screen_new(size_t wsize,
+                               vkk_engine_t* engine,
+                               vkk_renderer_t* renderer,
+                               const char* resource,
+                               void* sound_fx,
+                               vkui_screen_playClickFn playClick,
+                               vkui_widgetStyle_t* widget_style);
+void           vkui_screen_delete(vkui_screen_t** _self);
+vkui_widget_t* vkui_screen_top(vkui_screen_t* self,
+                               vkui_widget_t* top);
+vkui_window_t* vkui_screen_windowPeek(vkui_screen_t* self);
+void           vkui_screen_windowPush(vkui_screen_t* self,
+                                      vkui_window_t* window);
+int            vkui_screen_windowPop(vkui_screen_t* self);
+void           vkui_screen_windowReset(vkui_screen_t* self,
+                                       vkui_window_t* window);
+void           vkui_screen_contentRect(vkui_screen_t* self,
+                                       int t, int l,
+                                       int b, int r);
+void           vkui_screen_focus(vkui_screen_t* self,
+                                 vkui_widget_t* focus);
+void           vkui_screen_move(vkui_screen_t* self,
+                                vkui_widget_t* move);
+void           vkui_screen_density(vkui_screen_t* self,
+                                   float density);
+void           vkui_screen_rescale(vkui_screen_t* self,
+                                   int scale);
+int            vkui_screen_pointerDown(vkui_screen_t* self,
+                                       float x, float y,
+                                       double t0);
+int            vkui_screen_pointerUp(vkui_screen_t* self,
+                                     float x, float y,
+                                     double t0);
+int            vkui_screen_pointerMove(vkui_screen_t* self,
+                                       float x, float y,
+                                       double t0);
+int            vkui_screen_keyPress(vkui_screen_t* self,
+                                    int keycode, int meta);
+void           vkui_screen_draw(vkui_screen_t* self);
+void           vkui_screen_colorPageItem(vkui_screen_t* self,
+                                         cc_vec4f_t* color);
+void           vkui_screen_colorPageHeading(vkui_screen_t* self,
+                                            cc_vec4f_t* color);
+void           vkui_screen_colorPageImage(vkui_screen_t* self,
+                                          cc_vec4f_t* color);
+void           vkui_screen_colorPageLink(vkui_screen_t* self,
+                                         cc_vec4f_t* color);
+void           vkui_screen_colorPageEntry(vkui_screen_t* self,
+                                          cc_vec4f_t* color);
+void           vkui_screen_colorBanner(vkui_screen_t* self,
+                                       cc_vec4f_t* color);
+void           vkui_screen_colorBannerText(vkui_screen_t* self,
+                                           cc_vec4f_t* color);
+void           vkui_screen_colorActionIcon0(vkui_screen_t* self,
+                                            cc_vec4f_t* color);
+void           vkui_screen_colorActionIcon1(vkui_screen_t* self,
+                                            cc_vec4f_t* color);
+void           vkui_screen_colorStatusIcon(vkui_screen_t* self,
+                                           cc_vec4f_t* color);
+void           vkui_screen_colorFooterItem(vkui_screen_t* self,
+                                           cc_vec4f_t* color);
+void           vkui_screen_colorBackground(vkui_screen_t* self,
+                                           cc_vec4f_t* color);
+void           vkui_screen_colorScroll0(vkui_screen_t* self,
+                                        cc_vec4f_t* color);
+void           vkui_screen_colorScroll1(vkui_screen_t* self,
+                                        cc_vec4f_t* color);
 void          vkui_screen_sizei(vkui_screen_t* self,
                                 int* w, int* h);
 void          vkui_screen_sizef(vkui_screen_t* self,
@@ -142,10 +215,8 @@ vkui_font_t*  vkui_screen_font(vkui_screen_t* self,
 vkk_buffer_t* vkui_screen_textVb(vkui_screen_t* self,
                                  size_t size,
                                  vkk_buffer_t* vb);
-
-vkk_image_t*
-vkui_screen_spriteImage(vkui_screen_t* self,
-                        const char* name,
-                        texgz_tex_t** _tex);
+vkk_image_t*  vkui_screen_spriteImage(vkui_screen_t* self,
+                                      const char* name,
+                                      texgz_tex_t** _tex);
 
 #endif

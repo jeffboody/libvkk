@@ -26,8 +26,31 @@
 
 #include "../../libcc/math/cc_rect12f.h"
 #include "../../libcc/math/cc_vec4f.h"
-#include "vkui_tricolor.h"
 #include "vkui.h"
+
+#define VKUI_WIDGET_ANCHOR_TL 0
+#define VKUI_WIDGET_ANCHOR_TC 1
+#define VKUI_WIDGET_ANCHOR_TR 2
+#define VKUI_WIDGET_ANCHOR_CL 3
+#define VKUI_WIDGET_ANCHOR_CC 4
+#define VKUI_WIDGET_ANCHOR_CR 5
+#define VKUI_WIDGET_ANCHOR_BL 6
+#define VKUI_WIDGET_ANCHOR_BC 7
+#define VKUI_WIDGET_ANCHOR_BR 8
+
+#define VKUI_WIDGET_WRAP_SHRINK               0
+#define VKUI_WIDGET_WRAP_STRETCH_PARENT       1
+#define VKUI_WIDGET_WRAP_STRETCH_TEXT_VSMALL  2
+#define VKUI_WIDGET_WRAP_STRETCH_TEXT_VMEDIUM 3
+#define VKUI_WIDGET_WRAP_STRETCH_TEXT_VLARGE  4
+#define VKUI_WIDGET_WRAP_STRETCH_TEXT_HSMALL  5
+#define VKUI_WIDGET_WRAP_STRETCH_TEXT_HMEDIUM 6
+#define VKUI_WIDGET_WRAP_STRETCH_TEXT_HLARGE  7
+
+#define VKUI_WIDGET_BORDER_NONE   0x00
+#define VKUI_WIDGET_BORDER_SMALL  0x11
+#define VKUI_WIDGET_BORDER_MEDIUM 0x22
+#define VKUI_WIDGET_BORDER_LARGE  0x44
 
 #define VKUI_WIDGET_BORDER_HSMALL   0x01
 #define VKUI_WIDGET_BORDER_HMEDIUM  0x02
@@ -43,6 +66,10 @@
 // vertices per corner
 #define VKUI_WIDGET_BEZEL 8
 
+typedef int  (*vkui_widget_clickFn)(vkui_widget_t* widget,
+                                    int state,
+                                    float x, float y);
+typedef void (*vkui_widget_refreshFn)(vkui_widget_t* widget);
 typedef void (*vkui_widget_reflowFn)(vkui_widget_t* widget,
                                      float w, float h);
 typedef void (*vkui_widget_sizeFn)(vkui_widget_t* widget,
@@ -58,6 +85,59 @@ typedef void (*vkui_widget_dragFn)(vkui_widget_t* widget,
                                    float dx, float dy);
 typedef void (*vkui_widget_scrollTopFn)(vkui_widget_t* widget);
 typedef void (*vkui_widget_drawFn)(vkui_widget_t* widget);
+
+typedef struct vkui_widgetLayout_s
+{
+	// anchor
+	//    the anchor point defines how a widget is attached to
+	//    its parent/container widget
+	//    e.g. an CC anchor for a widget that is added to a
+	//    layer will cause the center of the widget to be
+	//    placed at the center of the layer
+	// horizontal/vertical wrapping
+	//    shrink:
+	//       size of children plus border
+	//       border is outset from children
+	//       children must be shrink
+	//       (except lists which may have both)
+	//    stretch:
+	//       size of container
+	//       border is inset from container
+	//       children may be stretch or shrink
+	//       top level widget must be stretch
+	int   border;
+	int   anchor;
+	int   wrapx;
+	int   wrapy;
+	float stretchx;
+	float stretchy;
+} vkui_widgetLayout_t;
+
+typedef struct vkui_widgetScroll_s
+{
+	int        scroll_bar;
+	cc_vec4f_t color0;
+	cc_vec4f_t color1;
+} vkui_widgetScroll_t;
+
+typedef struct vkui_widgetStyle_s
+{
+	cc_vec4f_t color_primary;
+	cc_vec4f_t color_secondary;
+	cc_vec4f_t color_text;
+	cc_vec4f_t color_background;
+} vkui_widgetStyle_t;
+
+typedef struct vkui_widgetFn_s
+{
+	// priv, arg, msg and functions may be NULL
+
+	void*                 priv;
+	void*                 arg;
+	char                  msg[256];
+	vkui_widget_clickFn   click_fn;
+	vkui_widget_refreshFn refresh_fn;
+} vkui_widgetFn_t;
 
 typedef struct vkui_widgetPrivFn_s
 {

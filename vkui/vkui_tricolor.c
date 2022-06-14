@@ -28,9 +28,7 @@
 #include "../../libcc/math/cc_vec4f.h"
 #include "../../libcc/cc_log.h"
 #include "../../libcc/cc_memory.h"
-#include "vkui_tricolor.h"
-#include "vkui_screen.h"
-#include "vkui_widget.h"
+#include "vkui.h"
 
 /***********************************************************
 * public                                                   *

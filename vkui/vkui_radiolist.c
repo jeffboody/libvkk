@@ -28,11 +28,7 @@
 
 #define LOG_TAG "vkui"
 #include "../../libcc/cc_log.h"
-#include "vkui_radiobox.h"
-#include "vkui_radiolist.h"
-#include "vkui_screen.h"
-#include "vkui_text.h"
-#include "vkui_widget.h"
+#include "vkui.h"
 
 /***********************************************************
 * private                                                  *

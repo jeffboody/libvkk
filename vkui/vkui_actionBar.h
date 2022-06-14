@@ -24,9 +24,6 @@
 #ifndef vkui_actionBar_H
 #define vkui_actionBar_H
 
-#include "vkui_listbox.h"
-#include "vkui.h"
-
 typedef struct vkui_actionBar_s
 {
 	vkui_listbox_t  base;
@@ -35,5 +32,19 @@ typedef struct vkui_actionBar_s
 	vkui_sprite_t*  selected;
 	int             forward;
 } vkui_actionBar_t;
+
+vkui_actionBar_t* vkui_actionBar_new(vkui_screen_t* screen,
+                                     size_t wsize,
+                                     int anchor,
+                                     int orientation,
+                                     vkui_widget_refreshFn refresh_fn);
+void              vkui_actionBar_delete(vkui_actionBar_t** _self);
+vkui_listbox_t*   vkui_actionBar_actions(vkui_actionBar_t* self);
+int               vkui_actionBar_popup(vkui_actionBar_t* self,
+                                       vkui_sprite_t* action,
+                                       vkui_window_t* popup);
+int               vkui_actionBar_clickPopupFn(vkui_widget_t* widget,
+                                              int state,
+                                              float x, float y);
 
 #endif
