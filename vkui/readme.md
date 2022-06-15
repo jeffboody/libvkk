@@ -5,13 +5,7 @@ The VKUI user interface is defined by creating a screen
 and one or more widget objects.
 
 A screen is required to manage shared resources, control
-the window stack, handle events and perform rendering. The
-screen accepts a VKK renderer which allows the app to
-define where rendering occurs. Typically an app will render
-directly to the display via the default renderer. However,
-an app may also render to a display embedded in a 3D
-environment via an image stream renderer (e.g. render to
-texture).
+the window stack, handle events and perform rendering.
 
 Widgets are designed as building blocks which the user may
 inherit from to build more complex widgets. Inheritance is
@@ -60,7 +54,26 @@ the user to create a commonly used subclass of the widget
 Note that the VKUI library is optional and must be enabled
 by setting/exporting the VKK\_USE\_VKUI variable.
 
-The following sections briefly describe the standard widgets.
+The following sections briefly describe the screen and
+standard widgets.
+
+Screen
+------
+
+The screen accepts a VKK renderer which allows the app to
+define where rendering occurs. Typically an app will render
+directly to the display via the default renderer. However,
+an app may also render to a display embedded in a 3D
+environment via an image stream renderer (e.g. render to
+texture).
+
+The screen also accepts a vkui\_widgetStyle\_t color
+palette which is used to derive colors the various widget
+components. The derived colors are roughly based on the
+[Material Design Dark Theme](https://material.io/design/color/dark-theme.html).
+Here is an example color palette that seems to work well.
+
+![Mint Color Palette](../doc/palette.jpg?raw=true "Mint Color Palette")
 
 Widget
 ------

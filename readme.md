@@ -150,9 +150,15 @@ Open source examples include
 [Gears VK](https://github.com/jeffboody/gearsvk) and
 [Precomputed Atmospheric Scattering](https://github.com/jeffboody/precomputed_atmospheric_scattering/tree/master/atmosphere/demovk).
 
+![Gears VK](doc/gearsvk.jpg?raw=true "Gears VK")
+
+![Precomputed Atmospheric Scattering](doc/sky2.jpg?raw=true "Precomputed Atmospheric Scattering")
+
 The VKK library is also used by the
 [Trekking Maps](https://www.3dgesoftware.com/)
 app which is available on the Google Play Store.
+
+![Trekking Maps](doc/trekking-maps.jpg?raw=true "Trekking Maps")
 
 License
 =======
