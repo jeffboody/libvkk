@@ -19,7 +19,7 @@ delivered when the app main thread is paused.
 	typedef void  (*vkk_platformOnPause_fn)(void* priv);
 	typedef void  (*vkk_platformOnDraw_fn)(void* priv);
 	typedef void  (*vkk_platformOnEvent_fn)(void* priv,
-	                                        vkk_event_t* event);
+	                                        vkk_platformEvent_t* event);
 
 	typedef struct
 	{
@@ -44,26 +44,26 @@ changes to screen density, the content rect and permissions.
 
 	typedef enum
 	{
-		VKK_EVENT_TYPE_UNDEFINED         = -1,
-		VKK_EVENT_TYPE_ACCELEROMETER     = 0,
-		VKK_EVENT_TYPE_ACTION_DOWN       = 1,
-		VKK_EVENT_TYPE_ACTION_MOVE       = 2,
-		VKK_EVENT_TYPE_ACTION_UP         = 3,
-		VKK_EVENT_TYPE_AXIS_MOVE         = 4,
-		VKK_EVENT_TYPE_BUTTON_DOWN       = 5,
-		VKK_EVENT_TYPE_BUTTON_UP         = 6,
-		VKK_EVENT_TYPE_DENSITY           = 7,
-		VKK_EVENT_TYPE_DOCUMENT          = 8,
-		VKK_EVENT_TYPE_GPS               = 9,
-		VKK_EVENT_TYPE_GYROSCOPE         = 10,
-		VKK_EVENT_TYPE_KEY_DOWN          = 11,
-		VKK_EVENT_TYPE_KEY_UP            = 12,
-		VKK_EVENT_TYPE_MAGNETOMETER      = 13,
-		VKK_EVENT_TYPE_CONTENT_RECT      = 14,
-		VKK_EVENT_TYPE_PERMISSION_STATUS = 15,
-		VKK_EVENT_TYPE_LOW_MEMORY        = 16,
-		VKK_EVENT_TYPE_MEMORY_INFO       = 17,
-	} vkk_eventType_e;
+		VKK_PLATFORM_EVENTTYPE_UNDEFINED         = -1,
+		VKK_PLATFORM_EVENTTYPE_ACCELEROMETER     = 0,
+		VKK_PLATFORM_EVENTTYPE_ACTION_DOWN       = 1,
+		VKK_PLATFORM_EVENTTYPE_ACTION_MOVE       = 2,
+		VKK_PLATFORM_EVENTTYPE_ACTION_UP         = 3,
+		VKK_PLATFORM_EVENTTYPE_AXIS_MOVE         = 4,
+		VKK_PLATFORM_EVENTTYPE_BUTTON_DOWN       = 5,
+		VKK_PLATFORM_EVENTTYPE_BUTTON_UP         = 6,
+		VKK_PLATFORM_EVENTTYPE_DENSITY           = 7,
+		VKK_PLATFORM_EVENTTYPE_DOCUMENT          = 8,
+		VKK_PLATFORM_EVENTTYPE_GPS               = 9,
+		VKK_PLATFORM_EVENTTYPE_GYROSCOPE         = 10,
+		VKK_PLATFORM_EVENTTYPE_KEY_DOWN          = 11,
+		VKK_PLATFORM_EVENTTYPE_KEY_UP            = 12,
+		VKK_PLATFORM_EVENTTYPE_MAGNETOMETER      = 13,
+		VKK_PLATFORM_EVENTTYPE_CONTENT_RECT      = 14,
+		VKK_PLATFORM_EVENTTYPE_PERMISSION_STATUS = 15,
+		VKK_PLATFORM_EVENTTYPE_LOW_MEMORY        = 16,
+		VKK_PLATFORM_EVENTTYPE_MEMORY_INFO       = 17,
+	} vkk_platformEventType_e;
 
 	typedef struct
 	{
@@ -71,32 +71,32 @@ changes to screen density, the content rect and permissions.
 		float ay;
 		float az;
 		int   rotation;
-	} vkk_eventAccelerometer_t;
+	} vkk_platformEventAccelerometer_t;
 
 	typedef struct
 	{
 		int count;
-		cc_vec2f_t coord[VKK_EVENT_ACTION_COUNT];
-	} vkk_eventAction_t;
+		cc_vec2f_t coord[VKK_PLATFORM_EVENTACTION_COUNT];
+	} vkk_platformEventAction_t;
 
 	typedef struct
 	{
-		int        id;
-		vkk_axis_e axis;
-		float      value;
-	} vkk_eventAxis_t;
+		int                id;
+		vkk_platformAxis_e axis;
+		float              value;
+	} vkk_platformEventAxis_t;
 
 	typedef struct
 	{
-		int          id;
-		vkk_button_e button;
-	} vkk_eventButton_t;
+		int                  id;
+		vkk_platformButton_e button;
+	} vkk_platformEventButton_t;
 
 	typedef struct
 	{
 		char uri[256];
 		int  fd;
-	} vkk_eventDocument_t;
+	} vkk_platformEventDocument_t;
 
 	typedef struct
 	{
@@ -106,21 +106,21 @@ changes to screen density, the content rect and permissions.
 		float  altitude;
 		float  speed;
 		float  bearing;
-	} vkk_eventGps_t;
+	} vkk_platformEventGps_t;
 
 	typedef struct
 	{
 		float ax;
 		float ay;
 		float az;
-	} vkk_eventGyroscope_t;
+	} vkk_platformEventGyroscope_t;
 
 	typedef struct
 	{
 		int keycode;
 		int meta;
 		int repeat;
-	} vkk_eventKey_t;
+	} vkk_platformEventKey_t;
 
 	typedef struct
 	{
@@ -130,7 +130,7 @@ changes to screen density, the content rect and permissions.
 		float gfx;
 		float gfy;
 		float gfz;
-	} vkk_eventMagnetometer_t;
+	} vkk_platformEventMagnetometer_t;
 
 	typedef struct
 	{
@@ -138,20 +138,20 @@ changes to screen density, the content rect and permissions.
 		int l;
 		int b;
 		int r;
-	} vkk_eventContentRect_t;
+	} vkk_platformEventContentRect_t;
 
 	typedef enum
 	{
-		VKK_PERMISSION_FINE_LOCATION       = 1,
-		VKK_PERMISSION_READ_STORAGE        = 2,
-		VKK_PERMISSION_WRITE_STORAGE       = 3,
-	} vkk_permission_e;
+		VKK_PLATFORM_PERMISSION_FINE_LOCATION       = 1,
+		VKK_PLATFORM_PERMISSION_READ_STORAGE        = 2,
+		VKK_PLATFORM_PERMISSION_WRITE_STORAGE       = 3,
+	} vkk_platformPermission_e;
 
 	typedef struct
 	{
-		vkk_permission_e permission;
+		vkk_platformPermission_e permission;
 		int status;
-	} vkk_eventPermission_t;
+	} vkk_platformEventPermission_t;
 
 	typedef struct
 	{
@@ -159,59 +159,59 @@ changes to screen density, the content rect and permissions.
 		size_t threshold;
 		size_t total;
 		int    low;
-	} vkk_eventMemoryInfo_t;
+	} vkk_platformEventMemoryInfo_t;
 
 	typedef struct
 	{
-		vkk_eventType_e type;
+		vkk_platformEventType_e type;
 		double ts;
 		union
 		{
-			vkk_eventAccelerometer_t accelerometer;
-			vkk_eventAction_t        action;
-			vkk_eventAxis_t          axis;
-			vkk_eventButton_t        button;
-			vkk_eventDocument_t      document;
-			float                    density;
-			vkk_eventGps_t           gps;
-			vkk_eventGyroscope_t     gyroscope;
-			vkk_eventKey_t           key;
-			vkk_eventMagnetometer_t  magnetometer;
-			vkk_eventContentRect_t   content_rect;
-			vkk_eventPermission_t    permission;
-			vkk_eventMemoryInfo_t    memory_info;
+			vkk_platformEventAccelerometer_t accelerometer;
+			vkk_platformEventAction_t        action;
+			vkk_platformEventAxis_t          axis;
+			vkk_platformEventButton_t        button;
+			vkk_platformEventDocument_t      document;
+			float                            density;
+			vkk_platformEventGps_t           gps;
+			vkk_platformEventGyroscope_t     gyroscope;
+			vkk_platformEventKey_t           key;
+			vkk_platformEventMagnetometer_t  magnetometer;
+			vkk_platformEventContentRect_t   content_rect;
+			vkk_platformEventPermission_t    permission;
+			vkk_platformEventMemoryInfo_t    memory_info;
 		};
-	} vkk_event_t;
+	} vkk_platformEvent_t;
 
 The keycodes use the standard ASCII keycode except for the
 following special keys.
 
-	#define VKK_KEYCODE_ENTER     0x00D
-	#define VKK_KEYCODE_ESCAPE    0x01B
-	#define VKK_KEYCODE_BACKSPACE 0x008
-	#define VKK_KEYCODE_DELETE    0x07F
-	#define VKK_KEYCODE_UP        0x100
-	#define VKK_KEYCODE_DOWN      0x101
-	#define VKK_KEYCODE_LEFT      0x102
-	#define VKK_KEYCODE_RIGHT     0x103
-	#define VKK_KEYCODE_HOME      0x104
-	#define VKK_KEYCODE_END       0x105
-	#define VKK_KEYCODE_PGUP      0x106
-	#define VKK_KEYCODE_PGDOWN    0x107
-	#define VKK_KEYCODE_INSERT    0x108
+	#define VKK_PLATFORM_KEYCODE_ENTER     0x00D
+	#define VKK_PLATFORM_KEYCODE_ESCAPE    0x01B
+	#define VKK_PLATFORM_KEYCODE_BACKSPACE 0x008
+	#define VKK_PLATFORM_KEYCODE_DELETE    0x07F
+	#define VKK_PLATFORM_KEYCODE_UP        0x100
+	#define VKK_PLATFORM_KEYCODE_DOWN      0x101
+	#define VKK_PLATFORM_KEYCODE_LEFT      0x102
+	#define VKK_PLATFORM_KEYCODE_RIGHT     0x103
+	#define VKK_PLATFORM_KEYCODE_HOME      0x104
+	#define VKK_PLATFORM_KEYCODE_END       0x105
+	#define VKK_PLATFORM_KEYCODE_PGUP      0x106
+	#define VKK_PLATFORM_KEYCODE_PGDOWN    0x107
+	#define VKK_PLATFORM_KEYCODE_INSERT    0x108
 
 The meta field is a mask containing the following values.
 
-	#define VKK_META_ALT     0x00000032
-	#define VKK_META_ALT_L   0x00000010
-	#define VKK_META_ALT_R   0x00000020
-	#define VKK_META_CTRL    0x00007000
-	#define VKK_META_CTRL_L  0x00002000
-	#define VKK_META_CTRL_R  0x00004000
-	#define VKK_META_SHIFT   0x000000C1
-	#define VKK_META_SHIFT_L 0x00000040
-	#define VKK_META_SHIFT_R 0x00000080
-	#define VKK_META_CAPS    0x00100000
+	#define VKK_PLATFORM_META_ALT     0x00000032
+	#define VKK_PLATFORM_META_ALT_L   0x00000010
+	#define VKK_PLATFORM_META_ALT_R   0x00000020
+	#define VKK_PLATFORM_META_CTRL    0x00007000
+	#define VKK_PLATFORM_META_CTRL_L  0x00002000
+	#define VKK_PLATFORM_META_CTRL_R  0x00004000
+	#define VKK_PLATFORM_META_SHIFT   0x000000C1
+	#define VKK_PLATFORM_META_SHIFT_L 0x00000040
+	#define VKK_PLATFORM_META_SHIFT_R 0x00000080
+	#define VKK_PLATFORM_META_CAPS    0x00100000
 
 See
 [vkk-java](https://github.com/jeffboody/vkk-java)

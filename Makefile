@@ -1,6 +1,6 @@
 TARGET  = libvkk.a
 CLASSES = \
-	platform/vkk_linux           \
+	platform/vkk_platformLinux   \
 	core/vkk_buffer              \
 	core/vkk_commandBuffer       \
 	core/vkk_defaultRenderer     \
@@ -20,33 +20,33 @@ CLASSES = \
 	core/vkk_uniformSet          \
 	core/vkk_uniformSetFactory   \
 	core/vkk_util
-ifeq ($(VKK_USE_VKUI),1)
+ifeq ($(VKK_USE_UI),1)
 	CLASSES += \
-		vkui/vkui_actionBar \
-		vkui/vkui_bulletbox \
-		vkui/vkui_checkbox  \
-		vkui/vkui_font      \
-		vkui/vkui_hline     \
-		vkui/vkui_infoPanel \
-		vkui/vkui_layer     \
-		vkui/vkui_listbox   \
-		vkui/vkui_screen    \
-		vkui/vkui_sprite    \
-		vkui/vkui_statusBar \
-		vkui/vkui_radiobox  \
-		vkui/vkui_radiolist \
-		vkui/vkui_textbox   \
-		vkui/vkui_text      \
-		vkui/vkui_tricolor  \
-		vkui/vkui_widget    \
-		vkui/vkui_window
+		ui/vkk_uiActionBar \
+		ui/vkk_uiBulletbox \
+		ui/vkk_uiCheckbox  \
+		ui/vkk_uiFont      \
+		ui/vkk_uiHline     \
+		ui/vkk_uiInfoPanel \
+		ui/vkk_uiLayer     \
+		ui/vkk_uiListbox   \
+		ui/vkk_uiScreen    \
+		ui/vkk_uiSprite    \
+		ui/vkk_uiStatusBar \
+		ui/vkk_uiRadiobox  \
+		ui/vkk_uiRadiolist \
+		ui/vkk_uiTextbox   \
+		ui/vkk_uiText      \
+		ui/vkk_uiTricolor  \
+		ui/vkk_uiWidget    \
+		ui/vkk_uiWindow
 endif
 SOURCE  = $(CLASSES:%=%.c)
 OBJECTS = $(SOURCE:.c=.o)
 HFILES  = vkk.h $(CLASSES:%=%.h)
-ifeq ($(VKK_USE_VKUI),1)
+ifeq ($(VKK_USE_UI),1)
 	HFILES += \
-		vkui.h
+		vkk_ui.h
 endif
 OPT     = -O2 -Wall -Wno-format-truncation
 CFLAGS   = $(OPT) -I$(VULKAN_SDK)/include `sdl2-config --cflags`

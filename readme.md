@@ -68,10 +68,10 @@ The platform features exposed by VKK include.
 
 See [VKK Platform](platform/readme.md) for more details.
 
-VKUI Library
-------------
+VKK UI
+------
 
-The VKUI library is an experimental widget library that is
+The VKK UI library is an experimental widget library that is
 built on top of the VKK library.
 
 The following standard widgets are included.
@@ -91,7 +91,7 @@ The following standard widgets are included.
 * widget
 * window
 
-See [VKUI Library](vkui/readme.md) for more details.
+See [VKK UI](ui/readme.md) for more details.
 
 Dependencies
 ============

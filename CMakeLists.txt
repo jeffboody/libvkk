@@ -3,26 +3,26 @@ cmake_minimum_required(VERSION 3.4.1)
 # Compiler options
 add_compile_options(-Wall -DVK_USE_PLATFORM_ANDROID_KHR)
 
-if(VKK_USE_VKUI)
-    set(SOURCE_VKUI
-        vkui/vkui_actionBar.c
-        vkui/vkui_bulletbox.c
-        vkui/vkui_checkbox.c
-        vkui/vkui_font.c
-        vkui/vkui_hline.c
-        vkui/vkui_infoPanel.c
-        vkui/vkui_layer.c
-        vkui/vkui_listbox.c
-        vkui/vkui_screen.c
-        vkui/vkui_sprite.c
-        vkui/vkui_statusBar.c
-        vkui/vkui_radiobox.c
-        vkui/vkui_radiolist.c
-        vkui/vkui_textbox.c
-        vkui/vkui_text.c
-        vkui/vkui_tricolor.c
-        vkui/vkui_widget.c
-        vkui/vkui_window.c)
+if(VKK_USE_UI)
+    set(SOURCE_UI
+        ui/vkk_uiActionBar.c
+        ui/vkk_uiBulletbox.c
+        ui/vkk_uiCheckbox.c
+        ui/vkk_uiFont.c
+        ui/vkk_uiHline.c
+        ui/vkk_uiInfoPanel.c
+        ui/vkk_uiLayer.c
+        ui/vkk_uiListbox.c
+        ui/vkk_uiScreen.c
+        ui/vkk_uiSprite.c
+        ui/vkk_uiStatusBar.c
+        ui/vkk_uiRadiobox.c
+        ui/vkk_uiRadiolist.c
+        ui/vkk_uiTextbox.c
+        ui/vkk_uiText.c
+        ui/vkk_uiTricolor.c
+        ui/vkk_uiWidget.c
+        ui/vkk_uiWindow.c)
 endif()
 
 # native_app_glue
@@ -38,7 +38,7 @@ add_library(vkk
             STATIC
 
             # Source
-            platform/vkk_android.c
+            platform/vkk_platformAndroid.c
             core/vkk_buffer.c
             core/vkk_commandBuffer.c
             core/vkk_defaultRenderer.c
@@ -58,7 +58,7 @@ add_library(vkk
             core/vkk_uniformSet.c
             core/vkk_uniformSetFactory.c
             core/vkk_util.c
-            ${SOURCE_VKUI})
+            ${SOURCE_UI})
 
 # Includes
 target_include_directories(vkk

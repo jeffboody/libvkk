@@ -28,12 +28,12 @@
 #ifdef ANDROID
 	#include <vulkan_wrapper.h>
 	#include <android_native_app_glue.h>
-	#include "../platform/vkk_android.h"
+	#include "../platform/vkk_platformAndroid.h"
 #else
 	#include <SDL2/SDL.h>
 	#include <SDL2/SDL_vulkan.h>
 	#include <vulkan/vulkan.h>
-	#include "../platform/vkk_linux.h"
+	#include "../platform/vkk_platformLinux.h"
 #endif
 
 #include "../../libcc/cc_jobq.h"
