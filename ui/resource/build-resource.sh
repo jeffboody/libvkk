@@ -1,4 +1,3 @@
-echo VKK UI
 cd vkk/ui/shaders
 glslangValidator -V default.vert  -o default_vert.spv
 glslangValidator -V color.frag    -o color_frag.spv

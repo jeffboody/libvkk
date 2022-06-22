@@ -41,12 +41,26 @@ ifeq ($(VKK_USE_UI),1)
 		ui/vkk_uiWidget    \
 		ui/vkk_uiWindow
 endif
+ifeq ($(VKK_USE_VG),1)
+	CLASSES += \
+		vg/vkk_vgBuffer         \
+		vg/vkk_vgContext        \
+		vg/vkk_vgLineBuilder    \
+		vg/vkk_vgLine           \
+		vg/vkk_vgPolygonBuilder \
+		vg/vkk_vgPolygonIdx     \
+		vg/vkk_vgPolygon
+endif
 SOURCE  = $(CLASSES:%=%.c)
 OBJECTS = $(SOURCE:.c=.o)
 HFILES  = vkk.h $(CLASSES:%=%.h)
 ifeq ($(VKK_USE_UI),1)
 	HFILES += \
 		vkk_ui.h
+endif
+ifeq ($(VKK_USE_VG),1)
+	HFILES += \
+		vkk_vg.h
 endif
 OPT     = -O2 -Wall -Wno-format-truncation
 CFLAGS   = $(OPT) -I$(VULKAN_SDK)/include `sdl2-config --cflags`

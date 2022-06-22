@@ -25,6 +25,17 @@ if(VKK_USE_UI)
         ui/vkk_uiWindow.c)
 endif()
 
+if(VKK_USE_VG)
+    set(SOURCE_VG
+        vg/vkk_vgBuffer.c
+        vg/vkk_vgContext.c
+        vg/vkk_vgLineBuilder.c
+        vg/vkk_vgLine.c
+        vg/vkk_vgPolygonBuilder.c
+        vg/vkk_vgPolygonIdx.c
+        vg/vkk_vgPolygon.c)
+endif()
+
 # native_app_glue
 add_library(native_app_glue
             STATIC
@@ -58,7 +69,8 @@ add_library(vkk
             core/vkk_uniformSet.c
             core/vkk_uniformSetFactory.c
             core/vkk_util.c
-            ${SOURCE_UI})
+            ${SOURCE_UI}
+            ${SOURCE_VG})
 
 # Includes
 target_include_directories(vkk
@@ -75,6 +87,7 @@ target_link_libraries(vkk
                       # Submodule libraries
                       cc
                       texgz
+                      tess2
                       xmlstream
 
                       # NDK libraries

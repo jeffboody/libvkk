@@ -1,0 +1,48 @@
+/*
+ * Copyright (c) 2022 Jeff Boody
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a
+ * copy of this software and associated documentation files (the "Software"),
+ * to deal in the Software without restriction, including without limitation
+ * the rights to use, copy, modify, merge, publish, distribute, sublicense,
+ * and/or sell copies of the Software, and to permit persons to whom the
+ * Software is furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included
+ * in all copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+ * THE SOFTWARE.
+ *
+ */
+
+#ifndef vkk_vgLine_H
+#define vkk_vgLine_H
+
+#include <stdint.h>
+
+#include "../../libcc/math/cc_vec2f.h"
+#include "../../libcc/math/cc_vec4f.h"
+#include "../vkk_vg.h"
+#include "../vkk.h"
+
+typedef struct vkk_vgLine_s
+{
+	float         dist;
+	uint32_t      vc;
+	vkk_buffer_t* vb_xyst;
+	vkk_buffer_t* vb_dxdy;
+} vkk_vgLine_t;
+
+// protected
+vkk_vgLine_t* vkk_vgLine_new(vkk_engine_t* engine,
+                             float dist, uint32_t vc,
+                             cc_vec4f_t* xyst,
+                             cc_vec2f_t* dxdy);
+
+#endif
