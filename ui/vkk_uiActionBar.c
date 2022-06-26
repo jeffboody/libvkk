@@ -36,7 +36,7 @@ vkk_uiActionBar_newActions(vkk_uiScreen_t* screen,
                            int anchor,
                            int orientation)
 {
-	ASSERT(self);
+	ASSERT(screen);
 
 	vkk_uiWidgetLayout_t layout =
 	{
