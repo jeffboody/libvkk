@@ -160,9 +160,6 @@ for additional arguments as follows.
 See the _Renderer_ secton for more details on the default
 renderer.
 
-See the _Resource File_ section for more details on the
-resource file.
-
 Buffers
 -------
 

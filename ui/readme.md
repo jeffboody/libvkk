@@ -1,21 +1,22 @@
-VKK UI
-======
+VKK UI (User Interface)
+=======================
 
-The VKK UI (user interface) is defined by creating a screen
-and one or more widget objects.
+VKK UI is an experimental widget library that is built on
+top of the VKK Core. The widget library requires a screen to
+manage shared resources, control the window stack, handle
+events, perform rendering and create widgets. The library
+includes widgets commonly found in other similar libraries
+such as text boxes and windows. Widgets are designed as
+building blocks which the user may also inherit from to
+build more complex widgets.
 
-A screen is required to manage shared resources, control
-the window stack, handle events and perform rendering.
-
-Widgets are designed as building blocks which the user may
-inherit from to build more complex widgets. Inheritance is
-accomplished by declaring the base object in the derived
-object (not a pointer object). Construct the object by
-passing the combined size in the wsize parameter of the
-base object constructor followed by construction of the
-derived class members. Similarly destruction is performed
-by freeing the derived class members followed by calling
-the base class destructor (e.g. perform destructor
+Inheritance is accomplished by declaring the base object in
+the derived object (not a pointer object). Construct the
+object by passing the combined size in the wsize parameter
+of the base object constructor followed by construction of
+the derived class members. Similarly destruction is
+performed by freeing the derived class members followed by
+calling the base class destructor (e.g. perform destructor
 operations in reverse order).
 
 For example.
@@ -47,12 +48,9 @@ For example.
 		}
 	}
 
-Some widgets also have constructor functions which allow
-the user to create a commonly used subclass of the widget
-(e.g. a page heading or paragraph).
-
-Note that the VKK UI library is optional and must be enabled
-by setting/exporting the VKK\_USE\_UI variable.
+Some widgets also have special constructor functions which
+allow the user to create a commonly used subclass of the
+widget (e.g. a page heading or paragraph).
 
 The following sections briefly describe the screen and
 standard widgets.
@@ -215,3 +213,13 @@ constructed by the newActionXXX constructor functions.
 It is the users responsibility to manage the list of widgets
 (e.g. you must clear all widgets added before deleting the
 action bar).
+
+Setup
+=====
+
+VKK UI is an optional library and must be enabled
+by exporting the VKK\_USE\_UI variable in the top level
+Makefile or CMakeLists.txt.
+
+VKK UI requires that resources are packed into the
+app resource file.
