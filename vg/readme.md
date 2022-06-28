@@ -11,8 +11,8 @@ process to generate the primitivies geometry. Primitive
 geometry is immutable once created however their attributes
 are defined at runtime when the primitives are drawn.
 
-The following sections briefly describe the process to
-build and render vector graphics primitives.
+The following sections describe the process to build and
+render vector graphics primitives.
 
 Line Builder
 ------------
@@ -41,17 +41,20 @@ style parameter. The line width is defined procedurally at
 runtime using the normal vectors to the line. This approach
 can result in line rendering artifacts for very sharp
 angles where the geometry extends much further than
-intended. To avoid this problem lines with very sharp
-corners (e.g. greater than 135 degrees) should be manually
-split into multiple lines at these sharp corners.
+intended. To avoid this problem, the user should split lines
+with very sharp corners (e.g. greater than 135 degrees) into
+multiple lines at these sharp corners.
 
-Another important feature of undefined line width is that
-lines may be drawn multiple times in the same frame with
-different line styles to achieve certain effects. For
+Another important feature of the undefined line width is
+that lines may be drawn multiple times in the same frame
+with different line styles to achieve certain effects. For
 example, a hiking trail might be represented by a thin
 dashed line on top of a thicker solid line. To achieve this
-effect, draw the line twice in a back-to-front order
-(thick solid line followed by thin dashed line).
+effect, draw the line twice in a back-to-front order. The
+first draw using a thick solid line style and a second draw
+using a thin dashed line style.
+
+Lines are anti-aliased.
 
 Polygon Builder
 ---------------
@@ -84,16 +87,20 @@ complete loop is formed while inner contours must each
 form a complete loop. The contour type is not explicitly
 specified to the point function.
 
+Polygons are not anti-aliased however the user may draw
+anti-aliased lines around the contour of the polygons to
+achieve polygon anti-aliasing.
+
 Rendering
 ---------
 
-A context is required to manage the line and polygon
+A context is required to manage the vector graphics
 rendering state. This internal state is intentionally
 opaque to the user to provide the simplest API possible.
 The user simply needs to reset the context once per frame
 prior to rendering any primitives and call the bind
 function prior to rendering one or more primitives of the
-corresponding type.
+corresponding bind type.
 
 	vkk_vgContext_t* vkk_vgContext_new(vkk_renderer_t* rend);
 	void             vkk_vgContext_delete(vkk_vgContext_t** _self);

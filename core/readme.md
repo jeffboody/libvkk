@@ -822,9 +822,9 @@ Shaders
 
 The VKK library accepts SPIR-V shader input which can be
 generated from GLSL shaders with the glslangValidator tool
-which is available from the LunarG SDK.
+which is available from the
+[LunarG](https://www.lunarg.com/) SDK.
 
-	https://www.lunarg.com/
 
 The following command may be used to generate the SPIR-V
 and the resulting binary should be packed into the

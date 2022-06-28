@@ -187,8 +187,8 @@ VKK Modules
 -----------
 
 The
-[VKK VG](https://github.com/jeffboody/libvkk/vg) and
-[VKK UI](https://github.com/jeffboody/libvkk/ui) modules
+[VKK VG](https://github.com/jeffboody/libvkk/tree/master/vg) and
+[VKK UI](https://github.com/jeffboody/libvkk/tree/master/ui) modules
 are also built on top of the VKK Core library.
 
 License
