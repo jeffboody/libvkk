@@ -34,6 +34,8 @@ if(VKK_USE_VG)
         vg/vkk_vgPolygonBuilder.c
         vg/vkk_vgPolygonIdx.c
         vg/vkk_vgPolygon.c)
+    set(LINK_VG
+        tess2)
 endif()
 
 # native_app_glue
@@ -87,7 +89,7 @@ target_link_libraries(vkk
                       # Submodule libraries
                       cc
                       texgz
-                      tess2
+                      ${LINK_VG}
                       xmlstream
 
                       # NDK libraries
