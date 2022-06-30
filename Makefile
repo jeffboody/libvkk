@@ -22,23 +22,26 @@ CLASSES = \
 	core/vkk_util
 ifeq ($(VKK_USE_UI),1)
 	CLASSES += \
-		ui/vkk_uiActionBar \
-		ui/vkk_uiBulletbox \
-		ui/vkk_uiCheckbox  \
-		ui/vkk_uiFont      \
-		ui/vkk_uiHline     \
-		ui/vkk_uiInfoPanel \
-		ui/vkk_uiLayer     \
-		ui/vkk_uiListbox   \
-		ui/vkk_uiScreen    \
-		ui/vkk_uiSprite    \
-		ui/vkk_uiStatusBar \
-		ui/vkk_uiRadiobox  \
-		ui/vkk_uiRadiolist \
-		ui/vkk_uiTextbox   \
-		ui/vkk_uiText      \
-		ui/vkk_uiTricolor  \
-		ui/vkk_uiWidget    \
+		ui/vkk_uiActionBar  \
+		ui/vkk_uiBulletbox  \
+		ui/vkk_uiCheckbox   \
+		ui/vkk_uiFileList   \
+		ui/vkk_uiFilePicker \
+		ui/vkk_uiFont       \
+		ui/vkk_uiHline      \
+		ui/vkk_uiInfoPanel  \
+		ui/vkk_uiLayer      \
+		ui/vkk_uiListbox    \
+		ui/vkk_uiScreen     \
+		ui/vkk_uiSprite     \
+		ui/vkk_uiStatusBar  \
+		ui/vkk_uiRadiobox   \
+		ui/vkk_uiRadiolist  \
+		ui/vkk_uiTextEntry  \
+		ui/vkk_uiTextbox    \
+		ui/vkk_uiText       \
+		ui/vkk_uiTricolor   \
+		ui/vkk_uiWidget     \
 		ui/vkk_uiWindow
 endif
 ifeq ($(VKK_USE_VG),1)

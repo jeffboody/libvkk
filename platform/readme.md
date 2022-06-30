@@ -53,16 +53,15 @@ changes to screen density, the content rect and permissions.
 		VKK_PLATFORM_EVENTTYPE_BUTTON_DOWN       = 5,
 		VKK_PLATFORM_EVENTTYPE_BUTTON_UP         = 6,
 		VKK_PLATFORM_EVENTTYPE_DENSITY           = 7,
-		VKK_PLATFORM_EVENTTYPE_DOCUMENT          = 8,
-		VKK_PLATFORM_EVENTTYPE_GPS               = 9,
-		VKK_PLATFORM_EVENTTYPE_GYROSCOPE         = 10,
-		VKK_PLATFORM_EVENTTYPE_KEY_DOWN          = 11,
-		VKK_PLATFORM_EVENTTYPE_KEY_UP            = 12,
-		VKK_PLATFORM_EVENTTYPE_MAGNETOMETER      = 13,
-		VKK_PLATFORM_EVENTTYPE_CONTENT_RECT      = 14,
-		VKK_PLATFORM_EVENTTYPE_PERMISSION_STATUS = 15,
-		VKK_PLATFORM_EVENTTYPE_LOW_MEMORY        = 16,
-		VKK_PLATFORM_EVENTTYPE_MEMORY_INFO       = 17,
+		VKK_PLATFORM_EVENTTYPE_GPS               = 8,
+		VKK_PLATFORM_EVENTTYPE_GYROSCOPE         = 9,
+		VKK_PLATFORM_EVENTTYPE_KEY_DOWN          = 10,
+		VKK_PLATFORM_EVENTTYPE_KEY_UP            = 11,
+		VKK_PLATFORM_EVENTTYPE_MAGNETOMETER      = 12,
+		VKK_PLATFORM_EVENTTYPE_CONTENT_RECT      = 13,
+		VKK_PLATFORM_EVENTTYPE_PERMISSION_STATUS = 14,
+		VKK_PLATFORM_EVENTTYPE_LOW_MEMORY        = 15,
+		VKK_PLATFORM_EVENTTYPE_MEMORY_INFO       = 16,
 	} vkk_platformEventType_e;
 
 	typedef struct
@@ -91,12 +90,6 @@ changes to screen density, the content rect and permissions.
 		int                  id;
 		vkk_platformButton_e button;
 	} vkk_platformEventButton_t;
-
-	typedef struct
-	{
-		char uri[256];
-		int  fd;
-	} vkk_platformEventDocument_t;
 
 	typedef struct
 	{
@@ -171,7 +164,6 @@ changes to screen density, the content rect and permissions.
 			vkk_platformEventAction_t        action;
 			vkk_platformEventAxis_t          axis;
 			vkk_platformEventButton_t        button;
-			vkk_platformEventDocument_t      document;
 			float                            density;
 			vkk_platformEventGps_t           gps;
 			vkk_platformEventGyroscope_t     gyroscope;

@@ -108,7 +108,11 @@ send commands to the platform. There are commands to turn
 on/off device sensors, play sounds, show the soft keyboard,
 load a URL in a browser and request platform permissions. On
 Linux, all commands are currently ignored except the
-VKK\_PLATFORM\_CMD\_EXIT command.
+VKK\_PLATFORM\_CMD\_EXIT,
+VKK\_PLATFORM\_CMD\_DOCUMENT\_CREATE and
+VKK\_PLATFORM\_CMD\_DOCUMENT\_OPEN commands. Some commands
+accept a message, priv or callback function as described
+below.
 
 	typedef enum vkk_platformCmd_s
 	{
@@ -135,15 +139,32 @@ VKK\_PLATFORM\_CMD\_EXIT command.
 		VKK_PLATFORM_CMD_MEMORY_INFO        = 21,
 	} vkk_platformCmd_e;
 
-	void vkk_engine_platformCmd(vkk_engine_t* self,
-	                            vkk_platformCmd_e cmd,
-	                            const char* msg);
+	typedef void (*vkk_platformCmd_documentFn)
+	             (void* priv, const char* uri, int* _fd);
 
-Some commands accept a message in the form of a json string
-for additional arguments as follows.
+	typedef struct vkk_platformCmdInfo_s
+	{
+		vkk_platformCmd_e          cmd;
+		char                       msg[256];
+		void*                      priv;
+		vkk_platformCmd_documentFn document_fn;
+	} vkk_platformCmdInfo_t;
+
+	void vkk_engine_platformCmd(vkk_engine_t* self,
+	                            vkk_platformCmdInfo_t* info);
+
+The load url command accepts the following json message.
 
 	VKK_PLATFORM_CMD_LOADURL
 	{"url":"https://www.google.com"}
+
+The document commands require special handling depending
+on the platform. On Android, the document commands accept a
+json message with the title, type and mode of the desired
+document. On Linux, the document commands simply accept a
+filename instead of a json message. The document commands
+also require a document_fn callback with optional priv
+pointer.
 
 	VKK_PLATFORM_CMD_DOCUMENT_CREATE
 	# title is optional
@@ -156,6 +177,9 @@ for additional arguments as follows.
 	# r=read, w=write, t=trim, a=append
 	{"type":"text:plain",
 	 "mode":"r|w|wt|wa|rw|rwt"}
+
+Note that the VKK UI includes a file picker which can be
+helpful when working with the document commands.
 
 See the _Renderer_ secton for more details on the default
 renderer.

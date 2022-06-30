@@ -827,6 +827,11 @@ void vkk_uiScreen_windowPush(vkk_uiScreen_t* self,
 
 	self->dirty = 1;
 
+	vkk_platformCmdInfo_t info =
+	{
+		.cmd = VKK_PLATFORM_CMD_SOFTKEY_HIDE
+	};
+
 	if(window)
 	{
 		cc_list_append(self->window_stack, NULL,
@@ -838,18 +843,15 @@ void vkk_uiScreen_windowPush(vkk_uiScreen_t* self,
 		// reset focus
 		if(window->focus)
 		{
-			vkk_engine_platformCmd(self->engine,
-			                       VKK_PLATFORM_CMD_SOFTKEY_SHOW,
-			                       NULL);
+			info.cmd = VKK_PLATFORM_CMD_SOFTKEY_SHOW;
+			vkk_engine_platformCmd(self->engine, &info);
 			vkk_uiScreen_focus(self, window->focus);
 			return;
 		}
 	}
 
 	// default focus state
-	vkk_engine_platformCmd(self->engine,
-	                       VKK_PLATFORM_CMD_SOFTKEY_HIDE,
-	                       NULL);
+	vkk_engine_platformCmd(self->engine, &info);
 	vkk_uiScreen_focus(self, NULL);
 }
 
@@ -869,10 +871,13 @@ int vkk_uiScreen_windowPop(vkk_uiScreen_t* self)
 
 	cc_list_remove(self->window_stack, &iter);
 
+	vkk_platformCmdInfo_t info =
+	{
+		.cmd = VKK_PLATFORM_CMD_SOFTKEY_HIDE
+	};
+
 	// default focus state
-	vkk_engine_platformCmd(self->engine,
-	                       VKK_PLATFORM_CMD_SOFTKEY_HIDE,
-	                       NULL);
+	vkk_engine_platformCmd(self->engine, &info);
 	vkk_uiScreen_focus(self, NULL);
 
 	return 1;
@@ -1482,6 +1487,7 @@ vkk_uiScreen_spriteImage(vkk_uiScreen_t* self,
 	// check for empty data
 	if(size == 0)
 	{
+		LOGE("invalid %s", name);
 		goto fail_empty;
 	}
 
@@ -1498,14 +1504,9 @@ vkk_uiScreen_spriteImage(vkk_uiScreen_t* self,
 	{
 		tex = texgz_tex_importd(size, data);
 	}
-	else
-	{
-		LOGE("invalid name=%s", name);
-	}
 
 	if(tex == NULL)
 	{
-		LOGE("invalid name=%s", name);
 		goto fail_tex;
 	}
 

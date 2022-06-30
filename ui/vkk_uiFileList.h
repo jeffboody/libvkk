@@ -21,34 +21,31 @@
  *
  */
 
-#ifndef vkk_platformLinux_H
-#define vkk_platformLinux_H
+#ifndef vkk_uiFileList_H
+#define vkk_uiFileList_H
 
-#include "../vkk.h"
-#include "../vkk_platform.h"
-
-typedef struct vkk_platform_s
+typedef struct vkk_uiFileList_s
 {
-	int   running;
-	int   paused;
-	float width;
-	float height;
+	vkk_uiWidget_t     widget;
+	vkk_uiText_t*      heading_name;
+	vkk_uiText_t*      text_name;
+	vkk_uiText_t*      text_ext;
+	vkk_uiText_t*      heading_path;
+	vkk_uiBulletbox_t* bulletbox_path;
+	vkk_uiListbox_t*   listbox_files;
 
-	// joystick state
-	int           joy_id;
-	SDL_Joystick* joy;
+	int dirty;
+} vkk_uiFileList_t;
 
-	// document state
-	int                        document_fd;
-	char                       document_uri[256];
-	void*                      document_priv;
-	vkk_platformCmd_documentFn document_fn;
-
-	vkk_engine_t* engine;
-	void*         priv;
-} vkk_platform_t;
-
-void vkk_platform_cmd(vkk_platform_t* self,
-                      vkk_platformCmdInfo_t* info);
+vkk_uiFileList_t* vkk_uiFileList_new(vkk_uiScreen_t* screen);
+void              vkk_uiFileList_delete(vkk_uiFileList_t** _self);
+void              vkk_uiFileList_reset(vkk_uiFileList_t* self,
+                                       const char* path,
+                                       const char* name,
+                                       const char* ext);
+void              vkk_uiFileList_filepath(vkk_uiFileList_t* self,
+                                          char* filepath);
+void              vkk_uiFileList_mkdir(void* priv,
+                                       const char* text);
 
 #endif

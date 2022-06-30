@@ -8,6 +8,8 @@ if(VKK_USE_UI)
         ui/vkk_uiActionBar.c
         ui/vkk_uiBulletbox.c
         ui/vkk_uiCheckbox.c
+        ui/vkk_uiFileList.c
+        ui/vkk_uiFilePicker.c
         ui/vkk_uiFont.c
         ui/vkk_uiHline.c
         ui/vkk_uiInfoPanel.c
@@ -18,6 +20,7 @@ if(VKK_USE_UI)
         ui/vkk_uiStatusBar.c
         ui/vkk_uiRadiobox.c
         ui/vkk_uiRadiolist.c
+        ui/vkk_uiTextEntry.c
         ui/vkk_uiTextbox.c
         ui/vkk_uiText.c
         ui/vkk_uiTricolor.c

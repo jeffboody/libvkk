@@ -31,6 +31,9 @@
  * platform commands
  */
 
+typedef void (*vkk_platformCmd_documentFn)
+             (void* priv, const char* uri, int* _fd);
+
 typedef enum vkk_platformCmd_s
 {
 	VKK_PLATFORM_CMD_ACCELEROMETER_OFF  = 1,
@@ -56,6 +59,14 @@ typedef enum vkk_platformCmd_s
 	VKK_PLATFORM_CMD_MEMORY_INFO        = 21,
 } vkk_platformCmd_e;
 
+typedef struct vkk_platformCmdInfo_s
+{
+	vkk_platformCmd_e          cmd;
+	char                       msg[256];
+	void*                      priv;
+	vkk_platformCmd_documentFn document_fn;
+} vkk_platformCmdInfo_t;
+
 /*
  * event handling
  */
@@ -72,16 +83,15 @@ typedef enum
 	VKK_PLATFORM_EVENTTYPE_BUTTON_DOWN       = 5,
 	VKK_PLATFORM_EVENTTYPE_BUTTON_UP         = 6,
 	VKK_PLATFORM_EVENTTYPE_DENSITY           = 7,
-	VKK_PLATFORM_EVENTTYPE_DOCUMENT          = 8,
-	VKK_PLATFORM_EVENTTYPE_GPS               = 9,
-	VKK_PLATFORM_EVENTTYPE_GYROSCOPE         = 10,
-	VKK_PLATFORM_EVENTTYPE_KEY_DOWN          = 11,
-	VKK_PLATFORM_EVENTTYPE_KEY_UP            = 12,
-	VKK_PLATFORM_EVENTTYPE_MAGNETOMETER      = 13,
-	VKK_PLATFORM_EVENTTYPE_CONTENT_RECT      = 14,
-	VKK_PLATFORM_EVENTTYPE_PERMISSION_STATUS = 15,
-	VKK_PLATFORM_EVENTTYPE_LOW_MEMORY        = 16,
-	VKK_PLATFORM_EVENTTYPE_MEMORY_INFO       = 17,
+	VKK_PLATFORM_EVENTTYPE_GPS               = 8,
+	VKK_PLATFORM_EVENTTYPE_GYROSCOPE         = 9,
+	VKK_PLATFORM_EVENTTYPE_KEY_DOWN          = 10,
+	VKK_PLATFORM_EVENTTYPE_KEY_UP            = 11,
+	VKK_PLATFORM_EVENTTYPE_MAGNETOMETER      = 12,
+	VKK_PLATFORM_EVENTTYPE_CONTENT_RECT      = 13,
+	VKK_PLATFORM_EVENTTYPE_PERMISSION_STATUS = 14,
+	VKK_PLATFORM_EVENTTYPE_LOW_MEMORY        = 15,
+	VKK_PLATFORM_EVENTTYPE_MEMORY_INFO       = 16,
 } vkk_platformEventType_e;
 
 // max actions supported
@@ -198,12 +208,6 @@ typedef struct
 
 typedef struct
 {
-	char uri[256];
-	int  fd;
-} vkk_platformEventDocument_t;
-
-typedef struct
-{
 	double lat;
 	double lon;
 	float  accuracy;
@@ -275,7 +279,6 @@ typedef struct
 		vkk_platformEventAxis_t          axis;
 		vkk_platformEventButton_t        button;
 		float                            density;
-		vkk_platformEventDocument_t      document;
 		vkk_platformEventGps_t           gps;
 		vkk_platformEventGyroscope_t     gyroscope;
 		vkk_platformEventKey_t           key;

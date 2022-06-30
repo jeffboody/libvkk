@@ -1183,13 +1183,12 @@ vkk_engine_defaultRenderer(vkk_engine_t* self)
 
 void
 vkk_engine_platformCmd(vkk_engine_t* self,
-                       vkk_platformCmd_e cmd,
-                       const char* msg)
+                       vkk_platformCmdInfo_t* info)
 {
-	// msg may be NULL
 	ASSERT(self);
+	ASSERT(info);
 
-	vkk_platform_cmd(self->platform, cmd, msg);
+	vkk_platform_cmd(self->platform, info);
 }
 
 /***********************************************************
@@ -1231,7 +1230,7 @@ vkk_engine_t* vkk_engine_new(vkk_platform_t* platform,
 
 	self->version.major = 1;
 	self->version.minor = 1;
-	self->version.patch = 38;
+	self->version.patch = 39;
 
 	// app info
 	snprintf(self->app_name, 256, "%s", app_name);

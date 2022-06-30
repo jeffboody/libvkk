@@ -100,6 +100,20 @@ It is the users responsibility to manage the page, layers
 and footer (e.g. you must clear all widgets added before
 deleting the window).
 
+File Picker
+-----------
+
+A file picker is a special window that provides the user a
+cross-platform mechanism to select a file (e.g. Open or
+Save As).
+
+Text Entry
+----------
+
+A text entry is a special window that allows the user to
+enter a line of text and provides a callback for accepting
+the input.
+
 Bullet Box
 ----------
 

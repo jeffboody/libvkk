@@ -156,6 +156,7 @@ typedef struct vkk_engine_s            vkk_engine_t;
 typedef struct vkk_graphicsPipeline_s  vkk_graphicsPipeline_t;
 typedef struct vkk_image_s             vkk_image_t;
 typedef struct vkk_pipelineLayout_s    vkk_pipelineLayout_t;
+typedef struct vkk_platformCmdInfo_s   vkk_platformCmdInfo_t;
 typedef struct vkk_renderer_s          vkk_renderer_t;
 typedef struct vkk_uniformSet_s        vkk_uniformSet_t;
 typedef struct vkk_uniformSetFactory_s vkk_uniformSetFactory_t;
@@ -256,8 +257,7 @@ void            vkk_engine_imageCaps(vkk_engine_t* self,
 float           vkk_engine_maxAnisotropy(vkk_engine_t* self);
 vkk_renderer_t* vkk_engine_defaultRenderer(vkk_engine_t* self);
 void            vkk_engine_platformCmd(vkk_engine_t* self,
-                                       vkk_platformCmd_e cmd,
-                                       const char* msg);
+                                       vkk_platformCmdInfo_t* info);
 
 /*
  * buffer API

@@ -685,12 +685,13 @@ int vkk_uiWidget_clickUrlFn(vkk_uiWidget_t* widget,
 
 	if(state == VKK_UI_WIDGET_POINTER_UP)
 	{
-		char msg[256];
-		snprintf(msg, 256, "{\"url\":\"%s\"}",
+		vkk_platformCmdInfo_t info =
+		{
+			.cmd = VKK_PLATFORM_CMD_LOADURL
+		};
+		snprintf(info.msg, 256, "{\"url\":\"%s\"}",
 		         vkk_uiWidget_widgetFnMsg(widget));
-		vkk_engine_platformCmd(engine,
-		                       VKK_PLATFORM_CMD_LOADURL,
-		                       msg);
+		vkk_engine_platformCmd(engine, &info);
 	}
 	return 1;
 }

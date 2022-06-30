@@ -45,6 +45,7 @@ typedef struct vkk_platform_s
 	// may be generated when the app/main thread is paused
 	// priv_mutex protects priv from being destroyed while
 	// a GPS event is being processed on the UI thread
+	// priv_mutex also protects the document state
 	pthread_mutex_t priv_mutex;
 
 	// axis values
@@ -63,13 +64,19 @@ typedef struct vkk_platform_s
 	int                 event_head;
 	int                 event_tail;
 	vkk_platformEvent_t event_buffer[VKK_EVENTQ_BUFSIZE];
+	vkk_platformEvent_t event_document;
+
+	// document state
+	int                        document_fd;
+	char                       document_uri[256];
+	void*                      document_priv;
+	vkk_platformCmd_documentFn document_fn;
 
 	vkk_engine_t* engine;
 	void*         priv;
 } vkk_platform_t;
 
 void vkk_platform_cmd(vkk_platform_t* self,
-                      vkk_platformCmd_e cmd,
-                      const char* msg);
+                      vkk_platformCmdInfo_t* info);
 
 #endif

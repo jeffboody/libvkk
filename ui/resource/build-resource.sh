@@ -27,3 +27,9 @@ bfs $1 blobSet vkk/ui/icons/ic_radio_button_checked_white_24dp.png
 bfs $1 blobSet vkk/ui/icons/ic_radio_button_unchecked_white_24dp.png
 bfs $1 blobSet vkk/ui/icons/ic_arrow_back_white_24dp.png
 bfs $1 blobSet vkk/ui/icons/ic_cancel_white_24dp.png
+bfs $1 blobSet vkk/ui/icons/ic_check_white_24dp.png
+bfs $1 blobSet vkk/ui/icons/ic_close_white_24dp.png
+bfs $1 blobSet vkk/ui/icons/ic_create_new_folder_white_24dp.png
+bfs $1 blobSet vkk/ui/icons/ic_folder_open_white_24dp.png
+bfs $1 blobSet vkk/ui/icons/ic_folder_white_24dp.png
+bfs $1 blobSet vkk/ui/icons/outline_insert_drive_file_white_48dp.png

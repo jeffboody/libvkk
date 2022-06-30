@@ -28,6 +28,8 @@ typedef struct vkk_uiActionBar_s      vkk_uiActionBar_t;
 typedef struct vkk_uiBulletboxStyle_s vkk_uiBulletboxStyle_t;
 typedef struct vkk_uiBulletbox_s      vkk_uiBulletbox_t;
 typedef struct vkk_uiCheckbox_s       vkk_uiCheckbox_t;
+typedef struct vkk_uiFilePicker_s     vkk_uiFilePicker_t;
+typedef struct vkk_uiFileList_s       vkk_uiFileList_t;
 typedef struct vkk_uiFontcoords_s     vkk_uiFontcoords_t;
 typedef struct vkk_uiFont_s           vkk_uiFont_t;
 typedef struct vkk_uiHline_s          vkk_uiHline_t;
@@ -39,6 +41,7 @@ typedef struct vkk_uiRadiolist_s      vkk_uiRadiolist_t;
 typedef struct vkk_uiScreen_s         vkk_uiScreen_t;
 typedef struct vkk_uiSprite_s         vkk_uiSprite_t;
 typedef struct vkk_uiStatusBar_s      vkk_uiStatusBar_t;
+typedef struct vkk_uiTextEntry_s      vkk_uiTextEntry_t;
 typedef struct vkk_uiTextFn_s         vkk_uiTextFn_t;
 typedef struct vkk_uiTextLayout_s     vkk_uiTextLayout_s;
 typedef struct vkk_uiTextStyle_s      vkk_uiTextStyle_t;
@@ -62,6 +65,7 @@ typedef struct vkk_uiWindow_s         vkk_uiWindow_t;
 #include "ui/vkk_uiScreen.h"
 
 // derive from widget
+#include "ui/vkk_uiFileList.h"
 #include "ui/vkk_uiHline.h"
 #include "ui/vkk_uiLayer.h"
 #include "ui/vkk_uiListbox.h"
@@ -71,6 +75,10 @@ typedef struct vkk_uiWindow_s         vkk_uiWindow_t;
 
 // derive from widget and text
 #include "ui/vkk_uiBulletbox.h"
+
+// derive from window
+#include "ui/vkk_uiFilePicker.h"
+#include "ui/vkk_uiTextEntry.h"
 
 // derive from bulletbox
 #include "ui/vkk_uiCheckbox.h"

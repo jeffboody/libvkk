@@ -612,11 +612,9 @@ vkk_platform_new(struct android_app* app)
 		goto fail_cond_init;
 	}
 
-	self->event_head = 0;
-	self->event_tail = 0;
-
 	self->app         = app;
 	self->paused      = 1;
+	self->document_fd = -1;
 	app->userData     = self;
 	app->onAppCmd     = onAppCmd;
 	app->onInputEvent = onInputEvent;
@@ -791,11 +789,10 @@ static void vkk_platform_draw(vkk_platform_t* self)
 ***********************************************************/
 
 void vkk_platform_cmd(vkk_platform_t* self,
-                      vkk_platformCmd_e cmd,
-                      const char* msg)
+                      vkk_platformCmdInfo_t* info)
 {
-	// msg may be NULL
 	ASSERT(self);
+	ASSERT(info);
 
 	// This doesn't work ... and the JNI workaround still
 	// doesn't work correctly.
@@ -812,6 +809,24 @@ void vkk_platform_cmd(vkk_platform_t* self,
 	// 	ANativeActivity_hideSoftInput(self->app->activity, 0);
 	// 	return;
 	// }
+
+	// save document callback
+	if((info->cmd == VKK_PLATFORM_CMD_DOCUMENT_CREATE) ||
+	   (info->cmd == VKK_PLATFORM_CMD_DOCUMENT_OPEN))
+	{
+		pthread_mutex_lock(&self->priv_mutex);
+		int fd = self->document_fd;
+		if(fd >= 0)
+		{
+			LOGE("invalid fd=%i", fd);
+			pthread_mutex_unlock(&self->priv_mutex);
+			return;
+		}
+
+		self->document_priv = info->priv;
+		self->document_fn   = info->document_fn;
+		pthread_mutex_unlock(&self->priv_mutex);
+	}
 
 	JavaVM* vm = self->app->activity->vm;
 	if(vm == NULL)
@@ -844,15 +859,16 @@ void vkk_platform_cmd(vkk_platform_t* self,
 		return;
 	}
 
-	jstring jmsg = (*env)->NewStringUTF(env, msg ? msg : "");
+	jstring jmsg;
+	jmsg = (*env)->NewStringUTF(env, info->msg);
 	if(jmsg == NULL)
 	{
 		LOGE("NewStringUTF failed");
 		return;
 	}
 
-	(*env)->CallStaticVoidMethod(env, cls, mid, (int) cmd,
-	                             jmsg);
+	(*env)->CallStaticVoidMethod(env, cls, mid,
+	                             (int) info->cmd, jmsg);
 	(*env)->DeleteLocalRef(env, jmsg);
 }
 
@@ -1100,16 +1116,13 @@ Java_com_jeffboody_vkk_VKKNativeActivity_NativeDocument(JNIEnv* env,
 
 	if(platform)
 	{
-		vkk_platformEvent_t* e = vkk_platform_dequeue(platform);
-		e->type                = VKK_PLATFORM_EVENTTYPE_DOCUMENT;
-		e->ts                  = cc_timestamp();
-		e->document.fd         = fd;
+		pthread_mutex_lock(&platform->priv_mutex);
+		platform->document_fd = fd;
 
 		const char* curi = (*env)->GetStringUTFChars(env, uri, NULL);
-		snprintf(e->document.uri, 256, "%s", curi);
+		snprintf(platform->document_uri, 256, "%s", curi);
 		(*env)->ReleaseStringUTFChars(env, uri, curi);
-
-		vkk_platform_enqueue(platform);
+		pthread_mutex_unlock(&platform->priv_mutex);
 	}
 }
 
@@ -1285,6 +1298,43 @@ void android_main(struct android_app* app)
 
 	while(1)
 	{
+		// process document event
+		pthread_mutex_lock(&platform->priv_mutex);
+		if(platform->document_fd >= 0)
+		{
+			// cache the document state
+			int                        document_fd;
+			char                       document_uri[256];
+			void*                      document_priv;
+			vkk_platformCmd_documentFn document_fn;
+			document_fd   = platform->document_fd;
+			document_priv = platform->document_priv;
+			document_fn   = platform->document_fn;
+			snprintf(document_uri, 256, "%s",
+			         platform->document_uri);
+
+			// reset document event
+			platform->document_fd   = -1;
+			platform->document_priv = NULL;
+			platform->document_fn   = NULL;
+			snprintf(platform->document_uri, 256, "%s", "");
+			pthread_mutex_unlock(&platform->priv_mutex);
+
+			(document_fn)(document_priv,
+			              document_uri,
+			              &document_fd);
+
+			// optionally close document_fd
+			if(document_fd >= 0)
+			{
+				close(document_fd);
+			}
+		}
+		else
+		{
+			pthread_mutex_unlock(&platform->priv_mutex);
+		}
+
 		// poll for native events
 		int   id;
 		int   outEvents;

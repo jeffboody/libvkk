@@ -21,10 +21,12 @@
  */
 
 #include <SDL2/SDL.h>
-#include <pwd.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <fcntl.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <sys/types.h>
+#include <pwd.h>
 #include <unistd.h>
 
 #define LOG_TAG "vkk"
@@ -465,8 +467,9 @@ static vkk_platform_t* vkk_platform_new(void)
 		return NULL;
 	}
 
-	self->running = 1;
-	self->paused  = 1;
+	self->running     = 1;
+	self->paused      = 1;
+	self->document_fd = -1;
 
 	// override the default screen density
 	float density = 1.0f;
@@ -554,15 +557,45 @@ static void vkk_platform_delete(vkk_platform_t** _self)
 }
 
 void vkk_platform_cmd(vkk_platform_t* self,
-                      vkk_platformCmd_e cmd,
-                      const char* msg)
+                      vkk_platformCmdInfo_t* info)
 {
-	// msg may be NULL
 	ASSERT(self);
+	ASSERT(info);
 
-	if(cmd == VKK_PLATFORM_CMD_EXIT)
+	if(info->cmd == VKK_PLATFORM_CMD_EXIT)
 	{
 		self->running = 0;
+	}
+	else if((info->cmd == VKK_PLATFORM_CMD_DOCUMENT_CREATE) ||
+	        (info->cmd == VKK_PLATFORM_CMD_DOCUMENT_OPEN))
+	{
+		int fd = self->document_fd;
+		if(fd >= 0)
+		{
+			LOGE("invalid fd=%i", fd);
+			return;
+		}
+		else if(info->cmd == VKK_PLATFORM_CMD_DOCUMENT_CREATE)
+		{
+			fd = open(info->msg,
+			          O_RDWR | O_CREAT | O_TRUNC,
+			          S_IRUSR | S_IWUSR);
+		}
+		else if(info->cmd == VKK_PLATFORM_CMD_DOCUMENT_OPEN)
+		{
+			fd = open(info->msg, O_RDWR);
+		}
+
+		if(fd < 0)
+		{
+			LOGE("open failed");
+			return;
+		}
+
+		self->document_fd   = fd;
+		self->document_priv = info->priv;
+		self->document_fn   = info->document_fn;
+		snprintf(self->document_uri, 256, "%s", info->msg);
 	}
 }
 
@@ -600,6 +633,23 @@ int main(int argc, char** argv)
 	vkk_platformTouch_init(&t, platform);
 	while(platform->running)
 	{
+		// process document event
+		if(platform->document_fd >= 0)
+		{
+			(platform->document_fn)(platform->document_priv,
+			                        platform->document_uri,
+			                        &platform->document_fd);
+
+			// reset document event
+			if(platform->document_fd >= 0)
+			{
+				close(platform->document_fd);
+				platform->document_fd = -1;
+			}
+			platform->document_priv = NULL;
+			platform->document_fn   = NULL;
+		}
+
 		// translate SDL events to VKK events
 		SDL_Event se;
 		while(SDL_PollEvent(&se))
