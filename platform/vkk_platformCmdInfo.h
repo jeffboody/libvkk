@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020 Jeff Boody
+ * Copyright (c) 2022 Jeff Boody
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
  * copy of this software and associated documentation files (the "Software"),
@@ -21,35 +21,17 @@
  *
  */
 
-#ifndef vkk_platformLinux_H
-#define vkk_platformLinux_H
+#ifndef vkk_platformCmdInfo_H
+#define vkk_platformCmdInfo_H
 
-#include "../platform/vkk_platformCmdInfo.h"
-#include "../vkk.h"
 #include "../vkk_platform.h"
 
-typedef struct vkk_platform_s
+typedef struct vkk_platformCmdInfo_s
 {
-	int   running;
-	int   paused;
-	float width;
-	float height;
-
-	// joystick state
-	int           joy_id;
-	SDL_Joystick* joy;
-
-	// document state
-	int                        document_fd;
-	char                       document_uri[256];
-	void*                      document_priv;
+	vkk_platformCmd_e          cmd;
+	char                       msg[256];
+	void*                      priv;
 	vkk_platformCmd_documentFn document_fn;
-
-	vkk_engine_t* engine;
-	void*         priv;
-} vkk_platform_t;
-
-void vkk_platform_cmd(vkk_platform_t* self,
-                      vkk_platformCmdInfo_t* info);
+} vkk_platformCmdInfo_t;
 
 #endif

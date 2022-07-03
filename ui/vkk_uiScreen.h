@@ -40,8 +40,6 @@
 #define VKK_UI_SCREEN_BIND_TEXT     3
 #define VKK_UI_SCREEN_BIND_TRICOLOR 4
 
-typedef void (*vkk_uiScreen_playClickFn)(void* sound_fx);
-
 typedef struct vkk_uiScreen_s
 {
 	vkk_engine_t*            engine;
@@ -105,9 +103,7 @@ typedef struct vkk_uiScreen_s
 	char resource[256];
 
 	// sound fx
-	int   clicked;
-	void* sound_fx;
-	vkk_uiScreen_playClickFn playClick;
+	int clicked;
 
 	// widget style used by helper functions
 	vkk_uiWidgetStyle_t widget_style;
@@ -126,8 +122,6 @@ vkk_uiScreen_t* vkk_uiScreen_new(size_t wsize,
                                  vkk_engine_t* engine,
                                  vkk_renderer_t* renderer,
                                  const char* resource,
-                                 void* sound_fx,
-                                 vkk_uiScreen_playClickFn playClick,
                                  vkk_uiWidgetStyle_t* widget_style);
 void            vkk_uiScreen_delete(vkk_uiScreen_t** _self);
 vkk_uiWindow_t* vkk_uiScreen_windowPeek(vkk_uiScreen_t* self);

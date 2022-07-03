@@ -29,6 +29,7 @@
 #include "../../libcc/cc_log.h"
 #include "../../libcc/cc_memory.h"
 #include "../../libbfs/bfs_file.h"
+#include "../platform/vkk_platformCmdInfo.h"
 #include "../vkk.h"
 #include "../vkk_platform.h"
 #include "vkk_buffer.h"
@@ -1182,14 +1183,143 @@ vkk_engine_defaultRenderer(vkk_engine_t* self)
 }
 
 void
-vkk_engine_platformCmd(vkk_engine_t* self,
-                       vkk_platformCmdInfo_t* info)
+vkk_engine_platformCmd(vkk_engine_t* self, int cmd)
 {
 	ASSERT(self);
-	ASSERT(info);
 
-	vkk_platform_cmd(self->platform, info);
+	if((cmd == VKK_PLATFORM_CMD_LOADURL)         ||
+	   (cmd == VKK_PLATFORM_CMD_DOCUMENT_CREATE) ||
+	   (cmd == VKK_PLATFORM_CMD_DOCUMENT_OPEN))
+	{
+		LOGE("invalid cmd=%i", cmd);
+		return;
+	}
+
+	vkk_platformCmdInfo_t info =
+	{
+		.cmd = cmd
+	};
+	vkk_platform_cmd(self->platform, &info);
 }
+
+void
+vkk_engine_platformCmdLoadUrl(vkk_engine_t* self,
+                              const char* url)
+{
+	ASSERT(self);
+	ASSERT(url);
+
+	vkk_platformCmdInfo_t info =
+	{
+		.cmd = VKK_PLATFORM_CMD_LOADURL
+	};
+	snprintf(info.msg, 256, "{\"url\":\"%s\"}", url);
+	vkk_platform_cmd(self->platform, &info);
+}
+
+#ifdef ANDROID
+
+void
+vkk_engine_platformCmdDocumentCreate(vkk_engine_t* self,
+                                     void* priv,
+                                     vkk_platformCmd_documentFn document_fn,
+                                     const char* type,
+                                     const char* mode,
+                                     const char* name,
+                                     const char* ext)
+{
+	// priv may be NULL
+	ASSERT(self);
+	ASSERT(document_fn);
+	ASSERT(type);
+	ASSERT(mode);
+	ASSERT(name);
+	ASSERT(ext);
+
+	vkk_platformCmdInfo_t info =
+	{
+		.cmd         = VKK_PLATFORM_CMD_DOCUMENT_CREATE,
+		.priv        = priv,
+		.document_fn = document_fn
+	};
+	snprintf(info.msg, 256,
+	         "{\"title\":\"%s%s\",\"type\":\"%s\",\"mode\":\"%s\"}",
+	         name, ext, type, mode);
+
+	vkk_platform_cmd(self->platform, &info);
+}
+
+void
+vkk_engine_platformCmdDocumentOpen(vkk_engine_t* self,
+                                   void* priv,
+                                   vkk_platformCmd_documentFn document_fn,
+                                   const char* type,
+                                   const char* mode)
+{
+	// priv may be NULL
+	ASSERT(self);
+	ASSERT(document_fn);
+	ASSERT(type);
+	ASSERT(mode);
+
+	vkk_platformCmdInfo_t info =
+	{
+		.cmd         = VKK_PLATFORM_CMD_DOCUMENT_OPEN,
+		.priv        = priv,
+		.document_fn = document_fn
+	};
+	snprintf(info.msg, 256,
+	         "{\"type\":\"%s\",\"mode\":\"%s\"}",
+	         type, mode);
+
+	vkk_platform_cmd(self->platform, &info);
+}
+
+#else // LINUX
+
+void
+vkk_engine_platformCmdDocumentCreate(vkk_engine_t* self,
+                                     void* priv,
+                                     vkk_platformCmd_documentFn document_fn,
+                                     const char* fname)
+{
+	// priv may be NULL
+	ASSERT(self);
+	ASSERT(document_fn);
+	ASSERT(fname);
+
+	vkk_platformCmdInfo_t info =
+	{
+		.cmd         = VKK_PLATFORM_CMD_DOCUMENT_CREATE,
+		.priv        = priv,
+		.document_fn = document_fn
+	};
+	snprintf(info.msg, 256, "%s", fname);
+	vkk_platform_cmd(self->platform, &info);
+}
+
+void
+vkk_engine_platformCmdDocumentOpen(vkk_engine_t* self,
+                                   void* priv,
+                                   vkk_platformCmd_documentFn document_fn,
+                                   const char* fname)
+{
+	// priv may be NULL
+	ASSERT(self);
+	ASSERT(document_fn);
+	ASSERT(fname);
+
+	vkk_platformCmdInfo_t info =
+	{
+		.cmd         = VKK_PLATFORM_CMD_DOCUMENT_OPEN,
+		.priv        = priv,
+		.document_fn = document_fn
+	};
+	snprintf(info.msg, 256, "%s", fname);
+	vkk_platform_cmd(self->platform, &info);
+}
+
+#endif
 
 /***********************************************************
 * protected                                                *
@@ -1230,7 +1360,7 @@ vkk_engine_t* vkk_engine_new(vkk_platform_t* platform,
 
 	self->version.major = 1;
 	self->version.minor = 1;
-	self->version.patch = 39;
+	self->version.patch = 40;
 
 	// app info
 	snprintf(self->app_name, 256, "%s", app_name);

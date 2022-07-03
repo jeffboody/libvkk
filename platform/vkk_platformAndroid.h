@@ -26,6 +26,7 @@
 
 #include <android_native_app_glue.h>
 
+#include "../platform/vkk_platformCmdInfo.h"
 #include "../vkk.h"
 #include "../vkk_platform.h"
 

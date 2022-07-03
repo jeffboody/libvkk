@@ -360,11 +360,8 @@ clickEntry(vkk_uiWidget_t* widget,
 	vkk_uiScreen_t* screen = widget->screen;
 	if(state == VKK_UI_WIDGET_POINTER_UP)
 	{
-		vkk_platformCmdInfo_t info =
-		{
-			.cmd = VKK_PLATFORM_CMD_SOFTKEY_SHOW
-		};
-		vkk_engine_platformCmd(screen->engine, &info);
+		vkk_engine_platformCmd(screen->engine,
+		                       VKK_PLATFORM_CMD_SOFTKEY_SHOW);
 		vkk_uiScreen_focus(screen, widget);
 	}
 	return 1;

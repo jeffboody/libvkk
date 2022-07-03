@@ -225,14 +225,10 @@ vkk_uiScreen_new(size_t wsize,
                  vkk_engine_t* engine,
                  vkk_renderer_t* renderer,
                  const char* resource,
-                 void* sound_fx,
-                 vkk_uiScreen_playClickFn playClick,
                  vkk_uiWidgetStyle_t* widget_style)
 {
 	ASSERT(engine);
 	ASSERT(resource);
-	ASSERT(sound_fx);
-	ASSERT(playClick);
 	ASSERT(widget_style);
 
 	if(wsize == 0)
@@ -253,8 +249,6 @@ vkk_uiScreen_new(size_t wsize,
 	self->scale         = VKK_UI_SCREEN_SCALE_MEDIUM;
 	self->dirty         = 1;
 	self->pointer_state = VKK_UI_WIDGET_POINTER_UP;
-	self->sound_fx      = sound_fx;
-	self->playClick     = playClick;
 
 	memcpy(&self->widget_style, widget_style,
 	       sizeof(vkk_uiWidgetStyle_t));
@@ -827,11 +821,6 @@ void vkk_uiScreen_windowPush(vkk_uiScreen_t* self,
 
 	self->dirty = 1;
 
-	vkk_platformCmdInfo_t info =
-	{
-		.cmd = VKK_PLATFORM_CMD_SOFTKEY_HIDE
-	};
-
 	if(window)
 	{
 		cc_list_append(self->window_stack, NULL,
@@ -843,15 +832,16 @@ void vkk_uiScreen_windowPush(vkk_uiScreen_t* self,
 		// reset focus
 		if(window->focus)
 		{
-			info.cmd = VKK_PLATFORM_CMD_SOFTKEY_SHOW;
-			vkk_engine_platformCmd(self->engine, &info);
+			vkk_engine_platformCmd(self->engine,
+			                       VKK_PLATFORM_CMD_SOFTKEY_SHOW);
 			vkk_uiScreen_focus(self, window->focus);
 			return;
 		}
 	}
 
 	// default focus state
-	vkk_engine_platformCmd(self->engine, &info);
+	vkk_engine_platformCmd(self->engine,
+	                       VKK_PLATFORM_CMD_SOFTKEY_HIDE);
 	vkk_uiScreen_focus(self, NULL);
 }
 
@@ -871,13 +861,9 @@ int vkk_uiScreen_windowPop(vkk_uiScreen_t* self)
 
 	cc_list_remove(self->window_stack, &iter);
 
-	vkk_platformCmdInfo_t info =
-	{
-		.cmd = VKK_PLATFORM_CMD_SOFTKEY_HIDE
-	};
-
 	// default focus state
-	vkk_engine_platformCmd(self->engine, &info);
+	vkk_engine_platformCmd(self->engine,
+	                       VKK_PLATFORM_CMD_SOFTKEY_HIDE);
 	vkk_uiScreen_focus(self, NULL);
 
 	return 1;
@@ -1234,8 +1220,8 @@ void vkk_uiScreen_draw(vkk_uiScreen_t* self)
 	// play sound fx
 	if(self->clicked)
 	{
-		vkk_uiScreen_playClickFn playClick = self->playClick;
-		(*playClick)(self->sound_fx);
+		vkk_engine_platformCmd(self->engine,
+		                       VKK_PLATFORM_CMD_PLAY_CLICK);
 		self->clicked = 0;
 	}
 }

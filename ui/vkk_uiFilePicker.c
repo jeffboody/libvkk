@@ -92,18 +92,9 @@ vkk_uiFilePicker_documentCreate(vkk_uiFilePicker_t* self,
 	ASSERT(name);
 	ASSERT(ext);
 
-	vkk_platformCmdInfo_t info =
-	{
-		.cmd         = VKK_PLATFORM_CMD_DOCUMENT_CREATE,
-		.priv        = priv,
-		.document_fn = document_fn
-	};
-
-	snprintf(info.msg, 256,
-	         "{\"title\":\"%s%s\",\"type\":\"%s\",\"mode\":\"%s\"}",
-	         name, ext, type, mode);
-
-	vkk_engine_platformCmd(self->engine, &info);
+	vkk_engine_platformCmdDocumentCreate(self->engine,
+	                                     priv, document_fn,
+	                                     type, mode, name, ext);
 }
 
 void
@@ -123,18 +114,9 @@ vkk_uiFilePicker_documentOpen(vkk_uiFilePicker_t* self,
 	ASSERT(path);
 	ASSERT(ext);
 
-	vkk_platformCmdInfo_t info =
-	{
-		.cmd         = VKK_PLATFORM_CMD_DOCUMENT_OPEN,
-		.priv        = priv,
-		.document_fn = document_fn
-	};
-
-	snprintf(info.msg, 256,
-	         "{\"type\":\"%s\",\"mode\":\"%s\"}",
-	         type, mode);
-
-	vkk_engine_platformCmd(self->engine, &info);
+	vkk_engine_platformCmdDocumentOpen(self->engine,
+	                                   priv, document_fn,
+	                                   type, mode);
 }
 
 /***********************************************************
@@ -158,20 +140,23 @@ vkk_uiFilePicker_clickSelect(vkk_uiWidget_t* widget,
 
 	if(state == VKK_UI_WIDGET_POINTER_UP)
 	{
-		vkk_platformCmdInfo_t info =
-		{
-			.cmd         = VKK_PLATFORM_CMD_DOCUMENT_OPEN,
-			.priv        = self->priv,
-			.document_fn = self->document_fn,
-		};
+		char fname[256];
+		vkk_uiFileList_filepath(self->file_list, fname);
 
 		if(self->create)
 		{
-			info.cmd = VKK_PLATFORM_CMD_DOCUMENT_CREATE;
+			vkk_engine_platformCmdDocumentCreate(engine,
+			                                     self->priv,
+			                                     self->document_fn,
+			                                     fname);
 		}
-
-		vkk_uiFileList_filepath(self->file_list, info.msg);
-		vkk_engine_platformCmd(engine, &info);
+		else
+		{
+			vkk_engine_platformCmdDocumentOpen(engine,
+			                                   self->priv,
+			                                   self->document_fn,
+			                                   fname);
+		}
 
 		vkk_uiScreen_windowPop(screen);
 	}

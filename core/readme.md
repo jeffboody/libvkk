@@ -103,16 +103,13 @@ query for the renderer that can draw to the display.
 
 	vkk_renderer_t* vkk_engine_defaultRenderer(vkk_engine_t* self);
 
-The vkk\_engine\_platformCmd() function allows the app to
-send commands to the platform. There are commands to turn
-on/off device sensors, play sounds, show the soft keyboard,
-load a URL in a browser and request platform permissions. On
-Linux, all commands are currently ignored except the
-VKK\_PLATFORM\_CMD\_EXIT,
-VKK\_PLATFORM\_CMD\_DOCUMENT\_CREATE and
-VKK\_PLATFORM\_CMD\_DOCUMENT\_OPEN commands. Some commands
-accept a message, priv or callback function as described
-below.
+The vkk\_engine\_platformCmd() functions allows the app to
+send commands to the platform. For example, there are
+commands to turn on/off device sensors, play sounds, show
+the soft keyboard, load a URL in a browser and request
+platform permissions. Some commands require additional
+parameters and have a corresponding separate platformCmd
+function as noted below.
 
 	typedef enum vkk_platformCmd_s
 	{
@@ -139,47 +136,57 @@ below.
 		VKK_PLATFORM_CMD_MEMORY_INFO        = 21,
 	} vkk_platformCmd_e;
 
+	void vkk_engine_platformCmd(vkk_engine_t* self,
+	                            int cmd);
+
+The VKK\_PLATFORM\_CMD\_LOADURL command can be issued with
+vkk\_engine\_platformCmdLoadUrl().
+
+	void vkk_engine_platformCmdLoadUrl(vkk_engine_t* self,
+	                                   const char* url);
+
+The VKK\_PLATFORM\_CMD\_DOCUMENT\_CREATE and
+VKK\_PLATFORM\_CMD\_DOCUMENT\_OPEN
+commands can be issued with
+vkk\_engine\_platformCmdDocumentCreate() and
+vkk\_engine\_platformCmdDocumentOpen(). The document
+commands require platform specific parameters to support the
+[Android Scoped Storage](https://developer.android.com/about/versions/11/privacy/storage)
+interface for accessing external storage. Note that VKK UI
+includes a file picker which can be helpful when importing
+or exporting documents.
+
 	typedef void (*vkk_platformCmd_documentFn)
 	             (void* priv, const char* uri, int* _fd);
 
-	typedef struct vkk_platformCmdInfo_s
-	{
-		vkk_platformCmd_e          cmd;
-		char                       msg[256];
-		void*                      priv;
-		vkk_platformCmd_documentFn document_fn;
-	} vkk_platformCmdInfo_t;
+	#ifdef ANDROID
+	void vkk_engine_platformCmdDocumentCreate(vkk_engine_t* self,
+	                                          void* priv,
+	                                          vkk_platformCmd_documentFn document_fn,
+	                                          const char* type,
+	                                          const char* mode,
+	                                          const char* name,
+	                                          const char* ext);
+	void vkk_engine_platformCmdDocumentOpen(vkk_engine_t* self,
+	                                        void* priv,
+	                                        vkk_platformCmd_documentFn document_fn,
+	                                        const char* type,
+	                                        const char* mode);
+	#else
+	void vkk_engine_platformCmdDocumentCreate(vkk_engine_t* self,
+	                                          void* priv,
+	                                          vkk_platformCmd_documentFn document_fn,
+	                                          const char* fname);
+	void vkk_engine_platformCmdDocumentOpen(vkk_engine_t* self,
+	                                        void* priv,
+	                                        vkk_platformCmd_documentFn document_fn,
+	                                        const char* fname);
+	#endif
 
-	void vkk_engine_platformCmd(vkk_engine_t* self,
-	                            vkk_platformCmdInfo_t* info);
-
-The load url command accepts the following json message.
-
-	VKK_PLATFORM_CMD_LOADURL
-	{"url":"https://www.google.com"}
-
-The document commands require special handling depending
-on the platform. On Android, the document commands accept a
-json message with the title, type and mode of the desired
-document. On Linux, the document commands simply accept a
-filename instead of a json message. The document commands
-also require a document_fn callback with optional priv
-pointer.
-
-	VKK_PLATFORM_CMD_DOCUMENT_CREATE
-	# title is optional
-	# r=read, w=write, t=trim, a=append
-	{"title":"test.txt",
-	 "type":"text:plain",
-	 "mode":"r|w|wt|wa|rw|rwt"}
-
-	VKK_PLATFORM_CMD_DOCUMENT_OPEN
-	# r=read, w=write, t=trim, a=append
-	{"type":"text:plain",
-	 "mode":"r|w|wt|wa|rw|rwt"}
-
-Note that the VKK UI includes a file picker which can be
-helpful when working with the document commands.
+On Linux, all commands are ignored except the
+VKK\_PLATFORM\_CMD\_EXIT,
+VKK\_PLATFORM\_CMD\_DOCUMENT\_CREATE and
+VKK\_PLATFORM\_CMD\_DOCUMENT\_OPEN commands.
 
 See the _Renderer_ secton for more details on the default
 renderer.

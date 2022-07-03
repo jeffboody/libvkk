@@ -59,14 +59,6 @@ typedef enum vkk_platformCmd_s
 	VKK_PLATFORM_CMD_MEMORY_INFO        = 21,
 } vkk_platformCmd_e;
 
-typedef struct vkk_platformCmdInfo_s
-{
-	vkk_platformCmd_e          cmd;
-	char                       msg[256];
-	void*                      priv;
-	vkk_platformCmd_documentFn document_fn;
-} vkk_platformCmdInfo_t;
-
 /*
  * event handling
  */

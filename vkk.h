@@ -156,11 +156,13 @@ typedef struct vkk_engine_s            vkk_engine_t;
 typedef struct vkk_graphicsPipeline_s  vkk_graphicsPipeline_t;
 typedef struct vkk_image_s             vkk_image_t;
 typedef struct vkk_pipelineLayout_s    vkk_pipelineLayout_t;
-typedef struct vkk_platformCmdInfo_s   vkk_platformCmdInfo_t;
 typedef struct vkk_renderer_s          vkk_renderer_t;
 typedef struct vkk_uniformSet_s        vkk_uniformSet_t;
 typedef struct vkk_uniformSetFactory_s vkk_uniformSetFactory_t;
 typedef enum   vkk_platformCmd_s       vkk_platformCmd_e;
+
+typedef void (*vkk_platformCmd_documentFn)
+             (void* priv, const char* uri, int* _fd);
 
 /*
  * parameter structures
@@ -257,7 +259,33 @@ void            vkk_engine_imageCaps(vkk_engine_t* self,
 float           vkk_engine_maxAnisotropy(vkk_engine_t* self);
 vkk_renderer_t* vkk_engine_defaultRenderer(vkk_engine_t* self);
 void            vkk_engine_platformCmd(vkk_engine_t* self,
-                                       vkk_platformCmdInfo_t* info);
+                                       int cmd);
+void            vkk_engine_platformCmdLoadUrl(vkk_engine_t* self,
+                                              const char* url);
+
+#ifdef ANDROID
+void            vkk_engine_platformCmdDocumentCreate(vkk_engine_t* self,
+                                                     void* priv,
+                                                     vkk_platformCmd_documentFn document_fn,
+                                                     const char* type,
+                                                     const char* mode,
+                                                     const char* name,
+                                                     const char* ext);
+void            vkk_engine_platformCmdDocumentOpen(vkk_engine_t* self,
+                                                   void* priv,
+                                                   vkk_platformCmd_documentFn document_fn,
+                                                   const char* type,
+                                                   const char* mode);
+#else
+void            vkk_engine_platformCmdDocumentCreate(vkk_engine_t* self,
+                                                     void* priv,
+                                                     vkk_platformCmd_documentFn document_fn,
+                                                     const char* fname);
+void            vkk_engine_platformCmdDocumentOpen(vkk_engine_t* self,
+                                                   void* priv,
+                                                   vkk_platformCmd_documentFn document_fn,
+                                                   const char* fname);
+#endif
 
 /*
  * buffer API
