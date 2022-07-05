@@ -39,6 +39,7 @@
 typedef struct vkk_uniformSetFactory_s
 {
 	vkk_engine_t*         engine;
+	uint32_t              ref_count;
 	vkk_updateMode_e      update;
 	uint32_t              ub_count;
 	vkk_uniformBinding_t* ub_array;
@@ -48,5 +49,9 @@ typedef struct vkk_uniformSetFactory_s
 	cc_list_t*            us_list;
 	char                  type_count[VKK_UNIFORM_TYPE_COUNT];
 } vkk_uniformSetFactory_t;
+
+// protected
+void vkk_uniformSetFactory_incRef(vkk_uniformSetFactory_t* self);
+void vkk_uniformSetFactory_decRef(vkk_uniformSetFactory_t* self);
 
 #endif

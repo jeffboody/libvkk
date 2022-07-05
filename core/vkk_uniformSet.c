@@ -204,6 +204,8 @@ vkk_uniformSet_new(vkk_engine_t* engine,
 		}
 	}
 
+	vkk_uniformSetFactory_incRef(usf);
+
 	// success
 	return self;
 

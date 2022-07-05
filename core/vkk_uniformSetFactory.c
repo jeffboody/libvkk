@@ -161,6 +161,8 @@ vkk_uniformSetFactory_new(vkk_engine_t* engine,
 
 	FREE(bindings);
 
+	vkk_uniformSetFactory_incRef(self);
+
 	// success
 	return self;
 
@@ -188,9 +190,36 @@ vkk_uniformSetFactory_delete(vkk_uniformSetFactory_t** _self)
 	vkk_uniformSetFactory_t* self = *_self;
 	if(self)
 	{
+		vkk_uniformSetFactory_decRef(self);
+		*_self = NULL;
+	}
+}
+
+/***********************************************************
+* protected                                                *
+***********************************************************/
+
+void vkk_uniformSetFactory_incRef(vkk_uniformSetFactory_t* self)
+{
+	ASSERT(self);
+
+	vkk_engine_usfLock(self->engine);
+	++self->ref_count;
+	vkk_engine_usfUnlock(self->engine);
+}
+
+void vkk_uniformSetFactory_decRef(vkk_uniformSetFactory_t* self)
+{
+	ASSERT(self);
+
+	vkk_engine_usfLock(self->engine);
+	int ref_count = --self->ref_count;
+	vkk_engine_usfUnlock(self->engine);
+
+	if(ref_count == 0)
+	{
 		vkk_engine_deleteObject(self->engine,
 		                        VKK_OBJECT_TYPE_UNIFORMSETFACTORY,
 		                        (void*) self);
-		*_self = NULL;
 	}
 }

@@ -1000,6 +1000,7 @@ vkk_engine_destructUniformSet(vkk_engine_t* self, int wait,
 			FREE(us);
 		}
 		vkk_engine_usfUnlock(self);
+		vkk_uniformSetFactory_decRef(us->usf);
 		*_us = NULL;
 	}
 }
@@ -1360,7 +1361,7 @@ vkk_engine_t* vkk_engine_new(vkk_platform_t* platform,
 
 	self->version.major = 1;
 	self->version.minor = 1;
-	self->version.patch = 40;
+	self->version.patch = 41;
 
 	// app info
 	snprintf(self->app_name, 256, "%s", app_name);
