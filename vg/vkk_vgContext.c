@@ -121,7 +121,6 @@ static vkk_vgContextUs2_t*
 vkk_vgContextUs2_new(vkk_vgContext_t* ctx, float dist)
 {
 	ASSERT(ctx);
-	ASSERT(style);
 
 	vkk_renderer_t* rend   = ctx->rend;
 	vkk_engine_t*   engine = rend->engine;
