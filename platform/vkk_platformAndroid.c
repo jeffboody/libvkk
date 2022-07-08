@@ -44,6 +44,13 @@
 static vkk_platform_t* platform = NULL;
 
 /***********************************************************
+* protected Android list initialization                    *
+***********************************************************/
+
+extern void cc_listPool_init(void);
+extern void cc_listPool_destroy(void);
+
+/***********************************************************
 * apply shift key                                          *
 ***********************************************************/
 
@@ -1259,6 +1266,8 @@ void android_main(struct android_app* app)
 {
 	ASSERT(app);
 
+	 cc_listPool_init();
+
 	vkk_platformOnEvent_fn onEvent;
 	onEvent = VKK_PLATFORM_INFO.onEvent;
 
@@ -1266,6 +1275,7 @@ void android_main(struct android_app* app)
 	if(InitVulkan() == 0)
 	{
 		LOGE("InitVulkan failed");
+		cc_listPool_destroy();
 		return;
 	}
 
@@ -1285,6 +1295,7 @@ void android_main(struct android_app* app)
 	if(updateResource(app, "resource.bfs", fname) == 0)
 	{
 		check_memory();
+		cc_listPool_destroy();
 		return;
 	}
 
@@ -1293,6 +1304,7 @@ void android_main(struct android_app* app)
 	{
 		LOGE("platform failed");
 		check_memory();
+		cc_listPool_destroy();
 		return;
 	}
 
@@ -1365,6 +1377,7 @@ void android_main(struct android_app* app)
 			{
 				vkk_platform_delete(&platform);
 				check_memory();
+				cc_listPool_destroy();
 				return;
 			}
 
