@@ -129,8 +129,6 @@ vkk_engine_initSDL(vkk_engine_t* self, const char* app_name)
 
 	SDL_version version;
 	SDL_VERSION(&version);
-	LOGI("SDL %i.%i.%i",
-	     version.major, version.minor, version.patch);
 
 	if(SDL_Init(SDL_INIT_VIDEO|SDL_INIT_JOYSTICK) < 0)
 	{
