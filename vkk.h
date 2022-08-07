@@ -384,6 +384,7 @@ vkk_image_t*     vkk_renderer_beginImageStream(vkk_renderer_t* self,
                                                float* clear_color);
 int              vkk_renderer_beginSecondary(vkk_renderer_t* self);
 void             vkk_renderer_end(vkk_renderer_t* self);
+int              vkk_renderer_fps(vkk_renderer_t* self);
 void             vkk_renderer_surfaceSize(vkk_renderer_t* self,
                                           uint32_t* _width,
                                           uint32_t* _height);

@@ -58,6 +58,11 @@ typedef struct vkk_renderer_s
 	uint32_t              wait_count;
 	VkSemaphore*          wait_array;
 	VkPipelineStageFlags* wait_flags;
+
+	// fps state
+	int    fps;
+	double fps_t0;
+	int    fps_frames;
 } vkk_renderer_t;
 
 // protected functions

@@ -27,6 +27,7 @@
 #define LOG_TAG "vkk"
 #include "../../libcc/cc_log.h"
 #include "../../libcc/cc_memory.h"
+#include "../../libcc/cc_timestamp.h"
 #include "vkk_buffer.h"
 #include "vkk_defaultRenderer.h"
 #include "vkk_engine.h"
@@ -44,6 +45,53 @@
 /***********************************************************
 * private                                                  *
 ***********************************************************/
+
+static void vkk_renderer_updatefps(vkk_renderer_t* self)
+{
+	ASSERT(self);
+
+	double t     = cc_timestamp();
+	double dt0   = t - self->fps_t0;
+	++self->fps_frames;
+
+	// don't update fps every frame
+	if(dt0 >= 1.0)
+	{
+		self->fps        = (int) (self->fps_frames/dt0 + 0.5);
+		self->fps_t0     = t;
+		self->fps_frames = 0;
+
+		// log FPS
+		#if 0
+			LOGI("%p %i fps", self, self->fps);
+		#endif
+
+		// debug memory
+		#if 0
+		if(self->type == VKK_RENDERER_TYPE_DEFAULT)
+		{
+			size_t count_chunks;
+			size_t count_slots;
+			size_t size_mem = MEMSIZE();
+			size_t size_chunks;
+			size_t size_slots;
+			vkk_engine_meminfo(self->engine,
+			                   &count_chunks,
+			                   &count_slots,
+			                   &size_chunks,
+			                   &size_slots);
+
+			float MB             = 1024.0f*1024.0f;
+			float size_mem_mb    = ((float) size_mem)/MB;
+			float size_chunks_mb = ((float) size_chunks)/MB;
+			float size_slots_mb  = ((float) size_slots)/MB;
+			float usage          = size_slots_mb/size_chunks_mb;
+			LOGI("meminfo: mem=%0.1f MB, chunks=%0.1f MB, slots=%0.1f MB, usage=%0.1f",
+			     size_mem_mb, size_chunks_mb, size_slots_mb, usage);
+		}
+		#endif
+	}
+}
 
 static void
 vkk_fillUniformAttachmentArray(vkk_uniformAttachment_t* dst,
@@ -565,6 +613,8 @@ int vkk_renderer_beginDefault(vkk_renderer_t* self,
 		return 0;
 	}
 
+	vkk_renderer_updatefps(self);
+
 	self->mode = mode;
 	return 1;
 }
@@ -595,6 +645,8 @@ int vkk_renderer_beginImage(vkk_renderer_t* self,
 	{
 		return 0;
 	}
+
+	vkk_renderer_updatefps(self);
 
 	self->mode = mode;
 	return 1;
@@ -628,6 +680,8 @@ vkk_renderer_beginImageStream(vkk_renderer_t* self,
 		return NULL;
 	}
 
+	vkk_renderer_updatefps(self);
+
 	self->mode = mode;
 	return image;
 }
@@ -648,7 +702,14 @@ int vkk_renderer_beginSecondary(vkk_renderer_t* self)
 	}
 	vkk_engine_rendererUnlock(engine);
 
-	return vkk_secondaryRenderer_begin(self);
+	if(vkk_secondaryRenderer_begin(self) == 0)
+	{
+		return 0;
+	}
+
+	vkk_renderer_updatefps(self);
+
+	return 1;
 }
 
 void vkk_renderer_end(vkk_renderer_t* self)
@@ -675,6 +736,13 @@ void vkk_renderer_end(vkk_renderer_t* self)
 	self->gp = NULL;
 
 	self->wait_count = 0;
+}
+
+int vkk_renderer_fps(vkk_renderer_t* self)
+{
+	ASSERT(self);
+
+	return self->fps;
 }
 
 void vkk_renderer_surfaceSize(vkk_renderer_t* self,

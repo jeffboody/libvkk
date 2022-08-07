@@ -698,6 +698,11 @@ sets when update is set to VKK\_UPDATE\_MODE\_STATIC or
 when one renderer is the consumer/executor of the other.
 Renderers may not share graphics pipelines.
 
+The vkk\_renderer\_fps() function allows the app to
+query the average fps for the renderer.
+
+	int vkk_renderer_fps(vkk_renderer_t* self);
+
 The vkk\_renderer\_surfaceSize() function allows the app to
 query the renderer for the surface size.
 
