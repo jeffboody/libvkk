@@ -45,8 +45,10 @@ vkk_uiInfoPanel_new(vkk_uiScreen_t* screen, size_t wsize,
 
 	vkk_uiWidgetScroll_t scroll =
 	{
-		.scroll_bar = 0
+		.scroll_bar = 1
 	};
+	vkk_uiScreen_colorScroll0(screen, &scroll.color0);
+	vkk_uiScreen_colorScroll1(screen, &scroll.color1);
 
 	cc_vec4f_t color;
 	vkk_uiScreen_colorBackground(screen, &color);
