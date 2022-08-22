@@ -280,6 +280,34 @@ vkk_uiBulletbox_newPageItem(vkk_uiScreen_t* screen,
 }
 
 vkk_uiBulletbox_t*
+vkk_uiBulletbox_newInfoItem(vkk_uiScreen_t* screen,
+                            const char** sprite_array)
+{
+	ASSERT(screen);
+	ASSERT(sprite_array);
+
+	vkk_uiWidgetFn_t fn =
+	{
+		.priv = NULL
+	};
+
+	vkk_uiBulletboxStyle_t style =
+	{
+		.text_style =
+		{
+			.font_type = VKK_UI_TEXT_FONTTYPE_REGULAR,
+			.size      = VKK_UI_TEXT_SIZE_SMALL,
+		}
+	};
+	vkk_uiScreen_colorPageItem(screen, &style.color_icon);
+	vkk_uiScreen_colorPageItem(screen, &style.text_style.color);
+
+	return vkk_uiBulletbox_new(screen, 0,
+	                           VKK_UI_WIDGET_ANCHOR_TL, &fn,
+	                           &style, sprite_array);
+}
+
+vkk_uiBulletbox_t*
 vkk_uiBulletbox_newFooterItem(vkk_uiScreen_t* screen,
                               vkk_uiWidgetFn_t* fn,
                               const char** sprite_array)

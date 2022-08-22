@@ -48,6 +48,8 @@ vkk_uiBulletbox_t* vkk_uiBulletbox_new(vkk_uiScreen_t* screen,
 vkk_uiBulletbox_t* vkk_uiBulletbox_newPageItem(vkk_uiScreen_t* screen,
                                                vkk_uiWidgetFn_t* fn,
                                                const char** sprite_array);
+vkk_uiBulletbox_t* vkk_uiBulletbox_newInfoItem(vkk_uiScreen_t* screen,
+                                               const char** sprite_array);
 vkk_uiBulletbox_t* vkk_uiBulletbox_newFooterItem(vkk_uiScreen_t* screen,
                                                  vkk_uiWidgetFn_t* fn,
                                                  const char** sprite_array);
