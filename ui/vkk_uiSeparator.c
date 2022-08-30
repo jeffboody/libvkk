@@ -33,13 +33,14 @@
 ***********************************************************/
 
 static void
-vkk_uiHline_size(vkk_uiWidget_t* widget, float* w, float* h)
+vkk_uiSeparator_size(vkk_uiWidget_t* widget,
+                     float* w, float* h)
 {
 	ASSERT(widget);
 	ASSERT(w);
 	ASSERT(h);
 
-	vkk_uiHline_t * self = (vkk_uiHline_t*) widget;
+	vkk_uiSeparator_t* self = (vkk_uiSeparator_t*) widget;
 
 	float hline_w = *w;
 	float hline_h = *h;
@@ -47,13 +48,13 @@ vkk_uiHline_size(vkk_uiWidget_t* widget, float* w, float* h)
 }
 
 static void
-vkk_uiHline_layout(vkk_uiWidget_t* widget,
-                   int dragx, int dragy)
+vkk_uiSeparator_layout(vkk_uiWidget_t* widget,
+                       int dragx, int dragy)
 {
 	ASSERT(widget);
 
-	vkk_uiHline_t*  self = (vkk_uiHline_t*) widget;
-	vkk_uiWidget_t* line = self->line;
+	vkk_uiSeparator_t* self = (vkk_uiSeparator_t*) widget;
+	vkk_uiWidget_t*    line = self->line;
 
 	// initialize the layout
 	float x = 0.0f;
@@ -81,20 +82,21 @@ vkk_uiHline_layout(vkk_uiWidget_t* widget,
 }
 
 static void
-vkk_uiHline_drag(vkk_uiWidget_t* widget,
-                 float x, float y, float dx, float dy)
+vkk_uiSeparator_drag(vkk_uiWidget_t* widget,
+                     float x, float y, float dx, float dy)
 {
 	ASSERT(widget);
 
-	vkk_uiHline_t* self = (vkk_uiHline_t*) widget;
+	vkk_uiSeparator_t* self = (vkk_uiSeparator_t*) widget;
 	vkk_uiWidget_drag(self->line, x, y, dx, dy);
 }
 
-static void vkk_uiHline_draw(struct vkk_uiWidget_s* widget)
+static void
+vkk_uiSeparator_draw(struct vkk_uiWidget_s* widget)
 {
 	ASSERT(widget);
 
-	vkk_uiHline_t* self = (vkk_uiHline_t*) widget;
+	vkk_uiSeparator_t* self = (vkk_uiSeparator_t*) widget;
 	vkk_uiWidget_draw(self->line);
 }
 
@@ -102,24 +104,34 @@ static void vkk_uiHline_draw(struct vkk_uiWidget_s* widget)
 * public                                                   *
 ***********************************************************/
 
-vkk_uiHline_t*
-vkk_uiHline_new(vkk_uiScreen_t* screen, size_t wsize,
-                int size, cc_vec4f_t* color)
+vkk_uiSeparator_t*
+vkk_uiSeparator_new(vkk_uiScreen_t* screen, size_t wsize,
+                    int type, cc_vec4f_t* color)
 {
 	ASSERT(screen);
 	ASSERT(color);
 
 	if(wsize == 0)
 	{
-		wsize = sizeof(vkk_uiHline_t);
+		wsize = sizeof(vkk_uiSeparator_t);
 	}
 
-	int wrapy = VKK_UI_WIDGET_WRAP_STRETCH_TEXT_VSMALL +
-	            size - VKK_UI_HLINE_SIZE_SMALL;
+	int   wrapx    = VKK_UI_WIDGET_WRAP_STRETCH_PARENT;
+	int   wrapy    = VKK_UI_WIDGET_WRAP_STRETCH_TEXT_VSMALL;
+	float stretchx = 1.0f;
+	float stretchy = 0.1f;
+	if(type == VKK_UI_SEPARATOR_TYPE_VERTICAL)
+	{
+		wrapx    = VKK_UI_WIDGET_WRAP_STRETCH_TEXT_VSMALL;
+		wrapy    = VKK_UI_WIDGET_WRAP_STRETCH_PARENT;
+		stretchx = 0.1f;
+		stretchy = 1.0f;
+	}
+
 	vkk_uiWidgetLayout_t layout =
 	{
 		.anchor   = VKK_UI_WIDGET_ANCHOR_CL,
-		.wrapx    = VKK_UI_WIDGET_WRAP_STRETCH_PARENT,
+		.wrapx    = wrapx,
 		.wrapy    = wrapy,
 		.stretchx = 1.0f,
 		.stretchy = 1.0f
@@ -130,15 +142,12 @@ vkk_uiHline_new(vkk_uiScreen_t* screen, size_t wsize,
 		.scroll_bar = 0
 	};
 
-	vkk_uiWidgetFn_t fn;
-	memset(&fn, 0, sizeof(vkk_uiWidgetFn_t));
-
-	vkk_uiWidgetPrivFn_t priv_fn =
+	vkk_uiWidgetFn_t fn =
 	{
-		.size_fn   = vkk_uiHline_size,
-		.layout_fn = vkk_uiHline_layout,
-		.drag_fn   = vkk_uiHline_drag,
-		.draw_fn   = vkk_uiHline_draw,
+		.layout_fn = vkk_uiSeparator_layout,
+		.drag_fn   = vkk_uiSeparator_drag,
+		.draw_fn   = vkk_uiSeparator_draw,
+		.size_fn   = vkk_uiSeparator_size,
 	};
 
 	cc_vec4f_t clear =
@@ -146,23 +155,26 @@ vkk_uiHline_new(vkk_uiScreen_t* screen, size_t wsize,
 		.a = 0.0f
 	};
 
-	vkk_uiHline_t* self;
-	self = (vkk_uiHline_t*)
+	vkk_uiSeparator_t* self;
+	self = (vkk_uiSeparator_t*)
 	       vkk_uiWidget_new(screen, wsize, &clear, &layout,
-	                        &scroll, &fn, &priv_fn);
+	                        &scroll, &fn);
 	if(self == NULL)
 	{
 		return NULL;
 	}
 
-	self->size = size;
-
 	// override the line properties
-	memset(&priv_fn, 0, sizeof(vkk_uiWidgetPrivFn_t));
-	layout.stretchy = 0.10f;
+	layout.stretchx = stretchx;
+	layout.stretchy = stretchy;
+
+	vkk_uiWidgetFn_t line_fn =
+	{
+		.priv = NULL,
+	};
 
 	self->line = vkk_uiWidget_new(screen, 0, color, &layout,
-	                              &scroll, &fn, &priv_fn);
+	                              &scroll, &line_fn);
 	if(self->line == NULL)
 	{
 		goto fail_line;
@@ -177,34 +189,34 @@ vkk_uiHline_new(vkk_uiScreen_t* screen, size_t wsize,
 	return NULL;
 }
 
-vkk_uiHline_t*
-vkk_uiHline_newPageItem(vkk_uiScreen_t* screen)
+vkk_uiSeparator_t*
+vkk_uiSeparator_newPageItem(vkk_uiScreen_t* screen)
 {
 	ASSERT(screen);
 
 	cc_vec4f_t color = { .a = 0.0f };
 
-	return vkk_uiHline_new(screen, 0,
-	                       VKK_UI_HLINE_SIZE_SMALL, &color);
+	int type = VKK_UI_SEPARATOR_TYPE_HORIZONTAL;
+	return vkk_uiSeparator_new(screen, 0, type, &color);
 }
 
-vkk_uiHline_t*
-vkk_uiHline_newInfoItem(vkk_uiScreen_t* screen)
+vkk_uiSeparator_t*
+vkk_uiSeparator_newInfoItem(vkk_uiScreen_t* screen)
 {
 	ASSERT(screen);
 
 	cc_vec4f_t color;
 	vkk_uiScreen_colorPageItem(screen, &color);
 
-	return vkk_uiHline_new(screen, 0,
-	                       VKK_UI_HLINE_SIZE_SMALL, &color);
+	int type = VKK_UI_SEPARATOR_TYPE_HORIZONTAL;
+	return vkk_uiSeparator_new(screen, 0, type, &color);
 }
 
-void vkk_uiHline_delete(vkk_uiHline_t** _self)
+void vkk_uiSeparator_delete(vkk_uiSeparator_t** _self)
 {
 	ASSERT(_self);
 
-	vkk_uiHline_t* self = *_self;
+	vkk_uiSeparator_t* self = *_self;
 	if(self)
 	{
 		vkk_uiWidget_delete(&self->line);

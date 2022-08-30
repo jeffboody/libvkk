@@ -245,10 +245,11 @@ vkk_uiFont_new(vkk_uiScreen_t* screen, const char* resource,
 	ASSERT(xmlname);
 
 	vkk_uiFont_t* self;
-	self = (vkk_uiFont_t*) MALLOC(sizeof(vkk_uiFont_t));
+	self = (vkk_uiFont_t*)
+	       CALLOC(1, sizeof(vkk_uiFont_t));
 	if(self == NULL)
 	{
-		LOGE("MALLOC failed");
+		LOGE("CALLOC failed");
 		return NULL;
 	}
 

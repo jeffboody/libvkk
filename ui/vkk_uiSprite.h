@@ -24,6 +24,13 @@
 #ifndef vkk_uiSprite_H
 #define vkk_uiSprite_H
 
+typedef struct vkk_uiSpriteFn_s
+{
+	// priv and functions may be NULL
+	void*                priv;
+	vkk_uiWidgetClick_fn click_fn;
+} vkk_uiSpriteFn_t;
+
 typedef struct vkk_uiSprite_s
 {
 	vkk_uiWidget_t base;
@@ -48,21 +55,18 @@ typedef struct vkk_uiSprite_s
 
 vkk_uiSprite_t* vkk_uiSprite_new(vkk_uiScreen_t* screen,
                                  size_t wsize,
+                                 vkk_uiSpriteFn_t* sfn,
                                  vkk_uiWidgetLayout_t* layout,
-                                 vkk_uiWidgetFn_t* fn,
                                  cc_vec4f_t* color,
                                  const char** sprite_array);
 vkk_uiSprite_t* vkk_uiSprite_newPageImage(vkk_uiScreen_t* screen,
-                                          vkk_uiWidgetFn_t* fn,
+                                          vkk_uiSpriteFn_t* sfn,
                                           const char** sprite_array);
 vkk_uiSprite_t* vkk_uiSprite_newSidebarImage(vkk_uiScreen_t* screen,
-                                             vkk_uiWidgetFn_t* fn,
+                                             vkk_uiSpriteFn_t* sfn,
                                              const char** sprite_array);
-vkk_uiSprite_t* vkk_uiSprite_newActionIcon(vkk_uiScreen_t* screen,
-                                           vkk_uiWidgetFn_t* fn,
-                                           const char** sprite_array);
 vkk_uiSprite_t* vkk_uiSprite_newStatusIcon(vkk_uiScreen_t* screen,
-                                           vkk_uiWidgetFn_t* fn,
+                                           vkk_uiSpriteFn_t* sfn,
                                            const char** sprite_array);
 void            vkk_uiSprite_delete(vkk_uiSprite_t** _self);
 void            vkk_uiSprite_select(vkk_uiSprite_t* self,

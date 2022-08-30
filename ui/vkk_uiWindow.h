@@ -33,28 +33,30 @@
 #define VKK_UI_WINDOW_FLAG_FOOTER       0x40
 #define VKK_UI_WINDOW_FLAG_TRANSPARENT  0x80
 
-typedef struct vkk_uiWindowInfo_s
+typedef struct vkk_uiWindowFn_s
 {
-	uint32_t         flags;
-	const char*      label;
-	vkk_uiWidgetFn_t fn;
-} vkk_uiWindowInfo_t;
+	// priv and functions may be NULL
+	void*                  priv;
+	vkk_uiWidgetRefresh_fn refresh_fn;
+} vkk_uiWindowFn_t;
 
 typedef struct vkk_uiWindow_s
 {
-	vkk_uiWidget_t     base;
-	vkk_uiBulletbox_t* title;
-	vkk_uiListbox_t*   page;
-	vkk_uiLayer_t*     layer0;
-	vkk_uiLayer_t*     layer1;
-	vkk_uiListbox_t*   footer;
-	vkk_uiWidget_t*    focus;
-	int                transparent;
+	vkk_uiWidget_t         base;
+	vkk_uiBulletBox_t*     title;
+	vkk_uiListBox_t*       page;
+	vkk_uiLayer_t*         layer0;
+	vkk_uiLayer_t*         layer1;
+	vkk_uiListBox_t*       footer;
+	vkk_uiWidget_t*        focus;
+	int                    transparent;
+	vkk_uiWidgetRefresh_fn refresh_fn;
 } vkk_uiWindow_t;
 
 vkk_uiWindow_t*  vkk_uiWindow_new(vkk_uiScreen_t* screen,
                                   size_t wsize,
-                                  vkk_uiWindowInfo_t* info);
+                                  vkk_uiWindowFn_t* wfn,
+                                  uint32_t flags);
 void             vkk_uiWindow_delete(vkk_uiWindow_t** _self);
 void             vkk_uiWindow_focus(vkk_uiWindow_t* self,
                                     vkk_uiWidget_t* focus);
@@ -62,9 +64,9 @@ void             vkk_uiWindow_select(vkk_uiWindow_t* self,
                                      uint32_t index);
 void             vkk_uiWindow_label(vkk_uiWindow_t* self,
                                     const char* fmt, ...);
-vkk_uiListbox_t* vkk_uiWindow_page(vkk_uiWindow_t* self);
+vkk_uiListBox_t* vkk_uiWindow_page(vkk_uiWindow_t* self);
 vkk_uiLayer_t*   vkk_uiWindow_layer0(vkk_uiWindow_t* self);
 vkk_uiLayer_t*   vkk_uiWindow_layer1(vkk_uiWindow_t* self);
-vkk_uiListbox_t* vkk_uiWindow_footer(vkk_uiWindow_t* self);
+vkk_uiListBox_t* vkk_uiWindow_footer(vkk_uiWindow_t* self);
 
 #endif

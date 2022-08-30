@@ -62,7 +62,21 @@ vkk_uiWindow_click(vkk_uiWidget_t* widget,
 	return 1;
 }
 
-static void
+static int
+vkk_uiWindow_clickTitle(vkk_uiWidget_t* widget,
+                        int state, float x, float y)
+{
+	ASSERT(widget);
+
+	if(state == VKK_UI_WIDGET_POINTER_UP)
+	{
+		vkk_uiScreen_popupSet(widget->screen, NULL, NULL);
+	}
+
+	return 1;
+}
+
+static int
 vkk_uiWindow_refresh(vkk_uiWidget_t* widget)
 {
 	ASSERT(widget);
@@ -73,6 +87,13 @@ vkk_uiWindow_refresh(vkk_uiWidget_t* widget)
 	vkk_uiWidget_t* layer0 = (vkk_uiWidget_t*) self->layer0;
 	vkk_uiWidget_t* layer1 = (vkk_uiWidget_t*) self->layer1;
 	vkk_uiWidget_t* footer = (vkk_uiWidget_t*) self->footer;
+
+	vkk_uiWidgetRefresh_fn refresh_fn = self->refresh_fn;
+	if(refresh_fn && ((*refresh_fn)(widget) == 0))
+	{
+		return 0;
+	}
+
 	if(title)
 	{
 		vkk_uiWidget_refresh(title);
@@ -93,6 +114,8 @@ vkk_uiWindow_refresh(vkk_uiWidget_t* widget)
 	{
 		vkk_uiWidget_refresh(footer);
 	}
+
+	return 1;
 }
 
 static void
@@ -429,7 +452,7 @@ vkk_uiWindow_draw(vkk_uiWidget_t* widget)
 	}
 }
 
-static vkk_uiListbox_t*
+static vkk_uiListBox_t*
 vkk_uiWindow_newPage(vkk_uiScreen_t* screen,
                      uint32_t flags)
 {
@@ -474,7 +497,7 @@ vkk_uiWindow_newPage(vkk_uiScreen_t* screen,
 		scroll.scroll_bar = 0;
 	}
 
-	vkk_uiWidgetFn_t empty_fn =
+	vkk_uiListBoxFn_t lbfn =
 	{
 		.priv = NULL
 	};
@@ -484,8 +507,8 @@ vkk_uiWindow_newPage(vkk_uiScreen_t* screen,
 		.a = 0.0f
 	};
 
-	return vkk_uiListbox_new(screen, 0, layout,
-	                         &scroll, &empty_fn,
+	return vkk_uiListBox_new(screen, 0, &lbfn, layout,
+	                         &scroll,
 	                         VKK_UI_LISTBOX_ORIENTATION_VERTICAL,
 	                         &clear);
 }
@@ -494,6 +517,11 @@ static vkk_uiLayer_t*
 vkk_uiWindow_newLayer(vkk_uiScreen_t* screen, int border)
 {
 	ASSERT(screen);
+
+	vkk_uiLayerFn_t lfn =
+	{
+		.priv = NULL,
+	};
 
 	vkk_uiWidgetLayout_t layout =
 	{
@@ -509,10 +537,11 @@ vkk_uiWindow_newLayer(vkk_uiScreen_t* screen, int border)
 		.a = 0.0f
 	};
 
-	return vkk_uiLayer_new(screen, 0, &layout, &color);
+	return vkk_uiLayer_new(screen, 0, &lfn, &layout,
+	                       &color);
 }
 
-static vkk_uiListbox_t*
+static vkk_uiListBox_t*
 vkk_uiWindow_newFooter(vkk_uiScreen_t* screen)
 {
 	ASSERT(screen);
@@ -530,7 +559,7 @@ vkk_uiWindow_newFooter(vkk_uiScreen_t* screen)
 		.scroll_bar = 0
 	};
 
-	vkk_uiWidgetFn_t empty_fn =
+	vkk_uiListBoxFn_t lbfn =
 	{
 		.priv = NULL
 	};
@@ -540,8 +569,8 @@ vkk_uiWindow_newFooter(vkk_uiScreen_t* screen)
 		.a = 0.0f
 	};
 
-	return vkk_uiListbox_new(screen, 0, &layout,
-	                         &scroll, &empty_fn,
+	return vkk_uiListBox_new(screen, 0, &lbfn, &layout,
+	                         &scroll,
 	                         VKK_UI_LISTBOX_ORIENTATION_HORIZONTAL,
 	                         &clear);
 }
@@ -553,28 +582,29 @@ vkk_uiWindow_newFooter(vkk_uiScreen_t* screen)
 vkk_uiWindow_t*
 vkk_uiWindow_new(vkk_uiScreen_t* screen,
                  size_t wsize,
-                 vkk_uiWindowInfo_t* info)
+                 vkk_uiWindowFn_t* wfn,
+                 uint32_t flags)
 {
 	ASSERT(screen);
-	ASSERT(info);
+	ASSERT(wfn);
 
 	// check for valid page flags
 	int page_count = 0;
-	if(info->flags & VKK_UI_WINDOW_FLAG_PAGE_DEFAULT)
+	if(flags & VKK_UI_WINDOW_FLAG_PAGE_DEFAULT)
 	{
 		++page_count;
 	}
-	if(info->flags & VKK_UI_WINDOW_FLAG_PAGE_SIDEBAR)
+	if(flags & VKK_UI_WINDOW_FLAG_PAGE_SIDEBAR)
 	{
 		++page_count;
 	}
-	if(info->flags & VKK_UI_WINDOW_FLAG_PAGE_POPUP)
+	if(flags & VKK_UI_WINDOW_FLAG_PAGE_POPUP)
 	{
 		++page_count;
 	}
 	if(page_count > 1)
 	{
-		LOGE("invalid flags=0x%X", info->flags);
+		LOGE("invalid flags=0x%X", flags);
 		return NULL;
 	}
 
@@ -612,11 +642,11 @@ vkk_uiWindow_new(vkk_uiScreen_t* screen,
 	};
 
 	vkk_uiWidgetLayout_t* layout = &layout_default;
-	if(info->flags & VKK_UI_WINDOW_FLAG_PAGE_SIDEBAR)
+	if(flags & VKK_UI_WINDOW_FLAG_PAGE_SIDEBAR)
 	{
 		layout = &layout_sidebar;
 	}
-	else if(info->flags & VKK_UI_WINDOW_FLAG_PAGE_POPUP)
+	else if(flags & VKK_UI_WINDOW_FLAG_PAGE_POPUP)
 	{
 		layout = &layout_popup;
 	}
@@ -626,45 +656,40 @@ vkk_uiWindow_new(vkk_uiScreen_t* screen,
 		.scroll_bar = 0
 	};
 
-	vkk_uiWidgetFn_t window_fn =
+	vkk_uiWidgetFn_t fn =
 	{
-		.click_fn   = vkk_uiWindow_click,
-		.refresh_fn = vkk_uiWindow_refresh
-	};
-
-	vkk_uiWidgetPrivFn_t priv_fn =
-	{
-		.size_fn      = vkk_uiWindow_size,
-		.layout_fn    = vkk_uiWindow_layout,
+		.priv         = wfn->priv,
+		.click_fn     = vkk_uiWindow_click,
 		.drag_fn      = vkk_uiWindow_drag,
-		.scrollTop_fn = vkk_uiWindow_scrollTop,
 		.draw_fn      = vkk_uiWindow_draw,
+		.layout_fn    = vkk_uiWindow_layout,
+		.refresh_fn   = vkk_uiWindow_refresh,
+		.scrollTop_fn = vkk_uiWindow_scrollTop,
+		.size_fn      = vkk_uiWindow_size,
 	};
 
 	vkk_uiWindow_t* self;
 	self = (vkk_uiWindow_t*)
 	       vkk_uiWidget_new(screen, wsize, &clear,
-	                        layout, &scroll, &window_fn,
-	                        &priv_fn);
+	                        layout, &scroll, &fn);
 	if(self == NULL)
 	{
 		return NULL;
 	}
 
-	vkk_uiWidget_t* base = &self->base;
-	vkk_uiWidget_soundFx(base, 0);
+	vkk_uiWidget_soundFx(&self->base, 0);
 
 	cc_vec4f_t color_banner;
 	cc_vec4f_t color_background;
 	vkk_uiScreen_colorBanner(screen,     &color_banner);
 	vkk_uiScreen_colorBackground(screen, &color_background);
 
-	if(info->flags & VKK_UI_WINDOW_FLAG_TRANSPARENT)
+	if(flags & VKK_UI_WINDOW_FLAG_TRANSPARENT)
 	{
 		color_background.a = 0.0f;
 	}
 
-	if(vkk_uiWidget_tricolor(base,
+	if(vkk_uiWidget_tricolor(&self->base,
 	                         &color_banner,
 	                         &color_background,
 	                         &color_banner) == 0)
@@ -672,7 +697,7 @@ vkk_uiWindow_new(vkk_uiScreen_t* screen,
 		goto fail_tricolor;
 	}
 
-	vkk_uiBulletboxStyle_t title_style =
+	vkk_uiBulletBoxStyle_t title_style =
 	{
 		.text_style =
 		{
@@ -697,38 +722,46 @@ vkk_uiWindow_new(vkk_uiScreen_t* screen,
 	};
 
 	const char** sprite_array = sprite_array_back;
-	if((info->flags & VKK_UI_WINDOW_FLAG_PAGE_POPUP) ||
-	   (info->flags & VKK_UI_WINDOW_FLAG_PAGE_SIDEBAR))
+	if((flags & VKK_UI_WINDOW_FLAG_PAGE_POPUP) ||
+	   (flags & VKK_UI_WINDOW_FLAG_PAGE_SIDEBAR))
 	{
 		sprite_array = sprite_array_cancel;
 	}
 
-	if(info->flags & VKK_UI_WINDOW_FLAG_TITLE)
+	if(flags & VKK_UI_WINDOW_FLAG_TITLE)
 	{
-		self->title = vkk_uiBulletbox_new(screen, 0,
+		vkk_uiBulletBoxFn_t bbfn =
+		{
+			.click_fn = vkk_uiWidget_clickBack,
+		};
+
+		if(flags & VKK_UI_WINDOW_FLAG_PAGE_POPUP)
+		{
+			bbfn.click_fn = vkk_uiWindow_clickTitle;
+		}
+
+		self->title = vkk_uiBulletBox_new(screen, 0, &bbfn,
 		                                  VKK_UI_WIDGET_ANCHOR_TL,
-		                                  &info->fn,
 		                                  &title_style,
 		                                  sprite_array);
 		if(self->title == NULL)
 		{
 			goto fail_title;
 		}
-		vkk_uiWindow_label(self, "%s", info->label);
 	}
 
-	if((info->flags & VKK_UI_WINDOW_FLAG_PAGE_DEFAULT) ||
-	   (info->flags & VKK_UI_WINDOW_FLAG_PAGE_SIDEBAR) ||
-	   (info->flags & VKK_UI_WINDOW_FLAG_PAGE_POPUP))
+	if((flags & VKK_UI_WINDOW_FLAG_PAGE_DEFAULT) ||
+	   (flags & VKK_UI_WINDOW_FLAG_PAGE_SIDEBAR) ||
+	   (flags & VKK_UI_WINDOW_FLAG_PAGE_POPUP))
 	{
-		self->page = vkk_uiWindow_newPage(screen, info->flags);
+		self->page = vkk_uiWindow_newPage(screen, flags);
 		if(self->page == NULL)
 		{
 			goto fail_page;
 		}
 	}
 
-	if(info->flags & VKK_UI_WINDOW_FLAG_LAYER0)
+	if(flags & VKK_UI_WINDOW_FLAG_LAYER0)
 	{
 		self->layer0 = vkk_uiWindow_newLayer(screen,
 		                                     VKK_UI_WIDGET_BORDER_NONE);
@@ -738,7 +771,7 @@ vkk_uiWindow_new(vkk_uiScreen_t* screen,
 		}
 	}
 
-	if(info->flags & VKK_UI_WINDOW_FLAG_LAYER1)
+	if(flags & VKK_UI_WINDOW_FLAG_LAYER1)
 	{
 		self->layer1 = vkk_uiWindow_newLayer(screen,
 		                                     VKK_UI_WIDGET_BORDER_LARGE);
@@ -748,7 +781,7 @@ vkk_uiWindow_new(vkk_uiScreen_t* screen,
 		}
 	}
 
-	if(info->flags & VKK_UI_WINDOW_FLAG_FOOTER)
+	if(flags & VKK_UI_WINDOW_FLAG_FOOTER)
 	{
 		self->footer = vkk_uiWindow_newFooter(screen);
 		if(self->footer == NULL)
@@ -762,6 +795,8 @@ vkk_uiWindow_new(vkk_uiScreen_t* screen,
 		self->transparent = 1;
 	}
 
+	self->refresh_fn = wfn->refresh_fn;
+
 	// success
 	return self;
 
@@ -771,9 +806,9 @@ vkk_uiWindow_new(vkk_uiScreen_t* screen,
 	fail_layer1:
 		vkk_uiLayer_delete(&self->layer0);
 	fail_layer0:
-		vkk_uiListbox_delete(&self->page);
+		vkk_uiListBox_delete(&self->page);
 	fail_page:
-		vkk_uiBulletbox_delete(&self->title);
+		vkk_uiBulletBox_delete(&self->title);
 	fail_title:
 	fail_tricolor:
 		vkk_uiWidget_delete((vkk_uiWidget_t**) &self);
@@ -787,11 +822,11 @@ void vkk_uiWindow_delete(vkk_uiWindow_t** _self)
 	vkk_uiWindow_t* self = *_self;
 	if(self)
 	{
-		vkk_uiListbox_delete(&self->footer);
+		vkk_uiListBox_delete(&self->footer);
 		vkk_uiLayer_delete(&self->layer1);
 		vkk_uiLayer_delete(&self->layer0);
-		vkk_uiListbox_delete(&self->page);
-		vkk_uiBulletbox_delete(&self->title);
+		vkk_uiListBox_delete(&self->page);
+		vkk_uiBulletBox_delete(&self->title);
 		vkk_uiWidget_delete((vkk_uiWidget_t**) _self);
 	}
 }
@@ -812,7 +847,7 @@ void vkk_uiWindow_select(vkk_uiWindow_t* self,
 
 	if(self->title)
 	{
-		vkk_uiBulletbox_select(self->title, index);
+		vkk_uiBulletBox_select(self->title, index);
 	}
 }
 
@@ -831,11 +866,11 @@ void vkk_uiWindow_label(vkk_uiWindow_t* self,
 		vsnprintf(string, 256, fmt, argptr);
 		va_end(argptr);
 
-		vkk_uiBulletbox_label(self->title, "%s", string);
+		vkk_uiBulletBox_label(self->title, "%s", string);
 	}
 }
 
-vkk_uiListbox_t* vkk_uiWindow_page(vkk_uiWindow_t* self)
+vkk_uiListBox_t* vkk_uiWindow_page(vkk_uiWindow_t* self)
 {
 	ASSERT(self);
 
@@ -856,7 +891,7 @@ vkk_uiLayer_t* vkk_uiWindow_layer1(vkk_uiWindow_t* self)
 	return self->layer1;
 }
 
-vkk_uiListbox_t* vkk_uiWindow_footer(vkk_uiWindow_t* self)
+vkk_uiListBox_t* vkk_uiWindow_footer(vkk_uiWindow_t* self)
 {
 	ASSERT(self);
 

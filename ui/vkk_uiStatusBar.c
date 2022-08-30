@@ -33,10 +33,16 @@
 
 vkk_uiStatusBar_t*
 vkk_uiStatusBar_new(vkk_uiScreen_t* screen, size_t wsize,
-                    vkk_uiWidgetFn_t* widget_fn)
+                    vkk_uiStatusBarFn_t* sbfn)
 {
 	ASSERT(screen);
-	ASSERT(widget_fn);
+	ASSERT(sbfn);
+
+	vkk_uiListBoxFn_t lbfn =
+	{
+		.priv       = sbfn->priv,
+		.refresh_fn = sbfn->refresh_fn,
+	};
 
 	vkk_uiWidgetLayout_t layout =
 	{
@@ -53,8 +59,8 @@ vkk_uiStatusBar_new(vkk_uiScreen_t* screen, size_t wsize,
 	vkk_uiScreen_colorBackground(screen, &color);
 
 	return (vkk_uiStatusBar_t*)
-	       vkk_uiListbox_new(screen, wsize, &layout,
-	                         &scroll, widget_fn,
+	       vkk_uiListBox_new(screen, wsize, &lbfn,
+	                         &layout, &scroll,
 	                         VKK_UI_LISTBOX_ORIENTATION_HORIZONTAL,
 	                         &color);
 }
@@ -66,7 +72,7 @@ void vkk_uiStatusBar_delete(vkk_uiStatusBar_t** _self)
 	vkk_uiStatusBar_t* self = *_self;
 	if(self)
 	{
-		vkk_uiListbox_delete((vkk_uiListbox_t**) _self);
+		vkk_uiListBox_delete((vkk_uiListBox_t**) _self);
 	}
 }
 
@@ -76,14 +82,12 @@ void vkk_uiStatusBar_add(vkk_uiStatusBar_t* self,
 	ASSERT(self);
 	ASSERT(widget);
 
-	vkk_uiListbox_t* base = &self->base;
-	vkk_uiListbox_add(base, widget);
+	vkk_uiListBox_add(&self->base, widget);
 }
 
 void vkk_uiStatusBar_clear(vkk_uiStatusBar_t* self)
 {
 	ASSERT(self);
 
-	vkk_uiListbox_t* base = &self->base;
-	vkk_uiListbox_clear(base);
+	vkk_uiListBox_clear(&self->base);
 }

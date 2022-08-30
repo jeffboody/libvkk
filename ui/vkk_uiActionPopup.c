@@ -25,70 +25,56 @@
 
 #define LOG_TAG "vkk"
 #include "../../libcc/cc_log.h"
+#include "../../libcc/cc_memory.h"
 #include "../vkk_ui.h"
 
 /***********************************************************
 * public                                                   *
 ***********************************************************/
 
-vkk_uiInfoPanel_t*
-vkk_uiInfoPanel_new(vkk_uiScreen_t* screen, size_t wsize,
-                    vkk_uiInfoPanelFn_t* ipfn)
+vkk_uiActionPopup_t*
+vkk_uiActionPopup_new(vkk_uiScreen_t* screen,
+                      size_t wsize,
+                      vkk_uiActionPopupFn_t* apfn,
+                      vkk_uiActionBar_t* parent)
 {
 	ASSERT(screen);
-	ASSERT(ipfn);
+	ASSERT(apfn);
+	ASSERT(parent);
 
-	vkk_uiWidgetLayout_t layout =
+	if(wsize == 0)
 	{
-		.border = VKK_UI_WIDGET_BORDER_MEDIUM,
+		wsize = sizeof(vkk_uiActionPopup_t);
+	}
+
+	vkk_uiWindowFn_t wfn =
+	{
+		.priv       = apfn->priv,
+		.refresh_fn = apfn->refresh_fn,
 	};
 
-	vkk_uiWidgetScroll_t scroll =
+	uint32_t flags = VKK_UI_WINDOW_FLAG_TITLE |
+	                 VKK_UI_WINDOW_FLAG_PAGE_POPUP;
+
+	vkk_uiActionPopup_t* self;
+	self = (vkk_uiActionPopup_t*)
+	       vkk_uiWindow_new(screen, wsize,
+	                        &wfn, flags);
+	if(self == NULL)
 	{
-		.scroll_bar = 1
-	};
-	vkk_uiScreen_colorScroll0(screen, &scroll.color0);
-	vkk_uiScreen_colorScroll1(screen, &scroll.color1);
+		return NULL;
+	}
 
-	cc_vec4f_t color;
-	vkk_uiScreen_colorBackground(screen, &color);
-
-	vkk_uiListBoxFn_t lbfn =
-	{
-		.priv       = ipfn->priv,
-		.refresh_fn = ipfn->refresh_fn,
-	};
-
-	return (vkk_uiInfoPanel_t*)
-	       vkk_uiListBox_new(screen, wsize, &lbfn,
-	                         &layout, &scroll,
-	                         VKK_UI_LISTBOX_ORIENTATION_VERTICAL,
-	                         &color);
+	return self;
 }
 
-void vkk_uiInfoPanel_delete(vkk_uiInfoPanel_t** _self)
+void vkk_uiActionPopup_delete(vkk_uiActionPopup_t** _self)
 {
 	ASSERT(_self);
 
-	vkk_uiInfoPanel_t* self = *_self;
+	vkk_uiActionPopup_t* self = *_self;
 	if(self)
 	{
-		vkk_uiListBox_delete((vkk_uiListBox_t**) _self);
+		vkk_uiWindow_delete((vkk_uiWindow_t**) _self);
 	}
-}
-
-void vkk_uiInfoPanel_add(vkk_uiInfoPanel_t* self,
-                         vkk_uiWidget_t* widget)
-{
-	ASSERT(self);
-	ASSERT(widget);
-
-	vkk_uiListBox_add(&self->base, widget);
-}
-
-void vkk_uiInfoPanel_clear(vkk_uiInfoPanel_t* self)
-{
-	ASSERT(self);
-
-	vkk_uiListBox_clear(&self->base);
 }

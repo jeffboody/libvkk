@@ -24,14 +24,21 @@
 #ifndef vkk_uiInfoPanel_H
 #define vkk_uiInfoPanel_H
 
+typedef struct vkk_uiInfoPanelFn_s
+{
+	// priv and functions may be NULL
+	void*                  priv;
+	vkk_uiWidgetRefresh_fn refresh_fn;
+} vkk_uiInfoPanelFn_t;
+
 typedef struct vkk_uiInfoPanel_s
 {
-	vkk_uiListbox_t base;
+	vkk_uiListBox_t base;
 } vkk_uiInfoPanel_t;
 
 vkk_uiInfoPanel_t* vkk_uiInfoPanel_new(vkk_uiScreen_t* screen,
                                        size_t wsize,
-                                       vkk_uiWidgetFn_t* widget_fn);
+                                       vkk_uiInfoPanelFn_t* ipfn);
 void               vkk_uiInfoPanel_delete(vkk_uiInfoPanel_t** _self);
 void               vkk_uiInfoPanel_add(vkk_uiInfoPanel_t* self,
                                        vkk_uiWidget_t* widget);

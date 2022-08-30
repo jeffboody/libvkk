@@ -21,36 +21,45 @@
  *
  */
 
-#ifndef vkk_uiLayer_H
-#define vkk_uiLayer_H
+#ifndef vkk_uiListBox_H
+#define vkk_uiListBox_H
 
 #include "../../libcc/cc_list.h"
 
-typedef struct vkk_uiLayerFn_s
+#define VKK_UI_LISTBOX_ORIENTATION_VERTICAL   0
+#define VKK_UI_LISTBOX_ORIENTATION_HORIZONTAL 1
+
+typedef struct vkk_uiListBoxFn_s
 {
 	// priv and functions may be NULL
 	void*                  priv;
 	vkk_uiWidgetRefresh_fn refresh_fn;
-} vkk_uiLayerFn_t;
+} vkk_uiListBoxFn_t;
 
-typedef struct vkk_uiLayer_s
+typedef struct vkk_uiListBox_s
 {
 	vkk_uiWidget_t         base;
 	cc_list_t*             list;
+	int                    orientation;
 	vkk_uiWidgetRefresh_fn refresh_fn;
-} vkk_uiLayer_t;
+} vkk_uiListBox_t;
 
-vkk_uiLayer_t*  vkk_uiLayer_new(vkk_uiScreen_t* screen,
-                                size_t wsize,
-                                vkk_uiLayerFn_t* lfn,
-                                vkk_uiWidgetLayout_t* layout,
-                                cc_vec4f_t* color);
-void            vkk_uiLayer_delete(vkk_uiLayer_t** _self);
-void            vkk_uiLayer_clear(vkk_uiLayer_t* self);
-int             vkk_uiLayer_add(vkk_uiLayer_t* self,
-                                vkk_uiWidget_t* widget);
-cc_listIter_t*  vkk_uiLayer_head(vkk_uiLayer_t* self);
-vkk_uiWidget_t* vkk_uiLayer_remove(vkk_uiLayer_t* self,
-                                   cc_listIter_t** _iter);
+vkk_uiListBox_t* vkk_uiListBox_new(vkk_uiScreen_t* screen,
+                                   size_t wsize,
+                                   vkk_uiListBoxFn_t* lbfn,
+                                   vkk_uiWidgetLayout_t* layout,
+                                   vkk_uiWidgetScroll_t* scroll,
+                                   int orientation,
+                                   cc_vec4f_t* color);
+void             vkk_uiListBox_delete(vkk_uiListBox_t** _self);
+void             vkk_uiListBox_clear(vkk_uiListBox_t* self);
+int              vkk_uiListBox_add(vkk_uiListBox_t* self,
+                                   vkk_uiWidget_t* widget);
+int              vkk_uiListBox_addSorted(vkk_uiListBox_t* self,
+                                         cc_listcmp_fn compare,
+                                         vkk_uiWidget_t* widget);
+cc_listIter_t*   vkk_uiListBox_head(vkk_uiListBox_t* self);
+vkk_uiWidget_t*  vkk_uiListBox_remove(vkk_uiListBox_t* self,
+                                      cc_listIter_t** _iter);
 
 #endif

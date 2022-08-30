@@ -814,6 +814,8 @@ void vkk_uiScreen_windowPush(vkk_uiScreen_t* self,
 	ASSERT(self);
 	ASSERT(window);
 
+	vkk_uiScreen_popupSet(self, NULL, NULL);
+
 	if(vkk_uiScreen_windowPeek(self) == window)
 	{
 		return;
@@ -829,7 +831,6 @@ void vkk_uiScreen_windowPush(vkk_uiScreen_t* self,
 		// reset scroll bar
 		vkk_uiWidget_scrollTop((vkk_uiWidget_t*) window);
 
-		// reset focus
 		if(window->focus)
 		{
 			vkk_engine_platformCmd(self->engine,
@@ -875,6 +876,8 @@ void vkk_uiScreen_windowReset(vkk_uiScreen_t* self,
 	// window may be NULL
 	ASSERT(self);
 
+	vkk_uiScreen_popupSet(self, NULL, NULL);
+
 	// check if window already active
 	if(vkk_uiScreen_windowPeek(self) == window)
 	{
@@ -889,6 +892,40 @@ void vkk_uiScreen_windowReset(vkk_uiScreen_t* self,
 	if(window)
 	{
 		vkk_uiScreen_windowPush(self, window);
+	}
+}
+
+void
+vkk_uiScreen_popupGet(vkk_uiScreen_t* self,
+                      vkk_uiActionBar_t** _action_bar,
+                      vkk_uiActionPopup_t** _action_popup)
+{
+	ASSERT(self);
+	ASSERT(_action_bar);
+	ASSERT(_action_popup);
+
+	*_action_bar   = self->action_bar;
+	*_action_popup = self->action_popup;
+}
+
+void
+vkk_uiScreen_popupSet(vkk_uiScreen_t* self,
+                      vkk_uiActionBar_t* action_bar,
+                      vkk_uiActionPopup_t* action_popup)
+{
+	// action_bar and action_popup may be NULL
+	ASSERT(self);
+
+	if((self->action_bar   == action_bar) &&
+	   (self->action_popup == action_popup))
+	{
+		self->action_bar   = NULL;
+		self->action_popup = NULL;
+	}
+	else
+	{
+		self->action_bar   = action_bar;
+		self->action_popup = action_popup;
 	}
 }
 
@@ -975,17 +1012,37 @@ int vkk_uiScreen_pointerDown(vkk_uiScreen_t* self,
 {
 	ASSERT(self);
 
-	vkk_uiWidget_t* top_widget;
-	top_widget = (vkk_uiWidget_t*)
-	             vkk_uiScreen_windowPeek(self);
-	if((top_widget == NULL) ||
+	vkk_uiWindow_t* top = vkk_uiScreen_windowPeek(self);
+	if((top == NULL) ||
 	   (self->pointer_state != VKK_UI_WIDGET_POINTER_UP))
 	{
 		// ignore
 		return 0;
 	}
 
-	if(vkk_uiWidget_click(top_widget,
+	// redirect events to the action bar if active
+	// or close the action popup
+	vkk_uiWidget_t* action_bar;
+	action_bar = (vkk_uiWidget_t*) self->action_bar;
+	if(action_bar)
+	{
+		if(vkk_uiWidget_click(action_bar,
+		                      VKK_UI_WIDGET_POINTER_DOWN, x, y))
+		{
+			self->pointer_state = VKK_UI_WIDGET_POINTER_DOWN;
+			self->pointer_x0    = x;
+			self->pointer_y0    = y;
+			self->pointer_t0    = t0;
+			self->pointer_vx    = 0.0f;
+			self->pointer_vy    = 0.0f;
+			return 1;
+		}
+
+		vkk_uiScreen_popupSet(self, NULL, NULL);
+	}
+
+	// fall through to the widget hierarchy
+	if(vkk_uiWidget_click(&top->base,
 	                      VKK_UI_WIDGET_POINTER_DOWN, x, y))
 	{
 		self->pointer_state = VKK_UI_WIDGET_POINTER_DOWN;
@@ -1005,9 +1062,7 @@ int vkk_uiScreen_pointerUp(vkk_uiScreen_t* self,
 {
 	ASSERT(self);
 
-	vkk_uiWidget_t* top_widget;
-	top_widget = (vkk_uiWidget_t*)
-	             vkk_uiScreen_windowPeek(self);
+	vkk_uiWindow_t* top = vkk_uiScreen_windowPeek(self);
 
 	int touch = self->pointer_state != VKK_UI_WIDGET_POINTER_UP;
 	if(self->move_widget)
@@ -1015,10 +1070,10 @@ int vkk_uiScreen_pointerUp(vkk_uiScreen_t* self,
 		vkk_uiWidget_click(self->move_widget,
 		                   VKK_UI_WIDGET_POINTER_UP, x, y);
 	}
-	else if(top_widget &&
+	else if(top &&
 	        (self->pointer_state == VKK_UI_WIDGET_POINTER_DOWN))
 	{
-		vkk_uiWidget_click(top_widget,
+		vkk_uiWidget_click(&top->base,
 		                   VKK_UI_WIDGET_POINTER_UP, x, y);
 	}
 	self->pointer_state = VKK_UI_WIDGET_POINTER_UP;
@@ -1033,10 +1088,8 @@ int vkk_uiScreen_pointerMove(vkk_uiScreen_t* self,
 {
 	ASSERT(self);
 
-	vkk_uiWidget_t* top_widget;
-	top_widget = (vkk_uiWidget_t*)
-	             vkk_uiScreen_windowPeek(self);
-	if((top_widget == NULL) ||
+	vkk_uiWindow_t* top = vkk_uiScreen_windowPeek(self);
+	if((top == NULL) ||
 	   (self->pointer_state == VKK_UI_WIDGET_POINTER_UP))
 	{
 		// ignore
@@ -1093,6 +1146,17 @@ int vkk_uiScreen_keyPress(vkk_uiScreen_t* self,
 {
 	ASSERT(self);
 
+	if(keycode == VKK_PLATFORM_KEYCODE_ESCAPE)
+	{
+		if(self->action_bar || self->action_popup)
+		{
+			vkk_uiScreen_popupSet(self, NULL, NULL);
+			return 1;
+		}
+
+		return vkk_uiScreen_windowPop(self);
+	}
+
 	if(self->focus_widget == NULL)
 	{
 		return 0;
@@ -1117,16 +1181,14 @@ void vkk_uiScreen_draw(vkk_uiScreen_t* self)
 		self->dirty = 1;
 	}
 
-	vkk_uiWidget_t* top_widget;
-	top_widget = (vkk_uiWidget_t*)
-	             vkk_uiScreen_windowPeek(self);
-	if(top_widget == NULL)
+	vkk_uiWindow_t* top = vkk_uiScreen_windowPeek(self);
+	if(top == NULL)
 	{
 		// ignore
 		return;
 	}
 
-	vkk_uiWidget_refresh(top_widget);
+	vkk_uiWidget_refresh(&top->base);
 
 	// dragging
 	float w  = (float) self->w;
@@ -1153,7 +1215,7 @@ void vkk_uiScreen_draw(vkk_uiScreen_t* self)
 
 		// TODO - change drag to return status for
 		// bump animation and to minimize dirty updates
-		vkk_uiWidget_drag(top_widget,
+		vkk_uiWidget_drag(&top->base,
 		                  x, y, vx*dt, vy*dt);
 
 		// update the speed
@@ -1197,9 +1259,9 @@ void vkk_uiScreen_draw(vkk_uiScreen_t* self)
 
 		float layout_w = clip.w;
 		float layout_h = clip.h;
-		vkk_uiWidget_layoutSize(top_widget,
+		vkk_uiWidget_layoutSize(&top->base,
 		                        &layout_w, &layout_h);
-		vkk_uiWidget_layoutXYClip(top_widget, clip.l,
+		vkk_uiWidget_layoutXYClip(&top->base, clip.l,
 		                          clip.t, &clip, 1, 1);
 		self->dirty = 0;
 	}
@@ -1214,7 +1276,7 @@ void vkk_uiScreen_draw(vkk_uiScreen_t* self)
 	                      0.0f, 0.0f, (float) w, (float) h);
 	vkk_renderer_scissor(self->renderer,
 	                     0, 0, w, h);
-	vkk_uiWidget_draw(top_widget);
+	vkk_uiWidget_draw(&top->base);
 	vkk_uiScreen_bind(self, VKK_UI_SCREEN_BIND_NONE);
 
 	// play sound fx

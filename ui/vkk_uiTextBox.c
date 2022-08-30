@@ -36,21 +36,23 @@
 ***********************************************************/
 
 static void
-vkk_uiTextbox_print(vkk_uiTextbox_t* self, const char* string)
+vkk_uiTextBox_print(vkk_uiTextBox_t* self,
+                    const char* string)
 {
 	ASSERT(self);
 	ASSERT(string);
 
-	vkk_uiWidget_t*  widget = (vkk_uiWidget_t*) self;
-	vkk_uiListbox_t* base   = &self->base;
+	vkk_uiWidget_t* widget = (vkk_uiWidget_t*) self;
 
 	vkk_uiTextLayout_t text_layout =
 	{
 		.border = VKK_UI_WIDGET_BORDER_NONE
 	};
 
-	vkk_uiTextFn_t text_fn;
-	memset(&text_fn, 0, sizeof(vkk_uiTextFn_t));
+	vkk_uiTextFn_t tfn =
+	{
+		.priv = NULL
+	};
 
 	cc_vec4f_t clear =
 	{
@@ -68,13 +70,15 @@ vkk_uiTextbox_print(vkk_uiTextbox_t* self, const char* string)
 		text_style.size    = self->text_style.size - 1;
 		text_style.spacing = VKK_UI_TEXT_SPACING_NONE;
 
-		text = vkk_uiText_new(widget->screen, 0, &text_layout,
-		                      &text_style, &text_fn, &clear);
+		text = vkk_uiText_new(widget->screen, 0, &tfn,
+		                      &text_layout, &text_style,
+		                      &clear);
 	}
 	else
 	{
-		text = vkk_uiText_new(widget->screen, 0, &text_layout,
-		                      &self->text_style, &text_fn, &clear);
+		text = vkk_uiText_new(widget->screen, 0, &tfn,
+		                      &text_layout, &self->text_style,
+		                      &clear);
 	}
 
 	if(text == NULL)
@@ -82,7 +86,7 @@ vkk_uiTextbox_print(vkk_uiTextbox_t* self, const char* string)
 		return;
 	}
 
-	if(vkk_uiListbox_add(base, (vkk_uiWidget_t*) text) == 0)
+	if(vkk_uiListBox_add(&self->base, (vkk_uiWidget_t*) text) == 0)
 	{
 		goto fail_add;
 	}
@@ -146,12 +150,11 @@ getToken(const char* src, char* tok, int* _srci, int* _toki)
 }
 
 static void
-vkk_uiTextbox_reflow(vkk_uiWidget_t* widget, float w, float h)
+vkk_uiTextBox_reflow(vkk_uiWidget_t* widget, float w, float h)
 {
 	ASSERT(widget);
 
-	vkk_uiTextbox_t*   self       = (vkk_uiTextbox_t*) widget;
-	vkk_uiListbox_t*   base       = &self->base;
+	vkk_uiTextBox_t*   self       = (vkk_uiTextBox_t*) widget;
 	vkk_uiTextStyle_t* text_style = &self->text_style;
 
 	// subtract the spacing which is added when
@@ -183,12 +186,12 @@ vkk_uiTextbox_reflow(vkk_uiWidget_t* widget, float w, float h)
 
 	// clear the text
 	cc_listIter_t* iter;
-	iter = vkk_uiListbox_head(base);
+	iter = vkk_uiListBox_head(&self->base);
 	while(iter)
 	{
 		vkk_uiText_t* text;
 		text = (vkk_uiText_t*)
-		       vkk_uiListbox_remove(base, &iter);
+		       vkk_uiListBox_remove(&self->base, &iter);
 		vkk_uiText_delete(&text);
 	}
 
@@ -216,13 +219,13 @@ vkk_uiTextbox_reflow(vkk_uiWidget_t* widget, float w, float h)
 				if(dsti > 0)
 				{
 					// print current line and line break
-					vkk_uiTextbox_print(self, dst);
-					vkk_uiTextbox_print(self, "");
+					vkk_uiTextBox_print(self, dst);
+					vkk_uiTextBox_print(self, "");
 				}
 				else
 				{
 					// print line break
-					vkk_uiTextbox_print(self, "");
+					vkk_uiTextBox_print(self, "");
 				}
 				dsti = 0;
 				break;
@@ -254,7 +257,7 @@ vkk_uiTextbox_reflow(vkk_uiWidget_t* widget, float w, float h)
 				else
 				{
 					// print the current line
-					vkk_uiTextbox_print(self, dst);
+					vkk_uiTextBox_print(self, dst);
 
 					// start a new line
 					strncpy(dst, tok, 256);
@@ -272,30 +275,49 @@ vkk_uiTextbox_reflow(vkk_uiWidget_t* widget, float w, float h)
 	if(dsti > 0)
 	{
 		// print the last line
-		vkk_uiTextbox_print(self, dst);
+		vkk_uiTextBox_print(self, dst);
 	}
+}
+
+static int
+vkk_uiTextBox_click(vkk_uiWidget_t* widget,
+                    int state, float x, float y)
+{
+	ASSERT(widget);
+
+	// no-op
+	return 0;
+}
+
+static int
+vkk_uiTextBox_refresh(vkk_uiWidget_t* widget)
+{
+	ASSERT(widget);
+
+	// ignore
+	return 0;
 }
 
 /***********************************************************
 * public                                                   *
 ***********************************************************/
 
-vkk_uiTextbox_t*
-vkk_uiTextbox_new(vkk_uiScreen_t* screen, size_t wsize,
+vkk_uiTextBox_t*
+vkk_uiTextBox_new(vkk_uiScreen_t* screen, size_t wsize,
+                  vkk_uiTextBoxFn_t* tbfn,
                   vkk_uiWidgetLayout_t* layout,
                   vkk_uiWidgetScroll_t* scroll,
-                  vkk_uiWidgetFn_t* fn,
                   vkk_uiTextStyle_t* text_style)
 {
 	ASSERT(screen);
+	ASSERT(tbfn);
 	ASSERT(layout);
 	ASSERT(scroll);
-	ASSERT(fn);
 	ASSERT(text_style);
 
 	if(wsize == 0)
 	{
-		wsize = sizeof(vkk_uiTextbox_t);
+		wsize = sizeof(vkk_uiTextBox_t);
 	}
 
 	cc_vec4f_t clear =
@@ -303,9 +325,16 @@ vkk_uiTextbox_new(vkk_uiScreen_t* screen, size_t wsize,
 		.a = 0.0f
 	};
 
-	vkk_uiTextbox_t* self;
-	self = (vkk_uiTextbox_t*)
-	vkk_uiListbox_new(screen, wsize, layout, scroll, fn,
+	vkk_uiListBoxFn_t lbfn =
+	{
+		.priv       = tbfn->priv,
+		.refresh_fn = vkk_uiTextBox_refresh,
+	};
+
+	vkk_uiTextBox_t* self;
+	self = (vkk_uiTextBox_t*)
+	vkk_uiListBox_new(screen, wsize, &lbfn, layout,
+	                  scroll,
 	                  VKK_UI_LISTBOX_ORIENTATION_VERTICAL,
 	                  &clear);
 	if(self == NULL)
@@ -313,15 +342,36 @@ vkk_uiTextbox_new(vkk_uiScreen_t* screen, size_t wsize,
 		return NULL;
 	}
 
-	// optionially set the reflow function
-	vkk_uiWidget_t* widget = (vkk_uiWidget_t*) self;
+	// optionially override the reflow function
+	vkk_uiWidgetReflow_fn reflow_fn = NULL;
 	if(layout->wrapx != VKK_UI_WIDGET_WRAP_SHRINK)
 	{
-		vkk_uiWidget_privReflowFn(widget, vkk_uiTextbox_reflow);
+		reflow_fn = vkk_uiTextBox_reflow;
 	}
 
-	// enable sound effects since textbox derives from listbox
-	vkk_uiWidget_soundFx(widget, fn->click_fn ? 1 : 0);
+	// optionally replace click function
+	vkk_uiWidget_t*      widget   = (vkk_uiWidget_t*) self;
+	vkk_uiWidgetClick_fn click_fn = vkk_uiTextBox_click;
+	if(tbfn->click_fn)
+	{
+		click_fn = tbfn->click_fn;
+
+		// enable sound effects since
+		// textbox derives from listbox
+		vkk_uiWidget_soundFx(widget, 1);
+	}
+
+	// override functions
+	vkk_uiWidgetFn_t fn_new =
+	{
+		.click_fn  = click_fn,
+		.reflow_fn = reflow_fn,
+	};
+	vkk_uiWidgetFn_t fn_old =
+	{
+		.priv = NULL
+	};
+	vkk_uiWidget_override(widget, &fn_new, &fn_old);
 
 	self->strings = cc_list_new();
 	if(self->strings == NULL)
@@ -341,16 +391,16 @@ vkk_uiTextbox_new(vkk_uiScreen_t* screen, size_t wsize,
 
 	// failure
 	fail_strings:
-		vkk_uiListbox_delete((vkk_uiListbox_t**) &self);
+		vkk_uiListBox_delete((vkk_uiListBox_t**) &self);
 	return NULL;
 }
 
-vkk_uiTextbox_t*
-vkk_uiTextbox_newPageButton(vkk_uiScreen_t* screen,
-                            vkk_uiWidgetFn_t* fn)
+vkk_uiTextBox_t*
+vkk_uiTextBox_newPageButton(vkk_uiScreen_t* screen,
+                            vkk_uiTextBoxFn_t* tbfn)
 {
 	ASSERT(screen);
-	ASSERT(fn);
+	ASSERT(tbfn);
 
 	vkk_uiWidgetLayout_t layout =
 	{
@@ -371,12 +421,12 @@ vkk_uiTextbox_newPageButton(vkk_uiScreen_t* screen,
 	};
 	vkk_uiScreen_colorPageLink(screen, &style.color);
 
-	return vkk_uiTextbox_new(screen, 0, &layout,
-	                         &scroll, fn, &style);
+	return vkk_uiTextBox_new(screen, 0, tbfn, &layout,
+	                         &scroll, &style);
 }
 
-vkk_uiTextbox_t*
-vkk_uiTextbox_newPageParagraph(vkk_uiScreen_t* screen)
+vkk_uiTextBox_t*
+vkk_uiTextBox_newPageParagraph(vkk_uiScreen_t* screen)
 {
 	ASSERT(screen);
 
@@ -391,7 +441,7 @@ vkk_uiTextbox_newPageParagraph(vkk_uiScreen_t* screen)
 		.scroll_bar = 0
 	};
 
-	vkk_uiWidgetFn_t fn =
+	vkk_uiTextBoxFn_t tbfn =
 	{
 		.priv = NULL
 	};
@@ -404,38 +454,36 @@ vkk_uiTextbox_newPageParagraph(vkk_uiScreen_t* screen)
 	};
 	vkk_uiScreen_colorPageItem(screen, &style.color);
 
-	return vkk_uiTextbox_new(screen, 0, &layout,
-	                         &scroll, &fn, &style);
+	return vkk_uiTextBox_new(screen, 0, &tbfn, &layout,
+	                         &scroll, &style);
 }
 
-void vkk_uiTextbox_delete(vkk_uiTextbox_t** _self)
+void vkk_uiTextBox_delete(vkk_uiTextBox_t** _self)
 {
 	ASSERT(_self);
 
-	vkk_uiTextbox_t* self = *_self;
+	vkk_uiTextBox_t* self = *_self;
 	if(self)
 	{
-		vkk_uiTextbox_clear(self);
+		vkk_uiTextBox_clear(self);
 		cc_list_delete(&self->strings);
-		vkk_uiListbox_delete((vkk_uiListbox_t**) _self);
+		vkk_uiListBox_delete((vkk_uiListBox_t**) _self);
 		*_self = NULL;
 	}
 }
 
-void vkk_uiTextbox_clear(vkk_uiTextbox_t* self)
+void vkk_uiTextBox_clear(vkk_uiTextBox_t* self)
 {
 	ASSERT(self);
 
-	vkk_uiListbox_t* base = &self->base;
-
 	// clear the text
 	cc_listIter_t* iter;
-	iter = vkk_uiListbox_head(base);
+	iter = vkk_uiListBox_head(&self->base);
 	while(iter)
 	{
 		vkk_uiText_t* text;
 		text = (vkk_uiText_t*)
-		       vkk_uiListbox_remove(base, &iter);
+		       vkk_uiListBox_remove(&self->base, &iter);
 		vkk_uiText_delete(&text);
 	}
 
@@ -451,7 +499,7 @@ void vkk_uiTextbox_clear(vkk_uiTextbox_t* self)
 	vkk_uiScreen_dirty(widget->screen);
 }
 
-void vkk_uiTextbox_printf(vkk_uiTextbox_t* self,
+void vkk_uiTextBox_printf(vkk_uiTextBox_t* self,
                           const char* fmt, ...)
 {
 	ASSERT(self);
@@ -483,7 +531,7 @@ void vkk_uiTextbox_printf(vkk_uiTextbox_t* self,
 
 	self->dirty = 1;
 
-	vkk_uiTextbox_print(self, string);
+	vkk_uiTextBox_print(self, string);
 
 	// success
 	return;

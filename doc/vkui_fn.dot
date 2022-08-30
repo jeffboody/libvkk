@@ -1,0 +1,106 @@
+// Copyright (c) 2022 Jeff Boody
+//
+// Permission is hereby granted, free of charge, to any person obtaining a
+// copy of this software and associated documentation files (the "Software"),
+// to deal in the Software without restriction, including without limitation
+// the rights to use, copy, modify, merge, publish, distribute, sublicense,
+// and/or sell copies of the Software, and to permit persons to whom the
+// Software is furnished to do so, subject to the following conditions:
+//
+// The above copyright notice and this permission notice shall be included
+// in all copies or substantial portions of the Software.
+//
+// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+// IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+// FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+// AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+// LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+// OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+// THE SOFTWARE.
+
+// sudo apt-get install graphviz
+// xdot vkui.dot
+digraph VKUI
+{
+	label="VKUI API";
+	fontsize=20;
+	size="4,3";
+	ratio=fill;
+
+	// function pointers
+	vkk_uiActionBarFn_t    [shape=box, fillcolor=orange, style=filled, label="vkk_uiActionBarFn_t\n------------------------------\npriv\nrefresh_fn"];
+	vkk_uiActionButtonFn_t [shape=box, fillcolor=orange, style=filled, label="vkk_uiActionButtonFn_t\n------------------------------\npriv\nclick_fn"];
+	vkk_uiActionPopupFn_t  [shape=box, fillcolor=orange, style=filled, label="vkk_uiActionPopupFn_t\n------------------------------\npriv\nrefresh_fn"];
+	vkk_uiBulletBoxFn_t    [shape=box, fillcolor=orange, style=filled, label="vkk_uiBulletBoxFn_t\n------------------------------\npriv\nclick_fn"];
+	vkk_uiCheckBoxFn_t     [shape=box, fillcolor=orange, style=filled, label="vkk_uiCheckBoxFn_t\n------------------------------\npriv\nvalue_fn"];
+	vkk_uiInfoPanelFn_t    [shape=box, fillcolor=orange, style=filled, label="vkk_uiInfoPanelFn_t\n------------------------------\npriv\nrefresh_fn"];
+	vkk_uiInputWindowFn_t  [shape=box, fillcolor=orange, style=filled, label="vkk_uiInputWindowFn_t\n------------------------------\npriv\nrefresh_fn\ninput_fn"];
+	vkk_uiLayerFn_t        [shape=box, fillcolor=orange, style=filled, label="vkk_uiLayerFn_t\n------------------------------\npriv\nrefresh_fn"];
+	vkk_uiListBoxFn_t      [shape=box, fillcolor=orange, style=filled, label="vkk_uiListBoxFn_t\n------------------------------\npriv\nrefresh_fn"];
+	vkk_uiRadioBoxFn_t     [shape=box, fillcolor=orange, style=filled, label="vkk_uiRadioBoxFn_t\n------------------------------\npriv\nvalue_fn"];
+	vkk_uiRadioListFn_t    [shape=box, fillcolor=orange, style=filled, label="vkk_uiRadioListFn_t\n------------------------------\npriv\nvalue_fn"];
+	vkk_uiSpriteFn_t       [shape=box, fillcolor=orange, style=filled, label="vkk_uiSpriteFn_t\n------------------------------\npriv\nclick_fn"];
+	vkk_uiStatusBarFn_t    [shape=box, fillcolor=orange, style=filled, label="vkk_uiStatusBarFn_t\n------------------------------\npriv\nrefresh_fn"];
+	vkk_uiTextBoxFn_t      [shape=box, fillcolor=orange, style=filled, label="vkk_uiTextBoxFn_t\n------------------------------\npriv\nclick_fn"];
+	vkk_uiTextFn_t         [shape=box, fillcolor=orange, style=filled, label="vkk_uiTextFn_t\n------------------------------\npriv\nclick_fn\ninput_fn"];
+	vkk_uiWidgetFn_t       [shape=box, fillcolor=orange, style=filled, label="vkk_uiWidgetFn_t\n------------------------------\npriv\naspect_fn\nclick_fn\ndrag_fn\ndraw_fn\ninput_fn\nkeyPress_fn\nlayout_fn\nreflow_fn\nscrollTop_fn\nsize_fn\nvalue_fn"];
+	vkk_uiWindowFn_t       [shape=box, fillcolor=orange, style=filled, label="vkk_uiWindowFn_t\n------------------------------\npriv\nrefresh_fn"];
+
+	// objects
+	vkk_uiActionBar_t    [shape=box, fillcolor=salmon, style=filled, label="vkk_uiActionBar_t\nrefresh_fn\nlast_popup\n------------------------------\nIMPLEMENT\nrefresh_fn > refresh_fn, update(active)"];
+	vkk_uiActionButton_t [shape=box, fillcolor=salmon, style=filled, label="vkk_uiActionButton_t\nparent\npopup\nwindow\nclick_fn\n------------------------------\nIMPLEMENT\npopup: click_fn > popup(window)\ntransiiton: click_fn > popup(0), transition(window)\ndefault: click_fn > popup(0), click_fn\n------------------------------\nOVERRIDE\nrefresh_fn (popup)"];
+	vkk_uiActionPopup_t  [shape=box, fillcolor=salmon, style=filled, label="vkk_uiActionPopup_t\nparent\n------------------------------\nIMPLEMENT\nclick_fn > popup(0)"];
+	vkk_uiBulletBox_t    [shape=box, fillcolor=salmon, style=filled, label="vkk_uiBulletBox_t\n------------------------------\nIMPLEMENT\ndrag_fn\ndraw_fn\nlayout_fn\nsize_fn"];
+	vkk_uiCheckBox_t     [shape=box, fillcolor=salmon, style=filled, label="vkk_uiCheckBox_t\nvalue\n------------------------------\nIMPLEMENT\nclick_fn > value_fn\n------------------------------\nOVERRIDE\nrefresh_fn\nvalue_fn"];
+	vkk_uiInfoPanel_t    [shape=box, fillcolor=salmon, style=filled, label="vkk_uiInfoPanel_t"];
+	vkk_uiInputWindow_t  [shape=box, fillcolor=salmon, style=filled, label="vkk_uiInputWindow_t\ninput_fn\n------------------------------\nIMPLEMENT\ninput_fn > pop(window), input_fn"];
+	vkk_uiLayer_t        [shape=box, fillcolor=salmon, style=filled, label="vkk_uiLayer_t\nrefresh_fn\n------------------------------\nIMPLEMENT\nclick_fn\ndrag_fn\ndraw_fn\nlayout_fn\nrefresh_fn > refresh_fn\nsize_fn"];
+	vkk_uiListBox_t      [shape=box, fillcolor=salmon, style=filled, label="vkk_uiListBox_t\nrefresh_fn\n------------------------------\nIMPLEMENT\nclick_fn\ndrag_fn\ndraw_fn\nlayout_fn\nrefresh_fn > refresh_fn\nsize_fn"];
+	vkk_uiRadioList_t    [shape=box, fillcolor=salmon, style=filled, label="vkk_uiRadioList_t\nvalue_fn\nvalue"];
+	vkk_uiRadioBox_t     [shape=box, fillcolor=salmon, style=filled, label="vkk_uiRadioBox_t\nparent\nvalue\n------------------------------\nIMPLEMENT\nclick_fn > set(parent), value_fn\n------------------------------\nOVERRIDE\nrefresh_fn\nvalue_fn"];
+	vkk_uiSprite_t       [shape=box, fillcolor=salmon, style=filled, label="vkk_uiSprite_t\n------------------------------\nIMPLEMENT\naspect_fn\ndraw_fn"];
+	vkk_uiStatusBar_t    [shape=box, fillcolor=salmon, style=filled, label="vkk_uiStatusBar_t"];
+	vkk_uiTextBox_t      [shape=box, fillcolor=salmon, style=filled, label="vkk_uiTextBox_t\n------------------------------\nIMPLEMENT\nrefresh_fn (no-op)\n------------------------------\nOVERRIDE\nclick_fn (click_fn or no-op)\nreflow_fn (optional)"];
+	vkk_uiText_t         [shape=box, fillcolor=salmon, style=filled, label="vkk_uiText_t\nclick_fn\n------------------------------\nIMPLEMENT\nclick_fn > softkey, focus, click_fn\ndraw_fn\ninput_fn\nkeyPress_fn > input_fn (optional)\nsize_fn"];
+	vkk_uiWidget_t       [shape=box, fillcolor=salmon, style=filled];
+	vkk_uiWindow_t       [shape=box, fillcolor=salmon, style=filled, label="vkk_uiWindow_t\nrefresh_fn\n------------------------------\nIMPLEMENT\nclick_fn (title/optional)\nclick_fn (window)\ndrag_fn\ndraw_fn\nrefresh_fn > refresh_fn\nscrollTop_fn\nsize_fn"];
+
+	// links
+	vkk_uiActionBar_t      -> vkk_uiActionButtonFn_t [style=dashed];
+	vkk_uiActionBar_t      -> vkk_uiActionPopupFn_t  [style=dashed];
+	vkk_uiActionButtonFn_t -> vkk_uiActionButton_t;
+	vkk_uiActionButton_t   -> vkk_uiSpriteFn_t;
+	vkk_uiActionPopupFn_t  -> vkk_uiActionPopup_t;
+	vkk_uiActionPopup_t    -> vkk_uiWindowFn_t;
+	vkk_uiActionBarFn_t    -> vkk_uiActionBar_t;
+	vkk_uiActionBar_t      -> vkk_uiListBoxFn_t;
+	vkk_uiBulletBoxFn_t    -> vkk_uiBulletBox_t;
+	vkk_uiBulletBox_t      -> vkk_uiWidgetFn_t;
+	vkk_uiCheckBoxFn_t     -> vkk_uiCheckBox_t;
+	vkk_uiCheckBox_t       -> vkk_uiBulletBoxFn_t;
+	vkk_uiInfoPanelFn_t    -> vkk_uiInfoPanel_t;
+	vkk_uiInfoPanel_t      -> vkk_uiListBoxFn_t;
+	vkk_uiInputWindowFn_t  -> vkk_uiInputWindow_t;
+	vkk_uiInputWindow_t    -> vkk_uiWindowFn_t;
+	vkk_uiInputWindow_t    -> vkk_uiTextFn_t [style=dashed];
+	vkk_uiLayerFn_t        -> vkk_uiLayer_t;
+	vkk_uiLayer_t          -> vkk_uiWidgetFn_t;
+	vkk_uiListBoxFn_t      -> vkk_uiListBox_t;
+	vkk_uiListBox_t        -> vkk_uiWidgetFn_t;
+	vkk_uiRadioBoxFn_t     -> vkk_uiRadioBox_t;
+	vkk_uiRadioBox_t       -> vkk_uiBulletBoxFn_t;
+	vkk_uiRadioListFn_t    -> vkk_uiRadioList_t;
+	vkk_uiRadioList_t      -> vkk_uiListBoxFn_t;
+	vkk_uiRadioList_t      -> vkk_uiRadioBoxFn_t [style=dashed];
+	vkk_uiSpriteFn_t       -> vkk_uiSprite_t;
+	vkk_uiSprite_t         -> vkk_uiWidgetFn_t;
+	vkk_uiStatusBarFn_t    -> vkk_uiStatusBar_t;
+	vkk_uiStatusBar_t      -> vkk_uiListBoxFn_t;
+	vkk_uiTextBoxFn_t      -> vkk_uiTextBox_t;
+	vkk_uiTextBox_t        -> vkk_uiListBoxFn_t;
+	vkk_uiTextFn_t         -> vkk_uiText_t;
+	vkk_uiText_t           -> vkk_uiWidgetFn_t;
+	vkk_uiWidgetFn_t       -> vkk_uiWidget_t;
+	vkk_uiWindowFn_t       -> vkk_uiWindow_t;
+	vkk_uiWindow_t         -> vkk_uiWidgetFn_t;
+}

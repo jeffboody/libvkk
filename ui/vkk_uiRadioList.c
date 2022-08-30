@@ -31,57 +31,30 @@
 #include "../vkk_ui.h"
 
 /***********************************************************
-* private                                                  *
-***********************************************************/
-
-static void
-vkk_uiRadiolist_refresh(vkk_uiWidget_t* widget)
-{
-	ASSERT(widget);
-
-	vkk_uiRadiolist_t* self = (vkk_uiRadiolist_t*) widget;
-	vkk_uiListbox_t*   base = &self->base;
-
-	if(self->value != *(self->pvalue))
-	{
-		self->value = *(self->pvalue);
-
-		cc_listIter_t* iter = cc_list_head(base->list);
-		while(iter)
-		{
-			vkk_uiRadiobox_t* rb;
-			rb = (vkk_uiRadiobox_t*) cc_list_peekIter(iter);
-			vkk_uiRadiobox_refresh(rb);
-			iter = cc_list_next(iter);
-		}
-	}
-}
-
-/***********************************************************
 * public                                                   *
 ***********************************************************/
 
-vkk_uiRadiolist_t*
-vkk_uiRadiolist_new(vkk_uiScreen_t* screen, size_t wsize,
+vkk_uiRadioList_t*
+vkk_uiRadioList_new(vkk_uiScreen_t* screen, size_t wsize,
+                    vkk_uiRadioListFn_t* rlfn,
                     vkk_uiWidgetLayout_t* layout,
                     vkk_uiWidgetScroll_t* scroll,
-                    vkk_uiBulletboxStyle_t* bulletbox_style,
-                    int* pvalue)
+                    vkk_uiBulletBoxStyle_t* bulletbox_style)
 {
 	ASSERT(screen);
+	ASSERT(rlfn);
 	ASSERT(layout);
 	ASSERT(scroll);
 	ASSERT(bulletbox_style);
-	ASSERT(pvalue);
 
 	if(wsize == 0)
 	{
-		wsize = sizeof(vkk_uiRadiolist_t);
+		wsize = sizeof(vkk_uiRadioList_t);
 	}
 
-	vkk_uiWidgetFn_t fn =
+	vkk_uiListBoxFn_t lbfn =
 	{
-		.refresh_fn = vkk_uiRadiolist_refresh,
+		.priv = rlfn->priv,
 	};
 
 	cc_vec4f_t clear =
@@ -89,9 +62,10 @@ vkk_uiRadiolist_new(vkk_uiScreen_t* screen, size_t wsize,
 		.a = 0.0f
 	};
 
-	vkk_uiRadiolist_t* self;
-	self = (vkk_uiRadiolist_t*)
-	       vkk_uiListbox_new(screen, wsize, layout, scroll, &fn,
+	vkk_uiRadioList_t* self;
+	self = (vkk_uiRadioList_t*)
+	       vkk_uiListBox_new(screen, wsize, &lbfn,
+	                         layout, scroll,
 	                         VKK_UI_LISTBOX_ORIENTATION_VERTICAL,
 	                         &clear);
 	if(self == NULL)
@@ -99,21 +73,20 @@ vkk_uiRadiolist_new(vkk_uiScreen_t* screen, size_t wsize,
 		return NULL;
 	}
 
-	self->pvalue = pvalue;
-	self->value  = *pvalue;
-
 	memcpy(&self->bulletbox_style, bulletbox_style,
-	       sizeof(vkk_uiBulletboxStyle_t));
+	       sizeof(vkk_uiBulletBoxStyle_t));
+
+	self->value_fn = rlfn->value_fn;
 
 	return self;
 }
 
-vkk_uiRadiolist_t*
-vkk_uiRadiolist_newPageItem(vkk_uiScreen_t* screen,
-                            int* pvalue)
+vkk_uiRadioList_t*
+vkk_uiRadioList_newPageItem(vkk_uiScreen_t* screen,
+                            vkk_uiRadioListFn_t* rlfn)
 {
 	ASSERT(screen);
-	ASSERT(pvalue);
+	ASSERT(rlfn);
 
 	vkk_uiWidgetLayout_t list_layout =
 	{
@@ -126,7 +99,7 @@ vkk_uiRadiolist_newPageItem(vkk_uiScreen_t* screen,
 		.scroll_bar = 0
 	};
 
-	vkk_uiBulletboxStyle_t style =
+	vkk_uiBulletBoxStyle_t style =
 	{
 		.text_style =
 		{
@@ -138,45 +111,45 @@ vkk_uiRadiolist_newPageItem(vkk_uiScreen_t* screen,
 	vkk_uiScreen_colorPageItem(screen, &style.color_icon);
 	vkk_uiScreen_colorPageItem(screen, &style.text_style.color);
 
-	return vkk_uiRadiolist_new(screen, 0, &list_layout,
-	                           &scroll, &style, pvalue);
+	return vkk_uiRadioList_new(screen, 0, rlfn,
+	                           &list_layout, &scroll, &style);
 }
 
-void vkk_uiRadiolist_delete(vkk_uiRadiolist_t** _self)
+void vkk_uiRadioList_delete(vkk_uiRadioList_t** _self)
 {
 	ASSERT(_self);
 
-	vkk_uiRadiolist_t* self = *_self;
+	vkk_uiRadioList_t* self = *_self;
 	if(self)
 	{
-		vkk_uiRadiolist_clear(self);
-		vkk_uiListbox_delete((vkk_uiListbox_t**) _self);
+		vkk_uiRadioList_clear(self);
+		vkk_uiListBox_delete((vkk_uiListBox_t**) _self);
 		*_self = NULL;
 	}
 }
 
-void vkk_uiRadiolist_clear(vkk_uiRadiolist_t* self)
+void vkk_uiRadioList_clear(vkk_uiRadioList_t* self)
 {
 	ASSERT(self);
 
-	vkk_uiListbox_t* base = &self->base;
-
 	cc_listIter_t* iter;
-	iter = vkk_uiListbox_head(base);
+	iter = vkk_uiListBox_head(&self->base);
 	while(iter)
 	{
-		vkk_uiRadiobox_t* rb;
-		rb = (vkk_uiRadiobox_t*)
-		     vkk_uiListbox_remove(base, &iter);
-		vkk_uiRadiobox_delete(&rb);
+		vkk_uiRadioBox_t* rb;
+		rb = (vkk_uiRadioBox_t*)
+		     vkk_uiListBox_remove(&self->base, &iter);
+		vkk_uiRadioBox_delete(&rb);
 	}
 }
 
-void vkk_uiRadiolist_add(vkk_uiRadiolist_t* self, int value,
+void vkk_uiRadioList_add(vkk_uiRadioList_t* self, int value,
                          const char* fmt, ...)
 {
 	ASSERT(self);
 	ASSERT(fmt);
+
+	vkk_uiWidget_t* widget = (vkk_uiWidget_t*) self;
 
 	// decode string
 	char string[256];
@@ -185,36 +158,48 @@ void vkk_uiRadiolist_add(vkk_uiRadiolist_t* self, int value,
 	vsnprintf(string, 256, fmt, argptr);
 	va_end(argptr);
 
-	vkk_uiWidget_t* widget = (vkk_uiWidget_t*) self;
-	vkk_uiRadiobox_t* rb;
-	rb = vkk_uiRadiobox_new(widget->screen, 0,
-	                        &self->bulletbox_style, value,
-	                        self);
+	vkk_uiRadioBoxFn_t rbfn =
+	{
+		.priv     = widget->fn.priv,
+		.value_fn = self->value_fn,
+	};
+
+	vkk_uiRadioBox_t* rb;
+	rb = vkk_uiRadioBox_new(widget->screen, 0, &rbfn,
+	                        &self->bulletbox_style, self,
+	                        value);
 	if(rb == NULL)
 	{
 		return;
 	}
 
-	vkk_uiListbox_t* base = &self->base;
-	if(vkk_uiListbox_add(base, (vkk_uiWidget_t*) rb) == 0)
+	if(vkk_uiListBox_add(&self->base,
+	                     (vkk_uiWidget_t*) rb) == 0)
 	{
 		goto fail_add;
 	}
 
-	vkk_uiRadiobox_label(rb, "%s", string);
+	vkk_uiRadioBox_label(rb, "%s", string);
 
 	// success
 	return;
 
 	// failure
 	fail_add:
-		vkk_uiRadiobox_delete(&rb);
+		vkk_uiRadioBox_delete(&rb);
 }
 
-void vkk_uiRadiolist_value(vkk_uiRadiolist_t* self,
-                           int value)
+int vkk_uiRadioList_get(vkk_uiRadioList_t* self)
 {
 	ASSERT(self);
 
-	*(self->pvalue) = value;
+	return self->value;
+}
+
+void vkk_uiRadioList_set(vkk_uiRadioList_t* self,
+                         int value)
+{
+	ASSERT(self);
+
+	self->value = value;
 }

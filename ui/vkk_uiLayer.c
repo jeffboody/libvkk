@@ -157,12 +157,19 @@ static void vkk_uiLayer_draw(vkk_uiWidget_t* widget)
 	}
 }
 
-static void
+static int
 vkk_uiLayer_refresh(vkk_uiWidget_t* widget)
 {
 	ASSERT(widget);
 
 	vkk_uiLayer_t* self = (vkk_uiLayer_t*) widget;
+
+	vkk_uiWidgetRefresh_fn refresh_fn = self->refresh_fn;
+	if(refresh_fn && ((*refresh_fn)(widget) == 0))
+	{
+		return 0;
+	}
+
 	cc_listIter_t* iter = cc_list_head(self->list);
 	while(iter)
 	{
@@ -171,6 +178,8 @@ vkk_uiLayer_refresh(vkk_uiWidget_t* widget)
 		vkk_uiWidget_refresh(tmp);
 		iter = cc_list_next(iter);
 	}
+
+	return 1;
 }
 
 /***********************************************************
@@ -179,10 +188,12 @@ vkk_uiLayer_refresh(vkk_uiWidget_t* widget)
 
 vkk_uiLayer_t*
 vkk_uiLayer_new(vkk_uiScreen_t* screen, size_t wsize,
+                vkk_uiLayerFn_t* lfn,
                 vkk_uiWidgetLayout_t* layout,
                 cc_vec4f_t* color)
 {
 	ASSERT(screen);
+	ASSERT(lfn);
 	ASSERT(layout);
 	ASSERT(color);
 
@@ -191,10 +202,15 @@ vkk_uiLayer_new(vkk_uiScreen_t* screen, size_t wsize,
 		wsize = sizeof(vkk_uiLayer_t);
 	}
 
-	vkk_uiWidgetFn_t layer_fn =
+	vkk_uiWidgetFn_t fn =
 	{
+		.priv       = lfn->priv,
 		.click_fn   = vkk_uiLayer_click,
-		.refresh_fn = vkk_uiLayer_refresh
+		.drag_fn    = vkk_uiLayer_drag,
+		.draw_fn    = vkk_uiLayer_draw,
+		.layout_fn  = vkk_uiLayer_layout,
+		.refresh_fn = vkk_uiLayer_refresh,
+		.size_fn    = vkk_uiLayer_size,
 	};
 
 	vkk_uiWidgetScroll_t scroll =
@@ -202,31 +218,24 @@ vkk_uiLayer_new(vkk_uiScreen_t* screen, size_t wsize,
 		.scroll_bar = 0
 	};
 
-	vkk_uiWidgetPrivFn_t priv_fn =
-	{
-		.size_fn    = vkk_uiLayer_size,
-		.layout_fn  = vkk_uiLayer_layout,
-		.drag_fn    = vkk_uiLayer_drag,
-		.draw_fn    = vkk_uiLayer_draw,
-	};
-
 	vkk_uiLayer_t* self;
 	self = (vkk_uiLayer_t*)
 	       vkk_uiWidget_new(screen, wsize, color, layout,
-	                        &scroll, &layer_fn, &priv_fn);
+	                        &scroll, &fn);
 	if(self == NULL)
 	{
 		return NULL;
 	}
 
-	vkk_uiWidget_t* base = &self->base;
-	vkk_uiWidget_soundFx(base, 0);
+	vkk_uiWidget_soundFx(&self->base, 0);
 
 	self->list = cc_list_new();
 	if(self->list == NULL)
 	{
 		goto fail_list;
 	}
+
+	self->refresh_fn = lfn->refresh_fn;
 
 	// success
 	return self;
@@ -253,11 +262,11 @@ void vkk_uiLayer_clear(vkk_uiLayer_t* self)
 {
 	ASSERT(self);
 
-	vkk_uiWidget_t* base = &self->base;
+	vkk_uiWidget_t* widget = &self->base;
 
 	cc_list_discard(self->list);
-	vkk_uiWidget_scrollTop(base);
-	vkk_uiScreen_dirty(base->screen);
+	vkk_uiWidget_scrollTop(widget);
+	vkk_uiScreen_dirty(widget->screen);
 }
 
 int vkk_uiLayer_add(vkk_uiLayer_t* self,
@@ -291,10 +300,10 @@ vkk_uiWidget_t* vkk_uiLayer_remove(vkk_uiLayer_t* self,
 	ASSERT(self);
 	ASSERT(_iter);
 
-	vkk_uiWidget_t* base = &self->base;
+	vkk_uiWidget_t* widget = &self->base;
 
-	vkk_uiWidget_scrollTop(base);
-	vkk_uiScreen_dirty(base->screen);
+	vkk_uiWidget_scrollTop(widget);
+	vkk_uiScreen_dirty(widget->screen);
 
 	return (vkk_uiWidget_t*)
 	       cc_list_remove(self->list, _iter);

@@ -38,8 +38,13 @@
 #define VKK_UI_TEXT_SPACING_MEDIUM 0x20
 #define VKK_UI_TEXT_SPACING_LARGE  0x40
 
-typedef void (*vkk_uiText_enterFn)(vkk_uiWidget_t* widget,
-                                   const char* string);
+typedef struct vkk_uiTextFn_s
+{
+	// priv and functions may be NULL
+	void*                priv;
+	vkk_uiWidgetClick_fn click_fn;
+	vkk_uiWidgetInput_fn input_fn;
+} vkk_uiTextFn_t;
 
 typedef struct vkk_uiTextLayout_s
 {
@@ -48,14 +53,6 @@ typedef struct vkk_uiTextLayout_s
 	int   wrapx;
 	float stretchx;
 } vkk_uiTextLayout_t;
-
-typedef struct vkk_uiTextFn_s
-{
-	// functions may be NULL
-
-	vkk_uiWidgetFn_t   fn;
-	vkk_uiText_enterFn enter_fn;
-} vkk_uiTextFn_t;
 
 typedef struct vkk_uiTextStyle_s
 {
@@ -67,11 +64,9 @@ typedef struct vkk_uiTextStyle_s
 
 typedef struct vkk_uiText_s
 {
-	vkk_uiWidget_t base;
-
-	// text properties
-	vkk_uiText_enterFn enter_fn;
-	vkk_uiTextStyle_t  style;
+	vkk_uiWidget_t       base;
+	vkk_uiTextStyle_t    style;
+	vkk_uiWidgetClick_fn click_fn;
 
 	// string data
 	size_t size;
@@ -90,14 +85,13 @@ typedef struct vkk_uiText_s
 
 vkk_uiText_t* vkk_uiText_new(vkk_uiScreen_t* screen,
                              size_t wsize,
+                             vkk_uiTextFn_t* tfn,
                              vkk_uiTextLayout_t* text_layout,
                              vkk_uiTextStyle_t* text_style,
-                             vkk_uiTextFn_t* text_fn,
                              cc_vec4f_t* color_fill);
 vkk_uiText_t* vkk_uiText_newPageHeading(vkk_uiScreen_t* screen);
-vkk_uiText_t* vkk_uiText_newPageTextEntry(vkk_uiScreen_t* screen,
-                                          void* priv,
-                                          vkk_uiText_enterFn enter_fn);
+vkk_uiText_t* vkk_uiText_newPageTextInput(vkk_uiScreen_t* screen,
+                                          vkk_uiTextFn_t* tfn);
 vkk_uiText_t* vkk_uiText_newInfoHeading(vkk_uiScreen_t* screen);
 vkk_uiText_t* vkk_uiText_newInfoItem(vkk_uiScreen_t* screen);
 void          vkk_uiText_delete(vkk_uiText_t** _self);
@@ -107,5 +101,6 @@ int           vkk_uiText_label(vkk_uiText_t* self,
                                const char* fmt, ...);
 int           vkk_uiText_width(vkk_uiText_t* self, int cursor);
 int           vkk_uiText_height(vkk_uiText_t* self);
+const char*   vkk_uiText_string(vkk_uiText_t* self);
 
 #endif

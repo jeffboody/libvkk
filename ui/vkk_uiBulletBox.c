@@ -37,16 +37,16 @@
 #define VKK_UI_BULLETBOX_SPACE 1.25f
 
 static void
-vkk_uiBulletbox_size(vkk_uiWidget_t* widget,
+vkk_uiBulletBox_size(vkk_uiWidget_t* widget,
                      float* w, float* h)
 {
 	ASSERT(widget);
 	ASSERT(w);
 	ASSERT(h);
 
-	vkk_uiBulletbox_t* self = (vkk_uiBulletbox_t*) widget;
-	vkk_uiWidget_t*    icon = (vkk_uiWidget_t*) self->icon;
-	vkk_uiWidget_t*    text = (vkk_uiWidget_t*) self->text;
+	vkk_uiBulletBox_t* self = (vkk_uiBulletBox_t*) widget;
+	vkk_uiWidget_t*    icon = &self->icon->base;
+	vkk_uiWidget_t*    text = &self->text->base;
 
 	float icon_w = *w;
 	float icon_h = *h;
@@ -61,14 +61,14 @@ vkk_uiBulletbox_size(vkk_uiWidget_t* widget,
 }
 
 static void
-vkk_uiBulletbox_layout(vkk_uiWidget_t* widget,
+vkk_uiBulletBox_layout(vkk_uiWidget_t* widget,
                        int dragx, int dragy)
 {
 	ASSERT(widget);
 
-	vkk_uiBulletbox_t* self = (vkk_uiBulletbox_t*) widget;
-	vkk_uiWidget_t*    icon = (vkk_uiWidget_t*) self->icon;
-	vkk_uiWidget_t*    text = (vkk_uiWidget_t*) self->text;
+	vkk_uiBulletBox_t* self = (vkk_uiBulletBox_t*) widget;
+	vkk_uiWidget_t*    icon = &self->icon->base;
+	vkk_uiWidget_t*    text = &self->text->base;
 
 	// initialize the layout
 	float x  = 0.0f;
@@ -107,24 +107,24 @@ vkk_uiBulletbox_layout(vkk_uiWidget_t* widget,
 }
 
 static void
-vkk_uiBulletbox_drag(vkk_uiWidget_t* widget,
+vkk_uiBulletBox_drag(vkk_uiWidget_t* widget,
                     float x, float y,
                     float dx, float dy)
 {
 	ASSERT(widget);
 
-	vkk_uiBulletbox_t* self = (vkk_uiBulletbox_t*) widget;
+	vkk_uiBulletBox_t* self = (vkk_uiBulletBox_t*) widget;
 	vkk_uiWidget_drag((vkk_uiWidget_t*) self->icon,
 	                  x, y, dx, dy);
 	vkk_uiWidget_drag((vkk_uiWidget_t*) self->text,
 	                  x, y, dx, dy);
 }
 
-static void vkk_uiBulletbox_draw(vkk_uiWidget_t* widget)
+static void vkk_uiBulletBox_draw(vkk_uiWidget_t* widget)
 {
 	ASSERT(widget);
 
-	vkk_uiBulletbox_t* self = (vkk_uiBulletbox_t*) widget;
+	vkk_uiBulletBox_t* self = (vkk_uiBulletBox_t*) widget;
 	vkk_uiWidget_draw((vkk_uiWidget_t*) self->icon);
 	vkk_uiWidget_draw((vkk_uiWidget_t*) self->text);
 }
@@ -133,15 +133,15 @@ static void vkk_uiBulletbox_draw(vkk_uiWidget_t* widget)
 * public                                                   *
 ***********************************************************/
 
-vkk_uiBulletbox_t*
-vkk_uiBulletbox_new(vkk_uiScreen_t* screen, size_t wsize,
+vkk_uiBulletBox_t*
+vkk_uiBulletBox_new(vkk_uiScreen_t* screen, size_t wsize,
+                    vkk_uiBulletBoxFn_t* bbfn,
                     int anchor,
-                    vkk_uiWidgetFn_t* fn,
-                    vkk_uiBulletboxStyle_t* bulletbox_style,
+                    vkk_uiBulletBoxStyle_t* bulletbox_style,
                     const char** sprite_array)
 {
 	ASSERT(screen);
-	ASSERT(fn);
+	ASSERT(bbfn);
 	ASSERT(bulletbox_style);
 	ASSERT(sprite_array);
 
@@ -150,7 +150,7 @@ vkk_uiBulletbox_new(vkk_uiScreen_t* screen, size_t wsize,
 
 	if(wsize == 0)
 	{
-		wsize = sizeof(vkk_uiBulletbox_t);
+		wsize = sizeof(vkk_uiBulletBox_t);
 	}
 
 	vkk_uiWidgetLayout_t widget_layout =
@@ -168,19 +168,20 @@ vkk_uiBulletbox_new(vkk_uiScreen_t* screen, size_t wsize,
 		.scroll_bar = 0
 	};
 
-	vkk_uiWidgetPrivFn_t priv_fn =
+	vkk_uiWidgetFn_t fn =
 	{
-		.size_fn   = vkk_uiBulletbox_size,
-		.layout_fn = vkk_uiBulletbox_layout,
-		.drag_fn   = vkk_uiBulletbox_drag,
-		.draw_fn   = vkk_uiBulletbox_draw,
+		.priv      = bbfn->priv,
+		.click_fn  = bbfn->click_fn,
+		.drag_fn   = vkk_uiBulletBox_drag,
+		.draw_fn   = vkk_uiBulletBox_draw,
+		.layout_fn = vkk_uiBulletBox_layout,
+		.size_fn   = vkk_uiBulletBox_size,
 	};
 
-	vkk_uiBulletbox_t* self;
-	self = (vkk_uiBulletbox_t*)
+	vkk_uiBulletBox_t* self;
+	self = (vkk_uiBulletBox_t*)
 	       vkk_uiWidget_new(screen, wsize, &clear,
-	                        &widget_layout, &scroll, fn,
-	                        &priv_fn);
+	                        &widget_layout, &scroll, &fn);
 	if(self == NULL)
 	{
 		return NULL;
@@ -214,11 +215,13 @@ vkk_uiBulletbox_new(vkk_uiScreen_t* screen, size_t wsize,
 		.stretchy = 1.0f
 	};
 
-	vkk_uiWidgetFn_t sprite_fn;
-	memset(&sprite_fn, 0, sizeof(vkk_uiWidgetFn_t));
+	vkk_uiSpriteFn_t sfn =
+	{
+		.priv = NULL
+	};
 
-	self->icon = vkk_uiSprite_new(screen, 0, &sprite_layout,
-	                              &sprite_fn,
+	self->icon = vkk_uiSprite_new(screen, 0, &sfn,
+	                              &sprite_layout,
 	                              &bulletbox_style->color_icon,
 	                              sprite_array);
 	if(self->icon == NULL)
@@ -231,11 +234,13 @@ vkk_uiBulletbox_new(vkk_uiScreen_t* screen, size_t wsize,
 		.border = VKK_UI_WIDGET_BORDER_NONE
 	};
 
-	vkk_uiTextFn_t text_fn;
-	memset(&text_fn, 0, sizeof(vkk_uiTextFn_t));
+	vkk_uiTextFn_t tfn =
+	{
+		.priv = NULL
+	};
 
-	self->text = vkk_uiText_new(screen, 0, &text_layout,
-	                            text_style, &text_fn,
+	self->text = vkk_uiText_new(screen, 0, &tfn,
+	                            &text_layout, text_style,
 	                            &clear);
 	if(self->text == NULL)
 	{
@@ -253,16 +258,16 @@ vkk_uiBulletbox_new(vkk_uiScreen_t* screen, size_t wsize,
 	return NULL;
 }
 
-vkk_uiBulletbox_t*
-vkk_uiBulletbox_newPageItem(vkk_uiScreen_t* screen,
-                            vkk_uiWidgetFn_t* fn,
+vkk_uiBulletBox_t*
+vkk_uiBulletBox_newPageItem(vkk_uiScreen_t* screen,
+                            vkk_uiBulletBoxFn_t* bbfn,
                             const char** sprite_array)
 {
 	ASSERT(screen);
-	ASSERT(fn);
+	ASSERT(bbfn);
 	ASSERT(sprite_array);
 
-	vkk_uiBulletboxStyle_t style =
+	vkk_uiBulletBoxStyle_t style =
 	{
 		.text_style =
 		{
@@ -274,24 +279,24 @@ vkk_uiBulletbox_newPageItem(vkk_uiScreen_t* screen,
 	vkk_uiScreen_colorPageItem(screen, &style.color_icon);
 	vkk_uiScreen_colorPageItem(screen, &style.text_style.color);
 
-	return vkk_uiBulletbox_new(screen, 0,
-	                           VKK_UI_WIDGET_ANCHOR_TL, fn,
+	return vkk_uiBulletBox_new(screen, 0, bbfn,
+	                           VKK_UI_WIDGET_ANCHOR_TL,
 	                           &style, sprite_array);
 }
 
-vkk_uiBulletbox_t*
-vkk_uiBulletbox_newInfoItem(vkk_uiScreen_t* screen,
+vkk_uiBulletBox_t*
+vkk_uiBulletBox_newInfoItem(vkk_uiScreen_t* screen,
                             const char** sprite_array)
 {
 	ASSERT(screen);
 	ASSERT(sprite_array);
 
-	vkk_uiWidgetFn_t fn =
+	vkk_uiBulletBoxFn_t bbfn =
 	{
 		.priv = NULL
 	};
 
-	vkk_uiBulletboxStyle_t style =
+	vkk_uiBulletBoxStyle_t style =
 	{
 		.text_style =
 		{
@@ -302,21 +307,21 @@ vkk_uiBulletbox_newInfoItem(vkk_uiScreen_t* screen,
 	vkk_uiScreen_colorPageItem(screen, &style.color_icon);
 	vkk_uiScreen_colorPageItem(screen, &style.text_style.color);
 
-	return vkk_uiBulletbox_new(screen, 0,
-	                           VKK_UI_WIDGET_ANCHOR_TL, &fn,
+	return vkk_uiBulletBox_new(screen, 0, &bbfn,
+	                           VKK_UI_WIDGET_ANCHOR_TL,
 	                           &style, sprite_array);
 }
 
-vkk_uiBulletbox_t*
-vkk_uiBulletbox_newFooterItem(vkk_uiScreen_t* screen,
-                              vkk_uiWidgetFn_t* fn,
+vkk_uiBulletBox_t*
+vkk_uiBulletBox_newFooterItem(vkk_uiScreen_t* screen,
+                              vkk_uiBulletBoxFn_t* bbfn,
                               const char** sprite_array)
 {
 	ASSERT(screen);
-	ASSERT(fn);
+	ASSERT(bbfn);
 	ASSERT(sprite_array);
 
-	vkk_uiBulletboxStyle_t style =
+	vkk_uiBulletBoxStyle_t style =
 	{
 		.text_style =
 		{
@@ -328,16 +333,16 @@ vkk_uiBulletbox_newFooterItem(vkk_uiScreen_t* screen,
 	vkk_uiScreen_colorFooterItem(screen, &style.color_icon);
 	vkk_uiScreen_colorFooterItem(screen, &style.text_style.color);
 
-	return vkk_uiBulletbox_new(screen, 0,
-	                           VKK_UI_WIDGET_ANCHOR_TC, fn,
+	return vkk_uiBulletBox_new(screen, 0, bbfn,
+	                           VKK_UI_WIDGET_ANCHOR_TC,
 	                           &style, sprite_array);
 }
 
-void vkk_uiBulletbox_delete(vkk_uiBulletbox_t** _self)
+void vkk_uiBulletBox_delete(vkk_uiBulletBox_t** _self)
 {
 	ASSERT(_self);
 
-	vkk_uiBulletbox_t* self = *_self;
+	vkk_uiBulletBox_t* self = *_self;
 	if(self)
 	{
 		vkk_uiText_delete(&self->text);
@@ -346,7 +351,7 @@ void vkk_uiBulletbox_delete(vkk_uiBulletbox_t** _self)
 	}
 }
 
-void vkk_uiBulletbox_select(vkk_uiBulletbox_t* self,
+void vkk_uiBulletBox_select(vkk_uiBulletBox_t* self,
                             uint32_t index)
 {
 	ASSERT(self);
@@ -354,7 +359,7 @@ void vkk_uiBulletbox_select(vkk_uiBulletbox_t* self,
 	vkk_uiSprite_select(self->icon, index);
 }
 
-void vkk_uiBulletbox_colorIcon(vkk_uiBulletbox_t* self,
+void vkk_uiBulletBox_colorIcon(vkk_uiBulletBox_t* self,
                                cc_vec4f_t* color)
 {
 	ASSERT(self);
@@ -363,7 +368,7 @@ void vkk_uiBulletbox_colorIcon(vkk_uiBulletbox_t* self,
 	vkk_uiSprite_color(self->icon, color);
 }
 
-void vkk_uiBulletbox_colorText(vkk_uiBulletbox_t* self,
+void vkk_uiBulletBox_colorText(vkk_uiBulletBox_t* self,
                                cc_vec4f_t* color)
 {
 	ASSERT(self);
@@ -372,7 +377,7 @@ void vkk_uiBulletbox_colorText(vkk_uiBulletbox_t* self,
 	vkk_uiText_color(self->text, color);
 }
 
-void vkk_uiBulletbox_label(vkk_uiBulletbox_t* self,
+void vkk_uiBulletBox_label(vkk_uiBulletBox_t* self,
                            const char* fmt, ...)
 {
 	ASSERT(self);

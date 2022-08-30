@@ -88,6 +88,10 @@ typedef struct vkk_uiScreen_s
 	vkk_uiWidget_t* focus_widget;
 	vkk_uiWidget_t* move_widget;
 
+	// action bar/popup
+	vkk_uiActionBar_t*   action_bar;
+	vkk_uiActionPopup_t* action_popup;
+
 	// layout dirty flag
 	int dirty;
 
@@ -130,6 +134,12 @@ void            vkk_uiScreen_windowPush(vkk_uiScreen_t* self,
 int             vkk_uiScreen_windowPop(vkk_uiScreen_t* self);
 void            vkk_uiScreen_windowReset(vkk_uiScreen_t* self,
                                          vkk_uiWindow_t* window);
+void            vkk_uiScreen_popupGet(vkk_uiScreen_t* self,
+                                      vkk_uiActionBar_t** _action_bar,
+                                      vkk_uiActionPopup_t** _action_popup);
+void            vkk_uiScreen_popupSet(vkk_uiScreen_t* self,
+                                      vkk_uiActionBar_t* action_bar,
+                                      vkk_uiActionPopup_t* action_popup);
 void            vkk_uiScreen_contentRect(vkk_uiScreen_t* self,
                                          int t, int l,
                                          int b, int r);

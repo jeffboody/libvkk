@@ -65,25 +65,29 @@
 // vertices per corner
 #define VKK_UI_WIDGET_BEZEL 8
 
-typedef int  (*vkk_uiWidget_clickFn)(vkk_uiWidget_t* widget,
+typedef void (*vkk_uiWidgetAspectRatio_fn)(vkk_uiWidget_t* widget,
+                                           float* ar);
+typedef int  (*vkk_uiWidgetClick_fn)(vkk_uiWidget_t* widget,
                                      int state,
                                      float x, float y);
-typedef void (*vkk_uiWidget_refreshFn)(vkk_uiWidget_t* widget);
-typedef void (*vkk_uiWidget_reflowFn)(vkk_uiWidget_t* widget,
-                                      float w, float h);
-typedef void (*vkk_uiWidget_sizeFn)(vkk_uiWidget_t* widget,
-                                    float* w, float* h);
-typedef void (*vkk_uiWidget_aspectRatioFn)(vkk_uiWidget_t* widget,
-                                           float* ar);
-typedef int  (*vkk_uiWidget_keyPressFn)(vkk_uiWidget_t* widget,
-                                        int keycode, int meta);
-typedef void (*vkk_uiWidget_layoutFn)(vkk_uiWidget_t* widget,
-                                      int dragx, int dragy);
-typedef void (*vkk_uiWidget_dragFn)(vkk_uiWidget_t* widget,
+typedef void (*vkk_uiWidgetDrag_fn)(vkk_uiWidget_t* widget,
                                     float x, float y,
                                     float dx, float dy);
-typedef void (*vkk_uiWidget_scrollTopFn)(vkk_uiWidget_t* widget);
-typedef void (*vkk_uiWidget_drawFn)(vkk_uiWidget_t* widget);
+typedef void (*vkk_uiWidgetDraw_fn)(vkk_uiWidget_t* widget);
+typedef void (*vkk_uiWidgetInput_fn)(vkk_uiWidget_t* widget,
+                                     const char* string);
+typedef int  (*vkk_uiWidgetKeyPress_fn)(vkk_uiWidget_t* widget,
+                                        int keycode, int meta);
+typedef void (*vkk_uiWidgetLayout_fn)(vkk_uiWidget_t* widget,
+                                      int dragx, int dragy);
+typedef void (*vkk_uiWidgetReflow_fn)(vkk_uiWidget_t* widget,
+                                      float w, float h);
+typedef int  (*vkk_uiWidgetRefresh_fn)(vkk_uiWidget_t* widget);
+typedef void (*vkk_uiWidgetScrollTop_fn)(vkk_uiWidget_t* widget);
+typedef void (*vkk_uiWidgetSize_fn)(vkk_uiWidget_t* widget,
+                                    float* w, float* h);
+typedef void (*vkk_uiWidgetValue_fn)(vkk_uiWidget_t* widget,
+                                     int value);
 
 typedef struct vkk_uiWidgetLayout_s
 {
@@ -129,57 +133,58 @@ typedef struct vkk_uiWidgetStyle_s
 
 typedef struct vkk_uiWidgetFn_s
 {
-	// priv, arg, msg and functions may be NULL
+	// priv and functions may be NULL
 
-	void*                  priv;
-	void*                  arg;
-	char                   msg[256];
-	vkk_uiWidget_clickFn   click_fn;
-	vkk_uiWidget_refreshFn refresh_fn;
-} vkk_uiWidgetFn_t;
-
-typedef struct vkk_uiWidgetPrivFn_s
-{
-	// functions may be NULL
-
-	// reflow_fn allows a derived widget to reflow
-	// it's content in a resize (e.g. textbox)
-	// called internally by vkk_uiWidget_layoutSize()
-	vkk_uiWidget_reflowFn reflow_fn;
-
-	// size_fn allows a derived widget to define
-	// it's internal size (e.g. ignoring borders)
-	// called internally by vkk_uiWidget_layoutSize()
-	vkk_uiWidget_sizeFn size_fn;
+	void* priv;
 
 	// aspect_fn allows a derived widget to define
-	// it's unstretched aspect ratio
-	// called internally by vkk_uiWidget_layoutSize()
-	vkk_uiWidget_aspectRatioFn aspect_fn;
+	// the unstretched aspect ratio
+	vkk_uiWidgetAspectRatio_fn aspect_fn;
 
-	// keyPress_fn allows a derived widget to define it's keyPress
-	// behavior called internally by vkk_uiWidget_keyPress()
-	// keyPress_fn uses the priv member from widgetFn base
-	vkk_uiWidget_keyPressFn keyPress_fn;
+	// click_fn allows a derived widget to receive click
+	// events
+	vkk_uiWidgetClick_fn click_fn;
 
-	// layout_fn allows a derived widget to layout it's children
-	// called internally by vkk_uiWidget_layoutXYClip
-	vkk_uiWidget_layoutFn layout_fn;
+	// drag_fn allows container widgets to drag their
+	// children
+	vkk_uiWidgetDrag_fn drag_fn;
 
-	// drag_fn allows a derived widget to drag it's children
-	// called internally by vkk_uiWidget_drag
-	vkk_uiWidget_dragFn drag_fn;
+	// draw_fn allows a derived widget to define the draw
+	// behavior
+	vkk_uiWidgetDraw_fn draw_fn;
+
+	// input_fn allows a derived widget to generate string
+	// events
+	vkk_uiWidgetInput_fn input_fn;
+
+	// keyPress_fn allows a derived widget to respond to key
+	// events when focused
+	vkk_uiWidgetKeyPress_fn keyPress_fn;
+
+	// layout_fn allows a container widget to layout their
+	// children
+	vkk_uiWidgetLayout_fn layout_fn;
+
+	// reflow_fn allows a derived widget to reflow
+	// the content on a resize event (e.g. textbox)
+	vkk_uiWidgetReflow_fn reflow_fn;
+
+	// refresh_fn allows a derived widget to update the
+	// contents prior to drawing
+	vkk_uiWidgetRefresh_fn refresh_fn;
 
 	// scrollTop_fn ensures widgets are at the top when
 	// brought forward in a layer
-	// called internally by vkk_uiWidget_scrollTop
-	vkk_uiWidget_scrollTopFn scrollTop_fn;
+	vkk_uiWidgetScrollTop_fn scrollTop_fn;
 
-	// draw_fn allows a derived widget to define
-	// it's draw behavior
-	// called internally by vkk_uiWidget_draw
-	vkk_uiWidget_drawFn draw_fn;
-} vkk_uiWidgetPrivFn_t;
+	// size_fn allows a container widget to define their
+	// internal size (e.g. ignoring borders)
+	vkk_uiWidgetSize_fn size_fn;
+
+	// value_fn allows a derived widget to generate integer
+	// events
+	vkk_uiWidgetValue_fn value_fn;
+} vkk_uiWidgetFn_t;
 
 typedef struct vkk_uiWidget_s
 {
@@ -204,7 +209,6 @@ typedef struct vkk_uiWidget_s
 	vkk_uiWidgetLayout_t layout;
 	vkk_uiWidgetScroll_t scroll;
 	vkk_uiWidgetFn_t     fn;
-	vkk_uiWidgetPrivFn_t priv_fn;
 
 	// sound fx for clicks
 	int sound_fx;
@@ -223,48 +227,66 @@ vkk_uiWidget_t* vkk_uiWidget_new(vkk_uiScreen_t* screen,
                                  size_t wsize, cc_vec4f_t* color,
                                  vkk_uiWidgetLayout_t* layout,
                                  vkk_uiWidgetScroll_t* scroll,
-                                 vkk_uiWidgetFn_t* fn,
-                                 vkk_uiWidgetPrivFn_t* priv_fn);
+                                 vkk_uiWidgetFn_t* fn);
 vkk_uiWidget_t* vkk_uiWidget_newSpace(vkk_uiScreen_t* screen);
-void           vkk_uiWidget_delete(vkk_uiWidget_t** _self);
-void           vkk_uiWidget_layoutXYClip(vkk_uiWidget_t* self,
-                                         float x, float y,
-                                         cc_rect1f_t* clip,
-                                         int dragx, int dragy);
-void           vkk_uiWidget_layoutSize(vkk_uiWidget_t* self,
-                                       float* w, float* h);
-void           vkk_uiWidget_layoutAnchor(vkk_uiWidget_t* self,
-                                         cc_rect1f_t* rect,
-                                         float* x, float * y);
-int            vkk_uiWidget_click(vkk_uiWidget_t* self,
-                                  int state,
-                                  float x, float y);
-int            vkk_uiWidget_clickUrlFn(vkk_uiWidget_t* widget,
-                                       int state,
-                                       float x, float y);
-int            vkk_uiWidget_keyPress(vkk_uiWidget_t* self,
-                                     int keycode, int meta);
-void           vkk_uiWidget_drag(vkk_uiWidget_t* self,
-                                 float x, float y,
-                                 float dx, float dy);
-void           vkk_uiWidget_draw(vkk_uiWidget_t* self);
-void           vkk_uiWidget_refresh(vkk_uiWidget_t* self);
-void           vkk_uiWidget_soundFx(vkk_uiWidget_t* self,
-                                    int sound_fx);
-void           vkk_uiWidget_color(vkk_uiWidget_t* self,
-                                  cc_vec4f_t* color);
-int            vkk_uiWidget_tricolor(vkk_uiWidget_t* self,
-                                     cc_vec4f_t* color0,
-                                     cc_vec4f_t* color1,
-                                     cc_vec4f_t* color2);
-void           vkk_uiWidget_tricolorAB(vkk_uiWidget_t* self,
-                                       float a, float b);
-void           vkk_uiWidget_scrollTop(vkk_uiWidget_t* self);
-int            vkk_uiWidget_hasFocus(vkk_uiWidget_t* self);
-void           vkk_uiWidget_privReflowFn(vkk_uiWidget_t* self,
-                                         vkk_uiWidget_reflowFn reflow_fn);
-void*          vkk_uiWidget_widgetFnPriv(vkk_uiWidget_t* self);
-void*          vkk_uiWidget_widgetFnArg(vkk_uiWidget_t* self);
-const char*    vkk_uiWidget_widgetFnMsg(vkk_uiWidget_t* self);
+void            vkk_uiWidget_delete(vkk_uiWidget_t** _self);
+void            vkk_uiWidget_override(vkk_uiWidget_t* self,
+                                      vkk_uiWidgetFn_t* fn_new,
+                                      vkk_uiWidgetFn_t* fn_old);
+void            vkk_uiWidget_layoutXYClip(vkk_uiWidget_t* self,
+                                          float x, float y,
+                                          cc_rect1f_t* clip,
+                                          int dragx, int dragy);
+void            vkk_uiWidget_layoutSize(vkk_uiWidget_t* self,
+                                        float* w, float* h);
+void            vkk_uiWidget_layoutAnchor(vkk_uiWidget_t* self,
+                                          cc_rect1f_t* rect,
+                                          float* x, float * y);
+int             vkk_uiWidget_click(vkk_uiWidget_t* self,
+                                   int state,
+                                   float x, float y);
+int             vkk_uiWidget_keyPress(vkk_uiWidget_t* self,
+                                      int keycode, int meta);
+void            vkk_uiWidget_drag(vkk_uiWidget_t* self,
+                                  float x, float y,
+                                  float dx, float dy);
+void            vkk_uiWidget_draw(vkk_uiWidget_t* self);
+void            vkk_uiWidget_refresh(vkk_uiWidget_t* self);
+void            vkk_uiWidget_soundFx(vkk_uiWidget_t* self,
+                                     int sound_fx);
+void            vkk_uiWidget_color(vkk_uiWidget_t* self,
+                                   cc_vec4f_t* color);
+int             vkk_uiWidget_tricolor(vkk_uiWidget_t* self,
+                                      cc_vec4f_t* color0,
+                                      cc_vec4f_t* color1,
+                                      cc_vec4f_t* color2);
+void            vkk_uiWidget_tricolorAB(vkk_uiWidget_t* self,
+                                        float a, float b);
+void            vkk_uiWidget_scrollTop(vkk_uiWidget_t* self);
+int             vkk_uiWidget_hasFocus(vkk_uiWidget_t* self);
+void*           vkk_uiWidget_priv(vkk_uiWidget_t* self);
+
+// standard click handlers
+// clickBack:
+//    priv: NULL
+// clickUrl:
+//    priv: const char* url;
+// clickTransition:
+//    priv: vkk_uiWindow_t** _window;
+//    note: use double pointer for window to solve
+//    construction ordering issues
+// value:
+//    priv: int* _value;
+int vkk_uiWidget_clickBack(vkk_uiWidget_t* widget,
+                           int state,
+                           float x, float y);
+int vkk_uiWidget_clickUrl(vkk_uiWidget_t* widget,
+                          int state,
+                          float x, float y);
+int vkk_uiWidget_clickTransition(vkk_uiWidget_t* widget,
+                                 int state,
+                                 float x, float y);
+void vkk_uiWidget_value(vkk_uiWidget_t* widget,
+                        int value);
 
 #endif

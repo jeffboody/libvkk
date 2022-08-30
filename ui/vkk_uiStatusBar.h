@@ -24,14 +24,21 @@
 #ifndef vkk_uiStatusBar_H
 #define vkk_uiStatusBar_H
 
+typedef struct vkk_uiStatusBarFn_s
+{
+	// priv and functions may be NULL
+	void*                  priv;
+	vkk_uiWidgetRefresh_fn refresh_fn;
+} vkk_uiStatusBarFn_t;
+
 typedef struct vkk_uiStatusBar_s
 {
-	vkk_uiListbox_t base;
+	vkk_uiListBox_t base;
 } vkk_uiStatusBar_t;
 
 vkk_uiStatusBar_t* vkk_uiStatusBar_new(vkk_uiScreen_t* screen,
                                        size_t wsize,
-                                       vkk_uiWidgetFn_t* widget_fn);
+                                       vkk_uiStatusBarFn_t* sbfn);
 void               vkk_uiStatusBar_delete(vkk_uiStatusBar_t** _self);
 void               vkk_uiStatusBar_add(vkk_uiStatusBar_t* self,
                                        vkk_uiWidget_t* widget);

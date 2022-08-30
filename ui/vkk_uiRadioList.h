@@ -21,35 +21,39 @@
  *
  */
 
-#ifndef vkk_uiRadiolist_H
-#define vkk_uiRadiolist_H
+#ifndef vkk_uiRadioList_H
+#define vkk_uiRadioList_H
 
-typedef struct vkk_uiRadiolist_s
+typedef struct vkk_uiRadioListFn_s
 {
-	vkk_uiListbox_t base;
+	// priv and functions may be NULL
+	void*                priv;
+	vkk_uiWidgetValue_fn value_fn;
+} vkk_uiRadioListFn_t;
 
-	// bulletbox properties
-	vkk_uiBulletboxStyle_t bulletbox_style;
+typedef struct vkk_uiRadioList_s
+{
+	vkk_uiListBox_t        base;
+	vkk_uiBulletBoxStyle_t bulletbox_style;
+	vkk_uiWidgetValue_fn   value_fn;
+	int                    value;
+} vkk_uiRadioList_t;
 
-	// radiolist value
-	int* pvalue;
-	int  value;
-} vkk_uiRadiolist_t;
-
-vkk_uiRadiolist_t* vkk_uiRadiolist_new(vkk_uiScreen_t* screen,
+vkk_uiRadioList_t* vkk_uiRadioList_new(vkk_uiScreen_t* screen,
                                        size_t wsize,
+                                       vkk_uiRadioListFn_t* rlfn,
                                        vkk_uiWidgetLayout_t* layout,
                                        vkk_uiWidgetScroll_t* scroll,
-                                       vkk_uiBulletboxStyle_t* bulletbox_style,
-                                       int* pvalue);
-vkk_uiRadiolist_t* vkk_uiRadiolist_newPageItem(vkk_uiScreen_t* screen,
-                                               int* pvalue);
-void               vkk_uiRadiolist_delete(vkk_uiRadiolist_t** _self);
-void               vkk_uiRadiolist_clear(vkk_uiRadiolist_t* self);
-void               vkk_uiRadiolist_add(vkk_uiRadiolist_t* self,
+                                       vkk_uiBulletBoxStyle_t* bulletbox_style);
+vkk_uiRadioList_t* vkk_uiRadioList_newPageItem(vkk_uiScreen_t* screen,
+                                               vkk_uiRadioListFn_t* rlfn);
+void               vkk_uiRadioList_delete(vkk_uiRadioList_t** _self);
+void               vkk_uiRadioList_clear(vkk_uiRadioList_t* self);
+void               vkk_uiRadioList_add(vkk_uiRadioList_t* self,
                                        int value,
                                        const char* fmt, ...);
-void               vkk_uiRadiolist_value(vkk_uiRadiolist_t* self,
-                                         int value);
+int                vkk_uiRadioList_get(vkk_uiRadioList_t* self);
+void               vkk_uiRadioList_set(vkk_uiRadioList_t* self,
+                                       int value);
 
 #endif

@@ -35,52 +35,50 @@
 ***********************************************************/
 
 static void
-vkk_uiTextEntry_clickEnter(vkk_uiWidget_t* widget,
-                           const char* string)
+vkk_uiInputWindow_input(vkk_uiWidget_t* widget,
+                        const char* string)
 {
 	ASSERT(widget);
 	ASSERT(string);
 
-	vkk_uiTextEntry_t* self;
-	self = (vkk_uiTextEntry_t*)
-	       vkk_uiWidget_widgetFnPriv(widget);
+	// widget is the text input widget
 
-	vkk_uiTextEntry_acceptFn accept_fn = self->accept_fn;
-	(*accept_fn)(self->priv, string);
+	vkk_uiInputWindow_t* self;
+	self = (vkk_uiInputWindow_t*) vkk_uiWidget_priv(widget);
 
+	// call input_fn with the InputWindow widget
+	// so the correct priv is available
+	vkk_uiWidgetInput_fn input_fn = self->input_fn;
+	if(input_fn)
+	{
+		(*input_fn)((vkk_uiWidget_t*) self, string);
+	}
 	vkk_uiScreen_windowPop(widget->screen);
 }
 
 static int
-vkk_uiTextEntry_clickAccept(vkk_uiWidget_t* widget,
-                            int state,
-                            float x, float y)
+vkk_uiInputWindow_clickAccept(vkk_uiWidget_t* widget,
+                              int state,
+                              float x, float y)
 {
 	ASSERT(widget);
 
-	if(state == VKK_UI_WIDGET_POINTER_UP)
-	{
-		vkk_uiTextEntry_t* ui_enter_text;
-		vkk_uiText_t*      text;
-		ui_enter_text = (vkk_uiTextEntry_t*)
-		                vkk_uiWidget_widgetFnPriv(widget);
-		text          = ui_enter_text->text;
-
-		vkk_uiTextEntry_clickEnter((vkk_uiWidget_t*) text,
-		                           text->string);
-	}
-	return 1;
-}
-
-static int
-vkk_uiTextEntry_clickCancel(vkk_uiWidget_t* widget,
-                            int state,
-                            float x, float y)
-{
-	ASSERT(widget);
+	// widget is the accept button
 
 	if(state == VKK_UI_WIDGET_POINTER_UP)
 	{
+		vkk_uiInputWindow_t* self;
+		self = (vkk_uiInputWindow_t*) vkk_uiWidget_priv(widget);
+
+		const char* string = vkk_uiText_string(self->text);
+
+		// call input_fn with the InputWindow widget
+		// so the correct priv is available
+		vkk_uiWidgetInput_fn input_fn = self->input_fn;
+		if(input_fn)
+		{
+			(*input_fn)((vkk_uiWidget_t*) self, string);
+		}
 		vkk_uiScreen_windowPop(widget->screen);
 	}
 	return 1;
@@ -90,42 +88,40 @@ vkk_uiTextEntry_clickCancel(vkk_uiWidget_t* widget,
 * public                                                   *
 ***********************************************************/
 
-vkk_uiTextEntry_t*
-vkk_uiTextEntry_new(vkk_uiScreen_t* screen,
-                    void* priv,
-                    const char* label,
-                    vkk_uiTextEntry_acceptFn accept_fn)
+vkk_uiInputWindow_t*
+vkk_uiInputWindow_new(vkk_uiScreen_t* screen,
+                      vkk_uiInputWindowFn_t* iwfn)
 {
 	ASSERT(screen);
-	ASSERT(accept_fn);
+	ASSERT(iwfn);
 
-	vkk_uiWindowInfo_t info =
+	vkk_uiWindowFn_t wfn =
 	{
-		.flags = VKK_UI_WINDOW_FLAG_TITLE        |
-		         VKK_UI_WINDOW_FLAG_PAGE_DEFAULT |
-		         VKK_UI_WINDOW_FLAG_FOOTER,
-		.label = label,
-		.fn =
-		{
-			.click_fn = vkk_uiTextEntry_clickCancel
-		},
+		.priv       = iwfn->priv,
+		.refresh_fn = iwfn->refresh_fn,
 	};
 
-	vkk_uiTextEntry_t* self;
-	self = (vkk_uiTextEntry_t*)
+	uint32_t flags = VKK_UI_WINDOW_FLAG_TITLE        |
+	                 VKK_UI_WINDOW_FLAG_PAGE_DEFAULT |
+	                 VKK_UI_WINDOW_FLAG_FOOTER;
+
+	vkk_uiInputWindow_t* self;
+	self = (vkk_uiInputWindow_t*)
 	       vkk_uiWindow_new(screen,
-	                        sizeof(vkk_uiTextEntry_t),
-	                        &info);
+	                        sizeof(vkk_uiInputWindow_t),
+	                        &wfn, flags);
 	if(self == NULL)
 	{
 		return NULL;
 	}
 
-	self->priv      = priv;
-	self->accept_fn = accept_fn;
+	vkk_uiTextFn_t tfn =
+	{
+		.priv     = self,
+		.input_fn = vkk_uiInputWindow_input,
+	};
 
-	self->text = vkk_uiText_newPageTextEntry(screen, self,
-	                                         vkk_uiTextEntry_clickEnter);
+	self->text = vkk_uiText_newPageTextInput(screen, &tfn);
 	if(self->text == NULL)
 	{
 		goto fail_text;
@@ -133,62 +129,64 @@ vkk_uiTextEntry_new(vkk_uiScreen_t* screen,
 	vkk_uiWindow_focus((vkk_uiWindow_t*) self,
 	                   (vkk_uiWidget_t*) self->text);
 
-	vkk_uiWidgetFn_t fn_accept =
+	vkk_uiBulletBoxFn_t bbfn_accept =
 	{
-		.priv     = (void*) self,
-		.click_fn = vkk_uiTextEntry_clickAccept
+		.priv     = self,
+		.click_fn = vkk_uiInputWindow_clickAccept
 	};
 
-	const char* sprite_accept[] =
+	const char* sprite_array_accept[] =
 	{
 		"vkk/ui/icons/ic_check_white_24dp.png",
 		NULL
 	};
-	self->bulletbox_accept = vkk_uiBulletbox_newFooterItem(screen,
-	                                                       &fn_accept,
-	                                                       sprite_accept);
+	self->bulletbox_accept = vkk_uiBulletBox_newFooterItem(screen,
+	                                                       &bbfn_accept,
+	                                                       sprite_array_accept);
 	if(self->bulletbox_accept == NULL)
 	{
 		goto fail_accept;
 	}
 
-	vkk_uiWidgetFn_t fn_cancel =
+	vkk_uiBulletBoxFn_t bbfn_cancel =
 	{
-		.click_fn = vkk_uiTextEntry_clickCancel
+		.click_fn = vkk_uiWidget_clickBack
 	};
 
-	const char* sprite_cancel[] =
+	const char* sprite_array_cancel[] =
 	{
 		"vkk/ui/icons/ic_close_white_24dp.png",
 		NULL
 	};
-	self->bulletbox_cancel = vkk_uiBulletbox_newFooterItem(screen,
-	                                                       &fn_cancel,
-	                                                       sprite_cancel);
+	self->bulletbox_cancel = vkk_uiBulletBox_newFooterItem(screen,
+	                                                       &bbfn_cancel,
+	                                                       sprite_array_cancel);
 	if(self->bulletbox_cancel == NULL)
 	{
 		goto fail_cancel;
 	}
 
+	self->input_fn = iwfn->input_fn;
+
 	vkk_uiText_label(self->text, "%s", "");
-	vkk_uiBulletbox_label(self->bulletbox_accept,
+	vkk_uiBulletBox_label(self->bulletbox_accept,
 	                      "%s", "Accept");
-	vkk_uiBulletbox_label(self->bulletbox_cancel,
+	vkk_uiBulletBox_label(self->bulletbox_cancel,
 	                      "%s", "Cancel");
 
-	vkk_uiWindow_t*  window = (vkk_uiWindow_t*) self;
-	vkk_uiListbox_t* page   = vkk_uiWindow_page(window);
-	vkk_uiListbox_t* footer = vkk_uiWindow_footer(window);
-	vkk_uiListbox_add(page,   (vkk_uiWidget_t*) self->text);
-	vkk_uiListbox_add(footer, (vkk_uiWidget_t*) self->bulletbox_accept);
-	vkk_uiListbox_add(footer, (vkk_uiWidget_t*) self->bulletbox_cancel);
+	vkk_uiWindow_t*  window = &self->base;
+	vkk_uiListBox_t* page   = vkk_uiWindow_page(window);
+	vkk_uiListBox_t* footer = vkk_uiWindow_footer(window);
+	vkk_uiListBox_add(page,   (vkk_uiWidget_t*) self->text);
+	vkk_uiListBox_add(footer, (vkk_uiWidget_t*) self->bulletbox_accept);
+	vkk_uiListBox_add(footer, (vkk_uiWidget_t*) self->bulletbox_cancel);
 
 	// success
 	return self;
 
 	// failure
 	fail_cancel:
-		vkk_uiBulletbox_delete(&self->bulletbox_accept);
+		vkk_uiBulletBox_delete(&self->bulletbox_accept);
 	fail_accept:
 		vkk_uiText_delete(&self->text);
 	fail_text:
@@ -196,26 +194,26 @@ vkk_uiTextEntry_new(vkk_uiScreen_t* screen,
 	return NULL;
 }
 
-void vkk_uiTextEntry_delete(vkk_uiTextEntry_t** _self)
+void vkk_uiInputWindow_delete(vkk_uiInputWindow_t** _self)
 {
 	ASSERT(_self);
 
-	vkk_uiTextEntry_t* self = *_self;
+	vkk_uiInputWindow_t* self = *_self;
 	if(self)
 	{
-		vkk_uiWindow_t*  window = (vkk_uiWindow_t*) self;
-		vkk_uiListbox_t* page   = vkk_uiWindow_page(window);
-		vkk_uiListbox_t* footer = vkk_uiWindow_footer(window);
-		vkk_uiListbox_clear(page);
-		vkk_uiListbox_clear(footer);
-		vkk_uiBulletbox_delete(&self->bulletbox_cancel);
-		vkk_uiBulletbox_delete(&self->bulletbox_accept);
+		vkk_uiWindow_t*  window = &self->base;
+		vkk_uiListBox_t* page   = vkk_uiWindow_page(window);
+		vkk_uiListBox_t* footer = vkk_uiWindow_footer(window);
+		vkk_uiListBox_clear(page);
+		vkk_uiListBox_clear(footer);
+		vkk_uiBulletBox_delete(&self->bulletbox_cancel);
+		vkk_uiBulletBox_delete(&self->bulletbox_accept);
 		vkk_uiText_delete(&self->text);
 		vkk_uiWindow_delete((vkk_uiWindow_t**) _self);
 	}
 }
 
-void vkk_uiTextEntry_label(vkk_uiTextEntry_t* self,
+void vkk_uiInputWindow_label(vkk_uiInputWindow_t* self,
                            const char* fmt, ...)
 {
 	ASSERT(self);
@@ -233,7 +231,7 @@ void vkk_uiTextEntry_label(vkk_uiTextEntry_t* self,
 	vkk_uiWindow_label(window, "%s", tmp_string);
 }
 
-void vkk_uiTextEntry_labelAccept(vkk_uiTextEntry_t* self,
+void vkk_uiInputWindow_labelAccept(vkk_uiInputWindow_t* self,
                                  const char* fmt, ...)
 {
 	ASSERT(self);
@@ -246,12 +244,12 @@ void vkk_uiTextEntry_labelAccept(vkk_uiTextEntry_t* self,
 	vsnprintf(tmp_string, 256, fmt, argptr);
 	va_end(argptr);
 
-	vkk_uiBulletbox_label(self->bulletbox_accept,
+	vkk_uiBulletBox_label(self->bulletbox_accept,
 	                      "%s", tmp_string);
 }
 
-void vkk_uiTextEntry_labelCancel(vkk_uiTextEntry_t* self,
-                                 const char* fmt, ...)
+void vkk_uiInputWindow_labelCancel(vkk_uiInputWindow_t* self,
+                                   const char* fmt, ...)
 {
 	ASSERT(self);
 	ASSERT(fmt);
@@ -263,12 +261,12 @@ void vkk_uiTextEntry_labelCancel(vkk_uiTextEntry_t* self,
 	vsnprintf(tmp_string, 256, fmt, argptr);
 	va_end(argptr);
 
-	vkk_uiBulletbox_label(self->bulletbox_cancel,
+	vkk_uiBulletBox_label(self->bulletbox_cancel,
 	                      "%s", tmp_string);
 }
 
-void vkk_uiTextEntry_labelText(vkk_uiTextEntry_t* self,
-                               const char* fmt, ...)
+void vkk_uiInputWindow_labelText(vkk_uiInputWindow_t* self,
+                                 const char* fmt, ...)
 {
 	ASSERT(self);
 	ASSERT(fmt);

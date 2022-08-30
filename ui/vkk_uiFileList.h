@@ -26,18 +26,19 @@
 
 typedef struct vkk_uiFileList_s
 {
-	vkk_uiWidget_t     widget;
+	vkk_uiWidget_t     base;
 	vkk_uiText_t*      heading_name;
 	vkk_uiText_t*      text_name;
 	vkk_uiText_t*      text_ext;
 	vkk_uiText_t*      heading_path;
-	vkk_uiBulletbox_t* bulletbox_path;
-	vkk_uiListbox_t*   listbox_files;
+	vkk_uiBulletBox_t* bulletbox_path;
+	vkk_uiListBox_t*   listbox_files;
 
 	int dirty;
 } vkk_uiFileList_t;
 
-vkk_uiFileList_t* vkk_uiFileList_new(vkk_uiScreen_t* screen);
+vkk_uiFileList_t* vkk_uiFileList_new(vkk_uiScreen_t* screen,
+                                     vkk_uiFilePicker_t* parent);
 void              vkk_uiFileList_delete(vkk_uiFileList_t** _self);
 void              vkk_uiFileList_reset(vkk_uiFileList_t* self,
                                        const char* path,
@@ -45,7 +46,9 @@ void              vkk_uiFileList_reset(vkk_uiFileList_t* self,
                                        const char* ext);
 void              vkk_uiFileList_filepath(vkk_uiFileList_t* self,
                                           char* filepath);
-void              vkk_uiFileList_mkdir(void* priv,
+void              vkk_uiFileList_mkdir(vkk_uiWidget_t* widget,
                                        const char* text);
+void              vkk_uiFileList_input(vkk_uiWidget_t* widget,
+                                       const char* string);
 
 #endif

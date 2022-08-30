@@ -63,11 +63,11 @@ vkk_uiFileList_setPath(vkk_uiFileList_t* self,
 
 	if(has_slash)
 	{
-		vkk_uiBulletbox_label(self->bulletbox_path, "%s", path);
+		vkk_uiBulletBox_label(self->bulletbox_path, "%s", path);
 	}
 	else
 	{
-		vkk_uiBulletbox_label(self->bulletbox_path, "%s/", path);
+		vkk_uiBulletBox_label(self->bulletbox_path, "%s/", path);
 	}
 }
 
@@ -145,10 +145,9 @@ vkk_uiFileList_clickItem(vkk_uiWidget_t* widget,
 	ASSERT(widget);
 
 	vkk_uiFileList_t* self;
-	self = (vkk_uiFileList_t*)
-	       vkk_uiWidget_widgetFnPriv(widget);
+	self = (vkk_uiFileList_t*) vkk_uiWidget_priv(widget);
 
-	vkk_uiBulletbox_t* item = (vkk_uiBulletbox_t*) widget;
+	vkk_uiBulletBox_t* item = (vkk_uiBulletBox_t*) widget;
 
 	if(state == VKK_UI_WIDGET_POINTER_UP)
 	{
@@ -518,8 +517,8 @@ vkk_uiFileList_compare(const void* a, const void* b)
 	ASSERT(a);
 	ASSERT(b);
 
-	vkk_uiBulletbox_t* aa = (vkk_uiBulletbox_t*) a;
-	vkk_uiBulletbox_t* bb = (vkk_uiBulletbox_t*) b;
+	vkk_uiBulletBox_t* aa = (vkk_uiBulletBox_t*) a;
+	vkk_uiBulletBox_t* bb = (vkk_uiBulletBox_t*) b;
 
 	return strcmp(aa->text->string, bb->text->string);
 }
@@ -532,12 +531,11 @@ vkk_uiFileList_addItem(vkk_uiFileList_t* self,
 	ASSERT(self);
 	ASSERT(label);
 
-	vkk_uiWidget_t* base   = (vkk_uiWidget_t*) self;
-	vkk_uiScreen_t* screen = base->screen;
+	vkk_uiScreen_t* screen = self->base.screen;
 
-	vkk_uiWidgetFn_t item_fn =
+	vkk_uiBulletBoxFn_t bbfn =
 	{
-		.priv     = (void*) self,
+		.priv     = self,
 		.click_fn = vkk_uiFileList_clickItem,
 	};
 
@@ -559,21 +557,20 @@ vkk_uiFileList_addItem(vkk_uiFileList_t* self,
 		sprite_array_item = sprite_array_file;
 	}
 
-	vkk_uiBulletbox_t* item;
-	item = vkk_uiBulletbox_newPageItem(screen,
-	                                   &item_fn,
+	vkk_uiBulletBox_t* item;
+	item = vkk_uiBulletBox_newPageItem(screen, &bbfn,
 	                                   sprite_array_item);
 	if(item == NULL)
 	{
 		return;
 	}
-	vkk_uiBulletbox_label(item, label);
+	vkk_uiBulletBox_label(item, label);
 
-	if(vkk_uiListbox_addSorted(self->listbox_files,
+	if(vkk_uiListBox_addSorted(self->listbox_files,
 	                           vkk_uiFileList_compare,
 	                           (vkk_uiWidget_t*) item) == 0)
 	{
-		vkk_uiBulletbox_delete(&item);
+		vkk_uiBulletBox_delete(&item);
 	}
 }
 
@@ -583,17 +580,17 @@ vkk_uiFileList_discard(vkk_uiFileList_t* self)
 	ASSERT(self);
 
 	cc_listIter_t* iter;
-	iter = vkk_uiListbox_head(self->listbox_files);
+	iter = vkk_uiListBox_head(self->listbox_files);
 	while(iter)
 	{
-		vkk_uiBulletbox_t* item;
-		item = (vkk_uiBulletbox_t*)
-		       vkk_uiListbox_remove(self->listbox_files, &iter);
-		vkk_uiBulletbox_delete(&item);
+		vkk_uiBulletBox_t* item;
+		item = (vkk_uiBulletBox_t*)
+		       vkk_uiListBox_remove(self->listbox_files, &iter);
+		vkk_uiBulletBox_delete(&item);
 	}
 }
 
-static void
+static int
 vkk_uiFileList_refresh(vkk_uiWidget_t* widget)
 {
 	ASSERT(widget);
@@ -602,7 +599,7 @@ vkk_uiFileList_refresh(vkk_uiWidget_t* widget)
 
 	if(self->dirty == 0)
 	{
-		return;
+		return 0;
 	}
 
 	self->dirty = 0;
@@ -612,7 +609,7 @@ vkk_uiFileList_refresh(vkk_uiWidget_t* widget)
 	if(path[0] != '/')
 	{
 		LOGE("invalid path=%s", path);
-		return;
+		return 0;
 	}
 
 	vkk_uiFileList_discard(self);
@@ -629,7 +626,7 @@ vkk_uiFileList_refresh(vkk_uiWidget_t* widget)
 	if(dir == NULL)
 	{
 		LOGE("opendir failed");
-		return;
+		return 0;
 	}
 
 	struct dirent* de = readdir(dir);
@@ -657,6 +654,8 @@ vkk_uiFileList_refresh(vkk_uiWidget_t* widget)
 		de = readdir(dir);
 	}
 	closedir(dir);
+
+	return 1;
 }
 
 static vkk_uiText_t*
@@ -677,9 +676,9 @@ vkk_uiFileList_newExtText(vkk_uiScreen_t* screen)
 	};
 	vkk_uiScreen_colorPageItem(screen, &style.color);
 
-	vkk_uiTextFn_t fn =
+	vkk_uiTextFn_t tfn =
 	{
-		.enter_fn = NULL
+		.priv = NULL
 	};
 
 	cc_vec4f_t clear =
@@ -687,18 +686,11 @@ vkk_uiFileList_newExtText(vkk_uiScreen_t* screen)
 		.a = 0.0f,
 	};
 
-	return vkk_uiText_new(screen, 0, &layout, &style,
-	                      &fn, &clear);
+	return vkk_uiText_new(screen, 0, &tfn, &layout,
+	                      &style, &clear);
 }
 
-static void
-vkk_uiFileList_clickEnter(vkk_uiWidget_t* widget,
-                          const char* string)
-{
-	// ignore
-}
-
-static vkk_uiListbox_t*
+static vkk_uiListBox_t*
 vkk_uiFileList_newFileList(vkk_uiScreen_t* screen)
 {
 	ASSERT(screen);
@@ -717,7 +709,7 @@ vkk_uiFileList_newFileList(vkk_uiScreen_t* screen)
 	vkk_uiScreen_colorScroll0(screen, &scroll.color0);
 	vkk_uiScreen_colorScroll1(screen, &scroll.color1);
 
-	vkk_uiWidgetFn_t empty_fn =
+	vkk_uiListBoxFn_t lbfn =
 	{
 		.priv = NULL
 	};
@@ -729,9 +721,9 @@ vkk_uiFileList_newFileList(vkk_uiScreen_t* screen)
 		.a = 0.0f
 	};
 
-	return vkk_uiListbox_new(screen, 0, &list_layout,
-	                         &scroll, &empty_fn, orientation,
-	                         &clear);
+	return vkk_uiListBox_new(screen, 0, &lbfn,
+	                         &list_layout, &scroll,
+	                         orientation, &clear);
 }
 
 /***********************************************************
@@ -739,9 +731,11 @@ vkk_uiFileList_newFileList(vkk_uiScreen_t* screen)
 ***********************************************************/
 
 vkk_uiFileList_t*
-vkk_uiFileList_new(vkk_uiScreen_t* screen)
+vkk_uiFileList_new(vkk_uiScreen_t* screen,
+                   vkk_uiFilePicker_t* parent)
 {
 	ASSERT(screen);
+	ASSERT(parent);
 
 	cc_vec4f_t clear =
 	{
@@ -764,25 +758,21 @@ vkk_uiFileList_new(vkk_uiScreen_t* screen)
 
 	vkk_uiWidgetFn_t fn =
 	{
-		.click_fn   = vkk_uiFileList_click,
-		.refresh_fn = vkk_uiFileList_refresh
-	};
-
-	vkk_uiWidgetPrivFn_t priv_fn =
-	{
-		.size_fn      = vkk_uiFileList_size,
-		.layout_fn    = vkk_uiFileList_layout,
+		.priv         = parent,
+		.click_fn     = vkk_uiFileList_click,
 		.drag_fn      = vkk_uiFileList_drag,
-		.scrollTop_fn = vkk_uiFileList_scrollTop,
 		.draw_fn      = vkk_uiFileList_draw,
+		.layout_fn    = vkk_uiFileList_layout,
+		.refresh_fn   = vkk_uiFileList_refresh,
+		.scrollTop_fn = vkk_uiFileList_scrollTop,
+		.size_fn      = vkk_uiFileList_size,
 	};
 
 	vkk_uiFileList_t* self;
 	self = (vkk_uiFileList_t*)
 	       vkk_uiWidget_new(screen,
 	                        sizeof(vkk_uiFileList_t),
-	                        &clear, &layout, &scroll, &fn,
-	                        &priv_fn);
+	                        &clear, &layout, &scroll, &fn);
 	if(self == NULL)
 	{
 		return NULL;
@@ -794,12 +784,19 @@ vkk_uiFileList_new(vkk_uiScreen_t* screen)
 		goto fail_heading_name;
 	}
 
-	self->text_name = vkk_uiText_newPageTextEntry(screen, NULL,
-	                                              vkk_uiFileList_clickEnter);
+	vkk_uiTextFn_t tfn =
+	{
+		.priv     = parent,
+		.input_fn = vkk_uiFileList_input,
+	};
+
+	self->text_name = vkk_uiText_newPageTextInput(screen,
+	                                              &tfn);
 	if(self->text_name == NULL)
 	{
 		goto fail_text_name;
 	}
+	vkk_uiWindow_focus(&parent->base, &self->text_name->base);
 
 	self->text_ext = vkk_uiFileList_newExtText(screen);
 	if(self->text_ext == NULL)
@@ -813,7 +810,7 @@ vkk_uiFileList_new(vkk_uiScreen_t* screen)
 		goto fail_heading_path;
 	}
 
-	vkk_uiWidgetFn_t path_fn =
+	vkk_uiBulletBoxFn_t bbfn =
 	{
 		.priv = NULL
 	};
@@ -824,8 +821,8 @@ vkk_uiFileList_new(vkk_uiScreen_t* screen)
 		NULL
 	};
 
-	self->bulletbox_path = vkk_uiBulletbox_newPageItem(screen,
-	                                                   &path_fn,
+	self->bulletbox_path = vkk_uiBulletBox_newPageItem(screen,
+	                                                   &bbfn,
 	                                                   sprite_array_path);
 	if(self->bulletbox_path == NULL)
 	{
@@ -846,7 +843,7 @@ vkk_uiFileList_new(vkk_uiScreen_t* screen)
 
 	// failure
 	fail_files:
-		vkk_uiBulletbox_delete(&self->bulletbox_path);
+		vkk_uiBulletBox_delete(&self->bulletbox_path);
 	fail_path:
 		vkk_uiText_delete(&self->heading_path);
 	fail_heading_path:
@@ -868,8 +865,8 @@ void vkk_uiFileList_delete(vkk_uiFileList_t** _self)
 	if(self)
 	{
 		vkk_uiFileList_discard(self);
-		vkk_uiListbox_delete(&self->listbox_files);
-		vkk_uiBulletbox_delete(&self->bulletbox_path);
+		vkk_uiListBox_delete(&self->listbox_files);
+		vkk_uiBulletBox_delete(&self->bulletbox_path);
 		vkk_uiText_delete(&self->heading_path);
 		vkk_uiText_delete(&self->text_ext);
 		vkk_uiText_delete(&self->text_name);
@@ -906,12 +903,14 @@ void vkk_uiFileList_filepath(vkk_uiFileList_t* self,
 	snprintf(filepath, 256, "%s%s%s", path, name, ext);
 }
 
-void vkk_uiFileList_mkdir(void* priv, const char* text)
+void vkk_uiFileList_mkdir(vkk_uiWidget_t* widget,
+                          const char* text)
 {
-	ASSERT(priv);
+	ASSERT(widget);
 	ASSERT(text);
 
-	vkk_uiFileList_t* self = (vkk_uiFileList_t*) priv;
+	vkk_uiFileList_t* self;
+	self = (vkk_uiFileList_t*) vkk_uiWidget_priv(widget);
 
 	char name[256];
 	if(validateName(text, name))
@@ -937,4 +936,41 @@ void vkk_uiFileList_mkdir(void* priv, const char* text)
 		vkk_uiFileList_setPath(self, path);
 		self->dirty = 1;
 	}
+}
+
+void
+vkk_uiFileList_input(vkk_uiWidget_t* widget,
+                     const char* string)
+{
+	ASSERT(widget);
+	ASSERT(string);
+
+	// widget may be either file_list or text_name
+
+	vkk_uiFilePicker_t* picker;
+	picker = (vkk_uiFilePicker_t*) vkk_uiWidget_priv(widget);
+
+	vkk_uiScreen_t* screen = widget->screen;
+	vkk_engine_t*   engine = screen->engine;
+
+	// determine input string
+	char fname[256];
+	vkk_uiFileList_filepath(picker->file_list, fname);
+
+	if(picker->create)
+	{
+		vkk_engine_platformCmdDocumentCreate(engine,
+		                                     picker->document_priv,
+		                                     picker->document_fn,
+		                                     fname);
+	}
+	else
+	{
+		vkk_engine_platformCmdDocumentOpen(engine,
+		                                   picker->document_priv,
+		                                   picker->document_fn,
+		                                   fname);
+	}
+
+	vkk_uiScreen_windowPop(screen);
 }

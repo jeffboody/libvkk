@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015 Jeff Boody
+ * Copyright (c) 2018 Jeff Boody
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
  * copy of this software and associated documentation files (the "Software"),
@@ -21,26 +21,24 @@
  *
  */
 
-#ifndef vkk_uiRadiobox_H
-#define vkk_uiRadiobox_H
+#ifndef vkk_uiSeparator_H
+#define vkk_uiSeparator_H
 
-typedef struct vkk_uiRadiobox_s
+#define VKK_UI_SEPARATOR_TYPE_HORIZONTAL 0
+#define VKK_UI_SEPARATOR_TYPE_VERTICAL   1
+
+typedef struct vkk_uiSeparator_s
 {
-	vkk_uiBulletbox_t base;
+	vkk_uiWidget_t  base;
+	vkk_uiWidget_t* line;
+} vkk_uiSeparator_t;
 
-	int                value;
-	vkk_uiRadiolist_t* parent;
-} vkk_uiRadiobox_t;
-
-
-vkk_uiRadiobox_t* vkk_uiRadiobox_new(vkk_uiScreen_t* screen,
-                                     size_t wsize,
-                                     vkk_uiBulletboxStyle_t* bulletbox_style,
-                                     int value,
-                                     vkk_uiRadiolist_t* parent);
-void             vkk_uiRadiobox_delete(vkk_uiRadiobox_t** _self);
-void             vkk_uiRadiobox_label(vkk_uiRadiobox_t* self,
-                                      const char* fmt, ...);
-void             vkk_uiRadiobox_refresh(vkk_uiRadiobox_t* self);
+vkk_uiSeparator_t* vkk_uiSeparator_new(vkk_uiScreen_t* screen,
+                                       size_t wsize,
+                                       int type,
+                                       cc_vec4f_t* color);
+vkk_uiSeparator_t* vkk_uiSeparator_newPageItem(vkk_uiScreen_t* screen);
+vkk_uiSeparator_t* vkk_uiSeparator_newInfoItem(vkk_uiScreen_t* screen);
+void               vkk_uiSeparator_delete(vkk_uiSeparator_t** _self);
 
 #endif

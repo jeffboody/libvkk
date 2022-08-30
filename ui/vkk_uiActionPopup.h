@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015 Jeff Boody
+ * Copyright (c) 2022 Jeff Boody
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
  * copy of this software and associated documentation files (the "Software"),
@@ -21,24 +21,25 @@
  *
  */
 
-#ifndef vkk_uiCheckbox_H
-#define vkk_uiCheckbox_H
+#ifndef vkk_uiActionPopup_H
+#define vkk_uiActionPopup_H
 
-typedef struct vkk_uiCheckbox_s
+typedef struct vkk_uiActionPopupFn_s
 {
-	vkk_uiBulletbox_t base;
+	// priv and functions may be NULL
+	void*                  priv;
+	vkk_uiWidgetRefresh_fn refresh_fn;
+} vkk_uiActionPopupFn_t;
 
-	int* pvalue;
-} vkk_uiCheckbox_t;
+typedef struct vkk_uiActionPopup_s
+{
+	vkk_uiWindow_t base;
+} vkk_uiActionPopup_t;
 
-vkk_uiCheckbox_t* vkk_uiCheckbox_new(vkk_uiScreen_t* screen,
-                                    size_t wsize,
-                                    vkk_uiBulletboxStyle_t* bulletbox_style,
-                                    int* pvalue);
-vkk_uiCheckbox_t* vkk_uiCheckbox_newPageItem(vkk_uiScreen_t* screen,
-                                            int* pvalue);
-void             vkk_uiCheckbox_delete(vkk_uiCheckbox_t** _self);
-void             vkk_uiCheckbox_label(vkk_uiCheckbox_t* self,
-                                      const char* fmt, ...);
+vkk_uiActionPopup_t* vkk_uiActionPopup_new(vkk_uiScreen_t* screen,
+                                           size_t wsize,
+                                           vkk_uiActionPopupFn_t* apfn,
+                                           vkk_uiActionBar_t* parent);
+void                 vkk_uiActionPopup_delete(vkk_uiActionPopup_t** _self);
 
 #endif

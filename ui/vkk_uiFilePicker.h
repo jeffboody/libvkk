@@ -31,14 +31,14 @@ typedef struct vkk_uiFilePicker_s
 #ifdef ANDROID
 	vkk_engine_t* engine;
 #else
-	vkk_uiWindow_t     window;
-	vkk_uiFileList_t*  file_list;
-	vkk_uiBulletbox_t* bulletbox_select;
-	vkk_uiBulletbox_t* bulletbox_cancel;
-	vkk_uiBulletbox_t* bulletbox_folder;
-	vkk_uiTextEntry_t* text_entry;
+	vkk_uiWindow_t       base;
+	vkk_uiFileList_t*    file_list;
+	vkk_uiBulletBox_t*   bulletbox_select;
+	vkk_uiBulletBox_t*   bulletbox_cancel;
+	vkk_uiBulletBox_t*   bulletbox_folder;
+	vkk_uiInputWindow_t* input_window;
 
-	void* priv;
+	void* document_priv;
 	vkk_platformCmd_documentFn document_fn;
 
 	int create;
@@ -48,7 +48,7 @@ typedef struct vkk_uiFilePicker_s
 vkk_uiFilePicker_t* vkk_uiFilePicker_new(vkk_uiScreen_t* screen);
 void                vkk_uiFilePicker_delete(vkk_uiFilePicker_t** _self);
 void                vkk_uiFilePicker_documentCreate(vkk_uiFilePicker_t* self,
-                                                    void* priv,
+                                                    void* document_priv,
                                                     vkk_platformCmd_documentFn document_fn,
                                                     const char* type,
                                                     const char* mode,
@@ -56,7 +56,7 @@ void                vkk_uiFilePicker_documentCreate(vkk_uiFilePicker_t* self,
                                                     const char* name,
                                                     const char* ext);
 void                vkk_uiFilePicker_documentOpen(vkk_uiFilePicker_t* self,
-                                                  void* priv,
+                                                  void* document_priv,
                                                   vkk_platformCmd_documentFn document_fn,
                                                   const char* type,
                                                   const char* mode,

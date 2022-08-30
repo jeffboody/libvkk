@@ -24,27 +24,31 @@
 #ifndef vkk_uiActionBar_H
 #define vkk_uiActionBar_H
 
+typedef struct vkk_uiActionBarFn_s
+{
+	// priv and functions may be NULL
+	void*                  priv;
+	vkk_uiWidgetRefresh_fn refresh_fn;
+} vkk_uiActionBarFn_t;
+
 typedef struct vkk_uiActionBar_s
 {
-	vkk_uiListbox_t  base;
-	vkk_uiListbox_t* actions;
+	vkk_uiListBox_t  base;
+	vkk_uiListBox_t* actions;
 	vkk_uiWidget_t*  space;
-	vkk_uiSprite_t*  selected;
 	int              forward;
+
+	vkk_uiWidgetRefresh_fn refresh_fn;
+
+	vkk_uiActionPopup_t* last_popup;
 } vkk_uiActionBar_t;
 
-vkk_uiActionBar_t* vkk_uiActionBar_new(vkk_uiScreen_t* screen,
-                                       size_t wsize,
-                                       int anchor,
-                                       int orientation,
-                                       vkk_uiWidget_refreshFn refresh_fn);
-void               vkk_uiActionBar_delete(vkk_uiActionBar_t** _self);
-vkk_uiListbox_t*   vkk_uiActionBar_actions(vkk_uiActionBar_t* self);
-int                vkk_uiActionBar_popup(vkk_uiActionBar_t* self,
-                                         vkk_uiSprite_t* action,
-                                         vkk_uiWindow_t* popup);
-int                vkk_uiActionBar_clickPopupFn(vkk_uiWidget_t* widget,
-                                               int state,
-                                               float x, float y);
+vkk_uiActionBar_t*   vkk_uiActionBar_new(vkk_uiScreen_t* screen,
+                                         size_t wsize,
+                                         vkk_uiActionBarFn_t* abfn,
+                                         int anchor,
+                                         int orientation);
+void                 vkk_uiActionBar_delete(vkk_uiActionBar_t** _self);
+vkk_uiListBox_t*     vkk_uiActionBar_actions(vkk_uiActionBar_t* self);
 
 #endif

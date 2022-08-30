@@ -31,7 +31,7 @@
 * private                                                  *
 ***********************************************************/
 
-static vkk_uiListbox_t*
+static vkk_uiListBox_t*
 vkk_uiActionBar_newActions(vkk_uiScreen_t* screen,
                            int anchor,
                            int orientation)
@@ -49,7 +49,7 @@ vkk_uiActionBar_newActions(vkk_uiScreen_t* screen,
 		.scroll_bar = 0
 	};
 
-	vkk_uiWidgetFn_t fn =
+	vkk_uiListBoxFn_t lbfn =
 	{
 		.priv = NULL
 	};
@@ -57,10 +57,63 @@ vkk_uiActionBar_newActions(vkk_uiScreen_t* screen,
 	cc_vec4f_t color;
 	vkk_uiScreen_colorBackground(screen, &color);
 
-	return vkk_uiListbox_new(screen, 0, &layout,
-	                         &scroll, &fn,
-	                         orientation,
-	                         &color);
+	return vkk_uiListBox_new(screen, 0, &lbfn, &layout,
+	                         &scroll, orientation, &color);
+}
+
+static int vkk_uiActionBar_refresh(vkk_uiWidget_t* widget)
+{
+	ASSERT(widget);
+
+	vkk_uiActionBar_t* self = (vkk_uiActionBar_t*) widget;
+	vkk_uiListBox_t*   base = &self->base;
+
+	vkk_uiWidgetRefresh_fn refresh_fn = self->refresh_fn;
+	if(refresh_fn && ((*refresh_fn)(widget) == 0))
+	{
+		return 0;
+	}
+
+	// get the active popup
+	vkk_uiActionBar_t*   bar;
+	vkk_uiActionPopup_t* popup;
+	vkk_uiScreen_popupGet(widget->screen, &bar, &popup);
+	if(self != bar)
+	{
+		popup = NULL;
+	}
+
+	// check if the popup changed
+	if(popup == self->last_popup)
+	{
+		return 1;
+	}
+
+	// toggle the popup selected
+	vkk_uiListBox_clear(base);
+	if(popup == NULL)
+	{
+		vkk_uiListBox_add(base, &self->actions->base);
+	}
+	else
+	{
+		if(self->forward)
+		{
+			vkk_uiListBox_add(base, (vkk_uiWidget_t*) self->actions);
+			vkk_uiListBox_add(base, (vkk_uiWidget_t*) self->space);
+			vkk_uiListBox_add(base, (vkk_uiWidget_t*) popup);
+		}
+		else
+		{
+			vkk_uiListBox_add(base, (vkk_uiWidget_t*) popup);
+			vkk_uiListBox_add(base, (vkk_uiWidget_t*) self->space);
+			vkk_uiListBox_add(base, (vkk_uiWidget_t*) self->actions);
+		}
+	}
+
+	self->last_popup = popup;
+
+	return 1;
 }
 
 /***********************************************************
@@ -70,12 +123,12 @@ vkk_uiActionBar_newActions(vkk_uiScreen_t* screen,
 vkk_uiActionBar_t*
 vkk_uiActionBar_new(vkk_uiScreen_t* screen,
                     size_t wsize,
+                    vkk_uiActionBarFn_t* abfn,
                     int anchor,
-                    int orientation,
-                    vkk_uiWidget_refreshFn refresh_fn)
+                    int orientation)
 {
-	// refresh_fn may be NULL
 	ASSERT(screen);
+	ASSERT(abfn);
 
 	if(wsize == 0)
 	{
@@ -92,9 +145,10 @@ vkk_uiActionBar_new(vkk_uiScreen_t* screen,
 		.scroll_bar = 0
 	};
 
-	vkk_uiWidgetFn_t fn =
+	vkk_uiListBoxFn_t lbfn =
 	{
-		.refresh_fn = refresh_fn
+		.priv       = abfn->priv,
+		.refresh_fn = vkk_uiActionBar_refresh,
 	};
 
 	cc_vec4f_t clear =
@@ -104,10 +158,9 @@ vkk_uiActionBar_new(vkk_uiScreen_t* screen,
 
 	vkk_uiActionBar_t* self;
 	self = (vkk_uiActionBar_t*)
-	       vkk_uiListbox_new(screen, wsize,
-	                         &layout, &scroll, &fn,
-	                         1 - orientation,
-	                         &clear);
+	       vkk_uiListBox_new(screen, wsize, &lbfn,
+	                         &layout, &scroll,
+	                         1 - orientation, &clear);
 	if(self == NULL)
 	{
 		return NULL;
@@ -138,17 +191,18 @@ vkk_uiActionBar_new(vkk_uiScreen_t* screen,
 		goto fail_space;
 	}
 
-	vkk_uiListbox_t* base = &self->base;
-	vkk_uiListbox_add(base, (vkk_uiWidget_t*) self->actions);
+	vkk_uiListBox_add(&self->base, (vkk_uiWidget_t*) self->actions);
+
+	self->refresh_fn = abfn->refresh_fn;
 
 	// success
 	return self;
 
 	// failure
 	fail_space:
-		vkk_uiListbox_delete(&self->actions);
+		vkk_uiListBox_delete(&self->actions);
 	fail_actions:
-		vkk_uiListbox_delete((vkk_uiListbox_t**) &self);
+		vkk_uiListBox_delete((vkk_uiListBox_t**) &self);
 	return NULL;
 }
 
@@ -159,105 +213,17 @@ void vkk_uiActionBar_delete(vkk_uiActionBar_t** _self)
 	vkk_uiActionBar_t* self = *_self;
 	if(self)
 	{
-		vkk_uiListbox_t* base = &self->base;
-
-		vkk_uiListbox_clear(base);
+		vkk_uiListBox_clear(&self->base);
 		vkk_uiWidget_delete(&self->space);
-		vkk_uiListbox_delete(&self->actions);
-		vkk_uiListbox_delete((vkk_uiListbox_t**) _self);
+		vkk_uiListBox_delete(&self->actions);
+		vkk_uiListBox_delete((vkk_uiListBox_t**) _self);
 	}
 }
 
-vkk_uiListbox_t*
+vkk_uiListBox_t*
 vkk_uiActionBar_actions(vkk_uiActionBar_t* self)
 {
 	ASSERT(self);
 
 	return self->actions;
-}
-
-int vkk_uiActionBar_popup(vkk_uiActionBar_t* self,
-                          vkk_uiSprite_t* action,
-                          vkk_uiWindow_t* popup)
-{
-	// action and popup may be NULL
-	ASSERT(self);
-
-	vkk_uiWidget_t*  widget = (vkk_uiWidget_t*) self;
-	vkk_uiScreen_t*  screen = widget->screen;
-	vkk_uiListbox_t* base   = &self->base;
-
-	if((self->selected == NULL) &&
-	   (action == NULL) && (popup == NULL))
-	{
-		return 0;
-	}
-
-	if(self->selected)
-	{
-		cc_vec4f_t color;
-		vkk_uiScreen_colorActionIcon0(screen, &color);
-		vkk_uiSprite_color(self->selected, &color);
-	}
-
-	// toggle the popup selected
-	vkk_uiListbox_clear(base);
-	if((action == NULL) || (popup == NULL) ||
-	   (action == self->selected))
-	{
-		self->selected = NULL;
-
-		vkk_uiListbox_add(base, (vkk_uiWidget_t*) self->actions);
-	}
-	else
-	{
-		cc_vec4f_t color;
-		vkk_uiScreen_colorActionIcon1(screen, &color);
-		vkk_uiSprite_color(action, &color);
-
-		self->selected = action;
-
-		if(self->forward)
-		{
-			vkk_uiListbox_add(base, (vkk_uiWidget_t*) self->actions);
-			vkk_uiListbox_add(base, (vkk_uiWidget_t*) self->space);
-			vkk_uiListbox_add(base, (vkk_uiWidget_t*) popup);
-		}
-		else
-		{
-			vkk_uiListbox_add(base, (vkk_uiWidget_t*) popup);
-			vkk_uiListbox_add(base, (vkk_uiWidget_t*) self->space);
-			vkk_uiListbox_add(base, (vkk_uiWidget_t*) self->actions);
-		}
-	}
-
-	return 1;
-}
-
-int vkk_uiActionBar_clickPopupFn(vkk_uiWidget_t* widget,
-                                 int state,
-                                 float x, float y)
-{
-	ASSERT(widget);
-
-	vkk_uiActionBar_t* ab;
-	vkk_uiSprite_t*    action;
-	vkk_uiWindow_t**   _popup;
-	ab     = (vkk_uiActionBar_t*)
-	          vkk_uiWidget_widgetFnPriv(widget);
-	action = (vkk_uiSprite_t*) widget;
-	_popup = (vkk_uiWindow_t**)
-	         vkk_uiWidget_widgetFnArg(widget);
-	if(state == VKK_UI_WIDGET_POINTER_UP)
-	{
-		if((ab == NULL) || (_popup == NULL))
-		{
-			LOGE("invalid action_bar=%p, popup=%p",
-			     ab, _popup);
-			return 0;
-		}
-
-		vkk_uiActionBar_popup(ab, action, *_popup);
-	}
-	return 1;
 }

@@ -22,26 +22,28 @@ CLASSES = \
 	core/vkk_util
 ifeq ($(VKK_USE_UI),1)
 	CLASSES += \
-		ui/vkk_uiActionBar  \
-		ui/vkk_uiBulletbox  \
-		ui/vkk_uiCheckbox   \
-		ui/vkk_uiFileList   \
-		ui/vkk_uiFilePicker \
-		ui/vkk_uiFont       \
-		ui/vkk_uiHline      \
-		ui/vkk_uiInfoPanel  \
-		ui/vkk_uiLayer      \
-		ui/vkk_uiListbox    \
-		ui/vkk_uiScreen     \
-		ui/vkk_uiSprite     \
-		ui/vkk_uiStatusBar  \
-		ui/vkk_uiRadiobox   \
-		ui/vkk_uiRadiolist  \
-		ui/vkk_uiTextEntry  \
-		ui/vkk_uiTextbox    \
-		ui/vkk_uiText       \
-		ui/vkk_uiTricolor   \
-		ui/vkk_uiWidget     \
+		ui/vkk_uiActionBar    \
+		ui/vkk_uiActionButton \
+		ui/vkk_uiActionPopup  \
+		ui/vkk_uiBulletBox    \
+		ui/vkk_uiCheckBox     \
+		ui/vkk_uiFileList     \
+		ui/vkk_uiFilePicker   \
+		ui/vkk_uiFont         \
+		ui/vkk_uiInfoPanel    \
+		ui/vkk_uiInputWindow  \
+		ui/vkk_uiLayer        \
+		ui/vkk_uiListBox      \
+		ui/vkk_uiRadioBox     \
+		ui/vkk_uiRadioList    \
+		ui/vkk_uiScreen       \
+		ui/vkk_uiSeparator    \
+		ui/vkk_uiSprite       \
+		ui/vkk_uiStatusBar    \
+		ui/vkk_uiTextBox      \
+		ui/vkk_uiText         \
+		ui/vkk_uiTricolor     \
+		ui/vkk_uiWidget       \
 		ui/vkk_uiWindow
 endif
 ifeq ($(VKK_USE_VG),1)

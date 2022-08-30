@@ -21,37 +21,33 @@
  *
  */
 
-#ifndef vkk_uiTextbox_H
-#define vkk_uiTextbox_H
+#ifndef vkk_uiCheckBox_H
+#define vkk_uiCheckBox_H
 
-#include "../../libcc/cc_list.h"
-
-typedef struct vkk_uiTextbox_s
+typedef struct vkk_uiCheckBoxFn_s
 {
-	vkk_uiListbox_t base;
+	// priv and functions may be NULL
+	void*                priv;
+	vkk_uiWidgetValue_fn value_fn;
+} vkk_uiCheckBoxFn_t;
 
-	// cached strings to reflow text
-	cc_list_t* strings;
-	int        dirty;
-	float      last_w;
-	float      last_h;
+typedef struct vkk_uiCheckBox_s
+{
+	vkk_uiBulletBox_t base;
+	int               value;
+} vkk_uiCheckBox_t;
 
-	// text properties
-	vkk_uiTextStyle_t text_style;
-} vkk_uiTextbox_t;
-
-vkk_uiTextbox_t* vkk_uiTextbox_new(vkk_uiScreen_t* screen,
-                                   size_t wsize,
-                                   vkk_uiWidgetLayout_t* layout,
-                                   vkk_uiWidgetScroll_t* scroll,
-                                   vkk_uiWidgetFn_t* fn,
-                                   vkk_uiTextStyle_t* text_style);
-vkk_uiTextbox_t* vkk_uiTextbox_newPageButton(vkk_uiScreen_t* screen,
-                                             vkk_uiWidgetFn_t* fn);
-vkk_uiTextbox_t* vkk_uiTextbox_newPageParagraph(vkk_uiScreen_t* screen);
-void             vkk_uiTextbox_delete(vkk_uiTextbox_t** _self);
-void             vkk_uiTextbox_clear(vkk_uiTextbox_t* self);
-void             vkk_uiTextbox_printf(vkk_uiTextbox_t* self,
+vkk_uiCheckBox_t* vkk_uiCheckBox_new(vkk_uiScreen_t* screen,
+                                     size_t wsize,
+                                     vkk_uiCheckBoxFn_t* cbfn,
+                                     vkk_uiBulletBoxStyle_t* bulletbox_style);
+vkk_uiCheckBox_t* vkk_uiCheckBox_newPageItem(vkk_uiScreen_t* screen,
+                                             vkk_uiCheckBoxFn_t* cbfn);
+void             vkk_uiCheckBox_delete(vkk_uiCheckBox_t** _self);
+void             vkk_uiCheckBox_label(vkk_uiCheckBox_t* self,
                                       const char* fmt, ...);
+int              vkk_uiCheckBox_get(vkk_uiCheckBox_t* self);
+void             vkk_uiCheckBox_set(vkk_uiCheckBox_t* self,
+                                    int value);
 
 #endif

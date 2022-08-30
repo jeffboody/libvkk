@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018 Jeff Boody
+ * Copyright (c) 2015 Jeff Boody
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
  * copy of this software and associated documentation files (the "Software"),
@@ -21,27 +21,32 @@
  *
  */
 
-#ifndef vkk_uiHline_H
-#define vkk_uiHline_H
+#ifndef vkk_uiRadioBox_H
+#define vkk_uiRadioBox_H
 
-#define VKK_UI_HLINE_SIZE_SMALL  0
-#define VKK_UI_HLINE_SIZE_MEDIUM 1
-#define VKK_UI_HLINE_SIZE_LARGE  2
-
-typedef struct vkk_uiHline_s
+typedef struct vkk_uiRadioBoxFn_s
 {
-	vkk_uiWidget_t  base;
-	vkk_uiWidget_t* line;
+	// priv and functions may be NULL
+	void*                priv;
+	vkk_uiWidgetValue_fn value_fn;
+} vkk_uiRadioBoxFn_t;
 
-	int size;
-} vkk_uiHline_t;
+typedef struct vkk_uiRadioBox_s
+{
+	vkk_uiBulletBox_t  base;
+	vkk_uiRadioList_t* parent;
+	int                value;
+} vkk_uiRadioBox_t;
 
-vkk_uiHline_t* vkk_uiHline_new(vkk_uiScreen_t* screen,
-                               size_t wsize,
-                               int size,
-                               cc_vec4f_t* color);
-vkk_uiHline_t* vkk_uiHline_newPageItem(vkk_uiScreen_t* screen);
-vkk_uiHline_t* vkk_uiHline_newInfoItem(vkk_uiScreen_t* screen);
-void           vkk_uiHline_delete(vkk_uiHline_t** _self);
+
+vkk_uiRadioBox_t* vkk_uiRadioBox_new(vkk_uiScreen_t* screen,
+                                     size_t wsize,
+                                     vkk_uiRadioBoxFn_t* rbfn,
+                                     vkk_uiBulletBoxStyle_t* bulletbox_style,
+                                     vkk_uiRadioList_t* parent,
+                                     int value);
+void             vkk_uiRadioBox_delete(vkk_uiRadioBox_t** _self);
+void             vkk_uiRadioBox_label(vkk_uiRadioBox_t* self,
+                                      const char* fmt, ...);
 
 #endif

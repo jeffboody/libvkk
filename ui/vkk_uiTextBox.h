@@ -21,38 +21,44 @@
  *
  */
 
-#ifndef vkk_uiListbox_H
-#define vkk_uiListbox_H
+#ifndef vkk_uiTextBox_H
+#define vkk_uiTextBox_H
 
 #include "../../libcc/cc_list.h"
 
-#define VKK_UI_LISTBOX_ORIENTATION_VERTICAL   0
-#define VKK_UI_LISTBOX_ORIENTATION_HORIZONTAL 1
-
-typedef struct vkk_uiListbox_s
+typedef struct vkk_uiTextBoxFn_s
 {
-	vkk_uiWidget_t base;
-	cc_list_t*    list;
+	// priv and functions may be NULL
+	void*                priv;
+	vkk_uiWidgetClick_fn click_fn;
+} vkk_uiTextBoxFn_t;
 
-	int orientation;
-} vkk_uiListbox_t;
+typedef struct vkk_uiTextBox_s
+{
+	vkk_uiListBox_t base;
 
-vkk_uiListbox_t* vkk_uiListbox_new(vkk_uiScreen_t* screen,
+	// cached strings to reflow text
+	cc_list_t* strings;
+	int        dirty;
+	float      last_w;
+	float      last_h;
+
+	// text properties
+	vkk_uiTextStyle_t text_style;
+} vkk_uiTextBox_t;
+
+vkk_uiTextBox_t* vkk_uiTextBox_new(vkk_uiScreen_t* screen,
                                    size_t wsize,
+                                   vkk_uiTextBoxFn_t* tbfn,
                                    vkk_uiWidgetLayout_t* layout,
                                    vkk_uiWidgetScroll_t* scroll,
-                                   vkk_uiWidgetFn_t* fn,
-                                   int orientation,
-                                   cc_vec4f_t* color);
-void             vkk_uiListbox_delete(vkk_uiListbox_t** _self);
-void             vkk_uiListbox_clear(vkk_uiListbox_t* self);
-int              vkk_uiListbox_add(vkk_uiListbox_t* self,
-                                   vkk_uiWidget_t* widget);
-int              vkk_uiListbox_addSorted(vkk_uiListbox_t* self,
-                                         cc_listcmp_fn compare,
-                                         vkk_uiWidget_t* widget);
-cc_listIter_t*   vkk_uiListbox_head(vkk_uiListbox_t* self);
-vkk_uiWidget_t*  vkk_uiListbox_remove(vkk_uiListbox_t* self,
-                                      cc_listIter_t** _iter);
+                                   vkk_uiTextStyle_t* text_style);
+vkk_uiTextBox_t* vkk_uiTextBox_newPageButton(vkk_uiScreen_t* screen,
+                                             vkk_uiTextBoxFn_t* tbfn);
+vkk_uiTextBox_t* vkk_uiTextBox_newPageParagraph(vkk_uiScreen_t* screen);
+void             vkk_uiTextBox_delete(vkk_uiTextBox_t** _self);
+void             vkk_uiTextBox_clear(vkk_uiTextBox_t* self);
+void             vkk_uiTextBox_printf(vkk_uiTextBox_t* self,
+                                      const char* fmt, ...);
 
 #endif

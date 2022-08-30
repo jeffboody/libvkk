@@ -33,13 +33,13 @@
 ***********************************************************/
 
 static void
-vkk_uiListbox_size(vkk_uiWidget_t* widget, float* w, float* h)
+vkk_uiListBox_size(vkk_uiWidget_t* widget, float* w, float* h)
 {
 	ASSERT(widget);
 	ASSERT(w);
 	ASSERT(h);
 
-	vkk_uiListbox_t*      self   = (vkk_uiListbox_t*) widget;
+	vkk_uiListBox_t*      self   = (vkk_uiListBox_t*) widget;
 	cc_listIter_t*        iter   = cc_list_head(self->list);
 	vkk_uiWidgetLayout_t* layout = &widget->layout;
 
@@ -171,12 +171,12 @@ vkk_uiListbox_size(vkk_uiWidget_t* widget, float* w, float* h)
 }
 
 static int
-vkk_uiListbox_click(vkk_uiWidget_t* widget,
+vkk_uiListBox_click(vkk_uiWidget_t* widget,
                     int state, float x, float y)
 {
 	ASSERT(widget);
 
-	vkk_uiListbox_t* self = (vkk_uiListbox_t*) widget;
+	vkk_uiListBox_t* self = (vkk_uiListBox_t*) widget;
 	cc_listIter_t*   iter = cc_list_head(self->list);
 	while(iter)
 	{
@@ -195,7 +195,7 @@ vkk_uiListbox_click(vkk_uiWidget_t* widget,
 }
 
 static void
-vkk_uiListbox_layoutVerticalShrink(vkk_uiListbox_t* self,
+vkk_uiListBox_layoutVerticalShrink(vkk_uiListBox_t* self,
                                    int dragx, int dragy)
 {
 	ASSERT(self);
@@ -237,7 +237,7 @@ vkk_uiListbox_layoutVerticalShrink(vkk_uiListbox_t* self,
 }
 
 static void
-vkk_uiListbox_layoutVerticalStretch(vkk_uiListbox_t* self,
+vkk_uiListBox_layoutVerticalStretch(vkk_uiListBox_t* self,
                                     int dragx, int dragy)
 {
 	ASSERT(self);
@@ -280,7 +280,7 @@ vkk_uiListbox_layoutVerticalStretch(vkk_uiListbox_t* self,
 }
 
 static void
-vkk_uiListbox_layoutHorizontalShrink(vkk_uiListbox_t* self,
+vkk_uiListBox_layoutHorizontalShrink(vkk_uiListBox_t* self,
                                      int dragx, int dragy)
 {
 	ASSERT(self);
@@ -322,7 +322,7 @@ vkk_uiListbox_layoutHorizontalShrink(vkk_uiListbox_t* self,
 }
 
 static void
-vkk_uiListbox_layoutHorizontalStretch(vkk_uiListbox_t* self,
+vkk_uiListBox_layoutHorizontalStretch(vkk_uiListBox_t* self,
                                       int dragx, int dragy)
 {
 	ASSERT(self);
@@ -365,14 +365,14 @@ vkk_uiListbox_layoutHorizontalStretch(vkk_uiListbox_t* self,
 }
 
 static void
-vkk_uiListbox_layout(vkk_uiWidget_t* widget,
+vkk_uiListBox_layout(vkk_uiWidget_t* widget,
                      int dragx, int dragy)
 {
 	ASSERT(widget);
 
 	vkk_uiWidgetLayout_t* layout = &widget->layout;
 
-	vkk_uiListbox_t* self = (vkk_uiListbox_t*) widget;
+	vkk_uiListBox_t* self = (vkk_uiListBox_t*) widget;
 	if(cc_list_size(self->list) == 0)
 	{
 		return;
@@ -382,33 +382,33 @@ vkk_uiListbox_layout(vkk_uiWidget_t* widget,
 	{
 		if(layout->wrapy == VKK_UI_WIDGET_WRAP_SHRINK)
 		{
-			vkk_uiListbox_layoutVerticalShrink(self, dragx, dragy);
+			vkk_uiListBox_layoutVerticalShrink(self, dragx, dragy);
 		}
 		else
 		{
-			vkk_uiListbox_layoutVerticalStretch(self, dragx, dragy);
+			vkk_uiListBox_layoutVerticalStretch(self, dragx, dragy);
 		}
 	}
 	else
 	{
 		if(layout->wrapx == VKK_UI_WIDGET_WRAP_SHRINK)
 		{
-			vkk_uiListbox_layoutHorizontalShrink(self, dragx, dragy);
+			vkk_uiListBox_layoutHorizontalShrink(self, dragx, dragy);
 		}
 		else
 		{
-			vkk_uiListbox_layoutHorizontalStretch(self, dragx, dragy);
+			vkk_uiListBox_layoutHorizontalStretch(self, dragx, dragy);
 		}
 	}
 }
 
 static void
-vkk_uiListbox_drag(vkk_uiWidget_t* widget,
+vkk_uiListBox_drag(vkk_uiWidget_t* widget,
                    float x, float y, float dx, float dy)
 {
 	ASSERT(widget);
 
-	vkk_uiListbox_t* self = (vkk_uiListbox_t*) widget;
+	vkk_uiListBox_t* self = (vkk_uiListBox_t*) widget;
 	cc_listIter_t*   iter = cc_list_head(self->list);
 	while(iter)
 	{
@@ -419,11 +419,11 @@ vkk_uiListbox_drag(vkk_uiWidget_t* widget,
 	}
 }
 
-static void vkk_uiListbox_draw(vkk_uiWidget_t* widget)
+static void vkk_uiListBox_draw(vkk_uiWidget_t* widget)
 {
 	ASSERT(widget);
 
-	vkk_uiListbox_t* self = (vkk_uiListbox_t*) widget;
+	vkk_uiListBox_t* self = (vkk_uiListBox_t*) widget;
 	cc_listIter_t*  iter = cc_list_head(self->list);
 	while(iter)
 	{
@@ -434,13 +434,20 @@ static void vkk_uiListbox_draw(vkk_uiWidget_t* widget)
 	}
 }
 
-static void
-vkk_uiListbox_refresh(vkk_uiWidget_t* widget)
+static int
+vkk_uiListBox_refresh(vkk_uiWidget_t* widget)
 {
 	ASSERT(widget);
 
-	vkk_uiListbox_t* self = (vkk_uiListbox_t*) widget;
-	cc_listIter_t*   iter = cc_list_head(self->list);
+	vkk_uiListBox_t* self = (vkk_uiListBox_t*) widget;
+
+	vkk_uiWidgetRefresh_fn refresh_fn = self->refresh_fn;
+	if(refresh_fn && ((*refresh_fn)(widget) == 0))
+	{
+		return 0;
+	}
+
+	cc_listIter_t* iter = cc_list_head(self->list);
 	while(iter)
 	{
 		vkk_uiWidget_t* tmp;
@@ -448,61 +455,54 @@ vkk_uiListbox_refresh(vkk_uiWidget_t* widget)
 		vkk_uiWidget_refresh(tmp);
 		iter = cc_list_next(iter);
 	}
+
+	return 1;
 }
 
 /***********************************************************
 * public                                                   *
 ***********************************************************/
 
-vkk_uiListbox_t*
-vkk_uiListbox_new(vkk_uiScreen_t* screen, size_t wsize,
+vkk_uiListBox_t*
+vkk_uiListBox_new(vkk_uiScreen_t* screen, size_t wsize,
+                  vkk_uiListBoxFn_t* lbfn,
                   vkk_uiWidgetLayout_t* layout,
                   vkk_uiWidgetScroll_t* scroll,
-                  vkk_uiWidgetFn_t* fn, int orientation,
+                  int orientation,
                   cc_vec4f_t* color)
 {
 	ASSERT(screen);
+	ASSERT(lbfn);
 	ASSERT(layout);
 	ASSERT(scroll);
-	ASSERT(fn);
 	ASSERT(color);
 
 	if(wsize == 0)
 	{
-		wsize = sizeof(vkk_uiListbox_t);
+		wsize = sizeof(vkk_uiListBox_t);
 	}
 
-	// optionally set click/refresh functions
-	vkk_uiWidgetFn_t list_fn;
-	memcpy(&list_fn, fn, sizeof(vkk_uiWidgetFn_t));
-	if(fn->click_fn == NULL)
+	vkk_uiWidgetFn_t fn =
 	{
-		list_fn.click_fn = vkk_uiListbox_click;
-	}
-	if(fn->refresh_fn == NULL)
-	{
-		list_fn.refresh_fn = vkk_uiListbox_refresh;
-	}
-
-	vkk_uiWidgetPrivFn_t priv_fn =
-	{
-		.size_fn   = vkk_uiListbox_size,
-		.layout_fn = vkk_uiListbox_layout,
-		.drag_fn   = vkk_uiListbox_drag,
-		.draw_fn   = vkk_uiListbox_draw,
+		.priv       = lbfn->priv,
+		.click_fn   = vkk_uiListBox_click,
+		.drag_fn    = vkk_uiListBox_drag,
+		.draw_fn    = vkk_uiListBox_draw,
+		.layout_fn  = vkk_uiListBox_layout,
+		.refresh_fn = vkk_uiListBox_refresh,
+		.size_fn    = vkk_uiListBox_size,
 	};
 
-	vkk_uiListbox_t* self;
-	self = (vkk_uiListbox_t*)
+	vkk_uiListBox_t* self;
+	self = (vkk_uiListBox_t*)
 	       vkk_uiWidget_new(screen, wsize, color, layout,
-	                        scroll, &list_fn, &priv_fn);
+	                        scroll, &fn);
 	if(self == NULL)
 	{
 		return NULL;
 	}
 
-	vkk_uiWidget_t* base = &self->base;
-	vkk_uiWidget_soundFx(base, 0);
+	vkk_uiWidget_soundFx(&self->base, 0);
 
 	self->list = cc_list_new();
 	if(self->list == NULL)
@@ -511,6 +511,7 @@ vkk_uiListbox_new(vkk_uiScreen_t* screen, size_t wsize,
 	}
 
 	self->orientation = orientation;
+	self->refresh_fn  = lbfn->refresh_fn;
 
 	// success
 	return self;
@@ -521,11 +522,11 @@ vkk_uiListbox_new(vkk_uiScreen_t* screen, size_t wsize,
 	return NULL;
 }
 
-void vkk_uiListbox_delete(vkk_uiListbox_t** _self)
+void vkk_uiListBox_delete(vkk_uiListBox_t** _self)
 {
 	ASSERT(_self);
 
-	vkk_uiListbox_t* self = *_self;
+	vkk_uiListBox_t* self = *_self;
 	if(self)
 	{
 		cc_list_delete(&self->list);
@@ -533,18 +534,18 @@ void vkk_uiListbox_delete(vkk_uiListbox_t** _self)
 	}
 }
 
-void vkk_uiListbox_clear(vkk_uiListbox_t* self)
+void vkk_uiListBox_clear(vkk_uiListBox_t* self)
 {
 	ASSERT(self);
 
-	vkk_uiWidget_t* base = &self->base;
+	vkk_uiWidget_t* widget = &self->base;
 
 	cc_list_discard(self->list);
-	vkk_uiWidget_scrollTop(base);
-	vkk_uiScreen_dirty(base->screen);
+	vkk_uiWidget_scrollTop(widget);
+	vkk_uiScreen_dirty(widget->screen);
 }
 
-int vkk_uiListbox_add(vkk_uiListbox_t* self,
+int vkk_uiListBox_add(vkk_uiListBox_t* self,
                       vkk_uiWidget_t* widget)
 {
 	ASSERT(self);
@@ -562,7 +563,7 @@ int vkk_uiListbox_add(vkk_uiListbox_t* self,
 	return 1;
 }
 
-int vkk_uiListbox_addSorted(vkk_uiListbox_t* self,
+int vkk_uiListBox_addSorted(vkk_uiListBox_t* self,
                             cc_listcmp_fn compare,
                             vkk_uiWidget_t* widget)
 {
@@ -582,23 +583,23 @@ int vkk_uiListbox_addSorted(vkk_uiListbox_t* self,
 	return 1;
 }
 
-cc_listIter_t* vkk_uiListbox_head(vkk_uiListbox_t* self)
+cc_listIter_t* vkk_uiListBox_head(vkk_uiListBox_t* self)
 {
 	ASSERT(self);
 
 	return cc_list_head(self->list);
 }
 
-vkk_uiWidget_t* vkk_uiListbox_remove(vkk_uiListbox_t* self,
+vkk_uiWidget_t* vkk_uiListBox_remove(vkk_uiListBox_t* self,
                                      cc_listIter_t** _iter)
 {
 	ASSERT(self);
 	ASSERT(_iter);
 
-	vkk_uiWidget_t* base = &self->base;
+	vkk_uiWidget_t* widget = &self->base;
 
-	vkk_uiWidget_scrollTop(base);
-	vkk_uiScreen_dirty(base->screen);
+	vkk_uiWidget_scrollTop(widget);
+	vkk_uiScreen_dirty(widget->screen);
 
 	return (vkk_uiWidget_t*)
 	       cc_list_remove(self->list, _iter);

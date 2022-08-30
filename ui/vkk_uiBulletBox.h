@@ -21,46 +21,53 @@
  *
  */
 
-#ifndef vkk_uiBulletbox_H
-#define vkk_uiBulletbox_H
+#ifndef vkk_uiBulletBox_H
+#define vkk_uiBulletBox_H
 
 #include "../../libcc/math/cc_vec4f.h"
 
-typedef struct vkk_uiBulletboxStyle_s
+typedef struct vkk_uiBulletBoxFn_s
+{
+	// priv and functions may be NULL
+	void*                priv;
+	vkk_uiWidgetClick_fn click_fn;
+} vkk_uiBulletBoxFn_t;
+
+typedef struct vkk_uiBulletBoxStyle_s
 {
 	cc_vec4f_t        color_icon;
 	vkk_uiTextStyle_t text_style;
-} vkk_uiBulletboxStyle_t;
+} vkk_uiBulletBoxStyle_t;
 
-typedef struct vkk_uiBulletbox_s
+typedef struct vkk_uiBulletBox_s
 {
 	vkk_uiWidget_t  base;
 	vkk_uiSprite_t* icon;
 	vkk_uiText_t*   text;
-} vkk_uiBulletbox_t;
+} vkk_uiBulletBox_t;
 
-vkk_uiBulletbox_t* vkk_uiBulletbox_new(vkk_uiScreen_t* screen,
+vkk_uiBulletBox_t* vkk_uiBulletBox_new(vkk_uiScreen_t* screen,
                                        size_t wsize,
+                                       vkk_uiBulletBoxFn_t* bbfn,
                                        int anchor,
-                                       vkk_uiWidgetFn_t* fn,
-                                       vkk_uiBulletboxStyle_t* bulletbox_style,
+                                       vkk_uiBulletBoxStyle_t* bulletbox_style,
                                        const char** sprite_array);
-vkk_uiBulletbox_t* vkk_uiBulletbox_newPageItem(vkk_uiScreen_t* screen,
-                                               vkk_uiWidgetFn_t* fn,
+vkk_uiBulletBox_t* vkk_uiBulletBox_newPageItem(vkk_uiScreen_t* screen,
+                                               vkk_uiBulletBoxFn_t* bbfn,
                                                const char** sprite_array);
-vkk_uiBulletbox_t* vkk_uiBulletbox_newInfoItem(vkk_uiScreen_t* screen,
+vkk_uiBulletBox_t* vkk_uiBulletBox_newInfoItem(vkk_uiScreen_t* screen,
                                                const char** sprite_array);
-vkk_uiBulletbox_t* vkk_uiBulletbox_newFooterItem(vkk_uiScreen_t* screen,
-                                                 vkk_uiWidgetFn_t* fn,
+vkk_uiBulletBox_t* vkk_uiBulletBox_newFooterItem(vkk_uiScreen_t* screen,
+                                                 vkk_uiBulletBoxFn_t* bbfn,
                                                  const char** sprite_array);
-void               vkk_uiBulletbox_delete(vkk_uiBulletbox_t** _self);
-void               vkk_uiBulletbox_select(vkk_uiBulletbox_t* self,
+void               vkk_uiBulletBox_delete(vkk_uiBulletBox_t** _self);
+void               vkk_uiBulletBox_select(vkk_uiBulletBox_t* self,
                                           uint32_t index);
-void               vkk_uiBulletbox_colorIcon(vkk_uiBulletbox_t* self,
+void               vkk_uiBulletBox_colorIcon(vkk_uiBulletBox_t* self,
                                              cc_vec4f_t* color);
-void               vkk_uiBulletbox_colorText(vkk_uiBulletbox_t* self,
+void               vkk_uiBulletBox_colorText(vkk_uiBulletBox_t* self,
                                              cc_vec4f_t* color);
-void               vkk_uiBulletbox_label(vkk_uiBulletbox_t* self,
+void               vkk_uiBulletBox_label(vkk_uiBulletBox_t* self,
                                          const char* fmt, ...);
 
 #endif

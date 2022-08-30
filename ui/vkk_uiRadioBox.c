@@ -34,111 +34,121 @@
 ***********************************************************/
 
 static int
-vkk_uiCheckbox_click(vkk_uiWidget_t* widget,
+vkk_uiRadioBox_click(vkk_uiWidget_t* widget,
                      int state, float x, float y)
 {
 	ASSERT(widget);
 
-	vkk_uiCheckbox_t* self = (vkk_uiCheckbox_t*) widget;
+	vkk_uiRadioBox_t* self = (vkk_uiRadioBox_t*) widget;
+
 	if(state == VKK_UI_WIDGET_POINTER_UP)
 	{
-		*(self->pvalue) = 1 - *(self->pvalue);
+		vkk_uiRadioList_set(self->parent, self->value);
+
+		vkk_uiWidgetValue_fn value_fn = widget->fn.value_fn;
+		if(value_fn)
+		{
+			(*value_fn)(widget, self->value);
+		}
 	}
+
 	return 1;
 }
 
-static void
-vkk_uiCheckbox_refresh(vkk_uiWidget_t* widget)
+static int
+vkk_uiRadioBox_refresh(vkk_uiWidget_t* widget)
 {
 	ASSERT(widget);
 
-	vkk_uiCheckbox_t*  self = (vkk_uiCheckbox_t*) widget;
-	vkk_uiBulletbox_t* base = &self->base;
-	vkk_uiBulletbox_select(base, *(self->pvalue));
+	vkk_uiRadioBox_t* self = (vkk_uiRadioBox_t*) widget;
+
+	if(self->value == vkk_uiRadioList_get(self->parent))
+	{
+		vkk_uiBulletBox_select(&self->base, 1);
+	}
+	else
+	{
+		vkk_uiBulletBox_select(&self->base, 0);
+	}
+
+	return 1;
 }
 
 /***********************************************************
 * public                                                   *
 ***********************************************************/
 
-vkk_uiCheckbox_t*
-vkk_uiCheckbox_new(vkk_uiScreen_t* screen, size_t wsize,
-                   vkk_uiBulletboxStyle_t* bulletbox_style,
-                   int* pvalue)
+vkk_uiRadioBox_t*
+vkk_uiRadioBox_new(vkk_uiScreen_t* screen, size_t wsize,
+                   vkk_uiRadioBoxFn_t* rbfn,
+                   vkk_uiBulletBoxStyle_t* bulletbox_style,
+                   vkk_uiRadioList_t* parent, int value)
 {
 	ASSERT(screen);
 	ASSERT(bulletbox_style);
-	ASSERT(pvalue);
+	ASSERT(parent);
 
 	if(wsize == 0)
 	{
-		wsize = sizeof(vkk_uiCheckbox_t);
+		wsize = sizeof(vkk_uiRadioBox_t);
 	}
 
-	vkk_uiWidgetFn_t widget_fn =
+	vkk_uiBulletBoxFn_t bulletbox_fn =
 	{
-		.click_fn   = vkk_uiCheckbox_click,
-		.refresh_fn = vkk_uiCheckbox_refresh,
+		.priv     = rbfn->priv,
+		.click_fn = vkk_uiRadioBox_click,
 	};
 
 	const char* sprite_array[] =
 	{
-		"vkk/ui/icons/ic_check_box_outline_blank_white_24dp.png",
-		"vkk/ui/icons/ic_check_box_white_24dp.png",
+		"vkk/ui/icons/ic_radio_button_unchecked_white_24dp.png",
+		"vkk/ui/icons/ic_radio_button_checked_white_24dp.png",
 		NULL
 	};
 
-	vkk_uiCheckbox_t* self;
-	self = (vkk_uiCheckbox_t*)
-	       vkk_uiBulletbox_new(screen, wsize,
-	                          VKK_UI_WIDGET_ANCHOR_TL,
-	                          &widget_fn, bulletbox_style,
-	                          sprite_array);
+	vkk_uiRadioBox_t* self;
+	self = (vkk_uiRadioBox_t*)
+	       vkk_uiBulletBox_new(screen, wsize,
+	                           &bulletbox_fn,
+	                           VKK_UI_WIDGET_ANCHOR_TL,
+	                           bulletbox_style,
+	                           sprite_array);
 	if(self == NULL)
 	{
 		return NULL;
 	}
 
-	self->pvalue = pvalue;
+	// override functions
+	vkk_uiWidget_t*  widget = (vkk_uiWidget_t*) self;
+	vkk_uiWidgetFn_t fn_new =
+	{
+		.refresh_fn = vkk_uiRadioBox_refresh,
+		.value_fn   = rbfn->value_fn,
+	};
+	vkk_uiWidgetFn_t fn_old =
+	{
+		.priv = NULL
+	};
+	vkk_uiWidget_override(widget, &fn_new, &fn_old);
+
+	self->parent = parent;
+	self->value  = value;
 
 	return self;
 }
 
-vkk_uiCheckbox_t*
-vkk_uiCheckbox_newPageItem(vkk_uiScreen_t* screen,
-                           int* pvalue)
-{
-	ASSERT(screen);
-	ASSERT(pvalue);
-
-	vkk_uiBulletboxStyle_t style =
-	{
-		.text_style =
-		{
-			.font_type = VKK_UI_TEXT_FONTTYPE_REGULAR,
-			.size      = VKK_UI_TEXT_SIZE_MEDIUM,
-			.spacing   = VKK_UI_TEXT_SPACING_MEDIUM
-		}
-	};
-	vkk_uiScreen_colorPageItem(screen, &style.color_icon);
-	vkk_uiScreen_colorPageItem(screen, &style.text_style.color);
-
-	return vkk_uiCheckbox_new(screen, 0, &style, pvalue);
-}
-
-void vkk_uiCheckbox_delete(vkk_uiCheckbox_t** _self)
+void vkk_uiRadioBox_delete(vkk_uiRadioBox_t** _self)
 {
 	ASSERT(_self);
 
-	vkk_uiCheckbox_t* self = *_self;
+	vkk_uiRadioBox_t* self = *_self;
 	if(self)
 	{
-		vkk_uiBulletbox_delete((vkk_uiBulletbox_t**) _self);
-		*_self = NULL;
+		vkk_uiBulletBox_delete((vkk_uiBulletBox_t**) _self);
 	}
 }
 
-void vkk_uiCheckbox_label(vkk_uiCheckbox_t* self,
+void vkk_uiRadioBox_label(vkk_uiRadioBox_t* self,
                           const char* fmt, ...)
 {
 	ASSERT(self);
@@ -151,6 +161,5 @@ void vkk_uiCheckbox_label(vkk_uiCheckbox_t* self,
 	vsnprintf(string, 256, fmt, argptr);
 	va_end(argptr);
 
-	vkk_uiBulletbox_t* base = &self->base;
-	vkk_uiBulletbox_label(base, "%s", string);
+	vkk_uiBulletBox_label(&self->base, "%s", string);
 }

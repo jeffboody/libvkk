@@ -107,10 +107,10 @@ A file picker is a special window that provides the user a
 cross-platform mechanism to select a file (e.g. Open or
 Save As).
 
-Text Entry
-----------
+Input Window
+------------
 
-A text entry is a special window that allows the user to
+A input window is a special window that allows the user to
 enter a line of text and provides a callback for accepting
 the input.
 
@@ -174,16 +174,17 @@ Text
 Text is simply a single line of text which may also be
 used for text entry.
 
-Textbox
--------
+Text Box
+--------
 
-A textbox is a container for a paragraph of text which
+A text box is a container for a paragraph of text which
 automatically reflows.
 
-HLine
------
+Separator
+---------
 
-A hline is simply a horizontal separator line.
+A separator is a thin line which can be used to separate
+content.
 
 Info Panel
 ----------
@@ -221,12 +222,25 @@ other action. A horizontal action bar will place popup
 windows above/below while a vertical action bar will place
 popup windows to the side.
 
-Objects suitable to be placed in the action bar may be
-constructed by the newActionXXX constructor functions.
+An action bar may simply contain action buttons.
 
 It is the users responsibility to manage the list of widgets
 (e.g. you must clear all widgets added before deleting the
 action bar).
+
+Action Button
+-------------
+
+An action button is a icon that may be placed in an action
+bar. These buttons may perform a click function, open an
+action popup windows or transition to a new window.
+
+Action Popup
+------------
+
+An action popup is a window that may be opened by an action
+button in an action bar to provide additional selection
+options.
 
 Setup
 =====

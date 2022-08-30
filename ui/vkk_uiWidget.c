@@ -104,15 +104,13 @@ vkk_uiWidget_new(vkk_uiScreen_t* screen, size_t wsize,
                  cc_vec4f_t* color,
                  vkk_uiWidgetLayout_t* layout,
                  vkk_uiWidgetScroll_t* scroll,
-                 vkk_uiWidgetFn_t* fn,
-                 vkk_uiWidgetPrivFn_t* priv_fn)
+                 vkk_uiWidgetFn_t* fn)
 {
 	ASSERT(screen);
 	ASSERT(color);
 	ASSERT(layout);
 	ASSERT(scroll);
 	ASSERT(fn);
-	ASSERT(priv_fn);
 
 	if(wsize == 0)
 	{
@@ -133,7 +131,6 @@ vkk_uiWidget_new(vkk_uiScreen_t* screen, size_t wsize,
 	memcpy(&self->layout, layout, sizeof(vkk_uiWidgetLayout_t));
 	memcpy(&self->scroll, scroll, sizeof(vkk_uiWidgetScroll_t));
 	memcpy(&self->fn, fn, sizeof(vkk_uiWidgetFn_t));
-	memcpy(&self->priv_fn, priv_fn, sizeof(vkk_uiWidgetPrivFn_t));
 
 	// check for invalid layouts
 	if(layout->wrapx == VKK_UI_WIDGET_WRAP_SHRINK)
@@ -243,13 +240,8 @@ vkk_uiWidget_newSpace(vkk_uiScreen_t* screen)
 		.priv = NULL
 	};
 
-	vkk_uiWidgetPrivFn_t priv_fn =
-	{
-		.draw_fn = NULL
-	};
-
 	return vkk_uiWidget_new(screen, 0, &clear, &layout,
-	                        &scroll, &fn, &priv_fn);
+	                        &scroll, &fn);
 }
 
 void vkk_uiWidget_delete(vkk_uiWidget_t** _self)
@@ -275,6 +267,95 @@ void vkk_uiWidget_delete(vkk_uiWidget_t** _self)
 	}
 }
 
+void vkk_uiWidget_override(vkk_uiWidget_t* self,
+                           vkk_uiWidgetFn_t* fn_new,
+                           vkk_uiWidgetFn_t* fn_old)
+{
+	ASSERT(self);
+	ASSERT(fn_new);
+	ASSERT(fn_old);
+
+	vkk_uiWidgetFn_t* fn = &self->fn;
+
+	if(fn_new->priv)
+	{
+		fn_old->priv = fn->priv;
+		fn->priv     = fn_new->priv;
+	}
+
+	if(fn_new->aspect_fn)
+	{
+		fn_old->aspect_fn = fn->aspect_fn;
+		fn->aspect_fn     = fn_new->aspect_fn;
+	}
+
+	if(fn_new->click_fn)
+	{
+		fn_old->click_fn = fn->click_fn;
+		fn->click_fn     = fn_new->click_fn;
+	}
+
+	if(fn_new->drag_fn)
+	{
+		fn_old->drag_fn = fn->drag_fn;
+		fn->drag_fn     = fn_new->drag_fn;
+	}
+
+	if(fn_new->draw_fn)
+	{
+		fn_old->draw_fn = fn->draw_fn;
+		fn->draw_fn     = fn_new->draw_fn;
+	}
+
+	if(fn_new->input_fn)
+	{
+		fn_old->input_fn = fn->input_fn;
+		fn->input_fn     = fn_new->input_fn;
+	}
+
+	if(fn_new->keyPress_fn)
+	{
+		fn_old->keyPress_fn = fn->keyPress_fn;
+		fn->keyPress_fn     = fn_new->keyPress_fn;
+	}
+
+	if(fn_new->layout_fn)
+	{
+		fn_old->layout_fn = fn->layout_fn;
+		fn->layout_fn     = fn_new->layout_fn;
+	}
+
+	if(fn_new->reflow_fn)
+	{
+		fn_old->reflow_fn = fn->reflow_fn;
+		fn->reflow_fn     = fn_new->reflow_fn;
+	}
+
+	if(fn_new->refresh_fn)
+	{
+		fn_old->refresh_fn = fn->refresh_fn;
+		fn->refresh_fn     = fn_new->refresh_fn;
+	}
+
+	if(fn_new->scrollTop_fn)
+	{
+		fn_old->scrollTop_fn = fn->scrollTop_fn;
+		fn->scrollTop_fn     = fn_new->scrollTop_fn;
+	}
+
+	if(fn_new->size_fn)
+	{
+		fn_old->size_fn = fn->size_fn;
+		fn->size_fn     = fn_new->size_fn;
+	}
+
+	if(fn_new->value_fn)
+	{
+		fn_old->value_fn = fn->value_fn;
+		fn->value_fn     = fn_new->value_fn;
+	}
+}
+
 void vkk_uiWidget_layoutXYClip(vkk_uiWidget_t* self,
                                float x, float y,
                                cc_rect1f_t* clip,
@@ -285,9 +366,9 @@ void vkk_uiWidget_layoutXYClip(vkk_uiWidget_t* self,
 
 	vkk_uiScreen_t* screen = self->screen;
 
-	vkk_uiWidgetLayout_t* layout  = &self->layout;
-	vkk_uiWidgetScroll_t* scroll  = &self->scroll;
-	vkk_uiWidgetPrivFn_t* priv_fn = &self->priv_fn;
+	vkk_uiWidgetLayout_t* layout = &self->layout;
+	vkk_uiWidgetScroll_t* scroll = &self->scroll;
+	vkk_uiWidgetFn_t*     fn     = &self->fn;
 
 	float w  = self->rect_border.w;
 	float h  = self->rect_border.h;
@@ -388,7 +469,7 @@ void vkk_uiWidget_layoutXYClip(vkk_uiWidget_t* self,
 	self->rect_draw.l   = l + h_bo;
 
 	// allow the widget to layout it's children
-	vkk_uiWidget_layoutFn layout_fn = priv_fn->layout_fn;
+	vkk_uiWidgetLayout_fn layout_fn = fn->layout_fn;
 	if(layout_fn)
 	{
 		(*layout_fn)(self, dragx, dragy);
@@ -445,17 +526,18 @@ void vkk_uiWidget_layoutSize(vkk_uiWidget_t* self,
 	ASSERT(w);
 	ASSERT(h);
 
-	vkk_uiWidgetLayout_t* layout  = &self->layout;
-	vkk_uiWidgetPrivFn_t* priv_fn = &self->priv_fn;
+	vkk_uiWidgetLayout_t* layout = &self->layout;
+	vkk_uiWidgetFn_t*     fn     = &self->fn;
 
-	// initialize font aspect ratio
-	vkk_uiFont_t* font = vkk_uiScreen_font(self->screen,
-	                                       VKK_UI_TEXT_FONTTYPE_REGULAR);
+	vkk_uiFont_t* font;
+	font = vkk_uiScreen_font(self->screen,
+	                         VKK_UI_TEXT_FONTTYPE_REGULAR);
+
 	float ar = vkk_uiFont_aspectRatioAvg(font);
 
 	// initialize the widget aspect ratio
 	float war = 1.0f;
-	vkk_uiWidget_aspectRatioFn aspect_fn = priv_fn->aspect_fn;
+	vkk_uiWidgetAspectRatio_fn aspect_fn = fn->aspect_fn;
 	if(aspect_fn)
 	{
 		(*aspect_fn)(self, &war);
@@ -548,7 +630,7 @@ void vkk_uiWidget_layoutSize(vkk_uiWidget_t* self,
 	// this makes the most sense for stretched widgets
 	float draw_w = self->rect_draw.w;
 	float draw_h = self->rect_draw.h;
-	vkk_uiWidget_reflowFn reflow_fn = priv_fn->reflow_fn;
+	vkk_uiWidgetReflow_fn reflow_fn = fn->reflow_fn;
 	if(reflow_fn)
 	{
 		(*reflow_fn)(self, draw_w, draw_h);
@@ -558,7 +640,7 @@ void vkk_uiWidget_layoutSize(vkk_uiWidget_t* self,
 	// recursively compute size of any children
 	// the draw size of the widget also becomes the border
 	// size of any children
-	vkk_uiWidget_sizeFn size_fn = priv_fn->size_fn;
+	vkk_uiWidgetSize_fn size_fn = fn->size_fn;
 	if(size_fn)
 	{
 		(*size_fn)(self, &draw_w, &draw_h);
@@ -646,7 +728,7 @@ int vkk_uiWidget_click(vkk_uiWidget_t* self, int state,
 
 	vkk_uiWidgetFn_t* fn = &self->fn;
 
-	vkk_uiWidget_clickFn click_fn = fn->click_fn;
+	vkk_uiWidgetClick_fn click_fn = fn->click_fn;
 	if(click_fn == NULL)
 	{
 		return 0;
@@ -674,31 +756,13 @@ int vkk_uiWidget_click(vkk_uiWidget_t* self, int state,
 	return clicked;
 }
 
-int vkk_uiWidget_clickUrlFn(vkk_uiWidget_t* widget,
-                            int state,
-                            float x, float y)
-{
-	ASSERT(widget);
-
-	vkk_uiScreen_t* screen = widget->screen;
-	vkk_engine_t*  engine = screen->engine;
-
-	if(state == VKK_UI_WIDGET_POINTER_UP)
-	{
-		const char* url;
-		url = vkk_uiWidget_widgetFnMsg(widget);
-		vkk_engine_platformCmdLoadUrl(engine, url);
-	}
-	return 1;
-}
-
 int vkk_uiWidget_keyPress(vkk_uiWidget_t* self,
                           int keycode, int meta)
 {
 	ASSERT(self);
 
-	vkk_uiWidgetPrivFn_t*   priv_fn     = &self->priv_fn;
-	vkk_uiWidget_keyPressFn keyPress_fn = priv_fn->keyPress_fn;
+	vkk_uiWidgetFn_t*       fn          = &self->fn;
+	vkk_uiWidgetKeyPress_fn keyPress_fn = fn->keyPress_fn;
 	if(keyPress_fn == NULL)
 	{
 		return 0;
@@ -713,8 +777,8 @@ void vkk_uiWidget_drag(vkk_uiWidget_t* self,
 {
 	ASSERT(self);
 
-	vkk_uiWidgetLayout_t* layout  = &self->layout;
-	vkk_uiWidgetPrivFn_t* priv_fn = &self->priv_fn;
+	vkk_uiWidgetLayout_t* layout = &self->layout;
+	vkk_uiWidgetFn_t*     fn     = &self->fn;
 
 	if((cc_rect1f_contains(&self->rect_clip, x, y) == 0) ||
 	   (cc_rect1f_contains(&self->rect_border, x, y) == 0))
@@ -737,7 +801,7 @@ void vkk_uiWidget_drag(vkk_uiWidget_t* self,
 
 	// a shrink wrapped widget drags it's children by
 	// changing it's own layout
-	vkk_uiWidget_dragFn drag_fn = priv_fn->drag_fn;
+	vkk_uiWidgetDrag_fn drag_fn = fn->drag_fn;
 	if(drag_fn &&
 	   ((layout->wrapx > VKK_UI_WIDGET_WRAP_SHRINK) ||
 	    (layout->wrapy > VKK_UI_WIDGET_WRAP_SHRINK)))
@@ -750,8 +814,8 @@ void vkk_uiWidget_draw(vkk_uiWidget_t* self)
 {
 	ASSERT(self);
 
-	vkk_uiWidgetScroll_t* scroll  = &self->scroll;
-	vkk_uiWidgetPrivFn_t* priv_fn = &self->priv_fn;
+	vkk_uiWidgetScroll_t* scroll = &self->scroll;
+	vkk_uiWidgetFn_t*     fn     = &self->fn;
 
 	cc_rect1f_t rect_border_clip;
 	if(cc_rect1f_intersect(&self->rect_border,
@@ -813,7 +877,7 @@ void vkk_uiWidget_draw(vkk_uiWidget_t* self)
 	}
 
 	// draw the contents
-	vkk_uiWidget_drawFn draw_fn = priv_fn->draw_fn;
+	vkk_uiWidgetDraw_fn draw_fn = fn->draw_fn;
 	if(draw_fn)
 	{
 		vkk_uiScreen_scissor(screen, &rect_draw_clip);
@@ -861,7 +925,7 @@ void vkk_uiWidget_refresh(vkk_uiWidget_t* self)
 
 	vkk_uiWidgetFn_t* fn = &self->fn;
 
-	vkk_uiWidget_refreshFn refresh_fn = fn->refresh_fn;
+	vkk_uiWidgetRefresh_fn refresh_fn = fn->refresh_fn;
 	if(refresh_fn)
 	{
 		(*refresh_fn)(self);
@@ -923,12 +987,12 @@ void vkk_uiWidget_scrollTop(vkk_uiWidget_t* self)
 {
 	ASSERT(self);
 
-	vkk_uiWidgetPrivFn_t* priv_fn = &self->priv_fn;
+	vkk_uiWidgetFn_t* fn = &self->fn;
 
 	self->drag_dx = 0.0f;
 	self->drag_dy = 0.0f;
 
-	vkk_uiWidget_scrollTopFn scrollTop_fn = priv_fn->scrollTop_fn;
+	vkk_uiWidgetScrollTop_fn scrollTop_fn = fn->scrollTop_fn;
 	if(scrollTop_fn)
 	{
 		(*scrollTop_fn)(self);
@@ -939,40 +1003,69 @@ int vkk_uiWidget_hasFocus(vkk_uiWidget_t* self)
 {
 	ASSERT(self);
 
-	vkk_uiScreen_t* screen = self->screen;
-	return self == screen->focus_widget;
+	return self == self->screen->focus_widget;
 }
 
-void
-vkk_uiWidget_privReflowFn(vkk_uiWidget_t* self,
-                          vkk_uiWidget_reflowFn reflow_fn)
-{
-	ASSERT(self);
-	ASSERT(reflow_fn);
-
-	vkk_uiWidgetPrivFn_t* priv_fn = &self->priv_fn;
-	ASSERT(priv_fn->reflow_fn == NULL);
-
-	priv_fn->reflow_fn = reflow_fn;
-}
-
-void* vkk_uiWidget_widgetFnPriv(vkk_uiWidget_t* self)
+void* vkk_uiWidget_priv(vkk_uiWidget_t* self)
 {
 	ASSERT(self);
 
 	return self->fn.priv;
 }
 
-void* vkk_uiWidget_widgetFnArg(vkk_uiWidget_t* self)
+int vkk_uiWidget_clickBack(vkk_uiWidget_t* widget,
+                           int state,
+                           float x, float y)
 {
-	ASSERT(self);
+	ASSERT(widget);
 
-	return self->fn.arg;
+	if(state == VKK_UI_WIDGET_POINTER_UP)
+	{
+		vkk_uiScreen_windowPop(widget->screen);
+	}
+	return 1;
 }
 
-const char* vkk_uiWidget_widgetFnMsg(vkk_uiWidget_t* self)
+int vkk_uiWidget_clickUrl(vkk_uiWidget_t* widget,
+                          int state,
+                          float x, float y)
 {
-	ASSERT(self);
+	ASSERT(widget);
 
-	return self->fn.msg;
+	vkk_uiScreen_t* screen = widget->screen;
+
+	const char* url;
+	url = (const char*) vkk_uiWidget_priv(widget);
+
+	if(state == VKK_UI_WIDGET_POINTER_UP)
+	{
+		vkk_engine_platformCmdLoadUrl(screen->engine, url);
+	}
+	return 1;
+}
+
+int vkk_uiWidget_clickTransition(vkk_uiWidget_t* widget,
+                                 int state,
+                                 float x, float y)
+{
+	ASSERT(widget);
+
+	vkk_uiWindow_t** _window;
+	_window = (vkk_uiWindow_t**) vkk_uiWidget_priv(widget);
+
+	vkk_uiWindow_t* window = *_window;
+	if(window && (state == VKK_UI_WIDGET_POINTER_UP))
+	{
+		vkk_uiScreen_windowPush(widget->screen, window);
+	}
+	return 1;
+}
+
+void vkk_uiWidget_value(vkk_uiWidget_t* widget,
+                        int value)
+{
+	ASSERT(widget);
+
+	int* _value = (int*) vkk_uiWidget_priv(widget);
+	*_value = value;
 }

@@ -136,14 +136,14 @@ static void vkk_uiSprite_draw(vkk_uiWidget_t* widget)
 vkk_uiSprite_t*
 vkk_uiSprite_new(vkk_uiScreen_t* screen,
                  size_t wsize,
+                 vkk_uiSpriteFn_t* sfn,
                  vkk_uiWidgetLayout_t* layout,
-                 vkk_uiWidgetFn_t* fn,
                  cc_vec4f_t* color,
                  const char** sprite_array)
 {
 	ASSERT(screen);
+	ASSERT(sfn);
 	ASSERT(layout);
-	ASSERT(fn);
 	ASSERT(color);
 	ASSERT(sprite_array);
 
@@ -177,9 +177,11 @@ vkk_uiSprite_new(vkk_uiScreen_t* screen,
 		.scroll_bar = 0
 	};
 
-	vkk_uiWidgetPrivFn_t priv_fn =
+	vkk_uiWidgetFn_t fn =
 	{
+		.priv      = sfn->priv,
 		.aspect_fn = vkk_uiSprite_aspect,
+		.click_fn  = sfn->click_fn,
 		.draw_fn   = vkk_uiSprite_draw,
 	};
 
@@ -191,7 +193,7 @@ vkk_uiSprite_new(vkk_uiScreen_t* screen,
 	vkk_uiSprite_t* self;
 	self = (vkk_uiSprite_t*)
 	       vkk_uiWidget_new(screen, wsize, &clear,
-	                        layout, &scroll, fn, &priv_fn);
+	                        layout, &scroll, &fn);
 	if(self == NULL)
 	{
 		return NULL;
@@ -348,11 +350,11 @@ vkk_uiSprite_new(vkk_uiScreen_t* screen,
 
 vkk_uiSprite_t*
 vkk_uiSprite_newPageImage(vkk_uiScreen_t* screen,
-                          vkk_uiWidgetFn_t* fn,
+                          vkk_uiSpriteFn_t* sfn,
                           const char** sprite_array)
 {
 	ASSERT(screen);
-	ASSERT(fn);
+	ASSERT(sfn);
 	ASSERT(sprite_array);
 
 	vkk_uiWidgetLayout_t sprite_layout =
@@ -367,17 +369,18 @@ vkk_uiSprite_newPageImage(vkk_uiScreen_t* screen,
 	cc_vec4f_t color;
 	vkk_uiScreen_colorPageImage(screen, &color);
 
-	return vkk_uiSprite_new(screen, 0, &sprite_layout,
-	                        fn, &color, sprite_array);
+	return vkk_uiSprite_new(screen, 0, sfn,
+	                        &sprite_layout, &color,
+	                        sprite_array);
 }
 
 vkk_uiSprite_t*
 vkk_uiSprite_newSidebarImage(vkk_uiScreen_t* screen,
-                             vkk_uiWidgetFn_t* fn,
+                             vkk_uiSpriteFn_t* sfn,
                              const char** sprite_array)
 {
 	ASSERT(screen);
-	ASSERT(fn);
+	ASSERT(sfn);
 	ASSERT(sprite_array);
 
 	vkk_uiWidgetLayout_t sprite_layout =
@@ -392,42 +395,18 @@ vkk_uiSprite_newSidebarImage(vkk_uiScreen_t* screen,
 	cc_vec4f_t color;
 	vkk_uiScreen_colorPageImage(screen, &color);
 
-	return vkk_uiSprite_new(screen, 0, &sprite_layout,
-	                        fn, &color, sprite_array);
-}
-
-vkk_uiSprite_t*
-vkk_uiSprite_newActionIcon(vkk_uiScreen_t* screen,
-                           vkk_uiWidgetFn_t* fn,
-                           const char** sprite_array)
-{
-	ASSERT(screen);
-	ASSERT(fn);
-	ASSERT(sprite_array);
-
-	vkk_uiWidgetLayout_t sprite_layout =
-	{
-		.border   = VKK_UI_WIDGET_BORDER_MEDIUM,
-		.wrapx    = VKK_UI_WIDGET_WRAP_STRETCH_TEXT_VMEDIUM,
-		.wrapy    = VKK_UI_WIDGET_WRAP_STRETCH_TEXT_VMEDIUM,
-		.stretchx = 1.0f,
-		.stretchy = 1.0f
-	};
-
-	cc_vec4f_t color;
-	vkk_uiScreen_colorActionIcon0(screen, &color);
-
-	return vkk_uiSprite_new(screen, 0, &sprite_layout,
-	                        fn, &color, sprite_array);
+	return vkk_uiSprite_new(screen, 0, sfn,
+	                        &sprite_layout, &color,
+	                        sprite_array);
 }
 
 vkk_uiSprite_t*
 vkk_uiSprite_newStatusIcon(vkk_uiScreen_t* screen,
-                           vkk_uiWidgetFn_t* fn,
+                           vkk_uiSpriteFn_t* sfn,
                            const char** sprite_array)
 {
 	ASSERT(screen);
-	ASSERT(fn);
+	ASSERT(sfn);
 	ASSERT(sprite_array);
 
 	vkk_uiWidgetLayout_t sprite_layout =
@@ -442,8 +421,9 @@ vkk_uiSprite_newStatusIcon(vkk_uiScreen_t* screen,
 	cc_vec4f_t color;
 	vkk_uiScreen_colorStatusIcon(screen, &color);
 
-	return vkk_uiSprite_new(screen, 0, &sprite_layout,
-	                        fn, &color, sprite_array);
+	return vkk_uiSprite_new(screen, 0, sfn,
+	                        &sprite_layout, &color,
+	                        sprite_array);
 }
 
 void vkk_uiSprite_delete(vkk_uiSprite_t** _self)

@@ -45,8 +45,8 @@ vkk_uiText_resize(vkk_uiText_t* self, size_t size)
 {
 	ASSERT(self);
 
-	vkk_uiWidget_t* base   = &self->base;
-	vkk_uiScreen_t* screen = base->screen;
+	vkk_uiWidget_t* widget = &self->base;
+	vkk_uiScreen_t* screen = widget->screen;
 
 	if(self->size >= size)
 	{
@@ -142,6 +142,33 @@ vkk_uiText_size(vkk_uiWidget_t* widget, float* w, float* h)
 	*h = size;
 }
 
+static int
+vkk_uiText_click(vkk_uiWidget_t* widget,
+                 int state, float x, float y)
+{
+	ASSERT(widget);
+
+	vkk_uiText_t*   self   = (vkk_uiText_t*) widget;
+	vkk_uiScreen_t* screen = widget->screen;
+
+	if(state == VKK_UI_WIDGET_POINTER_UP)
+	{
+		// acquire focus for input_fn
+		vkk_engine_platformCmd(screen->engine,
+		                       VKK_PLATFORM_CMD_SOFTKEY_SHOW);
+		vkk_uiScreen_focus(screen, widget);
+	}
+
+	// optionally call the base click_fn
+	vkk_uiWidgetClick_fn click_fn = self->click_fn;
+	if(click_fn)
+	{
+		return (*click_fn)(widget, state, x, y);
+	}
+
+	return 1;
+}
+
 static void vkk_uiText_draw(vkk_uiWidget_t* widget)
 {
 	ASSERT(widget);
@@ -232,9 +259,9 @@ vkk_uiText_addc(vkk_uiText_t* self, char c, int i,
 	ASSERT(self);
 
 	float              offset = *_offset;
-	vkk_uiWidget_t*    base   = &self->base;
+	vkk_uiWidget_t*    widget = &self->base;
 	vkk_uiTextStyle_t* style  = &self->style;
-	vkk_uiScreen_t*    screen = base->screen;
+	vkk_uiScreen_t*    screen = widget->screen;
 	vkk_uiFont_t*      font   = vkk_uiScreen_font(screen,
 	                                            style->font_type);
 
@@ -282,22 +309,16 @@ vkk_uiText_keyPress(vkk_uiWidget_t* widget,
 	vkk_uiText_t*   self   = (vkk_uiText_t*) widget;
 	vkk_uiScreen_t* screen = widget->screen;
 
-	vkk_uiText_enterFn enter_fn = self->enter_fn;
-	if(enter_fn == NULL)
-	{
-		LOGE("enter_fn is NULL");
-		return 0;
-	}
+	vkk_uiWidgetInput_fn input_fn = widget->fn.input_fn;
 
 	size_t len  = strlen(self->string);
 	size_t size = len + 1;
 	if(keycode == VKK_PLATFORM_KEYCODE_ENTER)
 	{
-		(*enter_fn)(widget, self->string);
-	}
-	else if(keycode == VKK_PLATFORM_KEYCODE_ESCAPE)
-	{
-		return 0;
+		if(input_fn)
+		{
+			(*input_fn)(widget, self->string);
+		}
 	}
 	else if(keycode == VKK_PLATFORM_KEYCODE_BACKSPACE)
 	{
@@ -351,37 +372,21 @@ vkk_uiText_keyPress(vkk_uiWidget_t* widget,
 	return 1;
 }
 
-static int
-clickEntry(vkk_uiWidget_t* widget,
-           int state, float x, float y)
-{
-	ASSERT(widget);
-
-	vkk_uiScreen_t* screen = widget->screen;
-	if(state == VKK_UI_WIDGET_POINTER_UP)
-	{
-		vkk_engine_platformCmd(screen->engine,
-		                       VKK_PLATFORM_CMD_SOFTKEY_SHOW);
-		vkk_uiScreen_focus(screen, widget);
-	}
-	return 1;
-}
-
 /***********************************************************
 * public                                                   *
 ***********************************************************/
 
 vkk_uiText_t*
 vkk_uiText_new(vkk_uiScreen_t* screen, size_t wsize,
+               vkk_uiTextFn_t* tfn,
                vkk_uiTextLayout_t* text_layout,
                vkk_uiTextStyle_t* text_style,
-               vkk_uiTextFn_t* text_fn,
                cc_vec4f_t* color_fill)
 {
 	ASSERT(screen);
+	ASSERT(tfn);
 	ASSERT(text_layout);
 	ASSERT(text_style);
-	ASSERT(text_fn);
 	ASSERT(color_fill);
 
 	if(wsize == 0)
@@ -403,26 +408,38 @@ vkk_uiText_new(vkk_uiScreen_t* screen, size_t wsize,
 		.scroll_bar = 0
 	};
 
-	vkk_uiWidgetPrivFn_t priv_fn =
+	// implement the click/keyPress functions when accepting
+	// input to trigger the softkey, focus and input events
+	vkk_uiWidgetClick_fn    click_fn    = tfn->click_fn;
+	vkk_uiWidgetKeyPress_fn keyPress_fn = NULL;
+	if(tfn->input_fn)
 	{
-		.size_fn     = vkk_uiText_size,
-		.keyPress_fn = vkk_uiText_keyPress,
+		click_fn    = vkk_uiText_click;
+		keyPress_fn = vkk_uiText_keyPress;
+	}
+
+	vkk_uiWidgetFn_t fn =
+	{
+		.priv        = tfn->priv,
+		.click_fn    = click_fn,
 		.draw_fn     = vkk_uiText_draw,
+		.keyPress_fn = keyPress_fn,
+		.size_fn     = vkk_uiText_size,
+		.input_fn    = tfn->input_fn,
 	};
 
 	vkk_uiText_t* self;
 	self = (vkk_uiText_t*)
 	       vkk_uiWidget_new(screen, wsize, color_fill, &layout,
-	                        &widget_scroll, &text_fn->fn,
-	                        &priv_fn);
+	                        &widget_scroll, &fn);
 	if(self == NULL)
 	{
 		return NULL;
 	}
 
-	self->enter_fn = text_fn->enter_fn;
 	memcpy(&self->style, text_style,
 	       sizeof(vkk_uiTextStyle_t));
+	self->click_fn = tfn->click_fn;
 
 	self->ub00_mvp = vkk_buffer_new(screen->engine,
 	                                VKK_UPDATE_MODE_ASYNCHRONOUS,
@@ -548,7 +565,7 @@ vkk_uiText_newPageHeading(vkk_uiScreen_t* screen)
 
 	vkk_uiTextFn_t fn =
 	{
-		.enter_fn = NULL
+		.priv = NULL
 	};
 
 	cc_vec4f_t clear =
@@ -556,18 +573,16 @@ vkk_uiText_newPageHeading(vkk_uiScreen_t* screen)
 		.a = 0.0f,
 	};
 
-	return vkk_uiText_new(screen, 0, &layout, &style,
-	                     &fn, &clear);
+	return vkk_uiText_new(screen, 0, &fn, &layout,
+	                      &style, &clear);
 }
 
 vkk_uiText_t*
-vkk_uiText_newPageTextEntry(vkk_uiScreen_t* screen,
-                            void* priv,
-                            vkk_uiText_enterFn enter_fn)
+vkk_uiText_newPageTextInput(vkk_uiScreen_t* screen,
+                            vkk_uiTextFn_t* tfn)
 {
-	// priv may be NULL
 	ASSERT(screen);
-	ASSERT(enter_fn);
+	ASSERT(tfn);
 
 	vkk_uiTextLayout_t layout =
 	{
@@ -584,21 +599,11 @@ vkk_uiText_newPageTextEntry(vkk_uiScreen_t* screen,
 	};
 	vkk_uiScreen_colorPageItem(screen, &style.color);
 
-	vkk_uiTextFn_t fn =
-	{
-		.fn =
-		{
-			.priv     = priv,
-			.click_fn = clickEntry
-		},
-		.enter_fn = enter_fn
-	};
-
 	cc_vec4f_t fill;
 	vkk_uiScreen_colorPageEntry(screen, &fill);
 
-	return vkk_uiText_new(screen, 0, &layout, &style,
-	                      &fn, &fill);
+	return vkk_uiText_new(screen, 0, tfn, &layout,
+	                      &style, &fill);
 }
 
 vkk_uiText_t*
@@ -618,9 +623,9 @@ vkk_uiText_newInfoHeading(vkk_uiScreen_t* screen)
 	};
 	vkk_uiScreen_colorPageHeading(screen, &style.color);
 
-	vkk_uiTextFn_t fn =
+	vkk_uiTextFn_t tfn =
 	{
-		.enter_fn = NULL
+		.priv = NULL
 	};
 
 	cc_vec4f_t clear =
@@ -628,8 +633,8 @@ vkk_uiText_newInfoHeading(vkk_uiScreen_t* screen)
 		.a = 0.0f,
 	};
 
-	return vkk_uiText_new(screen, 0, &layout, &style,
-	                      &fn, &clear);
+	return vkk_uiText_new(screen, 0, &tfn, &layout,
+	                      &style, &clear);
 }
 
 vkk_uiText_t*
@@ -649,9 +654,9 @@ vkk_uiText_newInfoItem(vkk_uiScreen_t* screen)
 	};
 	vkk_uiScreen_colorPageItem(screen, &style.color);
 
-	vkk_uiTextFn_t fn =
+	vkk_uiTextFn_t tfn =
 	{
-		.enter_fn = NULL
+		.priv = NULL
 	};
 
 	cc_vec4f_t clear =
@@ -659,8 +664,8 @@ vkk_uiText_newInfoItem(vkk_uiScreen_t* screen)
 		.a = 0.0f,
 	};
 
-	return vkk_uiText_new(screen, 0, &layout, &style,
-	                     &fn, &clear);
+	return vkk_uiText_new(screen, 0, &tfn, &layout,
+	                      &style, &clear);
 }
 
 void vkk_uiText_delete(vkk_uiText_t** _self)
@@ -670,16 +675,14 @@ void vkk_uiText_delete(vkk_uiText_t** _self)
 	vkk_uiText_t* self = *_self;
 	if(self)
 	{
-		vkk_uiWidget_t* base   = &self->base;
-		vkk_uiScreen_t* screen = base->screen;
-
+		vkk_uiWidget_t* widget = &self->base;
 		vkk_uniformSet_delete(&self->us2_multiplyImage);
 		vkk_buffer_delete(&self->ub20_multiply);
 		vkk_uniformSet_delete(&self->us1_color);
 		vkk_buffer_delete(&self->ub10_color);
 		vkk_uniformSet_delete(&self->us0_mvp);
 		vkk_buffer_delete(&self->ub00_mvp);
-		vkk_uiScreen_textVb(screen, 0, self->vb_xyuv);
+		vkk_uiScreen_textVb(widget->screen, 0, self->vb_xyuv);
 
 		FREE(self->xyuv);
 		FREE(self->string);
@@ -692,11 +695,12 @@ int vkk_uiText_width(vkk_uiText_t* self, int cursor)
 {
 	ASSERT(self);
 
-	vkk_uiWidget_t*    base   = &self->base;
+	vkk_uiWidget_t*    widget = &self->base;
 	vkk_uiTextStyle_t* style  = &self->style;
-	vkk_uiScreen_t*    screen = base->screen;
-	vkk_uiFont_t*      font   = vkk_uiScreen_font(screen,
-	                                            style->font_type);
+
+	vkk_uiFont_t* font;
+	font = vkk_uiScreen_font(widget->screen,
+	                         style->font_type);
 
 	int   width = 0;
 	char* s     = self->string;
@@ -718,11 +722,12 @@ int vkk_uiText_height(vkk_uiText_t* self)
 {
 	ASSERT(self);
 
-	vkk_uiWidget_t*    base   = &self->base;
+	vkk_uiWidget_t*    widget = &self->base;
 	vkk_uiTextStyle_t* style  = &self->style;
-	vkk_uiScreen_t*    screen = base->screen;
-	vkk_uiFont_t*      font   = vkk_uiScreen_font(screen,
-	                                            style->font_type);
+
+	vkk_uiFont_t* font;
+	font = vkk_uiScreen_font(widget->screen,
+	                         style->font_type);
 	return vkk_uiFont_height(font);
 }
 
@@ -740,8 +745,8 @@ vkk_uiText_label(vkk_uiText_t* self, const char* fmt, ...)
 	ASSERT(self);
 	ASSERT(fmt);
 
-	vkk_uiWidget_t* base   = &self->base;
-	vkk_uiScreen_t* screen = base->screen;
+	vkk_uiWidget_t* widget = &self->base;
+	vkk_uiScreen_t* screen = widget->screen;
 
 	// decode string
 	char tmp_string[256];
@@ -780,4 +785,11 @@ vkk_uiText_label(vkk_uiText_t* self, const char* fmt, ...)
 
 	vkk_uiScreen_dirty(screen);
 	return 1;
+}
+
+const char* vkk_uiText_string(vkk_uiText_t* self)
+{
+	ASSERT(self);
+
+	return self->string;
 }

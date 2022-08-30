@@ -6,22 +6,23 @@ add_compile_options(-Wall -DVK_USE_PLATFORM_ANDROID_KHR)
 if(VKK_USE_UI)
     set(SOURCE_UI
         ui/vkk_uiActionBar.c
-        ui/vkk_uiBulletbox.c
-        ui/vkk_uiCheckbox.c
-        ui/vkk_uiFileList.c
+        ui/vkk_uiActionButton.c
+        ui/vkk_uiActionPopup.c
+        ui/vkk_uiBulletBox.c
+        ui/vkk_uiCheckBox.c
         ui/vkk_uiFilePicker.c
         ui/vkk_uiFont.c
-        ui/vkk_uiHline.c
         ui/vkk_uiInfoPanel.c
+        ui/vkk_uiInputWindow.c
         ui/vkk_uiLayer.c
-        ui/vkk_uiListbox.c
+        ui/vkk_uiListBox.c
+        ui/vkk_uiRadioBox.c
+        ui/vkk_uiRadioList.c
         ui/vkk_uiScreen.c
+        ui/vkk_uiSeparator.c
         ui/vkk_uiSprite.c
         ui/vkk_uiStatusBar.c
-        ui/vkk_uiRadiobox.c
-        ui/vkk_uiRadiolist.c
-        ui/vkk_uiTextEntry.c
-        ui/vkk_uiTextbox.c
+        ui/vkk_uiTextBox.c
         ui/vkk_uiText.c
         ui/vkk_uiTricolor.c
         ui/vkk_uiWidget.c
