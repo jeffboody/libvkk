@@ -467,7 +467,6 @@ vkk_uiWindow_newPage(vkk_uiScreen_t* screen,
 
 	vkk_uiWidgetLayout_t layout_popup =
 	{
-		.anchor   = VKK_UI_WIDGET_ANCHOR_CC,
 		.wrapx    = VKK_UI_WIDGET_WRAP_STRETCH_PARENT,
 		.stretchx = 1.0f,
 	};
@@ -629,6 +628,7 @@ vkk_uiWindow_new(vkk_uiScreen_t* screen,
 	vkk_uiWidgetLayout_t layout_popup =
 	{
 		.border   = VKK_UI_WIDGET_BORDER_MEDIUM,
+		.anchor   = VKK_UI_WIDGET_ANCHOR_CC,
 		.wrapx    = VKK_UI_WIDGET_WRAP_STRETCH_TEXT_HMEDIUM,
 		.stretchx = 22.0f,
 	};
