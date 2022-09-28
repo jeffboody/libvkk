@@ -160,6 +160,9 @@ or exporting documents.
 	             (void* priv, const char* uri, int* _fd);
 
 	#ifdef ANDROID
+	// type: mime type such as "text:plain"
+	// mode: r|w|wt|wa|rw|rwt
+	// r=read, w=write, t=trim, a=append
 	void vkk_engine_platformCmdDocumentCreate(vkk_engine_t* self,
 	                                          void* priv,
 	                                          vkk_platformCmd_documentFn document_fn,
