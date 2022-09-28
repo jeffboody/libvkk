@@ -125,6 +125,47 @@ vkk_uiFilePicker_documentOpen(vkk_uiFilePicker_t* self,
 
 #else // LINUX
 
+#include <errno.h>
+
+static int vkk_uiFilePicker_mkdir(const char* fname)
+{
+       ASSERT(fname);
+
+       int  len = strnlen(fname, 255);
+       char dir[256];
+       int  i;
+       for(i = 0; i < len; ++i)
+       {
+               dir[i]     = fname[i];
+               dir[i + 1] = '\0';
+
+               if(dir[i] == '/')
+               {
+                       if(access(dir, R_OK) == 0)
+                       {
+                               // dir already exists
+                               continue;
+                       }
+
+                       // try to mkdir
+                       if(mkdir(dir, S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH) == -1)
+                       {
+                               if(errno == EEXIST)
+                               {
+                                       // already exists
+                               }
+                               else
+                               {
+                                       LOGE("mkdir %s failed", dir);
+                                       return 0;
+                               }
+                       }
+               }
+       }
+
+       return 1;
+}
+
 static int
 vkk_uiFilePicker_clickSelect(vkk_uiWidget_t* widget,
                              int state, float x, float y)
@@ -350,22 +391,27 @@ vkk_uiFilePicker_documentCreate(vkk_uiFilePicker_t* self,
 	vkk_uiWidget_t*  widget = &window->base;
 	vkk_uiListBox_t* footer = vkk_uiWindow_footer(window);
 
-	self->document_priv = document_priv;
-	self->document_fn   = document_fn;
-	self->create        = 1;
+	char dname[256];
+	snprintf(dname, 256, "%s/", path);
+	if(vkk_uiFilePicker_mkdir(dname))
+	{
+		self->document_priv = document_priv;
+		self->document_fn   = document_fn;
+		self->create        = 1;
 
-	vkk_uiWindow_label(window, "%s", "Save As");
+		vkk_uiWindow_label(window, "%s", "Save As");
 
-	vkk_uiListBox_clear(footer);
-	vkk_uiListBox_add(footer, (vkk_uiWidget_t*)
-	                  self->bulletbox_select);
-	vkk_uiListBox_add(footer, (vkk_uiWidget_t*)
-	                  self->bulletbox_cancel);
-	vkk_uiListBox_add(footer, (vkk_uiWidget_t*)
-	                  self->bulletbox_folder);
+		vkk_uiListBox_clear(footer);
+		vkk_uiListBox_add(footer, (vkk_uiWidget_t*)
+		                  self->bulletbox_select);
+		vkk_uiListBox_add(footer, (vkk_uiWidget_t*)
+		                  self->bulletbox_cancel);
+		vkk_uiListBox_add(footer, (vkk_uiWidget_t*)
+		                  self->bulletbox_folder);
 
-	vkk_uiFileList_reset(self->file_list, path, name, ext);
-	vkk_uiScreen_windowPush(widget->screen, window);
+		vkk_uiFileList_reset(self->file_list, path, name, ext);
+		vkk_uiScreen_windowPush(widget->screen, window);
+	}
 }
 
 void
@@ -387,20 +433,25 @@ vkk_uiFilePicker_documentOpen(vkk_uiFilePicker_t* self,
 	vkk_uiWidget_t*  widget = &window->base;
 	vkk_uiListBox_t* footer = vkk_uiWindow_footer(window);
 
-	self->document_priv = document_priv;
-	self->document_fn   = document_fn;
-	self->create        = 0;
+	char dname[256];
+	snprintf(dname, 256, "%s/", path);
+	if(vkk_uiFilePicker_mkdir(dname))
+	{
+		self->document_priv = document_priv;
+		self->document_fn   = document_fn;
+		self->create        = 0;
 
-	vkk_uiWindow_label(window, "%s", "Import");
+		vkk_uiWindow_label(window, "%s", "Import");
 
-	vkk_uiListBox_clear(footer);
-	vkk_uiListBox_add(footer, (vkk_uiWidget_t*)
-	                  self->bulletbox_select);
-	vkk_uiListBox_add(footer, (vkk_uiWidget_t*)
-	                  self->bulletbox_cancel);
+		vkk_uiListBox_clear(footer);
+		vkk_uiListBox_add(footer, (vkk_uiWidget_t*)
+		                  self->bulletbox_select);
+		vkk_uiListBox_add(footer, (vkk_uiWidget_t*)
+		                  self->bulletbox_cancel);
 
-	vkk_uiFileList_reset(self->file_list, path, "", ext);
-	vkk_uiScreen_windowPush(widget->screen, window);
+		vkk_uiFileList_reset(self->file_list, path, "", ext);
+		vkk_uiScreen_windowPush(widget->screen, window);
+	}
 }
 
 #endif // LINUX
