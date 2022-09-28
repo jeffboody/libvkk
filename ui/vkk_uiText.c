@@ -578,6 +578,70 @@ vkk_uiText_newPageHeading(vkk_uiScreen_t* screen)
 }
 
 vkk_uiText_t*
+vkk_uiText_newPageItem(vkk_uiScreen_t* screen)
+{
+	ASSERT(screen);
+
+	vkk_uiTextLayout_t layout =
+	{
+		.border = VKK_UI_WIDGET_BORDER_NONE,
+	};
+
+	vkk_uiTextStyle_t style =
+	{
+		.font_type = VKK_UI_TEXT_FONTTYPE_REGULAR,
+		.size      = VKK_UI_TEXT_SIZE_MEDIUM,
+		.spacing   = VKK_UI_TEXT_SPACING_MEDIUM
+	};
+	vkk_uiScreen_colorPageItem(screen, &style.color);
+
+	vkk_uiTextFn_t fn =
+	{
+		.priv = NULL
+	};
+
+	cc_vec4f_t clear =
+	{
+		.a = 0.0f,
+	};
+
+	return vkk_uiText_new(screen, 0, &fn, &layout,
+	                      &style, &clear);
+}
+
+vkk_uiText_t*
+vkk_uiText_newPageSubheading(vkk_uiScreen_t* screen)
+{
+	ASSERT(screen);
+
+	vkk_uiTextLayout_t layout =
+	{
+		.border = VKK_UI_WIDGET_BORDER_NONE,
+	};
+
+	vkk_uiTextStyle_t style =
+	{
+		.font_type = VKK_UI_TEXT_FONTTYPE_BOLD,
+		.size      = VKK_UI_TEXT_SIZE_SMALL,
+		.spacing   = VKK_UI_TEXT_SPACING_MEDIUM
+	};
+	vkk_uiScreen_colorPageHeading(screen, &style.color);
+
+	vkk_uiTextFn_t fn =
+	{
+		.priv = NULL
+	};
+
+	cc_vec4f_t clear =
+	{
+		.a = 0.0f,
+	};
+
+	return vkk_uiText_new(screen, 0, &fn, &layout,
+	                      &style, &clear);
+}
+
+vkk_uiText_t*
 vkk_uiText_newPageTextInput(vkk_uiScreen_t* screen,
                             vkk_uiTextFn_t* tfn)
 {

@@ -90,6 +90,8 @@ vkk_uiText_t* vkk_uiText_new(vkk_uiScreen_t* screen,
                              vkk_uiTextStyle_t* text_style,
                              cc_vec4f_t* color_fill);
 vkk_uiText_t* vkk_uiText_newPageHeading(vkk_uiScreen_t* screen);
+vkk_uiText_t* vkk_uiText_newPageItem(vkk_uiScreen_t* screen);
+vkk_uiText_t* vkk_uiText_newPageSubheading(vkk_uiScreen_t* screen);
 vkk_uiText_t* vkk_uiText_newPageTextInput(vkk_uiScreen_t* screen,
                                           vkk_uiTextFn_t* tfn);
 vkk_uiText_t* vkk_uiText_newInfoHeading(vkk_uiScreen_t* screen);
