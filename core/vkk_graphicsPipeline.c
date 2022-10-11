@@ -234,12 +234,19 @@ vkk_graphicsPipeline_new(vkk_engine_t* engine,
 		.lineWidth               = 1.0f
 	};
 
+	VkSampleCountFlagBits sample_count_flag_bits;
+	sample_count_flag_bits = VK_SAMPLE_COUNT_4_BIT;
+	if(vkk_renderer_msaaSampleCount(self->renderer) == 1)
+	{
+		sample_count_flag_bits = VK_SAMPLE_COUNT_1_BIT;
+	}
+
 	VkPipelineMultisampleStateCreateInfo pms_info =
 	{
 		.sType                 = VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO,
 		.pNext                 = NULL,
 		.flags                 = 0,
-		.rasterizationSamples  = VK_SAMPLE_COUNT_1_BIT,
+		.rasterizationSamples  = sample_count_flag_bits,
 		.sampleShadingEnable   = VK_FALSE,
 		.minSampleShading      = 0.0f,
 		.pSampleMask           = NULL,

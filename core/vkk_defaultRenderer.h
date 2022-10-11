@@ -26,6 +26,7 @@
 
 #include "../vkk.h"
 #include "vkk_commandBuffer.h"
+#include "vkk_memory.h"
 #include "vkk_renderer.h"
 
 typedef struct
@@ -49,6 +50,11 @@ typedef struct
 
 	// depth buffer
 	vkk_image_t* depth_image;
+
+	// msaa buffer
+	VkImage       msaa_image;
+	vkk_memory_t* msaa_memory;
+	VkImageView   msaa_image_view;
 
 	// framebuffer state
 	// one per swapchain image

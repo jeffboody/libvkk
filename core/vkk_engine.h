@@ -132,7 +132,8 @@ typedef struct vkk_engine_s
 	VkPhysicalDevice physical_device;
 
 	// device capabilities
-	float max_anisotropy;
+	float    max_anisotropy;
+	uint32_t msaa_sample_count;
 
 	// device state
 	VkDevice device;

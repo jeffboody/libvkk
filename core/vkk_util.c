@@ -206,6 +206,7 @@ VkFormat vkk_util_imageFormat(vkk_imageFormat_e format)
 		VK_FORMAT_R32_SFLOAT,
 		VK_FORMAT_R16_SFLOAT,
 		VK_FORMAT_D24_UNORM_S8_UINT,
+		VK_FORMAT_D24_UNORM_S8_UINT,
 	};
 
 	return format_map[format];

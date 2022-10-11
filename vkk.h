@@ -63,10 +63,11 @@ typedef enum
 	VKK_IMAGE_FORMAT_R8       = 11,
 	VKK_IMAGE_FORMAT_RF32     = 12,
 	VKK_IMAGE_FORMAT_RF16     = 13,
-	VKK_IMAGE_FORMAT_DEPTH    = 14,
+	VKK_IMAGE_FORMAT_DEPTH1X  = 14,
+	VKK_IMAGE_FORMAT_DEPTH4X  = 15,
 } vkk_imageFormat_e;
 
-#define VKK_IMAGE_FORMAT_COUNT 15
+#define VKK_IMAGE_FORMAT_COUNT 16
 
 typedef enum
 {
@@ -388,6 +389,7 @@ int              vkk_renderer_fps(vkk_renderer_t* self);
 void             vkk_renderer_surfaceSize(vkk_renderer_t* self,
                                           uint32_t* _width,
                                           uint32_t* _height);
+uint32_t         vkk_renderer_msaaSampleCount(vkk_renderer_t* self);
 vkk_updateMode_e vkk_renderer_updateMode(vkk_renderer_t* self);
 void             vkk_renderer_updateBuffer(vkk_renderer_t* self,
                                            vkk_buffer_t* buffer,

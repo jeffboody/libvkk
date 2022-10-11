@@ -81,7 +81,8 @@ transparency blending.
 		VKK_IMAGE_FORMAT_R8       = 11,
 		VKK_IMAGE_FORMAT_RF32     = 12,
 		VKK_IMAGE_FORMAT_RF16     = 13,
-		VKK_IMAGE_FORMAT_DEPTH    = 14,
+		VKK_IMAGE_FORMAT_DEPTH1X  = 14,
+		VKK_IMAGE_FORMAT_DEPTH4X  = 15,
 	} vkk_imageFormat_e;
 
 	typedef struct
@@ -241,7 +242,7 @@ Images
 Image objects may be created by the app for textures and
 image rendering. However, you must query the image
 capabilities to determine if the image format is supported.
-The VKK\_IMAGE\_FORMAT\_DEPTH format and stage are only
+The VKK\_IMAGE\_FORMAT\_DEPTH formats and stage are only
 used internally by the engine. Images whose width, height
 and depth are a power-of-two may be mipmapped. The stage
 flag indicates if the image will be used as a texture for
@@ -269,7 +270,8 @@ which are then converted internally to half floats.
 		VKK_IMAGE_FORMAT_R8       = 11,
 		VKK_IMAGE_FORMAT_RF32     = 12,
 		VKK_IMAGE_FORMAT_RF16     = 13,
-		VKK_IMAGE_FORMAT_DEPTH    = 14,
+		VKK_IMAGE_FORMAT_DEPTH1X  = 14,
+		VKK_IMAGE_FORMAT_DEPTH4X  = 15,
 	} vkk_imageFormat_e;
 
 	typedef enum
@@ -599,7 +601,8 @@ following functions.
 		VKK_IMAGE_FORMAT_R8       = 11,
 		VKK_IMAGE_FORMAT_RF32     = 12,
 		VKK_IMAGE_FORMAT_RF16     = 13,
-		VKK_IMAGE_FORMAT_DEPTH    = 14,
+		VKK_IMAGE_FORMAT_DEPTH1X  = 14,
+		VKK_IMAGE_FORMAT_DEPTH4X  = 15,
 	} vkk_imageFormat_e;
 
 	typedef enum
@@ -712,6 +715,13 @@ query the renderer for the surface size.
 	void vkk_renderer_surfaceSize(vkk_renderer_t* self,
 	                              uint32_t* _width,
 	                              uint32_t* _height);
+
+The vkk\_renderer\_msaaSampleCount() function allows the
+app to query the renderer for the MSAA sample count. MSAA
+is currently only supported for the default renderer and
+will be automatically enabled if supported by the hardware.
+
+	uint32_t vkk_renderer_msaaSampleCount(vkk_renderer_t* self);
 
 The vkk\_renderer\_updateMode() function may be used to
 query the non-static update mode supported by the renderer.

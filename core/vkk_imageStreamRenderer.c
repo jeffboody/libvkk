@@ -340,7 +340,7 @@ vkk_imageStreamRenderer_new(vkk_renderer_t* consumer,
 	}
 
 	self->depth_image = vkk_image_new(engine, width, height,
-	                                  1, VKK_IMAGE_FORMAT_DEPTH,
+	                                  1, VKK_IMAGE_FORMAT_DEPTH1X,
 	                                  0, VKK_STAGE_DEPTH, NULL);
 	if(self->depth_image == NULL)
 	{

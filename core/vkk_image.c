@@ -81,7 +81,8 @@ vkk_image_t* vkk_image_new(vkk_engine_t* engine,
 	if(mipmap)
 	{
 		// mipmap does not apply to the depth image
-		ASSERT(format != VKK_IMAGE_FORMAT_DEPTH);
+		ASSERT(format != VKK_IMAGE_FORMAT_DEPTH1X);
+		ASSERT(format != VKK_IMAGE_FORMAT_DEPTH4X);
 
 		uint32_t w = 1;
 		uint32_t h = 1;
@@ -159,15 +160,32 @@ vkk_image_t* vkk_image_new(vkk_engine_t* engine,
 		self->layout_array[i] = VK_IMAGE_LAYOUT_UNDEFINED;
 	}
 
-	VkImageUsageFlags  usage      = VK_IMAGE_USAGE_TRANSFER_SRC_BIT |
-	                                VK_IMAGE_USAGE_TRANSFER_DST_BIT |
-	                                VK_IMAGE_USAGE_SAMPLED_BIT;
-	VkImageAspectFlags aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-	if(format == VKK_IMAGE_FORMAT_DEPTH)
+	VkImageUsageFlags     usage;
+	VkImageAspectFlags    aspectMask;
+	VkSampleCountFlagBits samples;
+	int                   local_memory;
+	usage        = VK_IMAGE_USAGE_TRANSFER_SRC_BIT |
+	               VK_IMAGE_USAGE_TRANSFER_DST_BIT |
+	               VK_IMAGE_USAGE_SAMPLED_BIT;
+	aspectMask   = VK_IMAGE_ASPECT_COLOR_BIT;
+	samples      = VK_SAMPLE_COUNT_1_BIT;
+	local_memory = 0;
+	if(format == VKK_IMAGE_FORMAT_DEPTH1X)
 	{
-		usage      = VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT;
-		aspectMask = VK_IMAGE_ASPECT_DEPTH_BIT |
-		             VK_IMAGE_ASPECT_STENCIL_BIT;
+		usage        = VK_IMAGE_USAGE_TRANSIENT_ATTACHMENT_BIT |
+		               VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT;
+		aspectMask   = VK_IMAGE_ASPECT_DEPTH_BIT |
+		               VK_IMAGE_ASPECT_STENCIL_BIT;
+		local_memory = 1;
+	}
+	else if(format == VKK_IMAGE_FORMAT_DEPTH4X)
+	{
+		usage        = VK_IMAGE_USAGE_TRANSIENT_ATTACHMENT_BIT |
+		               VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT;
+		aspectMask   = VK_IMAGE_ASPECT_DEPTH_BIT |
+		               VK_IMAGE_ASPECT_STENCIL_BIT;
+		samples      = VK_SAMPLE_COUNT_4_BIT;
+		local_memory = 1;
 	}
 	else
 	{
@@ -188,13 +206,13 @@ vkk_image_t* vkk_image_new(vkk_engine_t* engine,
 		.format      = vkk_util_imageFormat(format),
 		.extent      =
 		{
-			width,
-			height,
-			depth
+			.width  = width,
+			.height = height,
+			.depth  = depth
 		},
 		.mipLevels   = mip_levels,
 		.arrayLayers = 1,
-		.samples     = VK_SAMPLE_COUNT_1_BIT,
+		.samples     = samples,
 		.tiling      = VK_IMAGE_TILING_OPTIMAL,
 		.usage       = usage,
 		.sharingMode = VK_SHARING_MODE_EXCLUSIVE,
@@ -210,8 +228,10 @@ vkk_image_t* vkk_image_new(vkk_engine_t* engine,
 		goto fail_create_image;
 	}
 
-	self->memory = vkk_memoryManager_allocImage(engine->mm,
-	                                            self->image);
+	self->memory =
+		vkk_memoryManager_allocImage(engine->mm,
+		                             self->image,
+		                             local_memory);
 	if(self->memory == NULL)
 	{
 		goto fail_alloc;
@@ -251,7 +271,13 @@ vkk_image_t* vkk_image_new(vkk_engine_t* engine,
 	}
 
 	// upload pixel data
-	if(pixels && (format != VKK_IMAGE_FORMAT_DEPTH))
+	int format_depth = 0;
+	if((format == VKK_IMAGE_FORMAT_DEPTH1X) ||
+	   (format == VKK_IMAGE_FORMAT_DEPTH4X))
+	{
+		format_depth = 1;
+	}
+	if(pixels && (format_depth == 0))
 	{
 		if(vkk_engine_uploadImage(engine, self, pixels) == 0)
 		{
@@ -334,7 +360,8 @@ size_t vkk_image_size(vkk_image_t* self,
 		1,  // VKK_IMAGE_FORMAT_R8
 		4,  // VKK_IMAGE_FORMAT_RF32
 		2,  // VKK_IMAGE_FORMAT_RF16
-		4,  // VKK_IMAGE_FORMAT_DEPTH
+		4,  // VKK_IMAGE_FORMAT_DEPTH1X
+		16, // VKK_IMAGE_FORMAT_DEPTH4X
 	};
 
 	*_width  = self->width;

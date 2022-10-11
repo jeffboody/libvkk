@@ -190,6 +190,7 @@ vkk_memoryManager_alloc(vkk_memoryManager_t* self,
 	                                 mp_flags,
 	                                 &mt_index) == 0)
 	{
+		LOGE("invalid memory type");
 		goto fail_memory_type;
 	}
 
@@ -448,7 +449,8 @@ vkk_memoryManager_allocBuffer(vkk_memoryManager_t* self,
 
 vkk_memory_t*
 vkk_memoryManager_allocImage(vkk_memoryManager_t* self,
-                             VkImage image)
+                             VkImage image,
+                             int local_memory)
 {
 	ASSERT(self);
 
@@ -459,6 +461,19 @@ vkk_memoryManager_allocImage(vkk_memoryManager_t* self,
 	                             image, &mr);
 
 	VkFlags mp_flags = 0;
+	if(local_memory)
+	{
+		mp_flags = VK_MEMORY_PROPERTY_LAZILY_ALLOCATED_BIT;
+
+		uint32_t mt_index;
+		if(vkk_engine_getMemoryTypeIndex(engine,
+		                                 mr.memoryTypeBits,
+		                                 mp_flags,
+		                                 &mt_index) == 0)
+		{
+			mp_flags = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
+		}
+	}
 
 	vkk_memory_t* memory;
 	memory = vkk_memoryManager_alloc(self, &mr, mp_flags);

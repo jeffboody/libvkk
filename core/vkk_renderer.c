@@ -772,6 +772,26 @@ void vkk_renderer_surfaceSize(vkk_renderer_t* self,
 	}
 }
 
+uint32_t vkk_renderer_msaaSampleCount(vkk_renderer_t* self)
+{
+	ASSERT(self);
+
+	vkk_engine_t* engine = self->engine;
+
+	if(self->type == VKK_RENDERER_TYPE_DEFAULT)
+	{
+		return engine->msaa_sample_count;
+	}
+	else if(self->type == VKK_RENDERER_TYPE_SECONDARY)
+	{
+		vkk_secondaryRenderer_t* sr;
+		sr = (vkk_secondaryRenderer_t*) self;
+		return vkk_renderer_msaaSampleCount(sr->executor);
+	}
+
+	return 1;
+}
+
 vkk_updateMode_e
 vkk_renderer_updateMode(vkk_renderer_t* self)
 {
