@@ -360,17 +360,21 @@ static int vkk_engine_getPhysicalDevice(vkk_engine_t* self)
 	}
 
 	// query MSAA sample count
-	VkSampleCountFlags scf;
-	scf = pdp.limits.framebufferColorSampleCounts &
-	      pdp.limits.framebufferDepthSampleCounts;
-	if(scf & VK_SAMPLE_COUNT_4_BIT)
-	{
-		self->msaa_sample_count = 4;
-	}
-	else
-	{
+	#ifdef VKK_ENGINE_DISABLE_MSAA
 		self->msaa_sample_count = 1;
-	}
+	#else
+		VkSampleCountFlags scf;
+		scf = pdp.limits.framebufferColorSampleCounts &
+		      pdp.limits.framebufferDepthSampleCounts;
+		if(scf & VK_SAMPLE_COUNT_4_BIT)
+		{
+			self->msaa_sample_count = 4;
+		}
+		else
+		{
+			self->msaa_sample_count = 1;
+		}
+	#endif
 
 	return 1;
 }
@@ -1372,7 +1376,7 @@ vkk_engine_t* vkk_engine_new(vkk_platform_t* platform,
 
 	self->version.major = 1;
 	self->version.minor = 1;
-	self->version.patch = 44;
+	self->version.patch = 45;
 
 	// app info
 	snprintf(self->app_name, 256, "%s", app_name);

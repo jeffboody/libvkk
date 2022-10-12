@@ -160,6 +160,9 @@ vkk_image_t* vkk_image_new(vkk_engine_t* engine,
 		self->layout_array[i] = VK_IMAGE_LAYOUT_UNDEFINED;
 	}
 
+	// note that the depth images are allocated as transient
+	// buffers with the local_memory flag which allows the
+	// allocation to be performed in tiled memory
 	VkImageUsageFlags     usage;
 	VkImageAspectFlags    aspectMask;
 	VkSampleCountFlagBits samples;

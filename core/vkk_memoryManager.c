@@ -460,6 +460,11 @@ vkk_memoryManager_allocImage(vkk_memoryManager_t* self,
 	vkGetImageMemoryRequirements(engine->device,
 	                             image, &mr);
 
+	// note that the local_memory flag allows the allocation
+	// to be performed in tiled memory
+	// this is used for cases where the image memory is used
+	// for rendering and is not visible to the user
+	// e.g. the depth and MSAA images
 	VkFlags mp_flags = 0;
 	if(local_memory)
 	{

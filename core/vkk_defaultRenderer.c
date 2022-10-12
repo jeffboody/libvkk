@@ -415,6 +415,13 @@ vkk_defaultRenderer_newMSAA(vkk_renderer_t* base)
 		return 1;
 	}
 
+	// when MSAA is enabled
+	// 1. create a transient MS image with 4x samples
+	// 2. it is important to note that the MS image
+	//    sets the local_memory flag which allows the
+	//    allocation to be performed in tiled memory
+	// 3. the MS image only requires a single backing image
+	//    since only one frame is rendered at a time
 	VkImageUsageFlags  usage      = VK_IMAGE_USAGE_TRANSIENT_ATTACHMENT_BIT |
 	                                VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
 	VkImageAspectFlags aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
@@ -694,17 +701,24 @@ vkk_defaultRenderer_newRenderpass(vkk_renderer_t* base)
 
 	vkk_engine_t* engine = base->engine;
 
-	VkSampleCountFlagBits sample_count_flag_bits;
+	// when MSAA is enabled
+	// 1. rendering is performed on a MS attachment
+	// 2. the MS attachment is resolved to the color
+	//    attachment at the end of the renderpass
+	// 3. the depth attachment has the same number of samples
+	//    as the MS attachment
+	//
+	// otherwise
+	// 1. rendering is performed on the color attachment
+	// 2. the resolve step is not required
+	VkSampleCountFlagBits samples;
 	VkAttachmentLoadOp    load_op;
-	VkAttachmentStoreOp   store_op;
-	sample_count_flag_bits = VK_SAMPLE_COUNT_4_BIT;
-	load_op                = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
-	store_op               = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+	samples = VK_SAMPLE_COUNT_4_BIT;
+	load_op = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
 	if(vkk_renderer_msaaSampleCount(base) == 1)
 	{
-		sample_count_flag_bits = VK_SAMPLE_COUNT_1_BIT;
-		load_op                = VK_ATTACHMENT_LOAD_OP_CLEAR;
-		store_op               = VK_ATTACHMENT_STORE_OP_STORE;
+		samples = VK_SAMPLE_COUNT_1_BIT;
+		load_op = VK_ATTACHMENT_LOAD_OP_CLEAR;
 	}
 
 	VkAttachmentDescription attachments[] =
@@ -714,7 +728,7 @@ vkk_defaultRenderer_newRenderpass(vkk_renderer_t* base)
 			.format         = self->swapchain_format,
 			.samples        = VK_SAMPLE_COUNT_1_BIT,
 			.loadOp         = load_op,
-			.storeOp        = store_op,
+			.storeOp        = VK_ATTACHMENT_STORE_OP_STORE,
 			.stencilLoadOp  = VK_ATTACHMENT_LOAD_OP_DONT_CARE,
 			.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE,
 			.initialLayout  = VK_IMAGE_LAYOUT_UNDEFINED,
@@ -723,7 +737,7 @@ vkk_defaultRenderer_newRenderpass(vkk_renderer_t* base)
 		{
 			.flags          = 0,
 			.format         = VK_FORMAT_D24_UNORM_S8_UINT,
-			.samples        = sample_count_flag_bits,
+			.samples        = samples,
 			.loadOp         = VK_ATTACHMENT_LOAD_OP_CLEAR,
 			.storeOp        = VK_ATTACHMENT_STORE_OP_DONT_CARE,
 			.stencilLoadOp  = VK_ATTACHMENT_LOAD_OP_DONT_CARE,
@@ -734,9 +748,9 @@ vkk_defaultRenderer_newRenderpass(vkk_renderer_t* base)
 		{
 			.flags          = 0,
 			.format         = self->swapchain_format,
-			.samples        = sample_count_flag_bits,
+			.samples        = samples,
 			.loadOp         = VK_ATTACHMENT_LOAD_OP_CLEAR,
-			.storeOp        = VK_ATTACHMENT_STORE_OP_STORE,
+			.storeOp        = VK_ATTACHMENT_STORE_OP_DONT_CARE,
 			.stencilLoadOp  = VK_ATTACHMENT_LOAD_OP_DONT_CARE,
 			.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE,
 			.initialLayout  = VK_IMAGE_LAYOUT_UNDEFINED,
