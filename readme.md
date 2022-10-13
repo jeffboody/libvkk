@@ -51,6 +51,7 @@ The core graphics features exposed by VKK include.
 * 2D and 3D images with optional mipmapping are supported
 * Triangles are the only primitive supported
 * Transparency, depth clearing, viewport and scissors
+* 4x MSAA rendering is supported for the default renderer
 
 See [VKK Core](core/readme.md) for more details.
 
@@ -167,6 +168,14 @@ Gears VK
 is a port of the famous "gears" demo to VKK.
 
 ![Gears VK](doc/gearsvk.jpg?raw=true "Gears VK")
+
+Glyph
+-----
+
+[Glyph](https://github.com/jeffboody/glyph)
+is an experimental glyph rendering demo.
+
+![Glyph](doc/glyph-bezier-interpolation-4x.jpg?raw=true "Glyph")
 
 Precomputed Atmospheric Scattering
 ----------------------------------
