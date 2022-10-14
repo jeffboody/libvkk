@@ -67,9 +67,12 @@ ifeq ($(VKK_USE_VG),1)
 	HFILES += \
 		vkk_vg.h
 endif
-OPT     = -O2 -Wall -Wno-format-truncation
-CFLAGS   = $(OPT) -I$(VULKAN_SDK)/include `sdl2-config --cflags`
-LDFLAGS  = -L$(VULKAN_SDK)/lib -lvulkan `sdl2-config --libs` -lm
+OPT    = -O2 -Wall -Wno-format-truncation
+CFLAGS = $(OPT) -I$(VULKAN_SDK)/include `sdl2-config --cflags`
+ifeq ($(VKK_ENGINE_DISABLE_MSAA),1)
+	CFLAGS += -DVKK_ENGINE_DISABLE_MSAA
+endif
+LDFLAGS = -L$(VULKAN_SDK)/lib -lvulkan `sdl2-config --libs` -lm
 AR      = ar
 
 all: $(TARGET)

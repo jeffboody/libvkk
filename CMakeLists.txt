@@ -3,6 +3,10 @@ cmake_minimum_required(VERSION 3.4.1)
 # Compiler options
 add_compile_options(-Wall -DVK_USE_PLATFORM_ANDROID_KHR)
 
+if(VKK_ENGINE_DISABLE_MSAA)
+	add_compile_options(-DVKK_ENGINE_DISABLE_MSAA)
+endif()
+
 if(VKK_USE_UI)
     set(SOURCE_UI
         ui/vkk_uiActionBar.c
