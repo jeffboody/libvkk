@@ -33,6 +33,7 @@
 #include <vulkan_wrapper.h>
 
 #define LOG_TAG "vkk"
+#include "../../libbfs/bfs_util.h"
 #include "../../libcc/cc_log.h"
 #include "../../libcc/cc_memory.h"
 #include "../../libcc/cc_timestamp.h"
@@ -47,7 +48,7 @@ static vkk_platform_t* platform = NULL;
 * protected Android list initialization                    *
 ***********************************************************/
 
-extern void cc_listPool_init(void);
+extern int  cc_listPool_init(void);
 extern void cc_listPool_destroy(void);
 
 /***********************************************************
@@ -1266,17 +1267,23 @@ void android_main(struct android_app* app)
 {
 	ASSERT(app);
 
-	 cc_listPool_init();
-
 	vkk_platformOnEvent_fn onEvent;
 	onEvent = VKK_PLATFORM_INFO.onEvent;
 
-	// initialize Vulkan
+	if(cc_listPool_init() == 0)
+	{
+		return;
+	}
+
+	if(bfs_util_initialize() == 0)
+	{
+		goto fail_bfs;
+	}
+
 	if(InitVulkan() == 0)
 	{
 		LOGE("InitVulkan failed");
-		cc_listPool_destroy();
-		return;
+		goto fail_vulkan;
 	}
 
 	// workaround for android_native_app_glue which does not
@@ -1294,18 +1301,13 @@ void android_main(struct android_app* app)
 	         app->activity->internalDataPath);
 	if(updateResource(app, "resource.bfs", fname) == 0)
 	{
-		check_memory();
-		cc_listPool_destroy();
-		return;
+		goto fail_update_resource;
 	}
 
 	platform = vkk_platform_new(app);
 	if(platform == NULL)
 	{
-		LOGE("platform failed");
-		check_memory();
-		cc_listPool_destroy();
-		return;
+		goto fail_platform;
 	}
 
 	while(1)
@@ -1376,6 +1378,7 @@ void android_main(struct android_app* app)
 			if(app->destroyRequested)
 			{
 				vkk_platform_delete(&platform);
+				bfs_util_shutdown();
 				check_memory();
 				cc_listPool_destroy();
 				return;
@@ -1411,4 +1414,17 @@ void android_main(struct android_app* app)
 
 		vkk_platform_draw(platform);
 	}
+
+	// dead code
+	LOGE("dead code");
+	return;
+
+	// failure
+	fail_platform:
+	fail_update_resource:
+	fail_vulkan:
+		bfs_util_shutdown();
+	fail_bfs:
+		check_memory();
+		cc_listPool_destroy();
 }

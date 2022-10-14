@@ -33,6 +33,7 @@
 #include "../../libcc/cc_log.h"
 #include "../../libcc/cc_memory.h"
 #include "../../libcc/cc_timestamp.h"
+#include "../../libbfs/bfs_util.h"
 #include "../core/vkk_engine.h"
 #include "../vkk_platform.h"
 #include "../vkk.h"
@@ -610,10 +611,15 @@ int main(int argc, char** argv)
 	onDraw  = VKK_PLATFORM_INFO.onDraw;
 	onEvent = VKK_PLATFORM_INFO.onEvent;
 
+	if(bfs_util_initialize() == 0)
+	{
+		return EXIT_FAILURE;
+	}
+
 	vkk_platform_t* platform = vkk_platform_new();
 	if(platform == NULL)
 	{
-		return EXIT_FAILURE;
+		goto fail_platform;
 	}
 
 	vkk_platformButton_e button_map[] =
@@ -940,6 +946,13 @@ int main(int argc, char** argv)
 		MEMINFO();
 	}
 
+	bfs_util_shutdown();
+
 	// success
 	return EXIT_SUCCESS;
+
+	// failure
+	fail_platform:
+		bfs_util_shutdown();
+	return EXIT_FAILURE;
 }
