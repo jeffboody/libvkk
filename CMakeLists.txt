@@ -95,6 +95,7 @@ target_include_directories(vkk
 target_link_libraries(vkk
 
                       # Submodule libraries
+                      bfs
                       cc
                       texgz
                       ${LINK_VG}
