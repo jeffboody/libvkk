@@ -799,214 +799,6 @@ void vkk_uiScreen_delete(vkk_uiScreen_t** _self)
 	}
 }
 
-vkk_uiWindow_t*
-vkk_uiScreen_windowPeek(vkk_uiScreen_t* self)
-{
-	ASSERT(self);
-
-	return (vkk_uiWindow_t*)
-	       cc_list_peekTail(self->window_stack);
-}
-
-void vkk_uiScreen_windowPush(vkk_uiScreen_t* self,
-                             vkk_uiWindow_t* window)
-{
-	ASSERT(self);
-	ASSERT(window);
-
-	vkk_uiScreen_popupSet(self, NULL, NULL);
-
-	if(vkk_uiScreen_windowPeek(self) == window)
-	{
-		return;
-	}
-
-	self->dirty = 1;
-
-	if(window)
-	{
-		cc_list_append(self->window_stack, NULL,
-		               (const void*) window);
-
-		// reset scroll bar
-		vkk_uiWidget_scrollTop((vkk_uiWidget_t*) window);
-
-		if(window->focus)
-		{
-			vkk_engine_platformCmd(self->engine,
-			                       VKK_PLATFORM_CMD_SOFTKEY_SHOW);
-			vkk_uiScreen_focus(self, window->focus);
-			return;
-		}
-	}
-
-	// default focus state
-	vkk_engine_platformCmd(self->engine,
-	                       VKK_PLATFORM_CMD_SOFTKEY_HIDE);
-	vkk_uiScreen_focus(self, NULL);
-}
-
-int vkk_uiScreen_windowPop(vkk_uiScreen_t* self)
-{
-	ASSERT(self);
-
-	cc_listIter_t* iter;
-	iter = cc_list_tail(self->window_stack);
-	if((iter == NULL) ||
-	   (cc_list_size(self->window_stack) <= 1))
-	{
-		return 0;
-	}
-
-	self->dirty = 1;
-
-	cc_list_remove(self->window_stack, &iter);
-
-	// default focus state
-	vkk_engine_platformCmd(self->engine,
-	                       VKK_PLATFORM_CMD_SOFTKEY_HIDE);
-	vkk_uiScreen_focus(self, NULL);
-
-	return 1;
-}
-
-void vkk_uiScreen_windowReset(vkk_uiScreen_t* self,
-                              vkk_uiWindow_t* window)
-{
-	// window may be NULL
-	ASSERT(self);
-
-	vkk_uiScreen_popupSet(self, NULL, NULL);
-
-	// check if window already active
-	if(vkk_uiScreen_windowPeek(self) == window)
-	{
-		return;
-	}
-
-	self->dirty = 1;
-
-	// reset window stack
-	cc_list_discard(self->window_stack);
-
-	if(window)
-	{
-		vkk_uiScreen_windowPush(self, window);
-	}
-}
-
-void
-vkk_uiScreen_popupGet(vkk_uiScreen_t* self,
-                      vkk_uiActionBar_t** _action_bar,
-                      vkk_uiActionPopup_t** _action_popup)
-{
-	ASSERT(self);
-	ASSERT(_action_bar);
-	ASSERT(_action_popup);
-
-	*_action_bar   = self->action_bar;
-	*_action_popup = self->action_popup;
-}
-
-void
-vkk_uiScreen_popupSet(vkk_uiScreen_t* self,
-                      vkk_uiActionBar_t* action_bar,
-                      vkk_uiActionPopup_t* action_popup)
-{
-	// action_bar and action_popup may be NULL
-	ASSERT(self);
-
-	if((self->action_bar   == action_bar) &&
-	   (self->action_popup == action_popup))
-	{
-		self->action_bar   = NULL;
-		self->action_popup = NULL;
-	}
-	else
-	{
-		self->action_bar   = action_bar;
-		self->action_popup = action_popup;
-	}
-}
-
-void vkk_uiScreen_contentRect(vkk_uiScreen_t* self,
-                              int t, int l,
-                              int b, int r)
-{
-	ASSERT(self);
-
-	self->content_rect_top    = t;
-	self->content_rect_left   = l;
-	self->content_rect_width  = r - l;
-	self->content_rect_height = b - t;
-
-	self->dirty = 1;
-}
-
-void
-vkk_uiScreen_focus(vkk_uiScreen_t* self,
-                   vkk_uiWidget_t* focus)
-{
-	// focus may be NULL
-	ASSERT(self);
-
-	self->focus_widget = focus;
-}
-
-void
-vkk_uiScreen_move(vkk_uiScreen_t* self,
-                  vkk_uiWidget_t* move)
-{
-	// move may be NULL
-	ASSERT(self);
-
-	self->move_widget = move;
-}
-
-void vkk_uiScreen_resize(vkk_uiScreen_t* self, int w, int h)
-{
-	ASSERT(self);
-
-	if((self->w == w) && (self->h == h))
-	{
-		return;
-	}
-
-	self->w     = w;
-	self->h     = h;
-	self->dirty = 1;
-}
-
-void vkk_uiScreen_density(vkk_uiScreen_t* self, float density)
-{
-	ASSERT(self);
-
-	if(self->density == density)
-	{
-		return;
-	}
-
-	self->density = density;
-	self->dirty   = 1;
-}
-
-void vkk_uiScreen_rescale(vkk_uiScreen_t* self, int scale)
-{
-	ASSERT(self);
-
-	if(self->scale == scale)
-	{
-		return;
-	}
-
-	if((scale >= VKK_UI_SCREEN_SCALE_XSMALL) &&
-	   (scale <= VKK_UI_SCREEN_SCALE_XLARGE))
-	{
-		self->scale = scale;
-		self->dirty = 1;
-	}
-}
-
 int vkk_uiScreen_pointerDown(vkk_uiScreen_t* self,
                              float x, float y, double t0)
 {
@@ -1141,12 +933,43 @@ int vkk_uiScreen_pointerMove(vkk_uiScreen_t* self,
 	return 1;
 }
 
-int vkk_uiScreen_keyPress(vkk_uiScreen_t* self,
-                          int keycode, int meta)
+void
+vkk_uiScreen_eventContentRect(vkk_uiScreen_t* self,
+                              vkk_platformEventContentRect_t* e)
+{
+	ASSERT(self);
+	ASSERT(e);
+
+	self->content_rect_top    = e->t;
+	self->content_rect_left   = e->l;
+	self->content_rect_width  = e->r - e->l;
+	self->content_rect_height = e->b - e->t;
+
+	self->dirty = 1;
+}
+
+void
+vkk_uiScreen_eventDensity(vkk_uiScreen_t* self,
+                          float density)
 {
 	ASSERT(self);
 
-	if(keycode == VKK_PLATFORM_KEYCODE_ESCAPE)
+	if(self->density == density)
+	{
+		return;
+	}
+
+	self->density = density;
+	self->dirty   = 1;
+}
+
+int vkk_uiScreen_eventKey(vkk_uiScreen_t* self,
+                          vkk_platformEventKey_t* e)
+{
+	ASSERT(self);
+	ASSERT(e);
+
+	if(e->keycode == VKK_PLATFORM_KEYCODE_ESCAPE)
 	{
 		if(self->action_bar || self->action_popup)
 		{
@@ -1163,7 +986,188 @@ int vkk_uiScreen_keyPress(vkk_uiScreen_t* self,
 	}
 
 	return vkk_uiWidget_keyPress(self->focus_widget,
-	                             keycode, meta);
+	                             e->keycode, e->meta);
+}
+
+vkk_uiWindow_t*
+vkk_uiScreen_windowPeek(vkk_uiScreen_t* self)
+{
+	ASSERT(self);
+
+	return (vkk_uiWindow_t*)
+	       cc_list_peekTail(self->window_stack);
+}
+
+void vkk_uiScreen_windowPush(vkk_uiScreen_t* self,
+                             vkk_uiWindow_t* window)
+{
+	ASSERT(self);
+	ASSERT(window);
+
+	vkk_uiScreen_popupSet(self, NULL, NULL);
+
+	if(vkk_uiScreen_windowPeek(self) == window)
+	{
+		return;
+	}
+
+	self->dirty = 1;
+
+	if(window)
+	{
+		cc_list_append(self->window_stack, NULL,
+		               (const void*) window);
+
+		// reset scroll bar
+		vkk_uiWidget_scrollTop((vkk_uiWidget_t*) window);
+
+		if(window->focus)
+		{
+			vkk_engine_platformCmd(self->engine,
+			                       VKK_PLATFORM_CMD_SOFTKEY_SHOW);
+			vkk_uiScreen_focus(self, window->focus);
+			return;
+		}
+	}
+
+	// default focus state
+	vkk_engine_platformCmd(self->engine,
+	                       VKK_PLATFORM_CMD_SOFTKEY_HIDE);
+	vkk_uiScreen_focus(self, NULL);
+}
+
+int vkk_uiScreen_windowPop(vkk_uiScreen_t* self)
+{
+	ASSERT(self);
+
+	cc_listIter_t* iter;
+	iter = cc_list_tail(self->window_stack);
+	if((iter == NULL) ||
+	   (cc_list_size(self->window_stack) <= 1))
+	{
+		return 0;
+	}
+
+	self->dirty = 1;
+
+	cc_list_remove(self->window_stack, &iter);
+
+	// default focus state
+	vkk_engine_platformCmd(self->engine,
+	                       VKK_PLATFORM_CMD_SOFTKEY_HIDE);
+	vkk_uiScreen_focus(self, NULL);
+
+	return 1;
+}
+
+void vkk_uiScreen_windowReset(vkk_uiScreen_t* self,
+                              vkk_uiWindow_t* window)
+{
+	// window may be NULL
+	ASSERT(self);
+
+	vkk_uiScreen_popupSet(self, NULL, NULL);
+
+	// check if window already active
+	if(vkk_uiScreen_windowPeek(self) == window)
+	{
+		return;
+	}
+
+	self->dirty = 1;
+
+	// reset window stack
+	cc_list_discard(self->window_stack);
+
+	if(window)
+	{
+		vkk_uiScreen_windowPush(self, window);
+	}
+}
+
+void
+vkk_uiScreen_popupGet(vkk_uiScreen_t* self,
+                      vkk_uiActionBar_t** _action_bar,
+                      vkk_uiActionPopup_t** _action_popup)
+{
+	ASSERT(self);
+	ASSERT(_action_bar);
+	ASSERT(_action_popup);
+
+	*_action_bar   = self->action_bar;
+	*_action_popup = self->action_popup;
+}
+
+void
+vkk_uiScreen_popupSet(vkk_uiScreen_t* self,
+                      vkk_uiActionBar_t* action_bar,
+                      vkk_uiActionPopup_t* action_popup)
+{
+	// action_bar and action_popup may be NULL
+	ASSERT(self);
+
+	if((self->action_bar   == action_bar) &&
+	   (self->action_popup == action_popup))
+	{
+		self->action_bar   = NULL;
+		self->action_popup = NULL;
+	}
+	else
+	{
+		self->action_bar   = action_bar;
+		self->action_popup = action_popup;
+	}
+}
+
+void
+vkk_uiScreen_focus(vkk_uiScreen_t* self,
+                   vkk_uiWidget_t* focus)
+{
+	// focus may be NULL
+	ASSERT(self);
+
+	self->focus_widget = focus;
+}
+
+void
+vkk_uiScreen_move(vkk_uiScreen_t* self,
+                  vkk_uiWidget_t* move)
+{
+	// move may be NULL
+	ASSERT(self);
+
+	self->move_widget = move;
+}
+
+void vkk_uiScreen_resize(vkk_uiScreen_t* self, int w, int h)
+{
+	ASSERT(self);
+
+	if((self->w == w) && (self->h == h))
+	{
+		return;
+	}
+
+	self->w     = w;
+	self->h     = h;
+	self->dirty = 1;
+}
+
+void vkk_uiScreen_rescale(vkk_uiScreen_t* self, int scale)
+{
+	ASSERT(self);
+
+	if(self->scale == scale)
+	{
+		return;
+	}
+
+	if((scale >= VKK_UI_SCREEN_SCALE_XSMALL) &&
+	   (scale <= VKK_UI_SCREEN_SCALE_XLARGE))
+	{
+		self->scale = scale;
+		self->dirty = 1;
+	}
 }
 
 void vkk_uiScreen_draw(vkk_uiScreen_t* self)

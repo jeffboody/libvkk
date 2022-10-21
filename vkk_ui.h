@@ -72,6 +72,8 @@ typedef struct vkk_uiWidget_s         vkk_uiWidget_t;
 typedef struct vkk_uiWindowFn_s       vkk_uiWindowFn_t;
 typedef struct vkk_uiWindow_s         vkk_uiWindow_t;
 
+#include "vkk_platform.h"
+
 #include "ui/vkk_uiFont.h"
 #include "ui/vkk_uiTricolor.h"
 #include "ui/vkk_uiWidget.h"
