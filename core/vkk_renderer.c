@@ -984,52 +984,6 @@ void vkk_renderer_bindUniformSets(vkk_renderer_t* self,
 	                        0, NULL);
 }
 
-void vkk_renderer_clearDepth(vkk_renderer_t* self)
-{
-	ASSERT(self);
-	ASSERT(self->mode == VKK_RENDERER_MODE_DRAW);
-
-	uint32_t width;
-	uint32_t height;
-	vkk_renderer_surfaceSize(self, &width, &height);
-	VkClearRect rect =
-	{
-		.rect =
-		{
-			.offset =
-			{
-				.x = 0,
-				.y = 0
-			},
-			.extent =
-			{
-				.width  = width,
-				.height = height
-			}
-		},
-		.baseArrayLayer = 0,
-		.layerCount     = 1
-	};
-
-	VkClearAttachment ca =
-	{
-		.aspectMask = VK_IMAGE_ASPECT_DEPTH_BIT |
-		              VK_IMAGE_ASPECT_STENCIL_BIT,
-		.colorAttachment = 0,
-		.clearValue =
-		{
-			.depthStencil =
-			{
-				.depth   = 1.0f,
-				.stencil = 0
-			}
-		}
-	};
-
-	VkCommandBuffer cb = vkk_renderer_commandBuffer(self);
-	vkCmdClearAttachments(cb, 1, &ca, 1, &rect);
-}
-
 void vkk_renderer_viewport(vkk_renderer_t* self,
                            float x, float y,
                            float width, float height)
@@ -1052,7 +1006,7 @@ void vkk_renderer_viewport(vkk_renderer_t* self,
 }
 
 void vkk_renderer_scissor(vkk_renderer_t* self,
-                          uint32_t x, uint32_t y,
+                          int32_t x, int32_t y,
                           uint32_t width, uint32_t height)
 {
 	ASSERT(self);
@@ -1076,6 +1030,50 @@ void vkk_renderer_scissor(vkk_renderer_t* self,
 	vkCmdSetScissor(cb, 0, 1, &scissor);
 }
 
+void vkk_renderer_clearDepth(vkk_renderer_t* self,
+                             int32_t x,
+                             int32_t y,
+                             uint32_t width,
+                             uint32_t height)
+{
+	ASSERT(self);
+	ASSERT(self->mode == VKK_RENDERER_MODE_DRAW);
+
+	VkClearRect rect =
+	{
+		.rect =
+		{
+			.offset =
+			{
+				.x = x,
+				.y = y
+			},
+			.extent =
+			{
+				.width  = width,
+				.height = height
+			}
+		},
+		.baseArrayLayer = 0,
+		.layerCount     = 1
+	};
+
+	VkClearAttachment ca =
+	{
+		.aspectMask      = VK_IMAGE_ASPECT_DEPTH_BIT,
+		.colorAttachment = 0,
+		.clearValue =
+		{
+			.depthStencil =
+			{
+				.depth = 1.0f,
+			}
+		}
+	};
+
+	VkCommandBuffer cb = vkk_renderer_commandBuffer(self);
+	vkCmdClearAttachments(cb, 1, &ca, 1, &rect);
+}
 
 void vkk_renderer_draw(vkk_renderer_t* self,
                        uint32_t vertex_count,

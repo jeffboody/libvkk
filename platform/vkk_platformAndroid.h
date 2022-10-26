@@ -36,10 +36,11 @@ typedef struct vkk_platform_s
 {
 	struct android_app* app;
 
-	int   running;
-	int   paused;
-	int   has_window;
-	float density;
+	int    running;
+	int    paused;
+	int    has_window;
+	float  density;
+	double escape_t0;
 
 	// priv is typically only accessed by main thread
 	// however GPS events are an exception because they

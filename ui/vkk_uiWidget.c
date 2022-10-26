@@ -124,8 +124,7 @@ vkk_uiWidget_new(vkk_uiScreen_t* screen, size_t wsize,
 		return NULL;
 	}
 
-	self->screen   = screen;
-	self->sound_fx = 1;
+	self->screen = screen;
 
 	memcpy(&self->color, color, sizeof(cc_vec4f_t));
 	memcpy(&self->layout, layout, sizeof(vkk_uiWidgetLayout_t));
@@ -281,6 +280,12 @@ void vkk_uiWidget_override(vkk_uiWidget_t* self,
 	{
 		fn_old->priv = fn->priv;
 		fn->priv     = fn_new->priv;
+	}
+
+	if(fn_new->action_fn)
+	{
+		fn_old->action_fn = fn->action_fn;
+		fn->action_fn     = fn_new->action_fn;
 	}
 
 	if(fn_new->aspect_fn)
@@ -721,39 +726,92 @@ void vkk_uiWidget_layoutAnchor(vkk_uiWidget_t* self,
 	}
 }
 
-int vkk_uiWidget_click(vkk_uiWidget_t* self, int state,
-                       float x, float y)
+vkk_uiWidget_t*
+vkk_uiWidget_action(vkk_uiWidget_t* self,
+                    vkk_uiWidgetActionInfo_t* info)
 {
 	ASSERT(self);
+	ASSERT(info);
 
 	vkk_uiWidgetFn_t* fn = &self->fn;
 
-	vkk_uiWidgetClick_fn click_fn = fn->click_fn;
-	if(click_fn == NULL)
+	// check if the widget supports actions
+	vkk_uiWidgetClick_fn  click_fn  = fn->click_fn;
+	vkk_uiWidgetAction_fn action_fn = fn->action_fn;
+	if((action_fn == NULL) && (click_fn == NULL))
 	{
-		return 0;
+		return NULL;
 	}
 
-	if((self == self->screen->move_widget) &&
-	   (state == VKK_UI_WIDGET_POINTER_UP))
+	// always apply the UP/CLICK action for action_fn
+	// UP may be used after DRAG, ROTATE, SCALE
+	// CLICK may be used after DOWN
+	int try_action = 1;
+	vkk_uiWidget_t* tmp;
+	if(action_fn &&
+	   ((info->action == VKK_UI_WIDGET_ACTION_UP) ||
+	    (info->action == VKK_UI_WIDGET_ACTION_CLICK)))
 	{
-		// skip contains check
-	}
-	else if((cc_rect1f_contains(&self->rect_clip, x, y) == 0) ||
-	        (cc_rect1f_contains(&self->rect_border, x, y) == 0))
-	{
-		// x, y is outside intersection of rect_border and rect_clip
-		return 0;
+		tmp = (*action_fn)(self, info);
+		if(tmp)
+		{
+			return tmp;
+		}
+
+		try_action = 0;
 	}
 
-	int clicked = (*click_fn)(self, state, x, y);
-	if(clicked && self->sound_fx &&
-	   (state == VKK_UI_WIDGET_POINTER_UP))
+	// check if coord(s) intersect with widget
+	if(info->count == 1)
 	{
-		vkk_uiScreen_playClick(self->screen);
+		float x0 = info->coord0.x;
+		float y0 = info->coord0.y;
+		if((cc_rect1f_contains(&self->rect_clip, x0, y0)   == 0) ||
+		   (cc_rect1f_contains(&self->rect_border, x0, y0) == 0))
+		{
+			return NULL;
+		}
+	}
+	else if(info->count == 2)
+	{
+		float x0 = info->coord0.x;
+		float y0 = info->coord0.y;
+		float x1 = info->coord1.x;
+		float y1 = info->coord1.y;
+		if((cc_rect1f_contains(&self->rect_clip, x0, y0)   == 0) ||
+		   (cc_rect1f_contains(&self->rect_border, x0, y0) == 0) ||
+		   (cc_rect1f_contains(&self->rect_clip, x1, y1)   == 0) ||
+		   (cc_rect1f_contains(&self->rect_border, x1, y1) == 0))
+		{
+			return NULL;
+		}
 	}
 
-	return clicked;
+	// handle action
+	if(action_fn && try_action)
+	{
+		tmp = (*action_fn)(self, info);
+		if(tmp)
+		{
+			return tmp;
+		}
+	}
+
+	// handle click
+	if(click_fn)
+	{
+		if(info->action == VKK_UI_WIDGET_ACTION_CLICK)
+		{
+			(*click_fn)(self);
+			return self;
+		}
+		if(info->action == VKK_UI_WIDGET_ACTION_DOWN)
+		{
+			return self;
+		}
+	}
+
+	return NULL;
 }
 
 int vkk_uiWidget_keyPress(vkk_uiWidget_t* self,
@@ -825,10 +883,9 @@ void vkk_uiWidget_draw(vkk_uiWidget_t* self)
 		return;
 	}
 
-	cc_rect1f_t rect_draw_clip;
 	if(cc_rect1f_intersect(&self->rect_draw,
 	                       &self->rect_clip,
-	                       &rect_draw_clip) == 0)
+	                       &self->rect_scissor) == 0)
 	{
 		return;
 	}
@@ -880,7 +937,7 @@ void vkk_uiWidget_draw(vkk_uiWidget_t* self)
 	vkk_uiWidgetDraw_fn draw_fn = fn->draw_fn;
 	if(draw_fn)
 	{
-		vkk_uiScreen_scissor(screen, &rect_draw_clip);
+		vkk_uiScreen_scissor(screen, &self->rect_scissor);
 		(*draw_fn)(self);
 	}
 
@@ -930,14 +987,6 @@ void vkk_uiWidget_refresh(vkk_uiWidget_t* self)
 	{
 		(*refresh_fn)(self);
 	}
-}
-
-void vkk_uiWidget_soundFx(vkk_uiWidget_t* self,
-                          int sound_fx)
-{
-	ASSERT(self);
-
-	self->sound_fx = sound_fx;
 }
 
 void vkk_uiWidget_color(vkk_uiWidget_t* self,
@@ -1006,6 +1055,20 @@ int vkk_uiWidget_hasFocus(vkk_uiWidget_t* self)
 	return self == self->screen->focus_widget;
 }
 
+cc_rect1f_t* vkk_uiWidget_rectDraw(vkk_uiWidget_t* self)
+{
+	ASSERT(self);
+
+	return &self->rect_draw;
+}
+
+cc_rect1f_t* vkk_uiWidget_rectScissor(vkk_uiWidget_t* self)
+{
+	ASSERT(self);
+
+	return &self->rect_scissor;
+}
+
 void* vkk_uiWidget_priv(vkk_uiWidget_t* self)
 {
 	ASSERT(self);
@@ -1013,22 +1076,14 @@ void* vkk_uiWidget_priv(vkk_uiWidget_t* self)
 	return self->fn.priv;
 }
 
-int vkk_uiWidget_clickBack(vkk_uiWidget_t* widget,
-                           int state,
-                           float x, float y)
+void vkk_uiWidget_clickBack(vkk_uiWidget_t* widget)
 {
 	ASSERT(widget);
 
-	if(state == VKK_UI_WIDGET_POINTER_UP)
-	{
-		vkk_uiScreen_windowPop(widget->screen);
-	}
-	return 1;
+	vkk_uiScreen_windowPop(widget->screen);
 }
 
-int vkk_uiWidget_clickUrl(vkk_uiWidget_t* widget,
-                          int state,
-                          float x, float y)
+void vkk_uiWidget_clickUrl(vkk_uiWidget_t* widget)
 {
 	ASSERT(widget);
 
@@ -1037,16 +1092,10 @@ int vkk_uiWidget_clickUrl(vkk_uiWidget_t* widget,
 	const char* url;
 	url = (const char*) vkk_uiWidget_priv(widget);
 
-	if(state == VKK_UI_WIDGET_POINTER_UP)
-	{
-		vkk_engine_platformCmdLoadUrl(screen->engine, url);
-	}
-	return 1;
+	vkk_engine_platformCmdLoadUrl(screen->engine, url);
 }
 
-int vkk_uiWidget_clickTransition(vkk_uiWidget_t* widget,
-                                 int state,
-                                 float x, float y)
+void vkk_uiWidget_clickTransition(vkk_uiWidget_t* widget)
 {
 	ASSERT(widget);
 
@@ -1054,11 +1103,10 @@ int vkk_uiWidget_clickTransition(vkk_uiWidget_t* widget,
 	_window = (vkk_uiWindow_t**) vkk_uiWidget_priv(widget);
 
 	vkk_uiWindow_t* window = *_window;
-	if(window && (state == VKK_UI_WIDGET_POINTER_UP))
+	if(window)
 	{
 		vkk_uiScreen_windowPush(widget->screen, window);
 	}
-	return 1;
 }
 
 void vkk_uiWidget_value(vkk_uiWidget_t* widget,

@@ -33,26 +33,20 @@
 * private                                                  *
 ***********************************************************/
 
-static int
-vkk_uiRadioBox_click(vkk_uiWidget_t* widget,
-                     int state, float x, float y)
+static void
+vkk_uiRadioBox_click(vkk_uiWidget_t* widget)
 {
 	ASSERT(widget);
 
 	vkk_uiRadioBox_t* self = (vkk_uiRadioBox_t*) widget;
 
-	if(state == VKK_UI_WIDGET_POINTER_UP)
+	vkk_uiRadioList_set(self->parent, self->value);
+
+	vkk_uiWidgetValue_fn value_fn = widget->fn.value_fn;
+	if(value_fn)
 	{
-		vkk_uiRadioList_set(self->parent, self->value);
-
-		vkk_uiWidgetValue_fn value_fn = widget->fn.value_fn;
-		if(value_fn)
-		{
-			(*value_fn)(widget, self->value);
-		}
+		(*value_fn)(widget, self->value);
 	}
-
-	return 1;
 }
 
 static int

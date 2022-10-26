@@ -137,10 +137,8 @@ vkk_uiFileList_setExt(vkk_uiFileList_t* self,
 	}
 }
 
-static int
-vkk_uiFileList_clickItem(vkk_uiWidget_t* widget,
-                         int state,
-                         float x, float y)
+static void
+vkk_uiFileList_clickItem(vkk_uiWidget_t* widget)
 {
 	ASSERT(widget);
 
@@ -149,55 +147,50 @@ vkk_uiFileList_clickItem(vkk_uiWidget_t* widget,
 
 	vkk_uiBulletBox_t* item = (vkk_uiBulletBox_t*) widget;
 
-	if(state == VKK_UI_WIDGET_POINTER_UP)
+	const char* path = vkk_uiFileList_getPath(self);
+	const char* name = item->text->string;
+
+	// update path
+	if((name[0] == '.') &&
+	   (name[1] == '.') &&
+	   (name[2] == '\0'))
 	{
-		const char* path = vkk_uiFileList_getPath(self);
-		const char* name = item->text->string;
+		char label[256];
+		snprintf(label, 256, "%s", path);
 
-		// update path
-		if((name[0] == '.') &&
-		   (name[1] == '.') &&
-		   (name[2] == '\0'))
+		// find the final directory
+		int i    = 0;
+		int last = 0;
+		while(label[i] != '\0')
 		{
-			char label[256];
-			snprintf(label, 256, "%s", path);
-
-			// find the final directory
-			int i    = 0;
-			int last = 0;
-			while(label[i] != '\0')
+			if((label[i]     == '/') &&
+			   (label[i + 1] != '\0'))
 			{
-				if((label[i]     == '/') &&
-				   (label[i + 1] != '\0'))
-				{
-					last = i + 1;
-				}
-
-				++i;
+				last = i + 1;
 			}
 
-			// dir can't be ".." for "/"
-			ASSERT(last != 0);
+			++i;
+		}
 
-			// remove the last directory
-			label[last] = '\0';
-			vkk_uiFileList_setPath(self, label);
-			self->dirty = 1;
-		}
-		else if(strstr(name, vkk_uiFileList_getExt(self)))
-		{
-			vkk_uiFileList_setName(self, name);
-		}
-		else
-		{
-			char label[256];
-			snprintf(label, 256, "%s%s/", path, name);
-			vkk_uiFileList_setPath(self, label);
-			self->dirty = 1;
-		}
+		// dir can't be ".." for "/"
+		ASSERT(last != 0);
+
+		// remove the last directory
+		label[last] = '\0';
+		vkk_uiFileList_setPath(self, label);
+		self->dirty = 1;
 	}
-
-	return 1;
+	else if(strstr(name, vkk_uiFileList_getExt(self)))
+	{
+		vkk_uiFileList_setName(self, name);
+	}
+	else
+	{
+		char label[256];
+		snprintf(label, 256, "%s%s/", path, name);
+		vkk_uiFileList_setPath(self, label);
+		self->dirty = 1;
+	}
 }
 
 static int validateName(const char* string, char* name)
@@ -482,11 +475,12 @@ static void vkk_uiFileList_draw(vkk_uiWidget_t* widget)
 	vkk_uiWidget_draw(listbox_files);
 }
 
-static int
-vkk_uiFileList_click(vkk_uiWidget_t* widget,
-                     int state, float x, float y)
+static vkk_uiWidget_t*
+vkk_uiFileList_action(vkk_uiWidget_t* widget,
+                      vkk_uiWidgetActionInfo_t* info)
 {
 	ASSERT(widget);
+	ASSERT(info);
 
 	vkk_uiFileList_t* self;
 	vkk_uiWidget_t*   heading_name;
@@ -503,12 +497,38 @@ vkk_uiFileList_click(vkk_uiWidget_t* widget,
 	bulletbox_path = (vkk_uiWidget_t*) self->bulletbox_path;
 	listbox_files  = (vkk_uiWidget_t*) self->listbox_files;
 
-	return vkk_uiWidget_click(heading_name, state, x, y)   ||
-	       vkk_uiWidget_click(text_name, state, x, y)      ||
-	       vkk_uiWidget_click(text_ext, state, x, y)       ||
-	       vkk_uiWidget_click(heading_path, state, x, y)   ||
-	       vkk_uiWidget_click(bulletbox_path, state, x, y) ||
-	       vkk_uiWidget_click(listbox_files, state, x, y);
+	vkk_uiWidget_t* tmp;
+	tmp = vkk_uiWidget_action(heading_name, info);
+	if(tmp)
+	{
+		return tmp;
+	}
+
+	tmp = vkk_uiWidget_action(text_name, info);
+	if(tmp)
+	{
+		return tmp;
+	}
+
+	tmp = vkk_uiWidget_action(text_ext, info);
+	if(tmp)
+	{
+		return tmp;
+	}
+
+	tmp = vkk_uiWidget_action(heading_path, info);
+	if(tmp)
+	{
+		return tmp;
+	}
+
+	tmp = vkk_uiWidget_action(bulletbox_path, info);
+	if(tmp)
+	{
+		return tmp;
+	}
+
+	return vkk_uiWidget_action(listbox_files, info);
 }
 
 static int
@@ -759,7 +779,7 @@ vkk_uiFileList_new(vkk_uiScreen_t* screen,
 	vkk_uiWidgetFn_t fn =
 	{
 		.priv         = parent,
-		.click_fn     = vkk_uiFileList_click,
+		.action_fn    = vkk_uiFileList_action,
 		.drag_fn      = vkk_uiFileList_drag,
 		.draw_fn      = vkk_uiFileList_draw,
 		.layout_fn    = vkk_uiFileList_layout,

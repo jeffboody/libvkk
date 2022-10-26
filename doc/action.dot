@@ -1,0 +1,83 @@
+// Copyright (c) 2022 Jeff Boody
+//
+// Permission is hereby granted, free of charge, to any person obtaining a
+// copy of this software and associated documentation files (the "Software"),
+// to deal in the Software without restriction, including without limitation
+// the rights to use, copy, modify, merge, publish, distribute, sublicense,
+// and/or sell copies of the Software, and to permit persons to whom the
+// Software is furnished to do so, subject to the following conditions:
+//
+// The above copyright notice and this permission notice shall be included
+// in all copies or substantial portions of the Software.
+//
+// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+// IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+// FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+// AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+// LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+// OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+// THE SOFTWARE.
+
+// sudo apt-get install graphviz
+// xdot action.dot
+digraph VKUI
+{
+	label="Action Events";
+	fontsize=20;
+	size="4,3";
+	ratio=fill;
+
+	george_engine_t            [shape=box, fillcolor=orange,     style=filled, label="george_engine_t"];
+	VKK_UI_SCREEN_ACTION_STATE [shape=box, fillcolor=cyan,       style=filled, label="VKK_UI_SCREEN_ACTION_STATE_UP\nVKK_UI_SCREEN_ACTION_STATE_DOWN\nVKK_UI_SCREEN_ACTION_STATE_DRAG\nVKK_UI_SCREEN_ACTION_STATE_ROTATE\nVKK_UI_SCREEN_ACTION_STATE_ZOOM"];
+	vkk_uiScreen_t             [shape=box, fillcolor=cyan,       style=filled, label="vkk_uiScreen_t\n--------------------\naction_state\naction_count\naction_ts\naction_coord0\naction_coord1\naction_drag\naction_widget"];
+	VKK_UI_WIDGET_ACTION       [shape=box, fillcolor=aquamarine, style=filled, label="VKK_UI_WIDGET_ACTION_UP\nVKK_UI_WIDGET_ACTION_CLICK\nVKK_UI_WIDGET_ACTION_DOWN\nVKK_UI_WIDGET_ACTION_DRAG\nVKK_UI_WIDGET_ACTION_ROTATE\nVKK_UI_WIDGET_ACTION_ZOOM"];
+	vkk_uiWidgetActionInfo_t   [shape=box, fillcolor=aquamarine, style=filled, label="vkk_uiWidgetActionInfo_t\n--------------------\naction\ncount\nts\ncoord0\ncoord1\ndrag\nrotation\nzoom"];
+	george_uiMap_action        [fillcolor=salmon,     style=filled, label="george_uiMap_action"];
+	george_engine_event        [fillcolor=orange,     style=filled, label="george_engine_event"];
+	george_engine_eventAction  [fillcolor=orange,     style=filled, label="george_engine_eventAction"];
+	george_engine_draw         [fillcolor=orange,     style=filled, label="george_engine_draw"];
+	george_overlay_eventAction [fillcolor=gold,       style=filled, label="george_overlay_eventAction"];
+	george_overlay_draw        [fillcolor=gold,       style=filled, label="george_overlay_draw"];
+	vkk_uiScreen_eventAction   [fillcolor=cyan,       style=filled, label="vkk_uiScreen_eventAction"];
+	vkk_uiScreen_actionDetect1 [fillcolor=cyan,       style=filled, label="vkk_uiScreen_actionDetect1"];
+	vkk_uiScreen_actionDetect2 [fillcolor=cyan,       style=filled, label="vkk_uiScreen_actionDetect2"];
+	vkk_uiScreen_draw          [fillcolor=cyan,       style=filled, label="vkk_uiScreen_draw"];
+	vkk_uiWidget_action        [fillcolor=aquamarine, style=filled, label="vkk_uiWidget_action"];
+	vkk_uiWidget_drag          [fillcolor=aquamarine, style=filled, label="vkk_uiWidget_drag"];
+	vkk_uiWidget_draw          [fillcolor=aquamarine, style=filled, label="vkk_uiWidget_draw"];
+	action_fn                  [fillcolor=palegreen,  style=filled, label="action_fn"];
+	// george_viewpoint_panStart  [fillcolor=plum,       style=filled, label="george_viewpoint_panStart"];
+	// george_viewpoint_panStop   [fillcolor=plum,       style=filled, label="george_viewpoint_panStop"];
+	// george_viewpoint_panTry    [fillcolor=plum,       style=filled, label="george_viewpoint_panTry"];
+	george_viewpoint_drag      [fillcolor=plum,       style=filled, label="george_viewpoint_drag"];
+	george_viewpoint_rotate    [fillcolor=plum,       style=filled, label="george_viewpoint_rotate"];
+	george_viewpoint_tilt      [fillcolor=plum,       style=filled, label="george_viewpoint_tilt"];
+	george_viewpoint_zoom      [fillcolor=plum,       style=filled, label="george_viewpoint_zoom"];
+	click_fn                   [fillcolor=palegreen,  style=filled, label="click_fn"];
+
+	george_engine_t            -> george_engine_draw;
+	george_engine_t            -> george_engine_event;
+	george_engine_event        -> george_engine_eventAction;
+	george_engine_eventAction  -> george_overlay_eventAction;
+	george_engine_draw         -> george_overlay_draw;
+	george_overlay_draw        -> vkk_uiScreen_draw;
+	vkk_uiScreen_draw          -> vkk_uiWidget_drag [label="first\ntop_widget"];
+	vkk_uiScreen_draw          -> vkk_uiWidget_draw [label="second"];
+	george_overlay_eventAction -> vkk_uiScreen_eventAction;
+	VKK_UI_SCREEN_ACTION_STATE -> vkk_uiScreen_t;
+	vkk_uiScreen_t             -> vkk_uiScreen_eventAction;
+	vkk_uiScreen_eventAction   -> vkk_uiScreen_actionDetect1 [label="action_widget\n<DOWN>"];
+	vkk_uiScreen_eventAction   -> vkk_uiScreen_actionDetect2 [label="action_widget\n<DOWN>"];
+	vkk_uiScreen_eventAction   -> vkk_uiWidget_action [label="top_widget\n<UP:DOWN>\n\naction_widget\n<DOWN:UP> (CLICK)\n<DRAG:UP>\n<ROTATE:UP>\n<ZOOM:UP>\n<DRAG:DRAG>\n<ROTATE:ROTATE>\n<ZOOM:ZOOM>"];
+	vkk_uiScreen_actionDetect1 -> vkk_uiWidget_action [label="action_widget\n<DOWN:DRAG>"];
+	vkk_uiScreen_actionDetect2 -> vkk_uiWidget_action [label="action_widget\n<DOWN:DRAG>\n<DOWN:ROTATE>\n<DOWN:ZOOM>"];
+	VKK_UI_WIDGET_ACTION       -> vkk_uiWidgetActionInfo_t [label="action"];
+	vkk_uiWidgetActionInfo_t   -> vkk_uiWidget_action;
+	vkk_uiWidget_action        -> action_fn;
+	action_fn                  -> george_uiMap_action;
+	george_uiMap_action        -> george_viewpoint_drag;
+	george_uiMap_action        -> george_viewpoint_rotate;
+	george_uiMap_action        -> george_viewpoint_tilt;
+	george_uiMap_action        -> george_viewpoint_zoom;
+	vkk_uiWidget_action        -> click_fn;
+}

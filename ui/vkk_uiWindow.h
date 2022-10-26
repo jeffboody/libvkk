@@ -24,14 +24,15 @@
 #ifndef vkk_uiWindow_H
 #define vkk_uiWindow_H
 
-#define VKK_UI_WINDOW_FLAG_TITLE        0x01
-#define VKK_UI_WINDOW_FLAG_PAGE_DEFAULT 0x02
-#define VKK_UI_WINDOW_FLAG_PAGE_SIDEBAR 0x04
-#define VKK_UI_WINDOW_FLAG_PAGE_POPUP   0x08
-#define VKK_UI_WINDOW_FLAG_LAYER0       0x10
-#define VKK_UI_WINDOW_FLAG_LAYER1       0x20
-#define VKK_UI_WINDOW_FLAG_FOOTER       0x40
-#define VKK_UI_WINDOW_FLAG_TRANSPARENT  0x80
+#define VKK_UI_WINDOW_FLAG_TITLE        0x0001
+#define VKK_UI_WINDOW_FLAG_PAGE_DEFAULT 0x0002
+#define VKK_UI_WINDOW_FLAG_PAGE_SIDEBAR 0x0004
+#define VKK_UI_WINDOW_FLAG_PAGE_POPUP   0x0008
+#define VKK_UI_WINDOW_FLAG_LAYER0       0x0010
+#define VKK_UI_WINDOW_FLAG_LAYER1       0x0020
+#define VKK_UI_WINDOW_FLAG_FOOTER       0x0040
+#define VKK_UI_WINDOW_FLAG_TRANSPARENT  0x0080
+#define VKK_UI_WINDOW_FLAG_FULLSCREEN   0x0100
 
 typedef struct vkk_uiWindowFn_s
 {
@@ -51,6 +52,8 @@ typedef struct vkk_uiWindow_s
 	vkk_uiWidget_t*        focus;
 	int                    transparent;
 	vkk_uiWidgetRefresh_fn refresh_fn;
+
+	uint32_t flags;
 } vkk_uiWindow_t;
 
 vkk_uiWindow_t*  vkk_uiWindow_new(vkk_uiScreen_t* screen,

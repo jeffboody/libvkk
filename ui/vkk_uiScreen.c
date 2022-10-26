@@ -27,10 +27,12 @@
 #include <string.h>
 
 #define LOG_TAG "vkk"
+#include "../../libcc/math/cc_float.h"
 #include "../../libcc/math/cc_mat4f.h"
 #include "../../libcc/math/cc_vec2f.h"
 #include "../../libcc/cc_memory.h"
 #include "../../libcc/cc_log.h"
+#include "../../libcc/cc_timestamp.h"
 #include "../../libvkk/vkk_platform.h"
 #include "../../libbfs/bfs_file.h"
 #include "../../texgz/texgz_png.h"
@@ -90,11 +92,11 @@ float vkk_uiScreen_scalef(vkk_uiScreen_t* self)
 	return 1.0f;
 }
 
-void vkk_uiScreen_dirty(vkk_uiScreen_t* self)
+void vkk_uiScreen_layoutDirty(vkk_uiScreen_t* self)
 {
 	ASSERT(self);
 
-	self->dirty = 1;
+	self->layout_dirty = 1;
 }
 
 void
@@ -162,6 +164,47 @@ vkk_uiScreen_layoutText(vkk_uiScreen_t* self, int size)
 	return sizef;
 }
 
+int vkk_uiScreen_depthDirty(vkk_uiScreen_t* self,
+                            vkk_uiWidget_t* widget)
+{
+	ASSERT(self);
+	ASSERT(widget);
+
+	cc_listIter_t* iter;
+	iter = cc_list_head(self->depth_dirty);
+	while(iter)
+	{
+		vkk_uiWidget_t* tmp;
+		tmp = (vkk_uiWidget_t*) cc_list_peekIter(iter);
+
+		cc_rect1f_t rect;
+		if(cc_rect1f_intersect(vkk_uiWidget_rectScissor(widget),
+		                       vkk_uiWidget_rectScissor(tmp),
+		                       &rect))
+		{
+			return 1;
+		}
+	}
+
+	return 0;
+}
+
+void vkk_uiScreen_depthMark(vkk_uiScreen_t* self,
+                            vkk_uiWidget_t* widget)
+{
+	ASSERT(self);
+	ASSERT(widget);
+
+	cc_list_append(self->depth_dirty, NULL, widget);
+}
+
+void vkk_uiScreen_depthReset(vkk_uiScreen_t* self)
+{
+	ASSERT(self);
+
+	cc_list_discard(self->depth_dirty);
+}
+
 void vkk_uiScreen_bind(vkk_uiScreen_t* self, int bind)
 {
 	ASSERT(self);
@@ -203,17 +246,10 @@ vkk_uiScreen_scissor(vkk_uiScreen_t* self,
 	ASSERT(rect);
 
 	vkk_renderer_scissor(self->renderer,
-	                     (uint32_t) (rect->l + 0.5f),
-	                     (uint32_t) (rect->t + 0.5f),
+	                     (int32_t)  (rect->l + 0.5f),
+	                     (int32_t)  (rect->t + 0.5f),
 	                     (uint32_t) (rect->w + 0.5f),
 	                     (uint32_t) (rect->h + 0.5f));
-}
-
-void vkk_uiScreen_playClick(vkk_uiScreen_t* self)
-{
-	ASSERT(self);
-
-	self->clicked = 1;
 }
 
 /***********************************************************
@@ -244,11 +280,10 @@ vkk_uiScreen_new(size_t wsize,
 		return NULL;
 	}
 
-	self->engine        = engine;
-	self->density       = 1.0f;
-	self->scale         = VKK_UI_SCREEN_SCALE_MEDIUM;
-	self->dirty         = 1;
-	self->pointer_state = VKK_UI_WIDGET_POINTER_UP;
+	self->engine       = engine;
+	self->density      = 1.0f;
+	self->scale        = VKK_UI_SCREEN_SCALE_MEDIUM;
+	self->layout_dirty = 1;
 
 	memcpy(&self->widget_style, widget_style,
 	       sizeof(vkk_uiWidgetStyle_t));
@@ -640,6 +675,12 @@ vkk_uiScreen_new(size_t wsize,
 		goto fail_window_stack;
 	}
 
+	self->depth_dirty = cc_list_new();
+	if(self->depth_dirty == NULL)
+	{
+		goto fail_depth_dirty;
+	}
+
 	self->sprite_map = cc_map_new();
 	if(self->sprite_map == NULL)
 	{
@@ -689,6 +730,8 @@ vkk_uiScreen_new(size_t wsize,
 	fail_font_array0:
 		cc_map_delete(&self->sprite_map);
 	fail_sprite_map:
+		cc_list_delete(&self->depth_dirty);
+	fail_depth_dirty:
 		cc_list_delete(&self->window_stack);
 	fail_window_stack:
 		vkk_uniformSet_delete(&self->us3_tricolor);
@@ -771,6 +814,8 @@ void vkk_uiScreen_delete(vkk_uiScreen_t** _self)
 		}
 		cc_map_delete(&self->sprite_map);
 
+		cc_list_discard(self->depth_dirty);
+		cc_list_delete(&self->depth_dirty);
 		cc_list_discard(self->window_stack);
 		cc_list_delete(&self->window_stack);
 		vkk_uniformSet_delete(&self->us3_tricolor);
@@ -799,138 +844,533 @@ void vkk_uiScreen_delete(vkk_uiScreen_t** _self)
 	}
 }
 
-int vkk_uiScreen_pointerDown(vkk_uiScreen_t* self,
-                             float x, float y, double t0)
+#ifdef LOG_DEBUG
+static const char*
+vkk_uiScreen_actionStateString(int action_state)
 {
-	ASSERT(self);
-
-	vkk_uiWindow_t* top = vkk_uiScreen_windowPeek(self);
-	if((top == NULL) ||
-	   (self->pointer_state != VKK_UI_WIDGET_POINTER_UP))
+	if(action_state == VKK_UI_SCREEN_ACTION_STATE_UP)
 	{
-		// ignore
-		return 0;
+		return "UP";
+	}
+	else if(action_state == VKK_UI_SCREEN_ACTION_STATE_DOWN)
+	{
+		return "DOWN";
+	}
+	else if(action_state == VKK_UI_SCREEN_ACTION_STATE_DRAG)
+	{
+		return "DRAG";
+	}
+	else if(action_state == VKK_UI_SCREEN_ACTION_STATE_ROTATE)
+	{
+		return "ROTATE";
+	}
+	else if(action_state == VKK_UI_SCREEN_ACTION_STATE_SCALE)
+	{
+		return "SCALE";
 	}
 
-	// redirect events to the action bar if active
-	// or close the action popup
-	vkk_uiWidget_t* action_bar;
-	action_bar = (vkk_uiWidget_t*) self->action_bar;
-	if(action_bar)
+	return "NULL";
+}
+#endif
+
+static int
+vkk_uiScreen_actionDetect1(vkk_uiScreen_t* self,
+                           vkk_platformEvent_t* event)
+{
+	ASSERT(self);
+	ASSERT(event);
+
+	vkk_platformEventAction_t* e = &event->action;
+
+	cc_vec2f_t* acoord0 = &self->action_coord0;
+	cc_vec2f_t* ecoord0 = &e->coord[0];
+
+	// check for a sizable motion
+	float dx0    = ecoord0->x - acoord0->x;
+	float dy0    = ecoord0->y - acoord0->y;
+	float delta  = fabsf(dx0) + fabsf(dy0);
+	int   sz     = (self->w > self->h) ? self->w : self->h;
+	float thresh = 0.03f*((float) sz);
+	if(delta < thresh)
 	{
-		if(vkk_uiWidget_click(action_bar,
-		                      VKK_UI_WIDGET_POINTER_DOWN, x, y))
+		return VKK_UI_SCREEN_ACTION_STATE_DOWN;
+	}
+
+	return VKK_UI_SCREEN_ACTION_STATE_DRAG;
+}
+
+static int
+vkk_uiScreen_actionDetect2(vkk_uiScreen_t* self,
+                           vkk_platformEvent_t* event)
+{
+	ASSERT(self);
+	ASSERT(event);
+
+	vkk_platformEventAction_t* e = &event->action;
+
+	cc_vec2f_t* acoord0 = &self->action_coord0;
+	cc_vec2f_t* acoord1 = &self->action_coord1;
+	cc_vec2f_t* ecoord0 = &e->coord[0];
+	cc_vec2f_t* ecoord1 = &e->coord[1];
+
+	// check for a sizable motion
+	float dx0    = ecoord0->x - acoord0->x;
+	float dy0    = ecoord0->y - acoord0->y;
+	float dx1    = ecoord1->x - acoord1->x;
+	float dy1    = ecoord1->y - acoord1->y;
+	float delta  = fabsf(dx0) + fabsf(dy0) +
+	               fabsf(dx1) + fabsf(dy1);
+	int   sz     = (self->w > self->h) ? self->w : self->h;
+	float thresh = 0.03f*((float) sz);
+	if(delta < thresh)
+	{
+		return VKK_UI_SCREEN_ACTION_STATE_DOWN;
+	}
+
+	// compute vectors
+	cc_vec2f_t va;
+	cc_vec2f_t ve;
+	cc_vec2f_subv_copy(acoord1, acoord0, &va);
+	cc_vec2f_subv_copy(ecoord1, ecoord0, &ve);
+
+	// compute vector properties
+	// a.e = |a||e|cos(rotation)
+	float dot  = cc_vec2f_dot(&va, &ve);
+	float axe  = cc_vec2f_cross(&va, &ve);
+	float sign = (axe > 0.0f) ? -1.0f : 1.0f;
+
+	// compute rotation
+	// clamp for numerical stability
+	float angle = 0.0f;
+	float ma    = cc_vec2f_mag(&va);
+	float me    = cc_vec2f_mag(&ve);
+	if((ma < 1.0f) || (me < 1.0f))
+	{
+		// ignore
+	}
+	else
+	{
+		float cosang;
+		cosang = cc_clamp(dot/(ma*me), -1.0f, 1.0f);
+		angle  = sign*cc_rad2deg(acosf(cosang));
+	}
+
+	// compute scale
+	float scale = cc_vec2f_mag(&ve)/cc_vec2f_mag(&va);
+
+	// compute centers
+	cc_vec2f_t ca;
+	cc_vec2f_t ce;
+	cc_vec2f_muls(&va, 0.5f);
+	cc_vec2f_muls(&ve, 0.5f);
+	cc_vec2f_addv_copy(acoord0, &va, &ca);
+	cc_vec2f_addv_copy(ecoord0, &ve, &ce);
+
+	// compute drag
+	cc_vec2f_t drag;
+	cc_vec2f_subv_copy(&ce, &ca, &drag);
+
+	// determine the action state
+	if(fabs(angle) >= 5.0f)
+	{
+		return VKK_UI_SCREEN_ACTION_STATE_ROTATE;
+	}
+	else if((scale > 1.05f) || (scale < 1.0f/1.05f))
+	{
+		return VKK_UI_SCREEN_ACTION_STATE_SCALE;
+	}
+	else if(cc_vec2f_mag(&drag) > thresh)
+	{
+		return VKK_UI_SCREEN_ACTION_STATE_DRAG;
+	}
+
+	return VKK_UI_SCREEN_ACTION_STATE_DOWN;
+}
+
+void
+vkk_uiScreen_eventAction(vkk_uiScreen_t* self,
+                         vkk_platformEvent_t* event)
+{
+	ASSERT(self);
+	ASSERT(event);
+
+	vkk_platformEventAction_t* e = &event->action;
+
+	vkk_uiWindow_t* top = vkk_uiScreen_windowPeek(self);
+	if(top == NULL)
+	{
+		// ignore
+		return;
+	}
+
+	int         astate  = self->action_state;
+	int         acount  = self->action_count;
+	double      ats     = self->action_ts;
+	cc_vec2f_t* acoord0 = &self->action_coord0;
+	cc_vec2f_t* acoord1 = &self->action_coord1;
+	int         ecount  = e->count;
+	double      ets     = event->ts;
+	cc_vec2f_t* ecoord0 = &e->coord[0];
+	cc_vec2f_t* ecoord1 = &e->coord[1];
+	int         nstate  = astate;
+	int         ncount  = acount;
+	double      nts     = ats;
+
+	vkk_uiWidget_t* awidget = self->action_widget;
+	vkk_uiWidget_t* nwidget = awidget;
+
+	vkk_platformEventType_e etype = event->type;
+
+	vkk_uiWidgetActionInfo_t info =
+	{
+		.action = VKK_UI_WIDGET_ACTION_UP,
+		.count  = ecount,
+		.ts     = ets,
+		.coord0 =
 		{
-			self->pointer_state = VKK_UI_WIDGET_POINTER_DOWN;
-			self->pointer_x0    = x;
-			self->pointer_y0    = y;
-			self->pointer_t0    = t0;
-			self->pointer_vx    = 0.0f;
-			self->pointer_vy    = 0.0f;
-			return 1;
+			.x = ecoord0->x,
+			.y = ecoord0->y,
+		},
+		.coord1 =
+		{
+			.x = ecoord1->x,
+			.y = ecoord1->y,
+		},
+	};
+
+	if((astate == VKK_UI_SCREEN_ACTION_STATE_UP)     &&
+	   (etype == VKK_PLATFORM_EVENTTYPE_ACTION_DOWN) &&
+	   (ecount <= 2))
+	{
+		// <UP:UP>
+		// <UP:DOWN>
+
+		info.action = VKK_UI_WIDGET_ACTION_DOWN;
+
+		// try to direct actions to action_bar popup
+		// or fall back to the top window
+		if(self->action_bar)
+		{
+			vkk_uiWidget_t* ab;
+			ab = (vkk_uiWidget_t*) self->action_bar;
+			nwidget = vkk_uiWidget_action(ab, &info);
+			if(nwidget == NULL)
+			{
+				// dismiss the action_bar popup
+				vkk_uiScreen_popupSet(self, NULL, NULL);
+				nwidget = vkk_uiWidget_action(&top->base, &info);
+			}
+		}
+		else
+		{
+			nwidget = vkk_uiWidget_action(&top->base, &info);
 		}
 
-		vkk_uiScreen_popupSet(self, NULL, NULL);
+		if(nwidget)
+		{
+			// update state
+			nstate = VKK_UI_SCREEN_ACTION_STATE_DOWN;
+			ncount = ecount;
+			nts    = ets;
+			LOGD("<%s:%s> ncount=%i",
+			     vkk_uiScreen_actionStateString(astate),
+			     vkk_uiScreen_actionStateString(nstate),
+			     ncount);
+			LOGD("acount=%i, acoord0=%f,%f, acoord1=%f,%f",
+			     acount, acoord0->x, acoord0->y,
+			     acoord1->x, acoord1->y);
+			LOGD("ecount=%i, ecoord0=%f,%f, ecoord1=%f,%f",
+			     ecount, ecoord0->x, ecoord0->y,
+			     ecoord1->x, ecoord1->y);
+		}
 	}
-
-	// fall through to the widget hierarchy
-	if(vkk_uiWidget_click(&top->base,
-	                      VKK_UI_WIDGET_POINTER_DOWN, x, y))
+	else if((astate == VKK_UI_SCREEN_ACTION_STATE_DOWN) &&
+	        ((etype  == VKK_PLATFORM_EVENTTYPE_ACTION_DOWN) ||
+	         (etype  == VKK_PLATFORM_EVENTTYPE_ACTION_MOVE)) &&
+	        (ecount <= 2) && (ecount != acount))
 	{
-		self->pointer_state = VKK_UI_WIDGET_POINTER_DOWN;
-		self->pointer_x0    = x;
-		self->pointer_y0    = y;
-		self->pointer_t0    = t0;
-		self->pointer_vx    = 0.0f;
-		self->pointer_vy    = 0.0f;
-		return 1;
+		// <DOWN:DOWN>
+
+		// update state
+		ncount = ecount;
+		nts    = ets;
+		LOGD("<%s:%s> ncount=%i",
+		     vkk_uiScreen_actionStateString(astate),
+		     vkk_uiScreen_actionStateString(nstate),
+		     ncount);
+		LOGD("acount=%i, acoord0=%f,%f, acoord1=%f,%f",
+		     acount, acoord0->x, acoord0->y,
+		     acoord1->x, acoord1->y);
+		LOGD("ecount=%i, ecoord0=%f,%f, ecoord1=%f,%f",
+		     ecount, ecoord0->x, ecoord0->y,
+		     ecoord1->x, ecoord1->y);
 	}
-
-	return 0;
-}
-
-int vkk_uiScreen_pointerUp(vkk_uiScreen_t* self,
-                           float x, float y, double t0)
-{
-	ASSERT(self);
-
-	vkk_uiWindow_t* top = vkk_uiScreen_windowPeek(self);
-
-	int touch = self->pointer_state != VKK_UI_WIDGET_POINTER_UP;
-	if(self->move_widget)
+	else if((astate == VKK_UI_SCREEN_ACTION_STATE_DOWN)    &&
+	        (etype  == VKK_PLATFORM_EVENTTYPE_ACTION_MOVE) &&
+	        (ecount == 1))
 	{
-		vkk_uiWidget_click(self->move_widget,
-		                   VKK_UI_WIDGET_POINTER_UP, x, y);
+		// <DOWN:DOWN>
+		// <DOWN:DRAG>
+
+		// determine and update state
+		int next = vkk_uiScreen_actionDetect1(self, event);
+		if(next != VKK_UI_SCREEN_ACTION_STATE_DOWN)
+		{
+			nstate = next;
+		}
+		ncount = ecount;
+		nts    = ets;
+		LOGD("<%s:%s> ncount=%i",
+		     vkk_uiScreen_actionStateString(astate),
+		     vkk_uiScreen_actionStateString(nstate),
+		     ncount);
+		LOGD("acount=%i, acoord0=%f,%f, acoord1=%f,%f",
+		     acount, acoord0->x, acoord0->y,
+		     acoord1->x, acoord1->y);
+		LOGD("ecount=%i, ecoord0=%f,%f, ecoord1=%f,%f",
+		     ecount, ecoord0->x, ecoord0->y,
+		     ecoord1->x, ecoord1->y);
 	}
-	else if(top &&
-	        (self->pointer_state == VKK_UI_WIDGET_POINTER_DOWN))
+	else if((astate == VKK_UI_SCREEN_ACTION_STATE_DOWN)    &&
+	        (etype  == VKK_PLATFORM_EVENTTYPE_ACTION_MOVE) &&
+	        (ecount == 2))
 	{
-		vkk_uiWidget_click(&top->base,
-		                   VKK_UI_WIDGET_POINTER_UP, x, y);
+		// <DOWN:DOWN>
+		// <DOWN:DRAG>
+		// <DOWN:ROTATE>
+		// <DOWN:SCALE>
+
+		// determine and update state
+		int next = vkk_uiScreen_actionDetect2(self, event);
+		if(next != VKK_UI_SCREEN_ACTION_STATE_DOWN)
+		{
+			nstate = next;
+		}
+		ncount = ecount;
+		nts    = ets;
+		LOGD("<%s:%s> ncount=%i",
+		     vkk_uiScreen_actionStateString(astate),
+		     vkk_uiScreen_actionStateString(nstate),
+		     ncount);
+		LOGD("acount=%i, acoord0=%f,%f, acoord1=%f,%f",
+		     acount, acoord0->x, acoord0->y,
+		     acoord1->x, acoord1->y);
+		LOGD("ecount=%i, ecoord0=%f,%f, ecoord1=%f,%f",
+		     ecount, ecoord0->x, ecoord0->y,
+		     ecoord1->x, ecoord1->y);
 	}
-	self->pointer_state = VKK_UI_WIDGET_POINTER_UP;
-
-	vkk_uiScreen_move(self, NULL);
-
-	return touch;
-}
-
-int vkk_uiScreen_pointerMove(vkk_uiScreen_t* self,
-                             float x, float y, double t0)
-{
-	ASSERT(self);
-
-	vkk_uiWindow_t* top = vkk_uiScreen_windowPeek(self);
-	if((top == NULL) ||
-	   (self->pointer_state == VKK_UI_WIDGET_POINTER_UP))
+	else if((astate == VKK_UI_SCREEN_ACTION_STATE_DRAG) &&
+	        (etype  == VKK_PLATFORM_EVENTTYPE_ACTION_MOVE) &&
+	        (acount == ecount) && (acount == 1))
 	{
-		// ignore
-		return 0;
+		// <DRAG:DRAG>
+
+		info.action = VKK_UI_WIDGET_ACTION_DRAG;
+		cc_vec2f_subv_copy(ecoord0, acoord0, &info.drag);
+
+		double dt = ets - ats;
+		if(vkk_uiWidget_action(awidget, &info))
+		{
+			// skip dragging/scrolling
+		}
+		else if(dt > 0.001)
+		{
+			// dragging/scrolling
+			self->action_dragv.x = info.drag.x/((float) dt);
+			self->action_dragv.y = info.drag.y/((float) dt);
+			self->layout_dirty   = 1;
+		}
+
+		// update state
+		nts = ets;
+		LOGD("<%s:%s> ncount=%i, drag=%f,%f",
+		     vkk_uiScreen_actionStateString(astate),
+		     vkk_uiScreen_actionStateString(nstate),
+		     ncount, info.drag.x, info.drag.y);
+		LOGD("acount=%i, acoord0=%f,%f, acoord1=%f,%f",
+		     acount, acoord0->x, acoord0->y,
+		     acoord1->x, acoord1->y);
+		LOGD("ecount=%i, ecoord0=%f,%f, ecoord1=%f,%f",
+		     ecount, ecoord0->x, ecoord0->y,
+		     ecoord1->x, ecoord1->y);
 	}
-
-	float dx = x - self->pointer_x0;
-	float dy = y - self->pointer_y0;
-	if(self->pointer_state == VKK_UI_WIDGET_POINTER_DOWN)
+	else if((astate == VKK_UI_SCREEN_ACTION_STATE_DRAG)    &&
+	        (etype  == VKK_PLATFORM_EVENTTYPE_ACTION_MOVE) &&
+	        (acount == ecount) && (acount == 2))
 	{
-		// reject small motions
-		float d = sqrtf(dx*dx + dy*dy);
-		float s = 0.2f*vkk_uiScreen_layoutText(self,
-		                                       VKK_UI_TEXT_SIZE_MEDIUM);
-		if(d < s)
+		// <DRAG:DRAG>
+
+		// compute vectors
+		cc_vec2f_t va;
+		cc_vec2f_t ve;
+		cc_vec2f_subv_copy(acoord1, acoord0, &va);
+		cc_vec2f_subv_copy(ecoord1, ecoord0, &ve);
+
+		// compute centers
+		cc_vec2f_t ca;
+		cc_vec2f_t ce;
+		cc_vec2f_muls(&va, 0.5f);
+		cc_vec2f_muls(&ve, 0.5f);
+		cc_vec2f_addv_copy(acoord0, &va, &ca);
+		cc_vec2f_addv_copy(ecoord0, &ve, &ce);
+
+		info.action = VKK_UI_WIDGET_ACTION_DRAG;
+		cc_vec2f_subv_copy(&ce, &ca, &info.drag);
+
+		// ignore return value
+		vkk_uiWidget_action(awidget, &info);
+
+		// update state
+		nts = ets;
+		LOGD("<%s:%s> ncount=%i, drag=%f,%f",
+		     vkk_uiScreen_actionStateString(astate),
+		     vkk_uiScreen_actionStateString(nstate),
+		     ncount, info.drag.x, info.drag.y);
+		LOGD("acount=%i, acoord0=%f,%f, acoord1=%f,%f",
+		     acount, acoord0->x, acoord0->y,
+		     acoord1->x, acoord1->y);
+		LOGD("ecount=%i, ecoord0=%f,%f, ecoord1=%f,%f",
+		     ecount, ecoord0->x, ecoord0->y,
+		     ecoord1->x, ecoord1->y);
+	}
+	else if((astate == VKK_UI_SCREEN_ACTION_STATE_ROTATE)  &&
+	        (etype  == VKK_PLATFORM_EVENTTYPE_ACTION_MOVE) &&
+	        (acount == ecount) && (acount == 2))
+	{
+		// <ROTATE:ROTATE>
+
+		// compute vectors
+		cc_vec2f_t va;
+		cc_vec2f_t ve;
+		cc_vec2f_subv_copy(acoord1, acoord0, &va);
+		cc_vec2f_subv_copy(ecoord1, ecoord0, &ve);
+
+		// compute vector properties
+		// a.e = |a||e|cos(rotation)
+		float dot  = cc_vec2f_dot(&va, &ve);
+		float axe  = cc_vec2f_cross(&va, &ve);
+		float sign = (axe > 0.0f) ? -1.0f : 1.0f;
+
+		// compute rotation
+		// clamp for numerical stability
+		float angle = 0.0f;
+		float ma    = cc_vec2f_mag(&va);
+		float me    = cc_vec2f_mag(&ve);
+		if((ma < 1.0f) || (me < 1.0f))
 		{
 			// ignore
-			return 1;
+		}
+		else
+		{
+			float cosang;
+			cosang = cc_clamp(dot/(ma*me), -1.0f, 1.0f);
+			angle  = sign*cc_rad2deg(acosf(cosang));
 		}
 
-		// initialize move state
-		self->pointer_state = VKK_UI_WIDGET_POINTER_MOVE;
-		self->pointer_x0    = x;
-		self->pointer_y0    = y;
-		self->pointer_t0    = t0;
-		self->pointer_vx    = 0.0f;
-		self->pointer_vy    = 0.0f;
-		return 1;
+		info.action = VKK_UI_WIDGET_ACTION_ROTATE;
+		info.angle  = angle;
+
+		// ignore return value
+		vkk_uiWidget_action(awidget, &info);
+
+		// update state
+		nts = ets;
+		LOGD("<%s:%s> ncount=%i, angle=%f",
+		     vkk_uiScreen_actionStateString(astate),
+		     vkk_uiScreen_actionStateString(nstate),
+		     ncount, info.angle);
+		LOGD("acount=%i, acoord0=%f,%f, acoord1=%f,%f",
+		     acount, acoord0->x, acoord0->y,
+		     acoord1->x, acoord1->y);
+		LOGD("ecount=%i, ecoord0=%f,%f, ecoord1=%f,%f",
+		     ecount, ecoord0->x, ecoord0->y,
+		     ecoord1->x, ecoord1->y);
+	}
+	else if((astate == VKK_UI_SCREEN_ACTION_STATE_SCALE)   &&
+	        (etype  == VKK_PLATFORM_EVENTTYPE_ACTION_MOVE) &&
+	        (acount == ecount) && (acount == 2))
+	{
+		// <SCALE:SCALE>
+
+		// compute vectors
+		cc_vec2f_t va;
+		cc_vec2f_t ve;
+		cc_vec2f_subv_copy(acoord1, acoord0, &va);
+		cc_vec2f_subv_copy(ecoord1, ecoord0, &ve);
+
+		info.action = VKK_UI_WIDGET_ACTION_SCALE;
+		info.scale  = cc_vec2f_mag(&ve)/cc_vec2f_mag(&va);
+
+		// ignore return value
+		vkk_uiWidget_action(awidget, &info);
+
+		// update state
+		nts = ets;
+		LOGD("<%s:%s> ncount=%i, scale=%f",
+		     vkk_uiScreen_actionStateString(astate),
+		     vkk_uiScreen_actionStateString(nstate),
+		     ncount, info.scale);
+		LOGD("acount=%i, acoord0=%f,%f, acoord1=%f,%f",
+		     acount, acoord0->x, acoord0->y,
+		     acoord1->x, acoord1->y);
+		LOGD("ecount=%i, ecoord0=%f,%f, ecoord1=%f,%f",
+		     ecount, ecoord0->x, ecoord0->y,
+		     ecoord1->x, ecoord1->y);
+	}
+	else if(astate != VKK_UI_SCREEN_ACTION_STATE_UP)
+	{
+		// <DOWN:CLICK> (count == 1)
+		// <ELSE:UP>
+
+		info.action = VKK_UI_WIDGET_ACTION_UP;
+		if((astate == VKK_UI_SCREEN_ACTION_STATE_DOWN) &&
+		   (acount == 1))
+		{
+			info.action = VKK_UI_WIDGET_ACTION_CLICK;
+		}
+
+		if(vkk_uiWidget_action(awidget, &info) &&
+		   (info.action == VKK_UI_WIDGET_ACTION_CLICK))
+		{
+			vkk_engine_platformCmd(self->engine,
+			                       VKK_PLATFORM_CMD_PLAY_CLICK);
+		}
+
+		// update state
+		nstate  = VKK_UI_SCREEN_ACTION_STATE_UP;
+		ncount  = 0;
+		nts     = ets;
+		nwidget = NULL;
+		LOGD("<%s:%s> ncount=%i",
+		     vkk_uiScreen_actionStateString(astate),
+		     vkk_uiScreen_actionStateString(nstate),
+		     ncount);
+		LOGD("acount=%i, acoord0=%f,%f, acoord1=%f,%f",
+		     acount, acoord0->x, acoord0->y,
+		     acoord1->x, acoord1->y);
+		LOGD("ecount=%i, ecoord0=%f,%f, ecoord1=%f,%f",
+		     ecount, ecoord0->x, ecoord0->y,
+		     ecoord1->x, ecoord1->y);
 	}
 
-	// ignore events with less than 8ms time delta
-	float dt = (float) (t0 - self->pointer_t0);
-	if(self->move_widget)
+	// update coords
+	// DRAG/ROTATE/SCALE transitions require a certain thresh
+	// to detect a state change so we don't update the coords
+	// unless the count changes
+	if((nstate != VKK_UI_SCREEN_ACTION_STATE_DOWN) ||
+	   (acount != ncount))
 	{
-		vkk_uiWidget_click(self->move_widget,
-		                   VKK_UI_WIDGET_POINTER_MOVE, x, y);
-	}
-	else if(dt >= 0.008f)
-	{
-		// update the move state
-		self->pointer_x0 = x;
-		self->pointer_y0 = y;
-		self->pointer_t0 = t0;
-		self->pointer_vx = dx/dt;
-		self->pointer_vy = dy/dt;
-		self->dirty      = 1;
+		acoord0->x = ecoord0->x;
+		acoord0->y = ecoord0->y;
+		acoord1->x = ecoord1->x;
+		acoord1->y = ecoord1->y;
 	}
 
-	return 1;
+	// update state
+	self->action_state  = nstate;
+	self->action_count  = ncount;
+	self->action_ts     = nts;
+	self->action_widget = nwidget;
 }
 
 void
@@ -944,8 +1384,7 @@ vkk_uiScreen_eventContentRect(vkk_uiScreen_t* self,
 	self->content_rect_left   = e->l;
 	self->content_rect_width  = e->r - e->l;
 	self->content_rect_height = e->b - e->t;
-
-	self->dirty = 1;
+	self->layout_dirty        = 1;
 }
 
 void
@@ -959,8 +1398,8 @@ vkk_uiScreen_eventDensity(vkk_uiScreen_t* self,
 		return;
 	}
 
-	self->density = density;
-	self->dirty   = 1;
+	self->density      = density;
+	self->layout_dirty = 1;
 }
 
 int vkk_uiScreen_eventKey(vkk_uiScreen_t* self,
@@ -1011,7 +1450,7 @@ void vkk_uiScreen_windowPush(vkk_uiScreen_t* self,
 		return;
 	}
 
-	self->dirty = 1;
+	self->layout_dirty = 1;
 
 	if(window)
 	{
@@ -1048,7 +1487,7 @@ int vkk_uiScreen_windowPop(vkk_uiScreen_t* self)
 		return 0;
 	}
 
-	self->dirty = 1;
+	self->layout_dirty = 1;
 
 	cc_list_remove(self->window_stack, &iter);
 
@@ -1074,7 +1513,7 @@ void vkk_uiScreen_windowReset(vkk_uiScreen_t* self,
 		return;
 	}
 
-	self->dirty = 1;
+	self->layout_dirty = 1;
 
 	// reset window stack
 	cc_list_discard(self->window_stack);
@@ -1129,30 +1568,6 @@ vkk_uiScreen_focus(vkk_uiScreen_t* self,
 	self->focus_widget = focus;
 }
 
-void
-vkk_uiScreen_move(vkk_uiScreen_t* self,
-                  vkk_uiWidget_t* move)
-{
-	// move may be NULL
-	ASSERT(self);
-
-	self->move_widget = move;
-}
-
-void vkk_uiScreen_resize(vkk_uiScreen_t* self, int w, int h)
-{
-	ASSERT(self);
-
-	if((self->w == w) && (self->h == h))
-	{
-		return;
-	}
-
-	self->w     = w;
-	self->h     = h;
-	self->dirty = 1;
-}
-
 void vkk_uiScreen_rescale(vkk_uiScreen_t* self, int scale)
 {
 	ASSERT(self);
@@ -1165,8 +1580,8 @@ void vkk_uiScreen_rescale(vkk_uiScreen_t* self, int scale)
 	if((scale >= VKK_UI_SCREEN_SCALE_XSMALL) &&
 	   (scale <= VKK_UI_SCREEN_SCALE_XLARGE))
 	{
-		self->scale = scale;
-		self->dirty = 1;
+		self->scale        = scale;
+		self->layout_dirty = 1;
 	}
 }
 
@@ -1180,9 +1595,10 @@ void vkk_uiScreen_draw(vkk_uiScreen_t* self)
 	                         &uw, &uh);
 	if((uw != self->w) || (uh != self->h))
 	{
-		self->w     = uw;
-		self->h     = uh;
-		self->dirty = 1;
+		self->w = uw;
+		self->h = uh;
+
+		self->layout_dirty = 1;
 	}
 
 	vkk_uiWindow_t* top = vkk_uiScreen_windowPeek(self);
@@ -1192,19 +1608,20 @@ void vkk_uiScreen_draw(vkk_uiScreen_t* self)
 		return;
 	}
 
+	vkk_uiScreen_depthReset(self);
 	vkk_uiWidget_refresh(&top->base);
 
-	// dragging
+	// dragging/scrolling
 	float w  = (float) self->w;
 	float h  = (float) self->h;
 	float dt = 1.0f/60.0f;
-	if((self->pointer_vx != 0.0f) ||
-	   (self->pointer_vy != 0.0f))
+	if((self->action_dragv.x != 0.0f) ||
+	   (self->action_dragv.y != 0.0f))
 	{
-		float x  = self->pointer_x0;
-		float y  = self->pointer_y0;
-		float vx = self->pointer_vx;
-		float vy = self->pointer_vy;
+		float x  = self->action_coord0.x;
+		float y  = self->action_coord0.y;
+		float vx = self->action_dragv.x;
+		float vy = self->action_dragv.y;
 
 		// clamp the speed to be proportional to the range
 		float range  = 4.0f*sqrtf(w*w + h*h);
@@ -1217,8 +1634,6 @@ void vkk_uiScreen_draw(vkk_uiScreen_t* self)
 			speed1 = range;
 		}
 
-		// TODO - change drag to return status for
-		// bump animation and to minimize dirty updates
 		vkk_uiWidget_drag(&top->base,
 		                  x, y, vx*dt, vy*dt);
 
@@ -1227,19 +1642,19 @@ void vkk_uiScreen_draw(vkk_uiScreen_t* self)
 		{
 			float speed2 = speed1 - drag;
 			float coef   = speed2/speed1;
-			self->pointer_vx *= coef;
-			self->pointer_vy *= coef;
+			self->action_dragv.x *= coef;
+			self->action_dragv.y *= coef;
 		}
 		else
 		{
-			self->pointer_vx = 0.0f;
-			self->pointer_vy = 0.0f;
+			self->action_dragv.x = 0.0f;
+			self->action_dragv.y = 0.0f;
 		}
 
-		self->dirty = 1;
+		self->layout_dirty = 1;
 	}
 
-	if(self->dirty)
+	if(self->layout_dirty)
 	{
 		cc_rect1f_t clip =
 		{
@@ -1267,7 +1682,7 @@ void vkk_uiScreen_draw(vkk_uiScreen_t* self)
 		                        &layout_w, &layout_h);
 		vkk_uiWidget_layoutXYClip(&top->base, clip.l,
 		                          clip.t, &clip, 1, 1);
-		self->dirty = 0;
+		self->layout_dirty = 0;
 	}
 
 	cc_mat4f_t mvp;
@@ -1282,14 +1697,6 @@ void vkk_uiScreen_draw(vkk_uiScreen_t* self)
 	                     0, 0, w, h);
 	vkk_uiWidget_draw(&top->base);
 	vkk_uiScreen_bind(self, VKK_UI_SCREEN_BIND_NONE);
-
-	// play sound fx
-	if(self->clicked)
-	{
-		vkk_engine_platformCmd(self->engine,
-		                       VKK_PLATFORM_CMD_PLAY_CLICK);
-		self->clicked = 0;
-	}
 }
 
 void vkk_uiScreen_colorPageItem(vkk_uiScreen_t* self,

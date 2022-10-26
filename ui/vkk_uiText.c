@@ -142,31 +142,25 @@ vkk_uiText_size(vkk_uiWidget_t* widget, float* w, float* h)
 	*h = size;
 }
 
-static int
-vkk_uiText_click(vkk_uiWidget_t* widget,
-                 int state, float x, float y)
+static void
+vkk_uiText_click(vkk_uiWidget_t* widget)
 {
 	ASSERT(widget);
 
 	vkk_uiText_t*   self   = (vkk_uiText_t*) widget;
 	vkk_uiScreen_t* screen = widget->screen;
 
-	if(state == VKK_UI_WIDGET_POINTER_UP)
-	{
-		// acquire focus for input_fn
-		vkk_engine_platformCmd(screen->engine,
-		                       VKK_PLATFORM_CMD_SOFTKEY_SHOW);
-		vkk_uiScreen_focus(screen, widget);
-	}
+	// acquire focus for input_fn
+	vkk_engine_platformCmd(screen->engine,
+	                       VKK_PLATFORM_CMD_SOFTKEY_SHOW);
+	vkk_uiScreen_focus(screen, widget);
 
 	// optionally call the base click_fn
 	vkk_uiWidgetClick_fn click_fn = self->click_fn;
 	if(click_fn)
 	{
-		return (*click_fn)(widget, state, x, y);
+		(*click_fn)(widget);
 	}
-
-	return 1;
 }
 
 static void vkk_uiText_draw(vkk_uiWidget_t* widget)
@@ -368,7 +362,7 @@ vkk_uiText_keyPress(vkk_uiWidget_t* widget,
 		                          (const void*) self->xyuv);
 	}
 
-	vkk_uiScreen_dirty(widget->screen);
+	vkk_uiScreen_layoutDirty(widget->screen);
 	return 1;
 }
 
@@ -847,7 +841,7 @@ vkk_uiText_label(vkk_uiText_t* self, const char* fmt, ...)
 		                          (const void*) self->xyuv);
 	}
 
-	vkk_uiScreen_dirty(screen);
+	vkk_uiScreen_layoutDirty(screen);
 	return 1;
 }
 

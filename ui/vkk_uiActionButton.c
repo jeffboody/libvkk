@@ -31,40 +31,35 @@
 * private                                                  *
 ***********************************************************/
 
-static int
-vkk_uiActionButton_click(vkk_uiWidget_t* widget,
-                         int state, float x, float y)
+static void
+vkk_uiActionButton_click(vkk_uiWidget_t* widget)
 {
 	ASSERT(widget);
 
 	vkk_uiActionButton_t* self = (vkk_uiActionButton_t*) widget;
-	if(state == VKK_UI_WIDGET_POINTER_UP)
-	{
-		vkk_uiActionPopup_t** _popup = self->_popup;
-		if(_popup)
-		{
-			vkk_uiScreen_popupSet(widget->screen,
-			                      self->parent,
-			                      *_popup);
-		}
-		else
-		{
-			vkk_uiScreen_popupSet(widget->screen, NULL, NULL);
-		}
 
-		vkk_uiWindow_t** _window = self->_window;
-		if(_window)
-		{
-			vkk_uiScreen_windowPush(widget->screen, *_window);
-		}
+	vkk_uiActionPopup_t** _popup = self->_popup;
+	if(_popup)
+	{
+		vkk_uiScreen_popupSet(widget->screen,
+		                      self->parent,
+		                      *_popup);
+	}
+	else
+	{
+		vkk_uiScreen_popupSet(widget->screen, NULL, NULL);
+	}
+
+	vkk_uiWindow_t** _window = self->_window;
+	if(_window)
+	{
+		vkk_uiScreen_windowPush(widget->screen, *_window);
 	}
 
 	if(self->click_fn)
 	{
-		(*self->click_fn)(widget, state, x, y);
+		(*self->click_fn)(widget);
 	}
-
-	return 1;
 }
 
 static int

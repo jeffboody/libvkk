@@ -170,11 +170,12 @@ vkk_uiListBox_size(vkk_uiWidget_t* widget, float* w, float* h)
 	}
 }
 
-static int
-vkk_uiListBox_click(vkk_uiWidget_t* widget,
-                    int state, float x, float y)
+static vkk_uiWidget_t*
+vkk_uiListBox_action(vkk_uiWidget_t* widget,
+                     vkk_uiWidgetActionInfo_t* info)
 {
 	ASSERT(widget);
+	ASSERT(info);
 
 	vkk_uiListBox_t* self = (vkk_uiListBox_t*) widget;
 	cc_listIter_t*   iter = cc_list_head(self->list);
@@ -182,16 +183,23 @@ vkk_uiListBox_click(vkk_uiWidget_t* widget,
 	{
 		vkk_uiWidget_t* tmp;
 		tmp = (vkk_uiWidget_t*) cc_list_peekIter(iter);
-		if(vkk_uiWidget_click(tmp, state, x, y))
+
+		tmp = vkk_uiWidget_action(tmp, info);
+		if(tmp)
 		{
-			return 1;
+			return tmp;
 		}
 
 		iter = cc_list_next(iter);
 	}
 
-	// listboxes are always clicked
-	return 1;
+	// receive DOWN action for scrolling
+	if(info->action == VKK_UI_WIDGET_ACTION_DOWN)
+	{
+		return widget;
+	}
+
+	return NULL;
 }
 
 static void
@@ -485,7 +493,7 @@ vkk_uiListBox_new(vkk_uiScreen_t* screen, size_t wsize,
 	vkk_uiWidgetFn_t fn =
 	{
 		.priv       = lbfn->priv,
-		.click_fn   = vkk_uiListBox_click,
+		.action_fn  = vkk_uiListBox_action,
 		.drag_fn    = vkk_uiListBox_drag,
 		.draw_fn    = vkk_uiListBox_draw,
 		.layout_fn  = vkk_uiListBox_layout,
@@ -501,8 +509,6 @@ vkk_uiListBox_new(vkk_uiScreen_t* screen, size_t wsize,
 	{
 		return NULL;
 	}
-
-	vkk_uiWidget_soundFx(&self->base, 0);
 
 	self->list = cc_list_new();
 	if(self->list == NULL)
@@ -542,7 +548,7 @@ void vkk_uiListBox_clear(vkk_uiListBox_t* self)
 
 	cc_list_discard(self->list);
 	vkk_uiWidget_scrollTop(widget);
-	vkk_uiScreen_dirty(widget->screen);
+	vkk_uiScreen_layoutDirty(widget->screen);
 }
 
 int vkk_uiListBox_add(vkk_uiListBox_t* self,
@@ -558,7 +564,7 @@ int vkk_uiListBox_add(vkk_uiListBox_t* self,
 	}
 
 	vkk_uiWidget_scrollTop(widget);
-	vkk_uiScreen_dirty(widget->screen);
+	vkk_uiScreen_layoutDirty(widget->screen);
 
 	return 1;
 }
@@ -578,7 +584,7 @@ int vkk_uiListBox_addSorted(vkk_uiListBox_t* self,
 	}
 
 	vkk_uiWidget_scrollTop(widget);
-	vkk_uiScreen_dirty(widget->screen);
+	vkk_uiScreen_layoutDirty(widget->screen);
 
 	return 1;
 }
@@ -599,7 +605,7 @@ vkk_uiWidget_t* vkk_uiListBox_remove(vkk_uiListBox_t* self,
 	vkk_uiWidget_t* widget = &self->base;
 
 	vkk_uiWidget_scrollTop(widget);
-	vkk_uiScreen_dirty(widget->screen);
+	vkk_uiScreen_layoutDirty(widget->screen);
 
 	return (vkk_uiWidget_t*)
 	       cc_list_remove(self->list, _iter);

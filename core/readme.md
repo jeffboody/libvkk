@@ -809,25 +809,32 @@ recommended to bind unused sets to avoid this scenario.
 	                                  uint32_t us_count,
 	                                  vkk_uniformSet_t** us_array);
 
-The vkk\_renderer\_clearDepth() function can be called to
-reset the depth buffer.
-
-	void vkk_renderer_clearDepth(vkk_renderer_t* self);
-
-The app may override the viewport or scissor with the
-vkk\_renderer\_viewport() and vkk\_renderer\_scissor()
-functions.
+The vkk\_renderer\_viewport() function can be called to set the
+viewport.
 
 	void vkk_renderer_viewport(vkk_renderer_t* self,
 	                           float x,
 	                           float y,
 	                           float width,
 	                           float height);
+
+The vkk\_renderer\_scissor() function can be called to set the
+scissor.
+
 	void vkk_renderer_scissor(vkk_renderer_t* self,
-	                          uint32_t x,
-	                          uint32_t y,
+	                          int32_t x,
+	                          int32_t y,
 	                          uint32_t width,
 	                          uint32_t height);
+
+The vkk\_renderer\_clearDepth() function can be called to
+clear the depth buffer.
+
+	void vkk_renderer_clearDepth(vkk_renderer_t* self,
+	                             int32_t x,
+	                             int32_t y,
+	                             uint32_t width,
+	                             uint32_t height);
 
 The following drawing functions may be called by the app to
 issue drawing commands. Note that the vertex format of the

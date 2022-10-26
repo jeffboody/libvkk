@@ -598,6 +598,10 @@ void vkk_platform_cmd(vkk_platform_t* self,
 		self->document_fn   = info->document_fn;
 		snprintf(self->document_uri, 256, "%s", info->msg);
 	}
+	else if(info->cmd == VKK_PLATFORM_CMD_LOADURL)
+	{
+		LOGI("url=%s", info->msg);
+	}
 }
 
 /***********************************************************
@@ -688,7 +692,26 @@ int main(int argc, char** argv)
 						.repeat  = se.key.repeat
 					}
 				};
-				(*onEvent)(platform->priv, &ve);
+
+				int pressed = (*onEvent)(platform->priv, &ve);
+				if((type    == VKK_PLATFORM_EVENTTYPE_KEY_UP) &&
+				   (keycode == VKK_PLATFORM_KEYCODE_ESCAPE)   &&
+				   (pressed == 0))
+				{
+					// double tap back to exit
+					if((ts - platform->escape_t0) < 0.5)
+					{
+						vkk_platformCmdInfo_t info =
+						{
+							.cmd = VKK_PLATFORM_CMD_EXIT,
+						};
+						vkk_platform_cmd(platform, &info);
+					}
+					else
+					{
+						platform->escape_t0 = ts;
+					}
+				}
 			}
 			else if((se.type == SDL_MOUSEBUTTONUP)   ||
 			        (se.type == SDL_MOUSEBUTTONDOWN) ||

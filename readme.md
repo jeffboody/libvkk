@@ -87,22 +87,26 @@ VKK UI (User Interface)
 
 The user interface widgets exposed by VKK UI include.
 
-* Action Bar
-* Bulletbox
-* Checkbox
-* File Picker
-* Hline
-* Info Panel
-* Layer
-* Listbox
-* Radiolist
-* Sprite
-* Status Bar
-* Text
-* Text Entry
-* Textbox
+* Screen
 * Widget
 * Window
+* File Picker
+* Input Window
+* Bullet Box
+* Check Box
+* Graphics Box
+* Layer
+* List Box
+* Radio List
+* Sprite
+* Text
+* Text Box
+* Separator
+* Info Panel
+* Status Bar
+* Action Bar
+* Action Button
+* Action Popup
 
 See [VKK UI](ui/readme.md) for more details.
 

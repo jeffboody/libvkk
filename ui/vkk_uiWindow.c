@@ -33,11 +33,12 @@
 * private                                                  *
 ***********************************************************/
 
-static int
-vkk_uiWindow_click(vkk_uiWidget_t* widget,
-                   int state, float x, float y)
+static vkk_uiWidget_t*
+vkk_uiWindow_action(vkk_uiWidget_t* widget,
+                    vkk_uiWidgetActionInfo_t* info)
 {
 	ASSERT(widget);
+	ASSERT(info);
 
 	vkk_uiWindow_t* self   = (vkk_uiWindow_t*) widget;
 	vkk_uiWidget_t* title  = (vkk_uiWidget_t*) self->title;
@@ -45,35 +46,64 @@ vkk_uiWindow_click(vkk_uiWidget_t* widget,
 	vkk_uiWidget_t* layer0 = (vkk_uiWidget_t*) self->layer0;
 	vkk_uiWidget_t* layer1 = (vkk_uiWidget_t*) self->layer1;
 	vkk_uiWidget_t* footer = (vkk_uiWidget_t*) self->footer;
-	if((title  && vkk_uiWidget_click(title,  state, x, y)) ||
-	   (page   && vkk_uiWidget_click(page,   state, x, y)) ||
-	   (layer0 && vkk_uiWidget_click(layer0, state, x, y)) ||
-	   (layer1 && vkk_uiWidget_click(layer1, state, x, y)) ||
-	   (footer && vkk_uiWidget_click(footer, state, x, y)))
+
+	// send events front-to-back
+
+	vkk_uiWidget_t* tmp = NULL;
+	if(title)
 	{
-		return 1;
+		tmp = vkk_uiWidget_action(title, info);
+		if(tmp)
+		{
+			return tmp;
+		}
 	}
 
-	// windows are always clicked unless transparent
-	if(self->transparent)
+	if(footer)
 	{
-		return 0;
+		tmp = vkk_uiWidget_action(footer, info);
+		if(tmp)
+		{
+			return tmp;
+		}
 	}
-	return 1;
+
+	if(layer1)
+	{
+		tmp = vkk_uiWidget_action(layer1, info);
+		if(tmp)
+		{
+			return tmp;
+		}
+	}
+
+	if(layer0)
+	{
+		tmp = vkk_uiWidget_action(layer0, info);
+		if(tmp)
+		{
+			return tmp;
+		}
+	}
+
+	if(page)
+	{
+		tmp = vkk_uiWidget_action(page, info);
+		if(tmp)
+		{
+			return tmp;
+		}
+	}
+
+	// only children receive actions
+	return NULL;
 }
 
-static int
-vkk_uiWindow_clickTitle(vkk_uiWidget_t* widget,
-                        int state, float x, float y)
+static void vkk_uiWindow_clickTitle(vkk_uiWidget_t* widget)
 {
 	ASSERT(widget);
 
-	if(state == VKK_UI_WIDGET_POINTER_UP)
-	{
-		vkk_uiScreen_popupSet(widget->screen, NULL, NULL);
-	}
-
-	return 1;
+	vkk_uiScreen_popupSet(widget->screen, NULL, NULL);
 }
 
 static int
@@ -131,6 +161,7 @@ vkk_uiWindow_size(vkk_uiWidget_t* widget, float* w, float* h)
 	vkk_uiWidget_t* layer0 = (vkk_uiWidget_t*) self->layer0;
 	vkk_uiWidget_t* layer1 = (vkk_uiWidget_t*) self->layer1;
 	vkk_uiWidget_t* footer = (vkk_uiWidget_t*) self->footer;
+	vkk_renderer_t* rend   = widget->screen->renderer;
 
 	float wmax = 0.0f;
 	float hsum = 0.0f;
@@ -190,22 +221,38 @@ vkk_uiWindow_size(vkk_uiWidget_t* widget, float* w, float* h)
 	// layout layer0
 	if(layer0)
 	{
-		tmp_w = *w;
-		tmp_h = *h - hsum;
-		if(tmp_h < 0.0f)
+		// override layer0 size
+		if(self->flags & VKK_UI_WINDOW_FLAG_FULLSCREEN)
 		{
-			tmp_h = 0.0f;
-		}
-		vkk_uiWidget_layoutSize(layer0, &tmp_w, &tmp_h);
+			uint32_t width;
+			uint32_t height;
+			vkk_renderer_surfaceSize(rend, &width, &height);
 
-		if(tmp_w > wmax)
-		{
-			wmax = tmp_w;
-		}
+			tmp_w = (float) width;
+			tmp_h = (float) height;
 
-		if(tmp_h > hbody)
+			vkk_uiWidget_layoutSize(layer0, &tmp_w, &tmp_h);
+		}
+		else
 		{
-			hbody = tmp_h;
+			tmp_w = *w;
+			tmp_h = *h - hsum;
+			if(tmp_h < 0.0f)
+			{
+				tmp_h = 0.0f;
+			}
+
+			vkk_uiWidget_layoutSize(layer0, &tmp_w, &tmp_h);
+
+			if(tmp_w > wmax)
+			{
+				wmax = tmp_w;
+			}
+
+			if(tmp_h > hbody)
+			{
+				hbody = tmp_h;
+			}
 		}
 	}
 
@@ -249,6 +296,7 @@ vkk_uiWindow_layout(vkk_uiWidget_t* widget,
 	vkk_uiWidget_t*       layer0 = (vkk_uiWidget_t*) self->layer0;
 	vkk_uiWidget_t*       layer1 = (vkk_uiWidget_t*) self->layer1;
 	vkk_uiWidget_t*       footer = (vkk_uiWidget_t*) self->footer;
+	vkk_renderer_t*       rend   = widget->screen->renderer;
 
 	// note that the window layout is a bit unique because
 	// the top/bottom borders are inserted between title/body
@@ -341,16 +389,34 @@ vkk_uiWindow_layout(vkk_uiWidget_t* widget,
 	// layout layer0
 	if(layer0)
 	{
-		rect_draw.t = t + title_h;
-		rect_draw.l = base->rect_border.l;
-		rect_draw.w = base->rect_border.w;
-		rect_draw.h = h - title_h - footer_h;
-		vkk_uiWidget_layoutAnchor(layer0, &rect_draw, &x, &y);
-		cc_rect1f_intersect(&rect_draw,
-		                    &base->rect_clip,
-		                    &rect_clip);
-		vkk_uiWidget_layoutXYClip(layer0, x, y, &rect_clip,
-		                          dragx, dragy);
+		if(self->flags & VKK_UI_WINDOW_FLAG_FULLSCREEN)
+		{
+			// override layer0 layout
+			uint32_t width;
+			uint32_t height;
+			vkk_renderer_surfaceSize(rend, &width, &height);
+
+			rect_draw.t = 0;
+			rect_draw.l = 0;
+			rect_draw.w = (float) width;
+			rect_draw.h = (float) height;
+			vkk_uiWidget_layoutAnchor(layer0, &rect_draw, &x, &y);
+			vkk_uiWidget_layoutXYClip(layer0, x, y, &rect_draw,
+			                          dragx, dragy);
+		}
+		else
+		{
+			rect_draw.t = t + title_h;
+			rect_draw.l = base->rect_border.l;
+			rect_draw.w = base->rect_border.w;
+			rect_draw.h = h - title_h - footer_h;
+			vkk_uiWidget_layoutAnchor(layer0, &rect_draw, &x, &y);
+			cc_rect1f_intersect(&rect_draw,
+			                    &base->rect_clip,
+			                    &rect_clip);
+			vkk_uiWidget_layoutXYClip(layer0, x, y, &rect_clip,
+			                          dragx, dragy);
+		}
 	}
 
 	// tricolor values
@@ -659,7 +725,7 @@ vkk_uiWindow_new(vkk_uiScreen_t* screen,
 	vkk_uiWidgetFn_t fn =
 	{
 		.priv         = wfn->priv,
-		.click_fn     = vkk_uiWindow_click,
+		.action_fn    = vkk_uiWindow_action,
 		.drag_fn      = vkk_uiWindow_drag,
 		.draw_fn      = vkk_uiWindow_draw,
 		.layout_fn    = vkk_uiWindow_layout,
@@ -677,7 +743,7 @@ vkk_uiWindow_new(vkk_uiScreen_t* screen,
 		return NULL;
 	}
 
-	vkk_uiWidget_soundFx(&self->base, 0);
+	self->flags = flags;
 
 	cc_vec4f_t color_banner;
 	cc_vec4f_t color_background;

@@ -56,32 +56,26 @@ vkk_uiInputWindow_input(vkk_uiWidget_t* widget,
 	vkk_uiScreen_windowPop(widget->screen);
 }
 
-static int
-vkk_uiInputWindow_clickAccept(vkk_uiWidget_t* widget,
-                              int state,
-                              float x, float y)
+static void
+vkk_uiInputWindow_clickAccept(vkk_uiWidget_t* widget)
 {
 	ASSERT(widget);
 
 	// widget is the accept button
 
-	if(state == VKK_UI_WIDGET_POINTER_UP)
+	vkk_uiInputWindow_t* self;
+	self = (vkk_uiInputWindow_t*) vkk_uiWidget_priv(widget);
+
+	const char* string = vkk_uiText_string(self->text);
+
+	// call input_fn with the InputWindow widget
+	// so the correct priv is available
+	vkk_uiWidgetInput_fn input_fn = self->input_fn;
+	if(input_fn)
 	{
-		vkk_uiInputWindow_t* self;
-		self = (vkk_uiInputWindow_t*) vkk_uiWidget_priv(widget);
-
-		const char* string = vkk_uiText_string(self->text);
-
-		// call input_fn with the InputWindow widget
-		// so the correct priv is available
-		vkk_uiWidgetInput_fn input_fn = self->input_fn;
-		if(input_fn)
-		{
-			(*input_fn)((vkk_uiWidget_t*) self, string);
-		}
-		vkk_uiScreen_windowPop(widget->screen);
+		(*input_fn)((vkk_uiWidget_t*) self, string);
 	}
-	return 1;
+	vkk_uiScreen_windowPop(widget->screen);
 }
 
 /***********************************************************

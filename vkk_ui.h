@@ -39,6 +39,7 @@ typedef struct vkk_uiFileList_s       vkk_uiFileList_t;
 typedef struct vkk_uiFilePicker_s     vkk_uiFilePicker_t;
 typedef struct vkk_uiFontcoords_s     vkk_uiFontcoords_t;
 typedef struct vkk_uiFont_s           vkk_uiFont_t;
+typedef struct vkk_uiGraphicsBox_s    vkk_uiGraphicsBox_t;
 typedef struct vkk_uiInfoPanelFn_s    vkk_uiInfoPanelFn_t;
 typedef struct vkk_uiInfoPanel_s      vkk_uiInfoPanel_t;
 typedef struct vkk_uiLayerFn_s        vkk_uiLayerFn_t;
@@ -83,6 +84,7 @@ typedef struct vkk_uiWindow_s         vkk_uiWindow_t;
 
 // derive from widget
 #include "ui/vkk_uiFileList.h"
+#include "ui/vkk_uiGraphicsBox.h"
 #include "ui/vkk_uiSeparator.h"
 #include "ui/vkk_uiLayer.h"
 #include "ui/vkk_uiListBox.h"

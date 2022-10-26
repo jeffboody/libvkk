@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020 Jeff Boody
+ * Copyright (c) 2022 Jeff Boody
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
  * copy of this software and associated documentation files (the "Software"),
@@ -21,36 +21,34 @@
  *
  */
 
-#ifndef vkk_platformLinux_H
-#define vkk_platformLinux_H
+#ifndef vkk_uiGraphicsBox_H
+#define vkk_uiGraphicsBox_H
 
-#include "../platform/vkk_platformCmdInfo.h"
-#include "../vkk.h"
-#include "../vkk_platform.h"
-
-typedef struct vkk_platform_s
+typedef struct vkk_uiGraphicsBoxFn_s
 {
-	int    running;
-	int    paused;
-	float  width;
-	float  height;
-	double escape_t0;
+	// priv and functions may be NULL
+	void*                  priv;
+	vkk_uiWidgetAction_fn  action_fn;
+	vkk_uiWidgetClick_fn   click_fn;
+	vkk_uiWidgetDraw_fn    draw_fn;
+	vkk_uiWidgetRefresh_fn refresh_fn;
+} vkk_uiGraphicsBoxFn_t;
 
-	// joystick state
-	int           joy_id;
-	SDL_Joystick* joy;
+typedef struct vkk_uiGraphicsBox_s
+{
+	vkk_uiWidget_t base;
 
-	// document state
-	int                        document_fd;
-	char                       document_uri[256];
-	void*                      document_priv;
-	vkk_platformCmd_documentFn document_fn;
+	vkk_uiWidgetDraw_fn draw_fn;
 
-	vkk_engine_t* engine;
-	void*         priv;
-} vkk_platform_t;
+	int clear_depth;
+} vkk_uiGraphicsBox_t;
 
-void vkk_platform_cmd(vkk_platform_t* self,
-                      vkk_platformCmdInfo_t* info);
+vkk_uiGraphicsBox_t* vkk_uiGraphicsBox_new(vkk_uiScreen_t* screen,
+                                           size_t wsize,
+                                           vkk_uiGraphicsBoxFn_t* gbfn,
+                                           vkk_uiWidgetLayout_t* layout,
+                                           int clear_depth,
+                                           cc_vec4f_t* color);
+void                 vkk_uiGraphicsBox_delete(vkk_uiGraphicsBox_t** _self);
 
 #endif

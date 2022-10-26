@@ -27,8 +27,9 @@
 typedef struct vkk_uiSpriteFn_s
 {
 	// priv and functions may be NULL
-	void*                priv;
-	vkk_uiWidgetClick_fn click_fn;
+	void*                 priv;
+	vkk_uiWidgetAction_fn action_fn;
+	vkk_uiWidgetClick_fn  click_fn;
 } vkk_uiSpriteFn_t;
 
 typedef struct vkk_uiSprite_s

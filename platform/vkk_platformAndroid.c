@@ -1408,7 +1408,25 @@ void android_main(struct android_app* app)
 			vkk_platformEvent_t e;
 			while(vkk_platform_poll(platform, &e))
 			{
-				(*onEvent)(platform->priv, &e);
+				int pressed = (*onEvent)(platform->priv, &e);
+				if((e.type == VKK_PLATFORM_EVENTTYPE_KEY_UP) &&
+				   (e.key.keycode == VKK_PLATFORM_KEYCODE_ESCAPE) &&
+				   (pressed == 0))
+				{
+					// double tap back to exit
+					if((e.ts - platform->escape_t0) < 0.5)
+					{
+						vkk_platformCmdInfo_t info =
+						{
+							.cmd = VKK_PLATFORM_CMD_EXIT,
+						};
+						vkk_platform_cmd(platform, &info);
+					}
+					else
+					{
+						platform->escape_t0 = e.ts;
+					}
+				}
 			}
 		}
 

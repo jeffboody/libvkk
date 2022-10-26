@@ -404,17 +404,21 @@ void             vkk_renderer_bindGraphicsPipeline(vkk_renderer_t* self,
 void             vkk_renderer_bindUniformSets(vkk_renderer_t* self,
                                               uint32_t us_count,
                                               vkk_uniformSet_t** us_array);
-void             vkk_renderer_clearDepth(vkk_renderer_t* self);
 void             vkk_renderer_viewport(vkk_renderer_t* self,
                                        float x,
                                        float y,
                                        float width,
                                        float height);
 void             vkk_renderer_scissor(vkk_renderer_t* self,
-                                      uint32_t x,
-                                      uint32_t y,
+                                      int32_t x,
+                                      int32_t y,
                                       uint32_t width,
                                       uint32_t height);
+void             vkk_renderer_clearDepth(vkk_renderer_t* self,
+                                         int32_t x,
+                                         int32_t y,
+                                         uint32_t width,
+                                         uint32_t height);
 void             vkk_renderer_draw(vkk_renderer_t* self,
                                    uint32_t vertex_count,
                                    uint32_t vertex_buffer_count,

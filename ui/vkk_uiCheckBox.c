@@ -33,24 +33,20 @@
 * private                                                  *
 ***********************************************************/
 
-static int
-vkk_uiCheckBox_click(vkk_uiWidget_t* widget,
-                     int state, float x, float y)
+static void
+vkk_uiCheckBox_click(vkk_uiWidget_t* widget)
 {
 	ASSERT(widget);
 
 	vkk_uiCheckBox_t* self = (vkk_uiCheckBox_t*) widget;
-	if(state == VKK_UI_WIDGET_POINTER_UP)
-	{
-		self->value = 1 - self->value;
 
-		vkk_uiWidgetValue_fn value_fn = widget->fn.value_fn;
-		if(value_fn)
-		{
-			(*value_fn)(widget, self->value);
-		}
+	self->value = 1 - self->value;
+
+	vkk_uiWidgetValue_fn value_fn = widget->fn.value_fn;
+	if(value_fn)
+	{
+		(*value_fn)(widget, self->value);
 	}
-	return 1;
 }
 
 static int

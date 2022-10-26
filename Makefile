@@ -30,6 +30,7 @@ ifeq ($(VKK_USE_UI),1)
 		ui/vkk_uiFileList     \
 		ui/vkk_uiFilePicker   \
 		ui/vkk_uiFont         \
+		ui/vkk_uiGraphicsBox  \
 		ui/vkk_uiInfoPanel    \
 		ui/vkk_uiInputWindow  \
 		ui/vkk_uiLayer        \

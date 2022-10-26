@@ -280,16 +280,6 @@ vkk_uiTextBox_reflow(vkk_uiWidget_t* widget, float w, float h)
 }
 
 static int
-vkk_uiTextBox_click(vkk_uiWidget_t* widget,
-                    int state, float x, float y)
-{
-	ASSERT(widget);
-
-	// no-op
-	return 0;
-}
-
-static int
 vkk_uiTextBox_refresh(vkk_uiWidget_t* widget)
 {
 	ASSERT(widget);
@@ -349,28 +339,17 @@ vkk_uiTextBox_new(vkk_uiScreen_t* screen, size_t wsize,
 		reflow_fn = vkk_uiTextBox_reflow;
 	}
 
-	// optionally replace click function
-	vkk_uiWidget_t*      widget   = (vkk_uiWidget_t*) self;
-	vkk_uiWidgetClick_fn click_fn = vkk_uiTextBox_click;
-	if(tbfn->click_fn)
-	{
-		click_fn = tbfn->click_fn;
-
-		// enable sound effects since
-		// textbox derives from listbox
-		vkk_uiWidget_soundFx(widget, 1);
-	}
-
 	// override functions
 	vkk_uiWidgetFn_t fn_new =
 	{
-		.click_fn  = click_fn,
+		.click_fn  = tbfn->click_fn,
 		.reflow_fn = reflow_fn,
 	};
 	vkk_uiWidgetFn_t fn_old =
 	{
 		.priv = NULL
 	};
+	vkk_uiWidget_t* widget = (vkk_uiWidget_t*) self;
 	vkk_uiWidget_override(widget, &fn_new, &fn_old);
 
 	self->strings = cc_list_new();
@@ -496,7 +475,7 @@ void vkk_uiTextBox_clear(vkk_uiTextBox_t* self)
 	}
 
 	vkk_uiWidget_t* widget = (vkk_uiWidget_t*) self;
-	vkk_uiScreen_dirty(widget->screen);
+	vkk_uiScreen_layoutDirty(widget->screen);
 }
 
 void vkk_uiTextBox_printf(vkk_uiTextBox_t* self,

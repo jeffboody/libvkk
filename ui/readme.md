@@ -126,6 +126,17 @@ A check box is a specialization of a bullet box which
 includes standard check box icons and a pointer to an
 integer value for the check box state.
 
+Graphics Box
+------------
+
+A graphics box is a widget which allows an app to embed 3D
+graphics content. The graphics box uses a cooperative
+rendering model where the widget library initializes the
+scissor, viewport and clears the depth buffer (as needed).
+This ensures the 3D graphics content is composed seamlessly
+with other widgets. The widget library also routes action
+events including multi-touch gestures to the graphics box.
+
 Layer
 -----
 

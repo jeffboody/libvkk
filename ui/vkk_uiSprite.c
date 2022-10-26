@@ -180,6 +180,7 @@ vkk_uiSprite_new(vkk_uiScreen_t* screen,
 	vkk_uiWidgetFn_t fn =
 	{
 		.priv      = sfn->priv,
+		.action_fn = sfn->action_fn,
 		.aspect_fn = vkk_uiSprite_aspect,
 		.click_fn  = sfn->click_fn,
 		.draw_fn   = vkk_uiSprite_draw,

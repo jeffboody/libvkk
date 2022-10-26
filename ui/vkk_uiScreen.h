@@ -40,6 +40,12 @@
 #define VKK_UI_SCREEN_BIND_TEXT     3
 #define VKK_UI_SCREEN_BIND_TRICOLOR 4
 
+#define VKK_UI_SCREEN_ACTION_STATE_UP     0
+#define VKK_UI_SCREEN_ACTION_STATE_DOWN   1
+#define VKK_UI_SCREEN_ACTION_STATE_DRAG   2
+#define VKK_UI_SCREEN_ACTION_STATE_ROTATE 3
+#define VKK_UI_SCREEN_ACTION_STATE_SCALE  4
+
 typedef struct vkk_uiScreen_s
 {
 	vkk_engine_t*            engine;
@@ -74,6 +80,14 @@ typedef struct vkk_uiScreen_s
 	uint32_t h;
 	float    density;
 
+	// action event
+	int        action_state;
+	int        action_count;
+	double     action_ts;
+	cc_vec2f_t action_coord0;
+	cc_vec2f_t action_coord1;
+	cc_vec2f_t action_dragv;
+
 	// content rect
 	uint32_t content_rect_top;
 	uint32_t content_rect_left;
@@ -86,28 +100,20 @@ typedef struct vkk_uiScreen_s
 	// widget(s)
 	cc_list_t*      window_stack;
 	vkk_uiWidget_t* focus_widget;
-	vkk_uiWidget_t* move_widget;
+	vkk_uiWidget_t* action_widget; // for action events
 
 	// action bar/popup
 	vkk_uiActionBar_t*   action_bar;
 	vkk_uiActionPopup_t* action_popup;
 
 	// layout dirty flag
-	int dirty;
+	int layout_dirty;
 
-	// pointer generates click and drag events
-	int    pointer_state;
-	float  pointer_x0;
-	float  pointer_y0;
-	double pointer_t0;
-	float  pointer_vx;
-	float  pointer_vy;
+	// depth dirty widgets
+	cc_list_t* depth_dirty;
 
 	// recource.bfs
 	char resource[256];
-
-	// sound fx
-	int clicked;
 
 	// widget style used by helper functions
 	vkk_uiWidgetStyle_t widget_style;
@@ -128,15 +134,8 @@ vkk_uiScreen_t* vkk_uiScreen_new(size_t wsize,
                                  const char* resource,
                                  vkk_uiWidgetStyle_t* widget_style);
 void            vkk_uiScreen_delete(vkk_uiScreen_t** _self);
-int             vkk_uiScreen_pointerDown(vkk_uiScreen_t* self,
-                                         float x, float y,
-                                         double t0);
-int             vkk_uiScreen_pointerUp(vkk_uiScreen_t* self,
-                                       float x, float y,
-                                       double t0);
-int             vkk_uiScreen_pointerMove(vkk_uiScreen_t* self,
-                                         float x, float y,
-                                         double t0);
+void            vkk_uiScreen_eventAction(vkk_uiScreen_t* self,
+                                         vkk_platformEvent_t* event);
 void            vkk_uiScreen_eventContentRect(vkk_uiScreen_t* self,
                                               vkk_platformEventContentRect_t* e);
 void            vkk_uiScreen_eventDensity(vkk_uiScreen_t* self,
@@ -157,8 +156,6 @@ void            vkk_uiScreen_popupSet(vkk_uiScreen_t* self,
                                       vkk_uiActionPopup_t* action_popup);
 void            vkk_uiScreen_focus(vkk_uiScreen_t* self,
                                    vkk_uiWidget_t* focus);
-void            vkk_uiScreen_move(vkk_uiScreen_t* self,
-                                  vkk_uiWidget_t* move);
 void            vkk_uiScreen_rescale(vkk_uiScreen_t* self,
                                      int scale);
 void            vkk_uiScreen_draw(vkk_uiScreen_t* self);
@@ -196,20 +193,22 @@ void            vkk_uiScreen_sizef(vkk_uiScreen_t* self,
                                    float* w, float* h);
 int             vkk_uiScreen_scalei(vkk_uiScreen_t* self);
 float           vkk_uiScreen_scalef(vkk_uiScreen_t* self);
-void            vkk_uiScreen_dirty(vkk_uiScreen_t* self);
+void            vkk_uiScreen_layoutDirty(vkk_uiScreen_t* self);
 void            vkk_uiScreen_layoutBorder(vkk_uiScreen_t* self,
                                           int border,
                                           float* hborder,
                                           float* vborder);
-float           vkk_uiScreen_layoutHLine(vkk_uiScreen_t* self,
-                                         int size);
 float           vkk_uiScreen_layoutText(vkk_uiScreen_t* self,
                                         int size);
+int             vkk_uiScreen_depthDirty(vkk_uiScreen_t* self,
+                                        vkk_uiWidget_t* widget);
+void            vkk_uiScreen_depthMark(vkk_uiScreen_t* self,
+                                       vkk_uiWidget_t* widget);
+void            vkk_uiScreen_depthReset(vkk_uiScreen_t* self);
 void            vkk_uiScreen_bind(vkk_uiScreen_t* self,
                                   int bind);
 void            vkk_uiScreen_scissor(vkk_uiScreen_t* self,
                                      cc_rect1f_t* rect);
-void            vkk_uiScreen_playClick(vkk_uiScreen_t* self);
 vkk_uiFont_t*   vkk_uiScreen_font(vkk_uiScreen_t* self,
                                   int font_type);
 vkk_buffer_t*   vkk_uiScreen_textVb(vkk_uiScreen_t* self,

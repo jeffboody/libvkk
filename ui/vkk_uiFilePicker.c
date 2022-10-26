@@ -166,41 +166,31 @@ static int vkk_uiFilePicker_mkdir(const char* fname)
        return 1;
 }
 
-static int
-vkk_uiFilePicker_clickSelect(vkk_uiWidget_t* widget,
-                             int state, float x, float y)
+static void
+vkk_uiFilePicker_clickSelect(vkk_uiWidget_t* widget)
 {
 	ASSERT(widget);
 
 	vkk_uiFilePicker_t* self;
 	self = (vkk_uiFilePicker_t*) vkk_uiWidget_priv(widget);
 
-	if(state == VKK_UI_WIDGET_POINTER_UP)
-	{
-		// input string is determined in input function
-		vkk_uiFileList_input(&self->file_list->base, "");
-	}
-	return 1;
+	// input string is determined in input function
+	vkk_uiFileList_input(&self->file_list->base, "");
 }
 
-static int
-vkk_uiFilePicker_clickFolder(vkk_uiWidget_t* widget,
-                             int state, float x, float y)
+static void
+vkk_uiFilePicker_clickFolder(vkk_uiWidget_t* widget)
 {
 	ASSERT(widget);
 
 	vkk_uiFilePicker_t* self;
 	self = (vkk_uiFilePicker_t*) vkk_uiWidget_priv(widget);
 
-	if(state == VKK_UI_WIDGET_POINTER_UP)
-	{
-		vkk_uiInputWindow_labelText(self->input_window,
-		                            "%s", "");
-		vkk_uiScreen_windowPush(widget->screen,
-		                        (vkk_uiWindow_t*)
-		                        self->input_window);
-	}
-	return 1;
+	vkk_uiInputWindow_labelText(self->input_window,
+	                            "%s", "");
+	vkk_uiScreen_windowPush(widget->screen,
+	                        (vkk_uiWindow_t*)
+	                        self->input_window);
 }
 
 /***********************************************************

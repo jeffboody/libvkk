@@ -69,28 +69,32 @@ vkk_uiLayer_size(vkk_uiWidget_t* widget, float* w, float* h)
 	*h = hmax;
 }
 
-static int
-vkk_uiLayer_click(vkk_uiWidget_t* widget,
-                  int state, float x, float y)
+static vkk_uiWidget_t*
+vkk_uiLayer_action(vkk_uiWidget_t* widget,
+                   vkk_uiWidgetActionInfo_t* info)
 {
 	ASSERT(widget);
+	ASSERT(info);
 
 	// send events front-to-back
 	vkk_uiLayer_t* self = (vkk_uiLayer_t*) widget;
 	cc_listIter_t* iter = cc_list_head(self->list);
 	while(iter)
 	{
-		widget = (vkk_uiWidget_t*) cc_list_peekIter(iter);
-		if(vkk_uiWidget_click(widget, state, x, y))
+		vkk_uiWidget_t* tmp;
+		tmp = (vkk_uiWidget_t*) cc_list_peekIter(iter);
+
+		tmp = vkk_uiWidget_action(tmp, info);
+		if(tmp)
 		{
-			return 1;
+			return tmp;
 		}
 
 		iter = cc_list_next(iter);
 	}
 
-	// layers are only clicked if a child is clicked
-	return 0;
+	// only children receive actions
+	return NULL;
 }
 
 static void
@@ -205,7 +209,7 @@ vkk_uiLayer_new(vkk_uiScreen_t* screen, size_t wsize,
 	vkk_uiWidgetFn_t fn =
 	{
 		.priv       = lfn->priv,
-		.click_fn   = vkk_uiLayer_click,
+		.action_fn  = vkk_uiLayer_action,
 		.drag_fn    = vkk_uiLayer_drag,
 		.draw_fn    = vkk_uiLayer_draw,
 		.layout_fn  = vkk_uiLayer_layout,
@@ -226,8 +230,6 @@ vkk_uiLayer_new(vkk_uiScreen_t* screen, size_t wsize,
 	{
 		return NULL;
 	}
-
-	vkk_uiWidget_soundFx(&self->base, 0);
 
 	self->list = cc_list_new();
 	if(self->list == NULL)
@@ -266,7 +268,7 @@ void vkk_uiLayer_clear(vkk_uiLayer_t* self)
 
 	cc_list_discard(self->list);
 	vkk_uiWidget_scrollTop(widget);
-	vkk_uiScreen_dirty(widget->screen);
+	vkk_uiScreen_layoutDirty(widget->screen);
 }
 
 int vkk_uiLayer_add(vkk_uiLayer_t* self,
@@ -282,7 +284,7 @@ int vkk_uiLayer_add(vkk_uiLayer_t* self,
 	}
 
 	vkk_uiWidget_scrollTop(widget);
-	vkk_uiScreen_dirty(widget->screen);
+	vkk_uiScreen_layoutDirty(widget->screen);
 
 	return 1;
 }
@@ -303,7 +305,7 @@ vkk_uiWidget_t* vkk_uiLayer_remove(vkk_uiLayer_t* self,
 	vkk_uiWidget_t* widget = &self->base;
 
 	vkk_uiWidget_scrollTop(widget);
-	vkk_uiScreen_dirty(widget->screen);
+	vkk_uiScreen_layoutDirty(widget->screen);
 
 	return (vkk_uiWidget_t*)
 	       cc_list_remove(self->list, _iter);

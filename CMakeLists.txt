@@ -16,6 +16,7 @@ if(VKK_USE_UI)
         ui/vkk_uiCheckBox.c
         ui/vkk_uiFilePicker.c
         ui/vkk_uiFont.c
+        ui/vkk_uiGraphicsBox.c
         ui/vkk_uiInfoPanel.c
         ui/vkk_uiInputWindow.c
         ui/vkk_uiLayer.c
