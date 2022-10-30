@@ -54,9 +54,16 @@ static void vkk_renderer_updatefps(vkk_renderer_t* self)
 	double dt0   = t - self->fps_t0;
 	++self->fps_frames;
 
-	// don't update fps every frame
-	if(dt0 >= 1.0)
+	if(dt0 >= 2.0)
 	{
+		// initialize fps
+		self->fps        = 60;
+		self->fps_t0     = t;
+		self->fps_frames = 0;
+	}
+	else if(dt0 >= 1.0)
+	{
+		// update fps
 		self->fps        = (int) (self->fps_frames/dt0 + 0.5);
 		self->fps_t0     = t;
 		self->fps_frames = 0;
