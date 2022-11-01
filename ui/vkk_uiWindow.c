@@ -537,13 +537,6 @@ vkk_uiWindow_newPage(vkk_uiScreen_t* screen,
 		.stretchx = 1.0f,
 	};
 
-	vkk_uiWidgetLayout_t layout_sidebar =
-	{
-		.border   = VKK_UI_WIDGET_BORDER_MEDIUM,
-		.wrapx    = VKK_UI_WIDGET_WRAP_STRETCH_PARENT,
-		.stretchx = 1.0f,
-	};
-
 	vkk_uiWidgetScroll_t scroll =
 	{
 		.scroll_bar = 1
@@ -552,11 +545,7 @@ vkk_uiWindow_newPage(vkk_uiScreen_t* screen,
 	vkk_uiScreen_colorScroll1(screen, &scroll.color1);
 
 	vkk_uiWidgetLayout_t* layout = &layout_default;
-	if(flags & VKK_UI_WINDOW_FLAG_PAGE_SIDEBAR)
-	{
-		layout = &layout_sidebar;
-	}
-	else if(flags & VKK_UI_WINDOW_FLAG_PAGE_POPUP)
+	if(flags & VKK_UI_WINDOW_FLAG_PAGE_POPUP)
 	{
 		layout            = &layout_popup;
 		scroll.scroll_bar = 0;
@@ -659,10 +648,6 @@ vkk_uiWindow_new(vkk_uiScreen_t* screen,
 	{
 		++page_count;
 	}
-	if(flags & VKK_UI_WINDOW_FLAG_PAGE_SIDEBAR)
-	{
-		++page_count;
-	}
 	if(flags & VKK_UI_WINDOW_FLAG_PAGE_POPUP)
 	{
 		++page_count;
@@ -699,20 +684,8 @@ vkk_uiWindow_new(vkk_uiScreen_t* screen,
 		.stretchx = 22.0f,
 	};
 
-	vkk_uiWidgetLayout_t layout_sidebar =
-	{
-		.wrapx    = VKK_UI_WIDGET_WRAP_STRETCH_TEXT_HMEDIUM,
-		.wrapy    = VKK_UI_WIDGET_WRAP_STRETCH_PARENT,
-		.stretchx = 24.0f,
-		.stretchy = 1.0f
-	};
-
 	vkk_uiWidgetLayout_t* layout = &layout_default;
-	if(flags & VKK_UI_WINDOW_FLAG_PAGE_SIDEBAR)
-	{
-		layout = &layout_sidebar;
-	}
-	else if(flags & VKK_UI_WINDOW_FLAG_PAGE_POPUP)
+	if(flags & VKK_UI_WINDOW_FLAG_PAGE_POPUP)
 	{
 		layout = &layout_popup;
 	}
@@ -788,8 +761,7 @@ vkk_uiWindow_new(vkk_uiScreen_t* screen,
 	};
 
 	const char** sprite_array = sprite_array_back;
-	if((flags & VKK_UI_WINDOW_FLAG_PAGE_POPUP) ||
-	   (flags & VKK_UI_WINDOW_FLAG_PAGE_SIDEBAR))
+	if(flags & VKK_UI_WINDOW_FLAG_PAGE_POPUP)
 	{
 		sprite_array = sprite_array_cancel;
 	}
@@ -817,7 +789,6 @@ vkk_uiWindow_new(vkk_uiScreen_t* screen,
 	}
 
 	if((flags & VKK_UI_WINDOW_FLAG_PAGE_DEFAULT) ||
-	   (flags & VKK_UI_WINDOW_FLAG_PAGE_SIDEBAR) ||
 	   (flags & VKK_UI_WINDOW_FLAG_PAGE_POPUP))
 	{
 		self->page = vkk_uiWindow_newPage(screen, flags);
