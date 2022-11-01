@@ -60,6 +60,8 @@ vkk_uiWindow_t*  vkk_uiWindow_new(vkk_uiScreen_t* screen,
                                   vkk_uiWindowFn_t* wfn,
                                   uint32_t flags);
 void             vkk_uiWindow_delete(vkk_uiWindow_t** _self);
+void             vkk_uiWindow_fullscreen(vkk_uiWindow_t* self,
+                                         int fullscreen);
 void             vkk_uiWindow_focus(vkk_uiWindow_t* self,
                                     vkk_uiWidget_t* focus);
 void             vkk_uiWindow_select(vkk_uiWindow_t* self,

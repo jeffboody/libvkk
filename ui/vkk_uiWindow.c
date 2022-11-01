@@ -868,6 +868,28 @@ void vkk_uiWindow_delete(vkk_uiWindow_t** _self)
 	}
 }
 
+void vkk_uiWindow_fullscreen(vkk_uiWindow_t* self,
+                             int fullscreen)
+{
+	ASSERT(self);
+
+	vkk_uiWidget_t* base = &self->base;
+
+	int enabled = self->flags & VKK_UI_WINDOW_FLAG_FULLSCREEN;
+	if(fullscreen && (enabled == 0))
+	{
+		// enable fullscreen
+		self->flags |= VKK_UI_WINDOW_FLAG_FULLSCREEN;
+		vkk_uiScreen_layoutDirty(base->screen);
+	}
+	else if((fullscreen == 0) && enabled)
+	{
+		// disable fullscreen
+		self->flags &= ~VKK_UI_WINDOW_FLAG_FULLSCREEN;
+		vkk_uiScreen_layoutDirty(base->screen);
+	}
+}
+
 void vkk_uiWindow_focus(vkk_uiWindow_t* self,
                         vkk_uiWidget_t* focus)
 {
