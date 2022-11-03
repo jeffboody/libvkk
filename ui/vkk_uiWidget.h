@@ -73,6 +73,7 @@ typedef struct vkk_uiWidgetActionInfo_s
 	int        action;
 	int        count;
 	double     ts;
+	double     dt;
 	cc_vec2f_t coord0;
 	cc_vec2f_t coord1;
 

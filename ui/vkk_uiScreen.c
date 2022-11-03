@@ -1026,6 +1026,7 @@ vkk_uiScreen_eventAction(vkk_uiScreen_t* self,
 		.action = VKK_UI_WIDGET_ACTION_UP,
 		.count  = ecount,
 		.ts     = ets,
+		.dt     = ets - ats,
 		.coord0 =
 		{
 			.x = ecoord0->x,
