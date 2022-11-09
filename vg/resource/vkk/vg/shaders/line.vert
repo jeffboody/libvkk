@@ -26,9 +26,14 @@
 layout(location=0) in vec4 xyst;
 layout(location=1) in vec2 dxdy;
 
-layout(std140, set=0, binding=0) uniform uniformMvp
+layout(std140, set=0, binding=0) uniform uniformPm
 {
-	mat4 mvp;
+	mat4 pm;
+};
+
+layout(std140, set=1, binding=0) uniform uniformMvm
+{
+	mat4 mvm;
 };
 
 layout(std140, set=2, binding=1) uniform uniformBrush12WidthCap
@@ -40,6 +45,7 @@ layout(location=0) out vec2 varying_st;
 
 void main()
 {
+	mat4  mvp   = pm*mvm;
 	float width = brush12WidthCap.z;
 	varying_st  = xyst.zw;
 	gl_Position = mvp*vec4(xyst.xy + width*dxdy, -1.0, 1.0);

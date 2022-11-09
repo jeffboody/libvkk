@@ -23,7 +23,7 @@
 
 #version 450
 
-layout(std140, set=1, binding=0) uniform uniformColor
+layout(std140, set=2, binding=0) uniform uniformColor
 {
 	vec4 color;
 };

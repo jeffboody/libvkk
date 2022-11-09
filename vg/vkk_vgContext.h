@@ -33,19 +33,41 @@ typedef struct vkk_vgContext_s
 	vkk_renderer_t*          rend;
 	vkk_uniformSetFactory_t* usf0;
 	vkk_uniformSetFactory_t* usf1;
-	vkk_uniformSetFactory_t* usf2;
-	vkk_pipelineLayout_t*    pl;
+	vkk_uniformSetFactory_t* usf2_line;
+	vkk_uniformSetFactory_t* usf2_poly;
+	vkk_uniformSetFactory_t* usf3_line;
+	vkk_pipelineLayout_t*    pl_line;
+	vkk_pipelineLayout_t*    pl_poly;
 	vkk_graphicsPipeline_t*  gp_line;
 	vkk_graphicsPipeline_t*  gp_poly;
-	vkk_buffer_t*            ub00_mvp;
-	vkk_uniformSet_t*        us0;
 
-	// us1: static color buffer
-	// us2: non-static dist
-	//      static brush12WidthCap reference
-	cc_list_t* list_us2[2];
-	cc_map_t*  map_us1_color;
-	cc_map_t*  map_ub21_brush12WidthCap;
+	// line/poly pm
+	// updated once per frame
+	// layout(std140, set=0, binding=0) uniform uniformPm
+	vkk_buffer_t*     ub00_pm;
+	vkk_uniformSet_t* us0;
+
+	// line/poly mvm
+	// updated zero or more times per frame
+	// default identity matrix is static
+	// layout(std140, set=1, binding=0) uniform uniformMvm
+	vkk_buffer_t*     ub10_mvm_identity;
+	vkk_uniformSet_t* us1;
+	cc_list_t*        list_usb1[2];
+	cc_list_t*        stack_usb1; // references
+
+	// static line style
+	// layout(std140, set=2, binding=0) uniform uniformColor
+	// layout(std140, set=2, binding=1) uniform uniformBrush12WidthCap
+	cc_map_t* map_usb2_line;
+
+	// static poly style
+	// layout(std140, set=2, binding=0) uniform uniformColor
+	cc_map_t* map_usb2_poly;
+
+	// line state updated per draw
+	// layout(std140, set=3, binding=0) uniform uniformDist
+	cc_list_t* list_usb3_line[2];
 } vkk_vgContext_t;
 
 // protected

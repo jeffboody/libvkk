@@ -105,9 +105,12 @@ corresponding bind type.
 	vkk_vgContext_t* vkk_vgContext_new(vkk_renderer_t* rend);
 	void             vkk_vgContext_delete(vkk_vgContext_t** _self);
 	void             vkk_vgContext_reset(vkk_vgContext_t* self,
-	                                     cc_mat4f_t* mvp);
+	                                     cc_mat4f_t* pm);
 	void             vkk_vgContext_bindLines(vkk_vgContext_t* self);
 	void             vkk_vgContext_bindPolygons(vkk_vgContext_t* self);
+	int              vkk_vgContext_pushMatrix(vkk_vgContext_t* self,
+	                                          cc_mat4f_t* mvm);
+	void             vkk_vgContext_popMatrix(vkk_vgContext_t* self);
 
 The primitive drawing functions are as follows.
 
@@ -140,11 +143,11 @@ The primitive drawing functions are as follows.
 
 A typical rendering sequence might be as follows.
 
-	cc_mat4f_t mvp;
-	cc_mat4f_orthoVK(&mvp, 1, l, r,
+	cc_mat4f_t pm;
+	cc_mat4f_orthoVK(&pm, 1, l, r,
 	                 b, t, 0.0f, 2.0f);
 	vkk_renderer_beginDefault(default, ...);
-	vkk_vgContext_reset(ctx, &mvp);
+	vkk_vgContext_reset(ctx, &pm);
 	vkk_vgContext_bindPolygons(ctx);
 	vkk_vgPolygon_draw(poly1, ctx, poly_style);
 	vkk_vgPolygon_draw(poly2, ctx, poly_style);

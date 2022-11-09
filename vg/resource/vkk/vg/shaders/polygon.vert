@@ -25,12 +25,18 @@
 
 layout(location=0) in vec2 xy;
 
-layout(std140, set=0, binding=0) uniform uniformMvp
+layout(std140, set=0, binding=0) uniform uniformPm
 {
-	mat4 mvp;
+	mat4 pm;
+};
+
+layout(std140, set=1, binding=0) uniform uniformMvm
+{
+	mat4 mvm;
 };
 
 void main()
 {
+	mat4 mvp    = pm*mvm;
 	gl_Position = mvp*vec4(xy, -1.0, 1.0);
 }

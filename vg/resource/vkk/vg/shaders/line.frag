@@ -25,19 +25,19 @@
 
 layout(location=0) in vec2 varying_st;
 
-layout(std140, set=1, binding=0) uniform uniformColor
+layout(std140, set=2, binding=0) uniform uniformColor
 {
 	vec4 color;
-};
-
-layout(std140, set=2, binding=0) uniform uniformDist
-{
-	float dist;
 };
 
 layout(std140, set=2, binding=1) uniform uniformBrush12WidthCap
 {
 	vec4 brush12WidthCap;
+};
+
+layout(std140, set=3, binding=0) uniform uniformDist
+{
+	float dist;
 };
 
 layout(location=0) out vec4 fragColor;
