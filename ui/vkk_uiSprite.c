@@ -376,32 +376,6 @@ vkk_uiSprite_newPageImage(vkk_uiScreen_t* screen,
 }
 
 vkk_uiSprite_t*
-vkk_uiSprite_newSidebarImage(vkk_uiScreen_t* screen,
-                             vkk_uiSpriteFn_t* sfn,
-                             const char** sprite_array)
-{
-	ASSERT(screen);
-	ASSERT(sfn);
-	ASSERT(sprite_array);
-
-	vkk_uiWidgetLayout_t sprite_layout =
-	{
-		.anchor   = VKK_UI_WIDGET_ANCHOR_TC,
-		.wrapx    = VKK_UI_WIDGET_WRAP_STRETCH_TEXT_VLARGE,
-		.wrapy    = VKK_UI_WIDGET_WRAP_STRETCH_TEXT_VLARGE,
-		.stretchx = 2.5f,
-		.stretchy = 2.5f
-	};
-
-	cc_vec4f_t color;
-	vkk_uiScreen_colorPageImage(screen, &color);
-
-	return vkk_uiSprite_new(screen, 0, sfn,
-	                        &sprite_layout, &color,
-	                        sprite_array);
-}
-
-vkk_uiSprite_t*
 vkk_uiSprite_newStatusIcon(vkk_uiScreen_t* screen,
                            vkk_uiSpriteFn_t* sfn,
                            const char** sprite_array)

@@ -63,9 +63,6 @@ vkk_uiSprite_t* vkk_uiSprite_new(vkk_uiScreen_t* screen,
 vkk_uiSprite_t* vkk_uiSprite_newPageImage(vkk_uiScreen_t* screen,
                                           vkk_uiSpriteFn_t* sfn,
                                           const char** sprite_array);
-vkk_uiSprite_t* vkk_uiSprite_newSidebarImage(vkk_uiScreen_t* screen,
-                                             vkk_uiSpriteFn_t* sfn,
-                                             const char** sprite_array);
 vkk_uiSprite_t* vkk_uiSprite_newStatusIcon(vkk_uiScreen_t* screen,
                                            vkk_uiSpriteFn_t* sfn,
                                            const char** sprite_array);
