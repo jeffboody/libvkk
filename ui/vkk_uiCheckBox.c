@@ -131,7 +131,7 @@ vkk_uiCheckBox_newPageItem(vkk_uiScreen_t* screen,
 		{
 			.font_type = VKK_UI_TEXT_FONTTYPE_REGULAR,
 			.size      = VKK_UI_TEXT_SIZE_MEDIUM,
-			.spacing   = VKK_UI_TEXT_SPACING_MEDIUM
+			.spacing   = VKK_UI_TEXT_SPACING_LARGE,
 		}
 	};
 	vkk_uiScreen_colorPageItem(screen, &style.color_icon);

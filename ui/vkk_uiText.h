@@ -37,6 +37,7 @@
 #define VKK_UI_TEXT_SPACING_SMALL  0x10
 #define VKK_UI_TEXT_SPACING_MEDIUM 0x20
 #define VKK_UI_TEXT_SPACING_LARGE  0x40
+#define VKK_UI_TEXT_SPACING_XLARGE 0x80
 
 typedef struct vkk_uiTextFn_s
 {

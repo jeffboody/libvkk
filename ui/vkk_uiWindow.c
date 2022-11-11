@@ -742,7 +742,7 @@ vkk_uiWindow_new(vkk_uiScreen_t* screen,
 		{
 			.font_type = VKK_UI_TEXT_FONTTYPE_BOLD,
 			.size      = VKK_UI_TEXT_SIZE_MEDIUM,
-			.spacing   = VKK_UI_TEXT_SPACING_LARGE
+			.spacing   = VKK_UI_TEXT_SPACING_XLARGE,
 		}
 	};
 	vkk_uiScreen_colorBannerText(screen, &title_style.color_icon);

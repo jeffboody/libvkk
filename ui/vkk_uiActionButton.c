@@ -124,7 +124,7 @@ vkk_uiActionButton_new(vkk_uiScreen_t* screen,
 
 	vkk_uiWidgetLayout_t layout =
 	{
-		.border   = VKK_UI_WIDGET_BORDER_MEDIUM,
+		.border   = VKK_UI_WIDGET_BORDER_LARGE,
 		.wrapx    = VKK_UI_WIDGET_WRAP_STRETCH_TEXT_VMEDIUM,
 		.wrapy    = VKK_UI_WIDGET_WRAP_STRETCH_TEXT_VMEDIUM,
 		.stretchx = 1.0f,

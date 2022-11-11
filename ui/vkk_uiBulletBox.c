@@ -273,7 +273,7 @@ vkk_uiBulletBox_newPageItem(vkk_uiScreen_t* screen,
 		{
 			.font_type = VKK_UI_TEXT_FONTTYPE_REGULAR,
 			.size      = VKK_UI_TEXT_SIZE_MEDIUM,
-			.spacing   = VKK_UI_TEXT_SPACING_MEDIUM
+			.spacing   = VKK_UI_TEXT_SPACING_LARGE
 		}
 	};
 	vkk_uiScreen_colorPageItem(screen, &style.color_icon);
@@ -327,7 +327,7 @@ vkk_uiBulletBox_newFooterItem(vkk_uiScreen_t* screen,
 		{
 			.font_type = VKK_UI_TEXT_FONTTYPE_BOLD,
 			.size      = VKK_UI_TEXT_SIZE_MEDIUM,
-			.spacing   = VKK_UI_TEXT_SPACING_LARGE
+			.spacing   = VKK_UI_TEXT_SPACING_XLARGE
 		}
 	};
 	vkk_uiScreen_colorFooterItem(screen, &style.color_icon);

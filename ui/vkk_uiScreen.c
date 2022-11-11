@@ -126,6 +126,10 @@ vkk_uiScreen_layoutBorder(vkk_uiScreen_t* self, int border,
 	{
 		*hborder = 1.5f*size;
 	}
+	else if(border & VKK_UI_WIDGET_BORDER_HXLARGE)
+	{
+		*hborder = 2.0f*size;
+	}
 
 	// vertical
 	if(border & VKK_UI_WIDGET_BORDER_VSMALL)
@@ -139,6 +143,10 @@ vkk_uiScreen_layoutBorder(vkk_uiScreen_t* self, int border,
 	else if(border & VKK_UI_WIDGET_BORDER_VLARGE)
 	{
 		*vborder = 1.5f*size;
+	}
+	else if(border & VKK_UI_WIDGET_BORDER_VXLARGE)
+	{
+		*vborder = 2.0f*size;
 	}
 }
 
