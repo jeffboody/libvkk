@@ -53,6 +53,10 @@ vkk_uiTricolor_t* vkk_uiTricolor_new(vkk_uiScreen_t* screen,
 		return NULL;
 	}
 
+	self->alpha0 = color0->a;
+	self->alpha1 = color1->a;
+	self->alpha2 = color2->a;
+
 	self->screen = screen;
 
 	self->vb_xyuv = vkk_buffer_new(screen->engine,
@@ -194,9 +198,9 @@ void vkk_uiTricolor_rect(vkk_uiTricolor_t* self,
 	cc_rect1f_copy(rect, &self->rect);
 }
 
-void vkk_uiTricolor_drawBuffer(vkk_uiTricolor_t* self,
-                               uint32_t vc,
-                               vkk_buffer_t* vb)
+void vkk_uiTricolor_drawBuffer0(vkk_uiTricolor_t* self,
+                                uint32_t vc,
+                                vkk_buffer_t* vb)
 {
 	ASSERT(self);
 	ASSERT(vb);
@@ -236,6 +240,18 @@ void vkk_uiTricolor_drawBuffer(vkk_uiTricolor_t* self,
 	};
 	vkk_renderer_bindUniformSets(screen->renderer,
 	                             4, us_tri);
+	vkk_renderer_draw(screen->renderer, vc, 1, &vb);
+}
+
+void vkk_uiTricolor_drawBuffer1(vkk_uiTricolor_t* self,
+                                uint32_t vc,
+                                vkk_buffer_t* vb)
+{
+	ASSERT(self);
+	ASSERT(vb);
+
+	vkk_uiScreen_t* screen = self->screen;
+
 	vkk_renderer_draw(screen->renderer, vc, 1, &vb);
 }
 

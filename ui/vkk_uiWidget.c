@@ -927,10 +927,61 @@ void vkk_uiWidget_draw(vkk_uiWidget_t* self)
 	}
 	else if((scroll->scroll_bar == 0) && self->tricolor)
 	{
-		vkk_uiScreen_scissor(screen, &rect_border_clip);
-		vkk_uiTricolor_drawBuffer(self->tricolor,
-		                          4*VKK_UI_WIDGET_BEZEL,
-		                          self->vb_xyuv);
+		// The following is an optimization which eliminates
+		// unnecessary window filling when the transparent flag
+		// is set.
+		float top    = rect_border_clip.t;
+		float bot    = rect_border_clip.t + rect_border_clip.h;
+		float a      = self->tricolor->a;
+		float b      = self->tricolor->b;
+		float alpha0 = self->tricolor->alpha0;
+		float alpha1 = self->tricolor->alpha1;
+		float alpha2 = self->tricolor->alpha2;
+		float a0     = alpha0*(a - top);
+		float a1     = alpha1*(b - a);
+		float a2     = alpha2*(bot - b);
+		if(a1 != 0.0f)
+		{
+			// draw all fill
+			vkk_uiScreen_scissor(screen, &rect_border_clip);
+			vkk_uiTricolor_drawBuffer0(self->tricolor,
+			                           4*VKK_UI_WIDGET_BEZEL,
+			                           self->vb_xyuv);
+		}
+		else
+		{
+			// draw title fill
+			if(a0 != 0.0f)
+			{
+				cc_rect1f_t rect_border_clip0 =
+				{
+					.t = top,
+					.l = rect_border_clip.l,
+					.w = rect_border_clip.w,
+					.h = a - top,
+				};
+				vkk_uiScreen_scissor(screen, &rect_border_clip0);
+				vkk_uiTricolor_drawBuffer0(self->tricolor,
+				                           4*VKK_UI_WIDGET_BEZEL,
+				                           self->vb_xyuv);
+			}
+
+			// draw footer fill
+			if(a2 != 0.0f)
+			{
+				cc_rect1f_t rect_border_clip2 =
+				{
+					.t = b,
+					.l = rect_border_clip.l,
+					.w = rect_border_clip.w,
+					.h = bot - b,
+				};
+				vkk_uiScreen_scissor(screen, &rect_border_clip2);
+				vkk_uiTricolor_drawBuffer1(self->tricolor,
+				                           4*VKK_UI_WIDGET_BEZEL,
+				                           self->vb_xyuv);
+			}
+		}
 	}
 
 	// draw the contents

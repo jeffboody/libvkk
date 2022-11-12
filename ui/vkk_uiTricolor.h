@@ -31,6 +31,10 @@ typedef struct vkk_uiTricolor_s
 {
 	vkk_uiScreen_t* screen;
 
+	float alpha0;
+	float alpha1;
+	float alpha2;
+
 	float a;
 	float b;
 
@@ -54,9 +58,12 @@ void              vkk_uiTricolor_ab(vkk_uiTricolor_t* self,
                                     float a, float b);
 void              vkk_uiTricolor_rect(vkk_uiTricolor_t* self,
                                       cc_rect1f_t* rect);
-void              vkk_uiTricolor_drawBuffer(vkk_uiTricolor_t* self,
-                                            uint32_t vc,
-                                            vkk_buffer_t* vb);
+void              vkk_uiTricolor_drawBuffer0(vkk_uiTricolor_t* self,
+                                             uint32_t vc,
+                                             vkk_buffer_t* vb);
+void              vkk_uiTricolor_drawBuffer1(vkk_uiTricolor_t* self,
+                                             uint32_t vc,
+                                             vkk_buffer_t* vb);
 void              vkk_uiTricolor_drawRect(vkk_uiTricolor_t* self);
 
 #endif
