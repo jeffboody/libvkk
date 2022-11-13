@@ -540,6 +540,12 @@ void vkk_uiWidget_layoutSize(vkk_uiWidget_t* self,
 
 	float ar = vkk_uiFont_aspectRatioAvg(font);
 
+	float narrow = self->screen->h;
+	if(self->screen->w < self->screen->h)
+	{
+		narrow = self->screen->w;
+	}
+
 	// initialize the widget aspect ratio
 	float war = 1.0f;
 	vkk_uiWidgetAspectRatio_fn aspect_fn = fn->aspect_fn;
@@ -586,6 +592,18 @@ void vkk_uiWidget_layoutSize(vkk_uiWidget_t* self,
 		self->rect_draw.w   = sz;
 		self->rect_border.w = sz + sh_bo*h_bo;
 	}
+	else if(layout->wrapx == VKK_UI_WIDGET_WRAP_STRETCH_SCREEN)
+	{
+		sz = war*layout->stretchx*self->screen->w;
+		self->rect_draw.w   = sz - sh_bo*h_bo;
+		self->rect_border.w = sz;
+	}
+	else if(layout->wrapx == VKK_UI_WIDGET_WRAP_STRETCH_SCREEN_NARROW)
+	{
+		sz = war*layout->stretchx*narrow;
+		self->rect_draw.w   = sz - sh_bo*h_bo;
+		self->rect_border.w = sz;
+	}
 
 	// intersect draw with border interior
 	if(self->rect_draw.w < 0.0f)
@@ -623,6 +641,18 @@ void vkk_uiWidget_layoutSize(vkk_uiWidget_t* self,
 		sz *= layout->stretchy;
 		self->rect_draw.h   = sz;
 		self->rect_border.h = sz + 2.0f*v_bo;
+	}
+	else if(layout->wrapy == VKK_UI_WIDGET_WRAP_STRETCH_SCREEN)
+	{
+		rh = layout->stretchy*self->screen->h;
+		self->rect_draw.h   = rh - 2.0f*v_bo;
+		self->rect_border.h = rh;
+	}
+	else if(layout->wrapy == VKK_UI_WIDGET_WRAP_STRETCH_SCREEN_NARROW)
+	{
+		rh = layout->stretchy*narrow;
+		self->rect_draw.h   = rh - 2.0f*v_bo;
+		self->rect_border.h = rh;
 	}
 
 	// intersect draw with border interior
