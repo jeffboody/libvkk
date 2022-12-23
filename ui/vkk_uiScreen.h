@@ -154,6 +154,8 @@ void            vkk_uiScreen_popupGet(vkk_uiScreen_t* self,
 void            vkk_uiScreen_popupSet(vkk_uiScreen_t* self,
                                       vkk_uiActionBar_t* action_bar,
                                       vkk_uiActionPopup_t* action_popup);
+void            vkk_uiScreen_detach(vkk_uiScreen_t* self,
+                                    vkk_uiWidget_t* widget);
 void            vkk_uiScreen_focus(vkk_uiScreen_t* self,
                                    vkk_uiWidget_t* focus);
 void            vkk_uiScreen_rescale(vkk_uiScreen_t* self,

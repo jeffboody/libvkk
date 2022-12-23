@@ -1178,7 +1178,7 @@ vkk_uiScreen_eventAction(vkk_uiScreen_t* self,
 		cc_vec2f_subv_copy(ecoord0, acoord0, &info.drag);
 
 		double dt = ets - ats;
-		if(vkk_uiWidget_action(awidget, &info))
+		if(awidget && vkk_uiWidget_action(awidget, &info))
 		{
 			// skip dragging/scrolling
 		}
@@ -1227,7 +1227,10 @@ vkk_uiScreen_eventAction(vkk_uiScreen_t* self,
 		cc_vec2f_subv_copy(&ce, &ca, &info.drag);
 
 		// ignore return value
-		vkk_uiWidget_action(awidget, &info);
+		if(awidget)
+		{
+			vkk_uiWidget_action(awidget, &info);
+		}
 
 		// update state
 		nts = ets;
@@ -1280,7 +1283,10 @@ vkk_uiScreen_eventAction(vkk_uiScreen_t* self,
 		info.angle  = angle;
 
 		// ignore return value
-		vkk_uiWidget_action(awidget, &info);
+		if(awidget)
+		{
+			vkk_uiWidget_action(awidget, &info);
+		}
 
 		// update state
 		nts = ets;
@@ -1311,7 +1317,10 @@ vkk_uiScreen_eventAction(vkk_uiScreen_t* self,
 		info.scale  = cc_vec2f_mag(&ve)/cc_vec2f_mag(&va);
 
 		// ignore return value
-		vkk_uiWidget_action(awidget, &info);
+		if(awidget)
+		{
+			vkk_uiWidget_action(awidget, &info);
+		}
 
 		// update state
 		nts = ets;
@@ -1338,7 +1347,8 @@ vkk_uiScreen_eventAction(vkk_uiScreen_t* self,
 			info.action = VKK_UI_WIDGET_ACTION_CLICK;
 		}
 
-		if(vkk_uiWidget_action(awidget, &info) &&
+		if(awidget &&
+		   vkk_uiWidget_action(awidget, &info) &&
 		   (info.action == VKK_UI_WIDGET_ACTION_CLICK))
 		{
 			vkk_engine_platformCmd(self->engine,
@@ -1564,6 +1574,22 @@ vkk_uiScreen_popupSet(vkk_uiScreen_t* self,
 	{
 		self->action_bar   = action_bar;
 		self->action_popup = action_popup;
+	}
+}
+
+void vkk_uiScreen_detach(vkk_uiScreen_t* self,
+                         vkk_uiWidget_t* widget)
+{
+	ASSERT(self);
+	ASSERT(widget);
+
+	if(self->focus_widget == widget)
+	{
+		self->focus_widget = NULL;
+	}
+	else if(self->action_widget == widget)
+	{
+		self->action_widget = NULL;
 	}
 }
 

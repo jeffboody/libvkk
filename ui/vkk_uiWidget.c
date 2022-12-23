@@ -250,13 +250,7 @@ void vkk_uiWidget_delete(vkk_uiWidget_t** _self)
 	vkk_uiWidget_t* self = *_self;
 	if(self)
 	{
-		vkk_uiScreen_t* screen = self->screen;
-
-		if(vkk_uiWidget_hasFocus(self))
-		{
-			vkk_uiScreen_focus(screen, NULL);
-		}
-
+		vkk_uiScreen_detach(self->screen, self);
 		vkk_uiTricolor_delete(&self->tricolor);
 		vkk_uniformSet_delete(&self->us1_color);
 		vkk_buffer_delete(&self->ub10_color);
