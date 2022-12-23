@@ -119,6 +119,17 @@ vkk_uiFilePicker_documentOpen(vkk_uiFilePicker_t* self,
 	                                   type, mode);
 }
 
+void vkk_uiFilePicker_documentName(vkk_uiFilePicker_t* self,
+                                   void* document_priv,
+                                   vkk_platformCmd_documentFn document_fn,
+                                   const char* path,
+                                   const char* ext)
+{
+	// unsupported on Android
+	LOGW("unsupported");
+	ASSERT(0);
+}
+
 /***********************************************************
 * private - LINUX                                          *
 ***********************************************************/
@@ -387,7 +398,7 @@ vkk_uiFilePicker_documentCreate(vkk_uiFilePicker_t* self,
 	{
 		self->document_priv = document_priv;
 		self->document_fn   = document_fn;
-		self->create        = 1;
+		self->mode          = VKK_UI_FILEPICKER_MODE_CREATE;
 
 		vkk_uiWindow_label(window, "%s", "Save As");
 
@@ -429,9 +440,44 @@ vkk_uiFilePicker_documentOpen(vkk_uiFilePicker_t* self,
 	{
 		self->document_priv = document_priv;
 		self->document_fn   = document_fn;
-		self->create        = 0;
+		self->mode          = VKK_UI_FILEPICKER_MODE_OPEN;
 
 		vkk_uiWindow_label(window, "%s", "Import");
+
+		vkk_uiListBox_clear(footer);
+		vkk_uiListBox_add(footer, (vkk_uiWidget_t*)
+		                  self->bulletbox_select);
+		vkk_uiListBox_add(footer, (vkk_uiWidget_t*)
+		                  self->bulletbox_cancel);
+
+		vkk_uiFileList_reset(self->file_list, path, "", ext);
+		vkk_uiScreen_windowPush(widget->screen, window);
+	}
+}
+
+void vkk_uiFilePicker_documentName(vkk_uiFilePicker_t* self,
+                                   void* document_priv,
+                                   vkk_platformCmd_documentFn document_fn,
+                                   const char* path,
+                                   const char* ext)
+{
+	ASSERT(self);
+	ASSERT(path);
+	ASSERT(ext);
+
+	vkk_uiWindow_t*  window = &self->base;
+	vkk_uiWidget_t*  widget = &window->base;
+	vkk_uiListBox_t* footer = vkk_uiWindow_footer(window);
+
+	char dname[256];
+	snprintf(dname, 256, "%s/", path);
+	if(vkk_uiFilePicker_mkdir(dname))
+	{
+		self->document_priv = document_priv;
+		self->document_fn   = document_fn;
+		self->mode          = VKK_UI_FILEPICKER_MODE_NAME;
+
+		vkk_uiWindow_label(window, "%s", "File Name");
 
 		vkk_uiListBox_clear(footer);
 		vkk_uiListBox_add(footer, (vkk_uiWidget_t*)

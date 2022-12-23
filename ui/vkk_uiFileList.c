@@ -977,16 +977,23 @@ vkk_uiFileList_input(vkk_uiWidget_t* widget,
 	char fname[256];
 	vkk_uiFileList_filepath(picker->file_list, fname);
 
-	if(picker->create)
+	if(picker->mode == VKK_UI_FILEPICKER_MODE_CREATE)
 	{
 		vkk_engine_platformCmdDocumentCreate(engine,
 		                                     picker->document_priv,
 		                                     picker->document_fn,
 		                                     fname);
 	}
-	else
+	else if(picker->mode == VKK_UI_FILEPICKER_MODE_OPEN)
 	{
 		vkk_engine_platformCmdDocumentOpen(engine,
+		                                   picker->document_priv,
+		                                   picker->document_fn,
+		                                   fname);
+	}
+	else if(picker->mode == VKK_UI_FILEPICKER_MODE_NAME)
+	{
+		vkk_engine_platformCmdDocumentName(engine,
 		                                   picker->document_priv,
 		                                   picker->document_fn,
 		                                   fname);

@@ -835,6 +835,12 @@ void vkk_platform_cmd(vkk_platform_t* self,
 		self->document_fn   = info->document_fn;
 		pthread_mutex_unlock(&self->priv_mutex);
 	}
+	else if(info->cmd == VKK_PLATFORM_CMD_DOCUMENT_NAME)
+	{
+		LOGW("unsupported cmd=%i", info->cmd);
+		ASSERT(0);
+		return;
+	}
 
 	JavaVM* vm = self->app->activity->vm;
 	if(vm == NULL)

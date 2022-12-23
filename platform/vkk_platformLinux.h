@@ -41,6 +41,7 @@ typedef struct vkk_platform_s
 	SDL_Joystick* joy;
 
 	// document state
+	int                        document_ready;
 	int                        document_fd;
 	char                       document_uri[256];
 	void*                      document_priv;

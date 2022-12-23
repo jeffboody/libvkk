@@ -286,6 +286,10 @@ void            vkk_engine_platformCmdDocumentOpen(vkk_engine_t* self,
                                                    void* priv,
                                                    vkk_platformCmd_documentFn document_fn,
                                                    const char* fname);
+void            vkk_engine_platformCmdDocumentName(vkk_engine_t* self,
+                                                   void* priv,
+                                                   vkk_platformCmd_documentFn document_fn,
+                                                   const char* fname);
 #endif
 
 /*

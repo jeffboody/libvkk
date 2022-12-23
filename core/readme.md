@@ -134,7 +134,8 @@ function as noted below.
 		VKK_PLATFORM_CMD_SOFTKEY_SHOW       = 18,
 		VKK_PLATFORM_CMD_DOCUMENT_CREATE    = 19,
 		VKK_PLATFORM_CMD_DOCUMENT_OPEN      = 20,
-		VKK_PLATFORM_CMD_MEMORY_INFO        = 21,
+		VKK_PLATFORM_CMD_DOCUMENT_NAME      = 21,
+		VKK_PLATFORM_CMD_MEMORY_INFO        = 22,
 	} vkk_platformCmd_e;
 
 	void vkk_engine_platformCmd(vkk_engine_t* self,
@@ -182,6 +183,10 @@ or exporting documents.
 	                                          vkk_platformCmd_documentFn document_fn,
 	                                          const char* fname);
 	void vkk_engine_platformCmdDocumentOpen(vkk_engine_t* self,
+	                                        void* priv,
+	                                        vkk_platformCmd_documentFn document_fn,
+	                                        const char* fname);
+	void vkk_engine_platformCmdDocumentName(vkk_engine_t* self,
 	                                        void* priv,
 	                                        vkk_platformCmd_documentFn document_fn,
 	                                        const char* fname);

@@ -593,9 +593,18 @@ void vkk_platform_cmd(vkk_platform_t* self,
 			return;
 		}
 
-		self->document_fd   = fd;
-		self->document_priv = info->priv;
-		self->document_fn   = info->document_fn;
+		self->document_ready = 1;
+		self->document_fd    = fd;
+		self->document_priv  = info->priv;
+		self->document_fn    = info->document_fn;
+		snprintf(self->document_uri, 256, "%s", info->msg);
+	}
+	else if(info->cmd == VKK_PLATFORM_CMD_DOCUMENT_NAME)
+	{
+		self->document_ready = 1;
+		self->document_fd    = -1;
+		self->document_priv  = info->priv;
+		self->document_fn    = info->document_fn;
 		snprintf(self->document_uri, 256, "%s", info->msg);
 	}
 	else if(info->cmd == VKK_PLATFORM_CMD_LOADURL)
@@ -644,13 +653,14 @@ int main(int argc, char** argv)
 	while(platform->running)
 	{
 		// process document event
-		if(platform->document_fd >= 0)
+		if(platform->document_ready)
 		{
 			(platform->document_fn)(platform->document_priv,
 			                        platform->document_uri,
 			                        &platform->document_fd);
 
 			// reset document event
+			platform->document_ready = 0;
 			if(platform->document_fd >= 0)
 			{
 				close(platform->document_fd);

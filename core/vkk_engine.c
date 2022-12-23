@@ -1205,7 +1205,8 @@ vkk_engine_platformCmd(vkk_engine_t* self, int cmd)
 
 	if((cmd == VKK_PLATFORM_CMD_LOADURL)         ||
 	   (cmd == VKK_PLATFORM_CMD_DOCUMENT_CREATE) ||
-	   (cmd == VKK_PLATFORM_CMD_DOCUMENT_OPEN))
+	   (cmd == VKK_PLATFORM_CMD_DOCUMENT_OPEN)   ||
+	   (cmd == VKK_PLATFORM_CMD_DOCUMENT_NAME))
 	{
 		LOGE("invalid cmd=%i", cmd);
 		return;
@@ -1335,6 +1336,27 @@ vkk_engine_platformCmdDocumentOpen(vkk_engine_t* self,
 	vkk_platform_cmd(self->platform, &info);
 }
 
+void
+vkk_engine_platformCmdDocumentName(vkk_engine_t* self,
+                                   void* priv,
+                                   vkk_platformCmd_documentFn document_fn,
+                                   const char* fname)
+{
+	// priv may be NULL
+	ASSERT(self);
+	ASSERT(document_fn);
+	ASSERT(fname);
+
+	vkk_platformCmdInfo_t info =
+	{
+		.cmd         = VKK_PLATFORM_CMD_DOCUMENT_NAME,
+		.priv        = priv,
+		.document_fn = document_fn
+	};
+	snprintf(info.msg, 256, "%s", fname);
+	vkk_platform_cmd(self->platform, &info);
+}
+
 #endif
 
 /***********************************************************
@@ -1376,7 +1398,7 @@ vkk_engine_t* vkk_engine_new(vkk_platform_t* platform,
 
 	self->version.major = 1;
 	self->version.minor = 1;
-	self->version.patch = 46;
+	self->version.patch = 47;
 
 	// app info
 	snprintf(self->app_name, 256, "%s", app_name);
