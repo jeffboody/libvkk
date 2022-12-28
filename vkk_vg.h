@@ -76,15 +76,19 @@ void              vkk_vgRenderer_reset(vkk_vgRenderer_t* self,
                                        cc_mat4f_t* pm);
 void              vkk_vgRenderer_bindLines(vkk_vgRenderer_t* self);
 void              vkk_vgRenderer_bindPolygons(vkk_vgRenderer_t* self);
+void              vkk_vgRenderer_bindImages(vkk_vgRenderer_t* self,
+                                            vkk_samplerInfo_t* si);
+int               vkk_vgRenderer_pushMatrix(vkk_vgRenderer_t* self,
+                                            cc_mat4f_t* mvm);
+void              vkk_vgRenderer_popMatrix(vkk_vgRenderer_t* self);
 void              vkk_vgRenderer_drawLine(vkk_vgRenderer_t* self,
                                           vkk_vgLineStyle_t* style,
                                           vkk_vgLine_t* line);
 void              vkk_vgRenderer_drawPolygon(vkk_vgRenderer_t* self,
                                              vkk_vgPolygonStyle_t* style,
                                              vkk_vgPolygon_t* polygon);
-int               vkk_vgRenderer_pushMatrix(vkk_vgRenderer_t* self,
-                                            cc_mat4f_t* mvm);
-void              vkk_vgRenderer_popMatrix(vkk_vgRenderer_t* self);
+void              vkk_vgRenderer_drawImage(vkk_vgRenderer_t* self,
+                                           vkk_image_t* image);
 
 /*
  * line builder API

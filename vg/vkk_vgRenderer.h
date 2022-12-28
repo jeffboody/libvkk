@@ -28,6 +28,8 @@
 #include "../../libcc/cc_map.h"
 #include "../vkk_vg.h"
 
+typedef struct vkk_vgRendererImageState_s vkk_vgRendererImageState_t;
+
 typedef struct vkk_vgRenderer_s
 {
 	vkk_renderer_t*          rend;
@@ -41,13 +43,13 @@ typedef struct vkk_vgRenderer_s
 	vkk_graphicsPipeline_t*  gp_line;
 	vkk_graphicsPipeline_t*  gp_poly;
 
-	// line/poly pm
+	// primitive pm
 	// updated once per frame
 	// layout(std140, set=0, binding=0) uniform uniformPm
 	vkk_buffer_t*     ub00_pm;
 	vkk_uniformSet_t* us0;
 
-	// line/poly mvm
+	// primitive mvm
 	// updated zero or more times per frame
 	// default identity matrix is static
 	// layout(std140, set=1, binding=0) uniform uniformMvm
@@ -65,16 +67,17 @@ typedef struct vkk_vgRenderer_s
 	// layout(std140, set=2, binding=0) uniform uniformColor
 	cc_map_t* map_usb2_poly;
 
+	// map from sampler info to dynamic image state
+	vkk_vgRendererImageState_t* image_state;
+	cc_map_t*                   map_image;
+
 	// line state updated per draw
 	// layout(std140, set=3, binding=0) uniform uniformDist
 	cc_list_t* list_usb3_line[2];
-} vkk_vgRenderer_t;
 
-// protected
-int vkk_vgRenderer_bindLine(vkk_vgRenderer_t* self,
-                            float dist,
-                            vkk_vgLineStyle_t* style);
-int vkk_vgRenderer_bindPolygon(vkk_vgRenderer_t* self,
-                               vkk_vgPolygonStyle_t* style);
+	// static image state
+	int image_yup;
+	vkk_buffer_t* vb_xyuv_image[2];
+} vkk_vgRenderer_t;
 
 #endif

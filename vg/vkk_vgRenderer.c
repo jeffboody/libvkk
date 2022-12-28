@@ -298,6 +298,203 @@ vkk_vgRendererUSB2Poly_delete(vkk_vgRendererUSB2Poly_t** _self)
 	}
 }
 
+typedef struct vkk_vgRendererImageState_s
+{
+	vkk_uniformSetFactory_t* usf2_image;
+	vkk_pipelineLayout_t*    pl_image;
+	vkk_graphicsPipeline_t*  gp_image;
+
+	// image state updated per draw
+	cc_list_t* list_us2_image[2];
+} vkk_vgRendererImageState_t;
+
+static vkk_vgRendererImageState_t*
+vkk_vgRendererImageState_new(vkk_vgRenderer_t* vg_rend,
+                             vkk_samplerInfo_t* si)
+{
+	ASSERT(vg_rend);
+	ASSERT(si);
+
+	vkk_engine_t* engine = vg_rend->rend->engine;
+
+	vkk_vgRendererImageState_t* self;
+	self = (vkk_vgRendererImageState_t*)
+	       CALLOC(1, sizeof(vkk_vgRendererImageState_t));
+	if(self == NULL)
+	{
+		LOGE("CALLOC failed");
+		return NULL;
+	}
+
+	vkk_uniformBinding_t ub_array2_image[] =
+	{
+		// layout(set=2, binding=0) uniform sampler2D image;
+		{
+			.binding = 0,
+			.type    = VKK_UNIFORM_TYPE_IMAGE_REF,
+			.stage   = VKK_STAGE_FS,
+			.si      = *si,
+		},
+	};
+
+	self->usf2_image = vkk_uniformSetFactory_new(engine,
+	                                             VKK_UPDATE_MODE_ASYNCHRONOUS,
+	                                             1, ub_array2_image);
+	if(self->usf2_image == NULL)
+	{
+		goto fail_usf2_image;
+	}
+
+	vkk_uniformSetFactory_t* usf_array_image[] =
+	{
+		vg_rend->usf0,
+		vg_rend->usf1,
+		self->usf2_image,
+	};
+
+	self->pl_image = vkk_pipelineLayout_new(engine, 3,
+	                                        usf_array_image);
+	if(self->pl_image == NULL)
+	{
+		goto fail_pl_image;
+	}
+
+	vkk_vertexBufferInfo_t vbi_image =
+	{
+		// layout(location=0) in vec4 xyuv;
+		.location   = 0,
+		.components = 4,
+		.format     = VKK_VERTEX_FORMAT_FLOAT
+	};
+
+	vkk_graphicsPipelineInfo_t gpi_image =
+	{
+		.renderer   = vg_rend->rend,
+		.pl         = self->pl_image,
+		.vs         = "vkk/vg/shaders/image_vert.spv",
+		.fs         = "vkk/vg/shaders/image_frag.spv",
+		.vb_count   = 1,
+		.vbi        = &vbi_image,
+		.cull_back  = 1,
+		.primitive  = VKK_PRIMITIVE_TRIANGLE_STRIP,
+		.blend_mode = VKK_BLEND_MODE_TRANSPARENCY,
+	};
+
+	self->gp_image = vkk_graphicsPipeline_new(engine,
+	                                          &gpi_image);
+	if(self->gp_image == NULL)
+	{
+		goto fail_gp_image;
+	}
+
+	self->list_us2_image[0] = cc_list_new();
+	if(self->list_us2_image[0] == NULL)
+	{
+		goto fail_list_us2_image0;
+	}
+
+	self->list_us2_image[1] = cc_list_new();
+	if(self->list_us2_image[1] == NULL)
+	{
+		goto fail_list_us2_image1;
+	}
+
+	// success
+	return self;
+
+	// failure
+	fail_list_us2_image1:
+		cc_list_delete(&self->list_us2_image[0]);
+	fail_list_us2_image0:
+		vkk_graphicsPipeline_delete(&self->gp_image);
+	fail_gp_image:
+		vkk_pipelineLayout_delete(&self->pl_image);
+	fail_pl_image:
+		vkk_uniformSetFactory_delete(&self->usf2_image);
+	fail_usf2_image:
+		FREE(self);
+	return NULL;
+}
+
+static void
+vkk_vgRendererImageState_delete(vkk_vgRendererImageState_t** _self)
+{
+	ASSERT(_self);
+
+	vkk_vgRendererImageState_t* self = *_self;
+	if(self)
+	{
+		cc_list_appendList(self->list_us2_image[0],
+		                   self->list_us2_image[1]);
+
+		cc_listIter_t* iter;
+		iter = cc_list_head(self->list_us2_image[0]);
+		while(iter)
+		{
+			vkk_uniformSet_t* us2;
+			us2 = (vkk_uniformSet_t*)
+			      cc_list_remove(self->list_us2_image[0],
+			                     &iter);
+			vkk_uniformSet_delete(&us2);
+		}
+
+		cc_list_delete(&self->list_us2_image[1]);
+		cc_list_delete(&self->list_us2_image[0]);
+		vkk_graphicsPipeline_delete(&self->gp_image);
+		vkk_pipelineLayout_delete(&self->pl_image);
+		vkk_uniformSetFactory_delete(&self->usf2_image);
+		FREE(self);
+		*_self = NULL;
+	}
+}
+
+static void
+vkk_vgRendererImageState_reset(vkk_vgRendererImageState_t* self)
+{
+	ASSERT(self);
+
+	cc_list_appendList(self->list_us2_image[0],
+	                   self->list_us2_image[1]);
+}
+
+static vkk_uniformSet_t*
+vkk_vgRendererImageState_us2(vkk_vgRendererImageState_t* self,
+                             vkk_engine_t* engine)
+{
+	ASSERT(self);
+	ASSERT(engine);
+
+	vkk_uniformSet_t* us2;
+	cc_listIter_t*    iter;
+	iter = cc_list_head(self->list_us2_image[0]);
+	if(iter)
+	{
+		us2 = (vkk_uniformSet_t*)
+		      cc_list_peekIter(iter);
+		cc_list_swapn(self->list_us2_image[0],
+		              self->list_us2_image[1],
+		              iter, NULL);
+	}
+	else
+	{
+		us2 = vkk_uniformSet_new(engine, 2, 0, NULL,
+		                         self->usf2_image);
+		if(us2 == NULL)
+		{
+			return NULL;
+		}
+
+		if(cc_list_append(self->list_us2_image[1], NULL,
+		                  (const void*) us2) == NULL)
+		{
+			vkk_uniformSet_delete(&us2);
+			return NULL;
+		}
+	}
+
+	return us2;
+}
+
 typedef struct
 {
 	vkk_buffer_t*     ub30_dist;
@@ -375,13 +572,10 @@ vkk_vgRendererUSB3Line_delete(vkk_vgRendererUSB3Line_t** _self)
 	}
 }
 
-/***********************************************************
-* protected                                                *
-***********************************************************/
-
-int vkk_vgRenderer_bindLine(vkk_vgRenderer_t* self,
-                            float dist,
-                            vkk_vgLineStyle_t* style)
+static int
+vkk_vgRenderer_bindLine(vkk_vgRenderer_t* self,
+                        float dist,
+                        vkk_vgLineStyle_t* style)
 {
 	ASSERT(self);
 	ASSERT(style);
@@ -467,8 +661,9 @@ int vkk_vgRenderer_bindLine(vkk_vgRenderer_t* self,
 	return 1;
 }
 
-int vkk_vgRenderer_bindPolygon(vkk_vgRenderer_t* self,
-                               vkk_vgPolygonStyle_t* style)
+static int
+vkk_vgRenderer_bindPolygon(vkk_vgRenderer_t* self,
+                           vkk_vgPolygonStyle_t* style)
 {
 	ASSERT(self);
 	ASSERT(style);
@@ -517,6 +712,63 @@ int vkk_vgRenderer_bindPolygon(vkk_vgRenderer_t* self,
 	{
 		us1,
 		usb2_poly->us2,
+	};
+	vkk_renderer_bindUniformSets(rend, 2, us_array);
+
+	return 1;
+}
+
+static int
+vkk_vgRenderer_bindImage(vkk_vgRenderer_t* self,
+                         vkk_image_t* image)
+{
+	ASSERT(self);
+	ASSERT(image);
+
+	vkk_renderer_t* rend = self->rend;
+
+	if(self->image_state == NULL)
+	{
+		return 0;
+	}
+
+	// get us1
+	vkk_uniformSet_t*     us1 = self->us1;
+	vkk_vgRendererUSB1_t* usb1;
+	usb1 = (vkk_vgRendererUSB1_t*)
+	       cc_list_peekHead(self->stack_usb1);
+	if(usb1)
+	{
+		us1 = usb1->us1;
+	}
+
+	// get us2
+	vkk_uniformSet_t* us2;
+	us2 = vkk_vgRendererImageState_us2(self->image_state,
+	                                   rend->engine);
+	if(us2 == NULL)
+	{
+		return 0;
+	}
+
+	vkk_uniformAttachment_t ua_array2[] =
+	{
+		// layout(set=2, binding=0) uniform sampler2D image;
+		{
+			.binding = 0,
+			.type    = VKK_UNIFORM_TYPE_IMAGE_REF,
+			.image   = image,
+		},
+	};
+
+	vkk_renderer_updateUniformSetRefs(rend, us2,
+	                                  1, ua_array2);
+
+	// bind uniform sets
+	vkk_uniformSet_t* us_array[] =
+	{
+		us1,
+		us2,
 	};
 	vkk_renderer_bindUniformSets(rend, 2, us_array);
 
@@ -705,7 +957,7 @@ vkk_vgRenderer_t* vkk_vgRenderer_new(vkk_renderer_t* rend)
 
 	vkk_vertexBufferInfo_t vbi_poly =
 	{
-		// layout(location=0) in vec4 xy;
+		// layout(location=0) in vec2 xy;
 		.location   = 0,
 		.components = 2,
 		.format     = VKK_VERTEX_FORMAT_FLOAT
@@ -785,13 +1037,21 @@ vkk_vgRenderer_t* vkk_vgRenderer_new(vkk_renderer_t* rend)
 	}
 
 	self->list_usb1[0] = cc_list_new();
-	self->list_usb1[1] = cc_list_new();
-	self->stack_usb1   = cc_list_new();
-	if((self->list_usb1[0] == NULL) ||
-	   (self->list_usb1[1] == NULL) ||
-	   (self->stack_usb1   == NULL))
+	if(self->list_usb1[0] == NULL)
 	{
-		goto fail_list_usb1;
+		goto fail_list_usb10;
+	}
+
+	self->list_usb1[1] = cc_list_new();
+	if(self->list_usb1[1] == NULL)
+	{
+		goto fail_list_usb11;
+	}
+
+	self->stack_usb1 = cc_list_new();
+	if(self->stack_usb1 == NULL)
+	{
+		goto fail_stack_usb1;
 	}
 
 	self->map_usb2_line = cc_map_new();
@@ -806,27 +1066,83 @@ vkk_vgRenderer_t* vkk_vgRenderer_new(vkk_renderer_t* rend)
 		goto fail_map_usb2_poly;
 	}
 
-	self->list_usb3_line[0] = cc_list_new();
-	self->list_usb3_line[1] = cc_list_new();
-	if((self->list_usb3_line[0] == NULL) ||
-	   (self->list_usb3_line[1] == NULL))
+	self->map_image = cc_map_new();
+	if(self->map_image == NULL)
 	{
-		goto fail_list_usb3_line;
+		goto fail_map_image;
+	}
+
+	self->list_usb3_line[0] = cc_list_new();
+	if(self->list_usb3_line[0] == NULL)
+	{
+		goto fail_list_usb3_line0;
+	}
+
+	self->list_usb3_line[1] = cc_list_new();
+	if(self->list_usb3_line[1] == NULL)
+	{
+		goto fail_list_usb3_line1;
+	}
+
+	float vb_xyuv_image0[] =
+	{
+		-0.5f, -0.5f, 0.0f, 0.0f,
+		-0.5f,  0.5f, 0.0f, 1.0f,
+		 0.5f, -0.5f, 1.0f, 0.0f,
+		 0.5f,  0.5f, 1.0f, 1.0f,
+	};
+
+	self->vb_xyuv_image[0] = vkk_buffer_new(engine,
+	                                        VKK_UPDATE_MODE_STATIC,
+	                                        VKK_BUFFER_USAGE_VERTEX,
+	                                        4*sizeof(cc_vec4f_t),
+	                                        vb_xyuv_image0);
+	if(self->vb_xyuv_image[0] == NULL)
+	{
+		goto fail_vb_xyuv_image0;
+	}
+
+	float vb_xyuv_image1[] =
+	{
+		-0.5f,  0.5f, 0.0f, 0.0f,
+		-0.5f, -0.5f, 0.0f, 1.0f,
+		 0.5f,  0.5f, 1.0f, 0.0f,
+		 0.5f, -0.5f, 1.0f, 1.0f,
+	};
+
+	self->vb_xyuv_image[1] = vkk_buffer_new(engine,
+	                                        VKK_UPDATE_MODE_STATIC,
+	                                        VKK_BUFFER_USAGE_VERTEX,
+	                                        4*sizeof(cc_vec4f_t),
+	                                        vb_xyuv_image1);
+	if(self->vb_xyuv_image[1] == NULL)
+	{
+		goto fail_vb_xyuv_image1;
 	}
 
 	// success
 	return self;
 
 	// failure
-	fail_list_usb3_line:
+	fail_vb_xyuv_image1:
+		vkk_buffer_delete(&self->vb_xyuv_image[0]);
+	fail_vb_xyuv_image0:
+		cc_list_delete(&self->list_usb3_line[1]);
+	fail_list_usb3_line1:
+		cc_list_delete(&self->list_usb3_line[0]);
+	fail_list_usb3_line0:
+		cc_map_delete(&self->map_image);
+	fail_map_image:
 		cc_map_delete(&self->map_usb2_poly);
 	fail_map_usb2_poly:
 		cc_map_delete(&self->map_usb2_line);
 	fail_map_usb2_line:
 		cc_list_delete(&self->stack_usb1);
+	fail_stack_usb1:
 		cc_list_delete(&self->list_usb1[1]);
+	fail_list_usb11:
 		cc_list_delete(&self->list_usb1[0]);
-	fail_list_usb1:
+	fail_list_usb10:
 		vkk_uniformSet_delete(&self->us1);
 	fail_us1:
 		vkk_buffer_delete(&self->ub10_mvm_identity);
@@ -882,6 +1198,15 @@ void vkk_vgRenderer_delete(vkk_vgRenderer_t** _self)
 		}
 
 		cc_mapIter_t* miter;
+		miter = cc_map_head(self->map_image);
+		while(miter)
+		{
+			vkk_vgRendererImageState_t* image_state;
+			image_state = (vkk_vgRendererImageState_t*)
+			              cc_map_remove(self->map_image, &miter);
+			vkk_vgRendererImageState_delete(&image_state);
+		}
+
 		miter = cc_map_head(self->map_usb2_poly);
 		while(miter)
 		{
@@ -909,8 +1234,11 @@ void vkk_vgRenderer_delete(vkk_vgRenderer_t** _self)
 			vkk_vgRendererUSB1_delete(&usb1);
 		}
 
+		vkk_buffer_delete(&self->vb_xyuv_image[1]);
+		vkk_buffer_delete(&self->vb_xyuv_image[0]);
 		cc_list_delete(&self->list_usb3_line[1]);
 		cc_list_delete(&self->list_usb3_line[0]);
+		cc_map_delete(&self->map_image);
 		cc_map_delete(&self->map_usb2_poly);
 		cc_map_delete(&self->map_usb2_line);
 		cc_list_delete(&self->stack_usb1);
@@ -947,6 +1275,30 @@ void vkk_vgRenderer_reset(vkk_vgRenderer_t* self,
 	cc_list_discard(self->stack_usb1);
 	cc_list_appendList(self->list_usb3_line[0],
 	                   self->list_usb3_line[1]);
+
+	cc_mapIter_t* miter;
+	miter = cc_map_head(self->map_image);
+	while(miter)
+	{
+		vkk_vgRendererImageState_t* image_state;
+		image_state = (vkk_vgRendererImageState_t*)
+		              cc_map_val(miter);
+		vkk_vgRendererImageState_reset(image_state);
+		miter = cc_map_next(miter);
+	}
+	self->image_state = NULL;
+
+	// check y axis up sign
+	// by using sign of m11 component
+	// of the orthographic projection
+	if(pm->m11 > 0.0f)
+	{
+		self->image_yup = 0;
+	}
+	else
+	{
+		self->image_yup = 1;
+	}
 }
 
 void vkk_vgRenderer_bindLines(vkk_vgRenderer_t* self)
@@ -969,52 +1321,44 @@ void vkk_vgRenderer_bindPolygons(vkk_vgRenderer_t* self)
 	                             &self->us0);
 }
 
-void vkk_vgRenderer_drawLine(vkk_vgRenderer_t* self,
-                             vkk_vgLineStyle_t* style,
-                             vkk_vgLine_t* line)
+void vkk_vgRenderer_bindImages(vkk_vgRenderer_t* self,
+                               vkk_samplerInfo_t* si)
 {
 	ASSERT(self);
-	ASSERT(style);
-	ASSERT(line);
+	ASSERT(si);
 
-	if(vkk_vgRenderer_bindLine(self, line->dist, style) == 0)
+	cc_mapIter_t* miter;
+	vkk_vgRendererImageState_t* image_state;
+	miter = cc_map_findp(self->map_image,
+	                     sizeof(vkk_samplerInfo_t), si);
+	if(miter)
 	{
-		return;
+		image_state = (vkk_vgRendererImageState_t*)
+		              cc_map_val(miter);
+	}
+	else
+	{
+		image_state = vkk_vgRendererImageState_new(self, si);
+		if(image_state == NULL)
+		{
+			self->image_state = NULL;
+			return;
+		}
+
+		if(cc_map_addp(self->map_image, image_state,
+		               sizeof(vkk_samplerInfo_t), si) == NULL)
+		{
+			vkk_vgRendererImageState_delete(&image_state);
+			self->image_state = NULL;
+			return;
+		}
 	}
 
-	vkk_buffer_t* vb_array[] =
-	{
-		line->vb_xyst,
-		line->vb_dxdy,
-	};
-	vkk_renderer_draw(self->rend, line->vc, 2, vb_array);
-}
-
-void vkk_vgRenderer_drawPolygon(vkk_vgRenderer_t* self,
-                                vkk_vgPolygonStyle_t* style,
-                                vkk_vgPolygon_t* polygon)
-{
-	ASSERT(self);
-	ASSERT(style);
-	ASSERT(polygon);
-
-	if(vkk_vgRenderer_bindPolygon(self, style) == 0)
-	{
-		return;
-	}
-
-	cc_listIter_t* iter = cc_list_head(polygon->list_idx);
-	while(iter)
-	{
-		vkk_vgPolygonIdx_t* pi;
-		pi = (vkk_vgPolygonIdx_t*) cc_list_peekIter(iter);
-
-		vkk_renderer_drawIndexed(self->rend,
-		                         pi->count, 1,
-		                         VKK_INDEX_TYPE_USHORT,
-		                         pi->ib, &polygon->vb_xy);
-		iter = cc_list_next(iter);
-	}
+	vkk_renderer_bindGraphicsPipeline(self->rend,
+	                                  image_state->gp_image);
+	vkk_renderer_bindUniformSets(self->rend, 1,
+	                             &self->us0);
+	self->image_state = image_state;
 }
 
 int vkk_vgRenderer_pushMatrix(vkk_vgRenderer_t* self,
@@ -1088,4 +1432,68 @@ void vkk_vgRenderer_popMatrix(vkk_vgRenderer_t* self)
 	{
 		cc_list_remove(self->stack_usb1, &iter);
 	}
+}
+
+void vkk_vgRenderer_drawLine(vkk_vgRenderer_t* self,
+                             vkk_vgLineStyle_t* style,
+                             vkk_vgLine_t* line)
+{
+	ASSERT(self);
+	ASSERT(style);
+	ASSERT(line);
+
+	if(vkk_vgRenderer_bindLine(self, line->dist, style) == 0)
+	{
+		return;
+	}
+
+	vkk_buffer_t* vb_array[] =
+	{
+		line->vb_xyst,
+		line->vb_dxdy,
+	};
+	vkk_renderer_draw(self->rend, line->vc, 2, vb_array);
+}
+
+void vkk_vgRenderer_drawPolygon(vkk_vgRenderer_t* self,
+                                vkk_vgPolygonStyle_t* style,
+                                vkk_vgPolygon_t* polygon)
+{
+	ASSERT(self);
+	ASSERT(style);
+	ASSERT(polygon);
+
+	if(vkk_vgRenderer_bindPolygon(self, style) == 0)
+	{
+		return;
+	}
+
+	cc_listIter_t* iter = cc_list_head(polygon->list_idx);
+	while(iter)
+	{
+		vkk_vgPolygonIdx_t* pi;
+		pi = (vkk_vgPolygonIdx_t*) cc_list_peekIter(iter);
+
+		vkk_renderer_drawIndexed(self->rend,
+		                         pi->count, 1,
+		                         VKK_INDEX_TYPE_USHORT,
+		                         pi->ib, &polygon->vb_xy);
+		iter = cc_list_next(iter);
+	}
+}
+
+void vkk_vgRenderer_drawImage(vkk_vgRenderer_t* self,
+                              vkk_image_t* image)
+{
+	ASSERT(self);
+	ASSERT(image);
+
+	if(vkk_vgRenderer_bindImage(self, image) == 0)
+	{
+		return;
+	}
+
+	vkk_buffer_t* vb_xyuv_image;
+	vb_xyuv_image = self->vb_xyuv_image[self->image_yup];
+	vkk_renderer_draw(self->rend, 4, 1, &vb_xyuv_image);
 }

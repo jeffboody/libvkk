@@ -97,20 +97,52 @@ Rendering
 A VG renderer is required to manage the vector graphics
 rendering state. This internal state is intentionally
 opaque to the user to provide the simplest API possible.
-The user simply needs to reset the VG renderer once per
-frame prior to rendering any primitives and call the bind
-function prior to rendering one or more primitives of the
-corresponding bind type.
 
 	vkk_vgRenderer_t* vkk_vgRenderer_new(vkk_renderer_t* rend);
 	void              vkk_vgRenderer_delete(vkk_vgRenderer_t** _self);
-	void              vkk_vgRenderer_reset(vkk_vgRenderer_t* self,
-	                                       cc_mat4f_t* pm);
-	void              vkk_vgRenderer_bindLines(vkk_vgRenderer_t* self);
-	void              vkk_vgRenderer_bindPolygons(vkk_vgRenderer_t* self);
-	int               vkk_vgRenderer_pushMatrix(vkk_vgRenderer_t* self,
-	                                            cc_mat4f_t* mvm);
-	void              vkk_vgRenderer_popMatrix(vkk_vgRenderer_t* self);
+
+The VG renderer must be reset once per frame prior to
+rendering of any primitives to initialize the rendering
+state.
+
+	void vkk_vgRenderer_reset(vkk_vgRenderer_t* self,
+	                          cc_mat4f_t* pm);
+
+The primitive type must be bound prior to rendering of one
+or more primitives.
+
+	typedef enum
+	{
+		VKK_SAMPLER_FILTER_NEAREST = 0,
+		VKK_SAMPLER_FILTER_LINEAR  = 1,
+	} vkk_samplerFilter_e;
+
+	typedef enum
+	{
+		VKK_SAMPLER_MIPMAP_MODE_NEAREST = 0,
+		VKK_SAMPLER_MIPMAP_MODE_LINEAR  = 1,
+	} vkk_samplerMipmapMode_e;
+
+	typedef struct
+	{
+		vkk_samplerFilter_e     min_filter;
+		vkk_samplerFilter_e     mag_filter;
+		vkk_samplerMipmapMode_e mipmap_mode;
+		int                     anisotropy;
+		float                   max_anisotropy;
+	} vkk_samplerInfo_t;
+
+	void vkk_vgRenderer_bindLines(vkk_vgRenderer_t* self);
+	void vkk_vgRenderer_bindPolygons(vkk_vgRenderer_t* self);
+	void vkk_vgRenderer_bindImages(vkk_vgRenderer_t* self,
+	                               vkk_samplerInfo_t* si);
+
+An optional model view matrix may be applied to the
+rendering primitive.
+
+	int  vkk_vgRenderer_pushMatrix(vkk_vgRenderer_t* self,
+	                               cc_mat4f_t* mvm);
+	void vkk_vgRenderer_popMatrix(vkk_vgRenderer_t* self);
 
 The primitive drawing functions are as follows.
 
@@ -140,6 +172,8 @@ The primitive drawing functions are as follows.
 	void vkk_vgRenderer_drawPolygon(vkk_vgRenderer_t* self,
 	                                vkk_vgPolygonStyle_t* style,
 	                                vkk_vgPolygon_t* polygon);
+	void vkk_vgRenderer_drawImage(vkk_vgRenderer_t* self,
+	                              vkk_image_t* image);
 
 A typical rendering sequence might be as follows.
 
@@ -158,7 +192,7 @@ A typical rendering sequence might be as follows.
 	...
 	vkk_renderer_end(default);
 
-Primitives should be drawn in back-to-front order due to
+Primitives must be drawn in back-to-front order due to
 transparency and anti-aliasing.
 
 Primitive Destructors

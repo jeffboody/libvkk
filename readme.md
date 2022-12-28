@@ -76,7 +76,7 @@ VKK VG (Vector Graphics)
 The vector graphics features exposed by VKK VG include.
 
 * Single header file (vkk\_vg.h)
-* Line and polygon primitives
+* Line, polygon and image primitives
 * Primitive geometry builders
 
 See [VKK VG](vg/readme.md) for more details.
