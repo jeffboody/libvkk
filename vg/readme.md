@@ -94,23 +94,23 @@ achieve polygon anti-aliasing.
 Rendering
 ---------
 
-A context is required to manage the vector graphics
+A VG renderer is required to manage the vector graphics
 rendering state. This internal state is intentionally
 opaque to the user to provide the simplest API possible.
-The user simply needs to reset the context once per frame
-prior to rendering any primitives and call the bind
+The user simply needs to reset the VG renderer once per
+frame prior to rendering any primitives and call the bind
 function prior to rendering one or more primitives of the
 corresponding bind type.
 
-	vkk_vgContext_t* vkk_vgContext_new(vkk_renderer_t* rend);
-	void             vkk_vgContext_delete(vkk_vgContext_t** _self);
-	void             vkk_vgContext_reset(vkk_vgContext_t* self,
-	                                     cc_mat4f_t* pm);
-	void             vkk_vgContext_bindLines(vkk_vgContext_t* self);
-	void             vkk_vgContext_bindPolygons(vkk_vgContext_t* self);
-	int              vkk_vgContext_pushMatrix(vkk_vgContext_t* self,
-	                                          cc_mat4f_t* mvm);
-	void             vkk_vgContext_popMatrix(vkk_vgContext_t* self);
+	vkk_vgRenderer_t* vkk_vgRenderer_new(vkk_renderer_t* rend);
+	void              vkk_vgRenderer_delete(vkk_vgRenderer_t** _self);
+	void              vkk_vgRenderer_reset(vkk_vgRenderer_t* self,
+	                                       cc_mat4f_t* pm);
+	void              vkk_vgRenderer_bindLines(vkk_vgRenderer_t* self);
+	void              vkk_vgRenderer_bindPolygons(vkk_vgRenderer_t* self);
+	int               vkk_vgRenderer_pushMatrix(vkk_vgRenderer_t* self,
+	                                            cc_mat4f_t* mvm);
+	void              vkk_vgRenderer_popMatrix(vkk_vgRenderer_t* self);
 
 The primitive drawing functions are as follows.
 
@@ -134,12 +134,12 @@ The primitive drawing functions are as follows.
 		cc_vec4f_t color;
 	} vkk_vgPolygonStyle_t;
 
-	void vkk_vgLine_draw(vkk_vgLine_t* self,
-	                     vkk_vgContext_t* ctx,
-	                     vkk_vgLineStyle_t* style);
-	void vkk_vgPolygon_draw(vkk_vgPolygon_t* self,
-	                        vkk_vgContext_t* ctx,
-	                        vkk_vgPolygonStyle_t* style);
+	void vkk_vgRenderer_drawLine(vkk_vgRenderer_t* self,
+	                             vkk_vgLineStyle_t* style,
+	                             vkk_vgLine_t* line);
+	void vkk_vgRenderer_drawPolygon(vkk_vgRenderer_t* self,
+	                                vkk_vgPolygonStyle_t* style,
+	                                vkk_vgPolygon_t* polygon);
 
 A typical rendering sequence might be as follows.
 
@@ -147,19 +147,27 @@ A typical rendering sequence might be as follows.
 	cc_mat4f_orthoVK(&pm, 1, l, r,
 	                 b, t, 0.0f, 2.0f);
 	vkk_renderer_beginDefault(default, ...);
-	vkk_vgContext_reset(ctx, &pm);
-	vkk_vgContext_bindPolygons(ctx);
-	vkk_vgPolygon_draw(poly1, ctx, poly_style);
-	vkk_vgPolygon_draw(poly2, ctx, poly_style);
+	vkk_vgRenderer_reset(vg_rend, &pm);
+	vkk_vgRenderer_bindPolygons(vg_rend);
+	vkk_vgRenderer_drawPolygon(vg_rend, poly_style, poly1);
+	vkk_vgRenderer_drawPolygon(vg_rend, poly_style, poly2);
 	...
-	vkk_vgContext_bindLines(ctx);
-	vkk_vgLine_draw(line1, ctx, line_style);
-	vkk_vgLine_draw(line2, ctx, line_style);
+	vkk_vgRenderer_bindLines(vg_rend);
+	vkk_vgRenderer_drawLine(vg_rend, line_style, line1);
+	vkk_vgRenderer_drawLine(vg_rend, line_style, line2);
 	...
 	vkk_renderer_end(default);
 
 Primitives should be drawn in back-to-front order due to
 transparency and anti-aliasing.
+
+Primitive Destructors
+---------------------
+
+The primitive destructor functions are as follows.
+
+	void vkk_vgLine_delete(vkk_vgLine_t** _self);
+	void vkk_vgPolygon_delete(vkk_vgPolygon_t** _self);
 
 Setup
 =====

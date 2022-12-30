@@ -50,7 +50,7 @@ endif
 ifeq ($(VKK_USE_VG),1)
 	CLASSES += \
 		vg/vkk_vgBuffer         \
-		vg/vkk_vgContext        \
+		vg/vkk_vgRenderer       \
 		vg/vkk_vgLineBuilder    \
 		vg/vkk_vgLine           \
 		vg/vkk_vgPolygonBuilder \

@@ -27,7 +27,10 @@
 #include "../../libcc/cc_log.h"
 #include "../../libcc/cc_memory.h"
 #include "../core/vkk_renderer.h"
-#include "vkk_vgContext.h"
+#include "vkk_vgRenderer.h"
+#include "vkk_vgLine.h"
+#include "vkk_vgPolygonIdx.h"
+#include "vkk_vgPolygon.h"
 
 /***********************************************************
 * private                                                  *
@@ -38,19 +41,19 @@ typedef struct
 	cc_mat4f_t        mvm;
 	vkk_buffer_t*     ub10_mvm;
 	vkk_uniformSet_t* us1;
-} vkk_vgContextUSB1_t;
+} vkk_vgRendererUSB1_t;
 
-static vkk_vgContextUSB1_t*
-vkk_vgContextUSB1_new(vkk_vgContext_t* ctx)
+static vkk_vgRendererUSB1_t*
+vkk_vgRendererUSB1_new(vkk_vgRenderer_t* vg_rend)
 {
-	ASSERT(ctx);
+	ASSERT(vg_rend);
 
-	vkk_renderer_t* rend   = ctx->rend;
+	vkk_renderer_t* rend   = vg_rend->rend;
 	vkk_engine_t*   engine = rend->engine;
 
-	vkk_vgContextUSB1_t* self;
-	self = (vkk_vgContextUSB1_t*)
-	       CALLOC(1, sizeof(vkk_vgContextUSB1_t));
+	vkk_vgRendererUSB1_t* self;
+	self = (vkk_vgRendererUSB1_t*)
+	       CALLOC(1, sizeof(vkk_vgRendererUSB1_t));
 	if(self == NULL)
 	{
 		LOGE("CALLOC failed");
@@ -78,7 +81,7 @@ vkk_vgContextUSB1_new(vkk_vgContext_t* ctx)
 	};
 
 	self->us1 = vkk_uniformSet_new(engine, 1, 1,
-	                               ua_array, ctx->usf1);
+	                               ua_array, vg_rend->usf1);
 	if(self->us1 == NULL)
 	{
 		goto fail_us1;
@@ -96,11 +99,11 @@ vkk_vgContextUSB1_new(vkk_vgContext_t* ctx)
 }
 
 static void
-vkk_vgContextUSB1_delete(vkk_vgContextUSB1_t** _self)
+vkk_vgRendererUSB1_delete(vkk_vgRendererUSB1_t** _self)
 {
 	ASSERT(_self);
 
-	vkk_vgContextUSB1_t* self = *_self;
+	vkk_vgRendererUSB1_t* self = *_self;
 	if(self)
 	{
 		vkk_uniformSet_delete(&self->us1);
@@ -115,21 +118,21 @@ typedef struct
 	vkk_buffer_t*     ub20_color;
 	vkk_buffer_t*     ub21_brush12WidthCap;
 	vkk_uniformSet_t* us2;
-} vkk_vgContextUSB2Line_t;
+} vkk_vgRendererUSB2Line_t;
 
-static vkk_vgContextUSB2Line_t*
-vkk_vgContextUSB2Line_new(vkk_vgContext_t* ctx,
-                          vkk_vgLineStyle_t* style)
+static vkk_vgRendererUSB2Line_t*
+vkk_vgRendererUSB2Line_new(vkk_vgRenderer_t* vg_rend,
+                           vkk_vgLineStyle_t* style)
 {
-	ASSERT(ctx);
+	ASSERT(vg_rend);
 	ASSERT(style);
 
-	vkk_renderer_t* rend   = ctx->rend;
+	vkk_renderer_t* rend   = vg_rend->rend;
 	vkk_engine_t*   engine = rend->engine;
 
-	vkk_vgContextUSB2Line_t* self;
-	self = (vkk_vgContextUSB2Line_t*)
-	       CALLOC(1, sizeof(vkk_vgContextUSB2Line_t));
+	vkk_vgRendererUSB2Line_t* self;
+	self = (vkk_vgRendererUSB2Line_t*)
+	       CALLOC(1, sizeof(vkk_vgRendererUSB2Line_t));
 	if(self == NULL)
 	{
 		LOGE("CALLOC failed");
@@ -180,7 +183,8 @@ vkk_vgContextUSB2Line_new(vkk_vgContext_t* ctx,
 	};
 
 	self->us2 = vkk_uniformSet_new(rend->engine, 2, 2,
-	                               ua_array, ctx->usf2_line);
+	                               ua_array,
+	                               vg_rend->usf2_line);
 	if(self->us2 == NULL)
 	{
 		goto fail_us2;
@@ -200,11 +204,11 @@ vkk_vgContextUSB2Line_new(vkk_vgContext_t* ctx,
 }
 
 static void
-vkk_vgContextUSB2Line_delete(vkk_vgContextUSB2Line_t** _self)
+vkk_vgRendererUSB2Line_delete(vkk_vgRendererUSB2Line_t** _self)
 {
 	ASSERT(_self);
 
-	vkk_vgContextUSB2Line_t* self = *_self;
+	vkk_vgRendererUSB2Line_t* self = *_self;
 	if(self)
 	{
 		vkk_uniformSet_delete(&self->us2);
@@ -219,21 +223,21 @@ typedef struct
 {
 	vkk_buffer_t*     ub20_color;
 	vkk_uniformSet_t* us2;
-} vkk_vgContextUSB2Poly_t;
+} vkk_vgRendererUSB2Poly_t;
 
-static vkk_vgContextUSB2Poly_t*
-vkk_vgContextUSB2Poly_new(vkk_vgContext_t* ctx,
-                          vkk_vgPolygonStyle_t* style)
+static vkk_vgRendererUSB2Poly_t*
+vkk_vgRendererUSB2Poly_new(vkk_vgRenderer_t* vg_rend,
+                           vkk_vgPolygonStyle_t* style)
 {
-	ASSERT(ctx);
+	ASSERT(vg_rend);
 	ASSERT(style);
 
-	vkk_renderer_t* rend   = ctx->rend;
+	vkk_renderer_t* rend   = vg_rend->rend;
 	vkk_engine_t*   engine = rend->engine;
 
-	vkk_vgContextUSB2Poly_t* self;
-	self = (vkk_vgContextUSB2Poly_t*)
-	       CALLOC(1, sizeof(vkk_vgContextUSB2Poly_t));
+	vkk_vgRendererUSB2Poly_t* self;
+	self = (vkk_vgRendererUSB2Poly_t*)
+	       CALLOC(1, sizeof(vkk_vgRendererUSB2Poly_t));
 	if(self == NULL)
 	{
 		LOGE("CALLOC failed");
@@ -261,7 +265,8 @@ vkk_vgContextUSB2Poly_new(vkk_vgContext_t* ctx,
 	};
 
 	self->us2 = vkk_uniformSet_new(rend->engine, 2, 1,
-	                               ua_array, ctx->usf2_poly);
+	                               ua_array,
+	                               vg_rend->usf2_poly);
 	if(self->us2 == NULL)
 	{
 		goto fail_us2;
@@ -279,11 +284,11 @@ vkk_vgContextUSB2Poly_new(vkk_vgContext_t* ctx,
 }
 
 static void
-vkk_vgContextUSB2Poly_delete(vkk_vgContextUSB2Poly_t** _self)
+vkk_vgRendererUSB2Poly_delete(vkk_vgRendererUSB2Poly_t** _self)
 {
 	ASSERT(_self);
 
-	vkk_vgContextUSB2Poly_t* self = *_self;
+	vkk_vgRendererUSB2Poly_t* self = *_self;
 	if(self)
 	{
 		vkk_uniformSet_delete(&self->us2);
@@ -297,19 +302,19 @@ typedef struct
 {
 	vkk_buffer_t*     ub30_dist;
 	vkk_uniformSet_t* us3;
-} vkk_vgContextUSB3Line_t;
+} vkk_vgRendererUSB3Line_t;
 
-static vkk_vgContextUSB3Line_t*
-vkk_vgContextUSB3Line_new(vkk_vgContext_t* ctx, float dist)
+static vkk_vgRendererUSB3Line_t*
+vkk_vgRendererUSB3Line_new(vkk_vgRenderer_t* vg_rend, float dist)
 {
-	ASSERT(ctx);
+	ASSERT(vg_rend);
 
-	vkk_renderer_t* rend   = ctx->rend;
+	vkk_renderer_t* rend   = vg_rend->rend;
 	vkk_engine_t*   engine = rend->engine;
 
-	vkk_vgContextUSB3Line_t* self;
-	self = (vkk_vgContextUSB3Line_t*)
-	       CALLOC(1, sizeof(vkk_vgContextUSB3Line_t));
+	vkk_vgRendererUSB3Line_t* self;
+	self = (vkk_vgRendererUSB3Line_t*)
+	       CALLOC(1, sizeof(vkk_vgRendererUSB3Line_t));
 	if(self == NULL)
 	{
 		LOGE("CALLOC failed");
@@ -337,7 +342,8 @@ vkk_vgContextUSB3Line_new(vkk_vgContext_t* ctx, float dist)
 	};
 
 	self->us3 = vkk_uniformSet_new(engine, 3, 1,
-	                               ua_array, ctx->usf3_line);
+	                               ua_array,
+	                               vg_rend->usf3_line);
 	if(self->us3 == NULL)
 	{
 		goto fail_us3;
@@ -355,11 +361,11 @@ vkk_vgContextUSB3Line_new(vkk_vgContext_t* ctx, float dist)
 }
 
 static void
-vkk_vgContextUSB3Line_delete(vkk_vgContextUSB3Line_t** _self)
+vkk_vgRendererUSB3Line_delete(vkk_vgRendererUSB3Line_t** _self)
 {
 	ASSERT(_self);
 
-	vkk_vgContextUSB3Line_t* self = *_self;
+	vkk_vgRendererUSB3Line_t* self = *_self;
 	if(self)
 	{
 		vkk_uniformSet_delete(&self->us3);
@@ -373,9 +379,9 @@ vkk_vgContextUSB3Line_delete(vkk_vgContextUSB3Line_t** _self)
 * protected                                                *
 ***********************************************************/
 
-int vkk_vgContext_bindLine(vkk_vgContext_t* self,
-                           float dist,
-                           vkk_vgLineStyle_t* style)
+int vkk_vgRenderer_bindLine(vkk_vgRenderer_t* self,
+                            float dist,
+                            vkk_vgLineStyle_t* style)
 {
 	ASSERT(self);
 	ASSERT(style);
@@ -384,8 +390,8 @@ int vkk_vgContext_bindLine(vkk_vgContext_t* self,
 
 	// get us1
 	vkk_uniformSet_t*    us1 = self->us1;
-	vkk_vgContextUSB1_t* usb1;
-	usb1 = (vkk_vgContextUSB1_t*)
+	vkk_vgRendererUSB1_t* usb1;
+	usb1 = (vkk_vgRendererUSB1_t*)
 	       cc_list_peekHead(self->stack_usb1);
 	if(usb1)
 	{
@@ -393,17 +399,18 @@ int vkk_vgContext_bindLine(vkk_vgContext_t* self,
 	}
 
 	// get us2
-	vkk_vgContextUSB2Line_t* usb2_line;
-	cc_mapIter_t*            miter;
+	vkk_vgRendererUSB2Line_t* usb2_line;
+	cc_mapIter_t*             miter;
 	miter = cc_map_findp(self->map_usb2_line,
 	                     sizeof(vkk_vgLineStyle_t), style);
 	if(miter)
 	{
-		usb2_line = (vkk_vgContextUSB2Line_t*) cc_map_val(miter);
+		usb2_line = (vkk_vgRendererUSB2Line_t*)
+		            cc_map_val(miter);
 	}
 	else
 	{
-		usb2_line = vkk_vgContextUSB2Line_new(self, style);
+		usb2_line = vkk_vgRendererUSB2Line_new(self, style);
 		if(usb2_line == NULL)
 		{
 			return 0;
@@ -413,18 +420,18 @@ int vkk_vgContext_bindLine(vkk_vgContext_t* self,
 		               sizeof(vkk_vgLineStyle_t),
 		               style) == NULL)
 		{
-			vkk_vgContextUSB2Line_delete(&usb2_line);
+			vkk_vgRendererUSB2Line_delete(&usb2_line);
 			return 0;
 		}
 	}
 
 	// get us3
-	vkk_vgContextUSB3Line_t* usb3_line;
-	cc_listIter_t*           iter;
+	vkk_vgRendererUSB3Line_t* usb3_line;
+	cc_listIter_t*            iter;
 	iter = cc_list_head(self->list_usb3_line[0]);
 	if(iter)
 	{
-		usb3_line = (vkk_vgContextUSB3Line_t*)
+		usb3_line = (vkk_vgRendererUSB3Line_t*)
 		            cc_list_peekIter(iter);
 		cc_list_swapn(self->list_usb3_line[0],
 		              self->list_usb3_line[1],
@@ -434,7 +441,7 @@ int vkk_vgContext_bindLine(vkk_vgContext_t* self,
 	}
 	else
 	{
-		usb3_line = vkk_vgContextUSB3Line_new(self, dist);
+		usb3_line = vkk_vgRendererUSB3Line_new(self, dist);
 		if(usb3_line == NULL)
 		{
 			return 0;
@@ -443,7 +450,7 @@ int vkk_vgContext_bindLine(vkk_vgContext_t* self,
 		if(cc_list_append(self->list_usb3_line[1], NULL,
 		                  (const void*) usb3_line) == NULL)
 		{
-			vkk_vgContextUSB3Line_delete(&usb3_line);
+			vkk_vgRendererUSB3Line_delete(&usb3_line);
 			return 0;
 		}
 	}
@@ -460,8 +467,8 @@ int vkk_vgContext_bindLine(vkk_vgContext_t* self,
 	return 1;
 }
 
-int vkk_vgContext_bindPolygon(vkk_vgContext_t* self,
-                              vkk_vgPolygonStyle_t* style)
+int vkk_vgRenderer_bindPolygon(vkk_vgRenderer_t* self,
+                               vkk_vgPolygonStyle_t* style)
 {
 	ASSERT(self);
 	ASSERT(style);
@@ -469,9 +476,9 @@ int vkk_vgContext_bindPolygon(vkk_vgContext_t* self,
 	vkk_renderer_t* rend = self->rend;
 
 	// get us1
-	vkk_uniformSet_t*    us1 = self->us1;
-	vkk_vgContextUSB1_t* usb1;
-	usb1 = (vkk_vgContextUSB1_t*)
+	vkk_uniformSet_t*     us1 = self->us1;
+	vkk_vgRendererUSB1_t* usb1;
+	usb1 = (vkk_vgRendererUSB1_t*)
 	       cc_list_peekHead(self->stack_usb1);
 	if(usb1)
 	{
@@ -479,17 +486,18 @@ int vkk_vgContext_bindPolygon(vkk_vgContext_t* self,
 	}
 
 	// get us2
-	vkk_vgContextUSB2Poly_t* usb2_poly;
-	cc_mapIter_t*            miter;
+	vkk_vgRendererUSB2Poly_t* usb2_poly;
+	cc_mapIter_t*             miter;
 	miter = cc_map_findp(self->map_usb2_poly,
 	                     sizeof(vkk_vgPolygonStyle_t), style);
 	if(miter)
 	{
-		usb2_poly = (vkk_vgContextUSB2Poly_t*) cc_map_val(miter);
+		usb2_poly = (vkk_vgRendererUSB2Poly_t*)
+		            cc_map_val(miter);
 	}
 	else
 	{
-		usb2_poly = vkk_vgContextUSB2Poly_new(self, style);
+		usb2_poly = vkk_vgRendererUSB2Poly_new(self, style);
 		if(usb2_poly == NULL)
 		{
 			return 0;
@@ -499,7 +507,7 @@ int vkk_vgContext_bindPolygon(vkk_vgContext_t* self,
 		               sizeof(vkk_vgPolygonStyle_t),
 		               style) == NULL)
 		{
-			vkk_vgContextUSB2Poly_delete(&usb2_poly);
+			vkk_vgRendererUSB2Poly_delete(&usb2_poly);
 			return 0;
 		}
 	}
@@ -519,15 +527,15 @@ int vkk_vgContext_bindPolygon(vkk_vgContext_t* self,
 * public                                                   *
 ***********************************************************/
 
-vkk_vgContext_t* vkk_vgContext_new(vkk_renderer_t* rend)
+vkk_vgRenderer_t* vkk_vgRenderer_new(vkk_renderer_t* rend)
 {
 	ASSERT(rend);
 
 	vkk_engine_t* engine = rend->engine;
 
-	vkk_vgContext_t* self;
-	self = (vkk_vgContext_t*)
-	       CALLOC(1, sizeof(vkk_vgContext_t));
+	vkk_vgRenderer_t* self;
+	self = (vkk_vgRenderer_t*)
+	       CALLOC(1, sizeof(vkk_vgRenderer_t));
 	if(self == NULL)
 	{
 		LOGE("CALLOC failed");
@@ -849,11 +857,11 @@ vkk_vgContext_t* vkk_vgContext_new(vkk_renderer_t* rend)
 	return NULL;
 }
 
-void vkk_vgContext_delete(vkk_vgContext_t** _self)
+void vkk_vgRenderer_delete(vkk_vgRenderer_t** _self)
 {
 	ASSERT(_self);
 
-	vkk_vgContext_t* self = *_self;
+	vkk_vgRenderer_t* self = *_self;
 	if(self)
 	{
 		cc_list_appendList(self->list_usb1[0],
@@ -866,39 +874,39 @@ void vkk_vgContext_delete(vkk_vgContext_t** _self)
 		iter = cc_list_head(self->list_usb3_line[0]);
 		while(iter)
 		{
-			vkk_vgContextUSB3Line_t* usb3_line;
-			usb3_line = (vkk_vgContextUSB3Line_t*)
+			vkk_vgRendererUSB3Line_t* usb3_line;
+			usb3_line = (vkk_vgRendererUSB3Line_t*)
 			            cc_list_remove(self->list_usb3_line[0],
 			                           &iter);
-			vkk_vgContextUSB3Line_delete(&usb3_line);
+			vkk_vgRendererUSB3Line_delete(&usb3_line);
 		}
 
 		cc_mapIter_t* miter;
 		miter = cc_map_head(self->map_usb2_poly);
 		while(miter)
 		{
-			vkk_vgContextUSB2Poly_t* usb2_poly;
-			usb2_poly = (vkk_vgContextUSB2Poly_t*)
+			vkk_vgRendererUSB2Poly_t* usb2_poly;
+			usb2_poly = (vkk_vgRendererUSB2Poly_t*)
 			            cc_map_remove(self->map_usb2_poly, &miter);
-			vkk_vgContextUSB2Poly_delete(&usb2_poly);
+			vkk_vgRendererUSB2Poly_delete(&usb2_poly);
 		}
 
 		miter = cc_map_head(self->map_usb2_line);
 		while(miter)
 		{
-			vkk_vgContextUSB2Line_t* usb2_line;
-			usb2_line = (vkk_vgContextUSB2Line_t*)
+			vkk_vgRendererUSB2Line_t* usb2_line;
+			usb2_line = (vkk_vgRendererUSB2Line_t*)
 			            cc_map_remove(self->map_usb2_line, &miter);
-			vkk_vgContextUSB2Line_delete(&usb2_line);
+			vkk_vgRendererUSB2Line_delete(&usb2_line);
 		}
 
 		iter = cc_list_head(self->list_usb1[0]);
 		while(iter)
 		{
-			vkk_vgContextUSB1_t* usb1;
-			usb1 = (vkk_vgContextUSB1_t*)
+			vkk_vgRendererUSB1_t* usb1;
+			usb1 = (vkk_vgRendererUSB1_t*)
 			       cc_list_remove(self->list_usb1[0], &iter);
-			vkk_vgContextUSB1_delete(&usb1);
+			vkk_vgRendererUSB1_delete(&usb1);
 		}
 
 		cc_list_delete(&self->list_usb3_line[1]);
@@ -926,8 +934,8 @@ void vkk_vgContext_delete(vkk_vgContext_t** _self)
 	}
 }
 
-void vkk_vgContext_reset(vkk_vgContext_t* self,
-                         cc_mat4f_t* pm)
+void vkk_vgRenderer_reset(vkk_vgRenderer_t* self,
+                          cc_mat4f_t* pm)
 {
 	ASSERT(self);
 	ASSERT(pm);
@@ -941,7 +949,7 @@ void vkk_vgContext_reset(vkk_vgContext_t* self,
 	                   self->list_usb3_line[1]);
 }
 
-void vkk_vgContext_bindLines(vkk_vgContext_t* self)
+void vkk_vgRenderer_bindLines(vkk_vgRenderer_t* self)
 {
 	ASSERT(self);
 
@@ -951,7 +959,7 @@ void vkk_vgContext_bindLines(vkk_vgContext_t* self)
 	                             &self->us0);
 }
 
-void vkk_vgContext_bindPolygons(vkk_vgContext_t* self)
+void vkk_vgRenderer_bindPolygons(vkk_vgRenderer_t* self)
 {
 	ASSERT(self);
 
@@ -961,21 +969,69 @@ void vkk_vgContext_bindPolygons(vkk_vgContext_t* self)
 	                             &self->us0);
 }
 
-int vkk_vgContext_pushMatrix(vkk_vgContext_t* self,
-                             cc_mat4f_t* mvm)
+void vkk_vgRenderer_drawLine(vkk_vgRenderer_t* self,
+                             vkk_vgLineStyle_t* style,
+                             vkk_vgLine_t* line)
+{
+	ASSERT(self);
+	ASSERT(style);
+	ASSERT(line);
+
+	if(vkk_vgRenderer_bindLine(self, line->dist, style) == 0)
+	{
+		return;
+	}
+
+	vkk_buffer_t* vb_array[] =
+	{
+		line->vb_xyst,
+		line->vb_dxdy,
+	};
+	vkk_renderer_draw(self->rend, line->vc, 2, vb_array);
+}
+
+void vkk_vgRenderer_drawPolygon(vkk_vgRenderer_t* self,
+                                vkk_vgPolygonStyle_t* style,
+                                vkk_vgPolygon_t* polygon)
+{
+	ASSERT(self);
+	ASSERT(style);
+	ASSERT(polygon);
+
+	if(vkk_vgRenderer_bindPolygon(self, style) == 0)
+	{
+		return;
+	}
+
+	cc_listIter_t* iter = cc_list_head(polygon->list_idx);
+	while(iter)
+	{
+		vkk_vgPolygonIdx_t* pi;
+		pi = (vkk_vgPolygonIdx_t*) cc_list_peekIter(iter);
+
+		vkk_renderer_drawIndexed(self->rend,
+		                         pi->count, 1,
+		                         VKK_INDEX_TYPE_USHORT,
+		                         pi->ib, &polygon->vb_xy);
+		iter = cc_list_next(iter);
+	}
+}
+
+int vkk_vgRenderer_pushMatrix(vkk_vgRenderer_t* self,
+                              cc_mat4f_t* mvm)
 {
 	ASSERT(self);
 	ASSERT(mvm);
 
 	// try to use an existing mvm
 	// or fall back to create a new mvm
-	vkk_vgContextUSB1_t* usb1;
-	cc_listIter_t*       iter;
-	cc_listIter_t*       siter;
+	vkk_vgRendererUSB1_t* usb1;
+	cc_listIter_t*        iter;
+	cc_listIter_t*        siter;
 	iter = cc_list_head(self->list_usb1[0]);
 	if(iter)
 	{
-		usb1 = (vkk_vgContextUSB1_t*) cc_list_peekIter(iter);
+		usb1 = (vkk_vgRendererUSB1_t*) cc_list_peekIter(iter);
 
 		siter = cc_list_insert(self->stack_usb1, NULL, usb1);
 		if(siter == NULL)
@@ -988,7 +1044,7 @@ int vkk_vgContext_pushMatrix(vkk_vgContext_t* self,
 	}
 	else
 	{
-		usb1 = vkk_vgContextUSB1_new(self);
+		usb1 = vkk_vgRendererUSB1_new(self);
 		if(usb1 == NULL)
 		{
 			return 0;
@@ -1019,11 +1075,11 @@ int vkk_vgContext_pushMatrix(vkk_vgContext_t* self,
 	fail_list_usb1:
 		cc_list_remove(self->stack_usb1, &siter);
 	fail_stack:
-		vkk_vgContextUSB1_delete(&usb1);
+		vkk_vgRendererUSB1_delete(&usb1);
 	return 0;
 }
 
-void vkk_vgContext_popMatrix(vkk_vgContext_t* self)
+void vkk_vgRenderer_popMatrix(vkk_vgRenderer_t* self)
 {
 	ASSERT(self);
 

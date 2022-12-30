@@ -37,12 +37,12 @@ endif()
 if(VKK_USE_VG)
     set(SOURCE_VG
         vg/vkk_vgBuffer.c
-        vg/vkk_vgContext.c
         vg/vkk_vgLineBuilder.c
         vg/vkk_vgLine.c
         vg/vkk_vgPolygonBuilder.c
         vg/vkk_vgPolygonIdx.c
-        vg/vkk_vgPolygon.c)
+        vg/vkk_vgPolygon.c
+        vg/vkk_vgRenderer.c)
     set(LINK_VG
         tess2)
 endif()

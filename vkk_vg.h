@@ -42,7 +42,7 @@ typedef enum
  * opaque objects
  */
 
-typedef struct vkk_vgContext_s        vkk_vgContext_t;
+typedef struct vkk_vgRenderer_s       vkk_vgRenderer_t;
 typedef struct vkk_vgLineBuilder_s    vkk_vgLineBuilder_t;
 typedef struct vkk_vgLine_s           vkk_vgLine_t;
 typedef struct vkk_vgPolygonBuilder_s vkk_vgPolygonBuilder_t;
@@ -67,18 +67,24 @@ typedef struct vkk_vgPolygonStyle_s
 } vkk_vgPolygonStyle_t;
 
 /*
- * context API
+ * renderer API
  */
 
-vkk_vgContext_t* vkk_vgContext_new(vkk_renderer_t* rend);
-void             vkk_vgContext_delete(vkk_vgContext_t** _self);
-void             vkk_vgContext_reset(vkk_vgContext_t* self,
-                                     cc_mat4f_t* pm);
-void             vkk_vgContext_bindLines(vkk_vgContext_t* self);
-void             vkk_vgContext_bindPolygons(vkk_vgContext_t* self);
-int              vkk_vgContext_pushMatrix(vkk_vgContext_t* self,
-                                          cc_mat4f_t* mvm);
-void             vkk_vgContext_popMatrix(vkk_vgContext_t* self);
+vkk_vgRenderer_t* vkk_vgRenderer_new(vkk_renderer_t* rend);
+void              vkk_vgRenderer_delete(vkk_vgRenderer_t** _self);
+void              vkk_vgRenderer_reset(vkk_vgRenderer_t* self,
+                                       cc_mat4f_t* pm);
+void              vkk_vgRenderer_bindLines(vkk_vgRenderer_t* self);
+void              vkk_vgRenderer_bindPolygons(vkk_vgRenderer_t* self);
+void              vkk_vgRenderer_drawLine(vkk_vgRenderer_t* self,
+                                          vkk_vgLineStyle_t* style,
+                                          vkk_vgLine_t* line);
+void              vkk_vgRenderer_drawPolygon(vkk_vgRenderer_t* self,
+                                             vkk_vgPolygonStyle_t* style,
+                                             vkk_vgPolygon_t* polygon);
+int               vkk_vgRenderer_pushMatrix(vkk_vgRenderer_t* self,
+                                            cc_mat4f_t* mvm);
+void              vkk_vgRenderer_popMatrix(vkk_vgRenderer_t* self);
 
 /*
  * line builder API
@@ -97,15 +103,6 @@ int                  vkk_vgLineBuilder_point(vkk_vgLineBuilder_t* self,
                                              float y);
 
 /*
- * line API
- */
-
-void vkk_vgLine_delete(vkk_vgLine_t** _self);
-void vkk_vgLine_draw(vkk_vgLine_t* self,
-                     vkk_vgContext_t* ctx,
-                     vkk_vgLineStyle_t* style);
-
-/*
  * polygon builder API
  */
 
@@ -119,12 +116,10 @@ int                     vkk_vgPolygonBuilder_point(vkk_vgPolygonBuilder_t* self,
                                                    float y);
 
 /*
- * polygon API
+ * destructors API
  */
 
+void vkk_vgLine_delete(vkk_vgLine_t** _self);
 void vkk_vgPolygon_delete(vkk_vgPolygon_t** _self);
-void vkk_vgPolygon_draw(vkk_vgPolygon_t* self,
-                        vkk_vgContext_t* ctx,
-                        vkk_vgPolygonStyle_t* style);
 
 #endif

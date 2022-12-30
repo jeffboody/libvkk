@@ -21,14 +21,14 @@
  *
  */
 
-#ifndef vkk_vgContext_H
-#define vkk_vgContext_H
+#ifndef vkk_vgRenderer_H
+#define vkk_vgRenderer_H
 
 #include "../../libcc/cc_list.h"
 #include "../../libcc/cc_map.h"
 #include "../vkk_vg.h"
 
-typedef struct vkk_vgContext_s
+typedef struct vkk_vgRenderer_s
 {
 	vkk_renderer_t*          rend;
 	vkk_uniformSetFactory_t* usf0;
@@ -68,13 +68,13 @@ typedef struct vkk_vgContext_s
 	// line state updated per draw
 	// layout(std140, set=3, binding=0) uniform uniformDist
 	cc_list_t* list_usb3_line[2];
-} vkk_vgContext_t;
+} vkk_vgRenderer_t;
 
 // protected
-int vkk_vgContext_bindLine(vkk_vgContext_t* self,
-                           float dist,
-                           vkk_vgLineStyle_t* style);
-int vkk_vgContext_bindPolygon(vkk_vgContext_t* self,
-                              vkk_vgPolygonStyle_t* style);
+int vkk_vgRenderer_bindLine(vkk_vgRenderer_t* self,
+                            float dist,
+                            vkk_vgLineStyle_t* style);
+int vkk_vgRenderer_bindPolygon(vkk_vgRenderer_t* self,
+                               vkk_vgPolygonStyle_t* style);
 
 #endif

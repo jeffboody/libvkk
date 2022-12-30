@@ -26,8 +26,8 @@
 #define LOG_TAG "vkk"
 #include "../../libcc/cc_log.h"
 #include "../../libcc/cc_memory.h"
-#include "vkk_vgContext.h"
 #include "vkk_vgLine.h"
+#include "vkk_vgRenderer.h"
 
 /***********************************************************
 * protected                                                *
@@ -102,27 +102,4 @@ void vkk_vgLine_delete(vkk_vgLine_t** _self)
 		FREE(self);
 		*_self = NULL;
 	}
-}
-
-void vkk_vgLine_draw(vkk_vgLine_t* self,
-                     vkk_vgContext_t* ctx,
-                     vkk_vgLineStyle_t* style)
-{
-	ASSERT(self);
-	ASSERT(ctx);
-	ASSERT(style);
-
-	vkk_renderer_t* rend = ctx->rend;
-
-	if(vkk_vgContext_bindLine(ctx, self->dist, style) == 0)
-	{
-		return;
-	}
-
-	vkk_buffer_t* vb_array[] =
-	{
-		self->vb_xyst,
-		self->vb_dxdy,
-	};
-	vkk_renderer_draw(rend, self->vc, 2, vb_array);
 }
