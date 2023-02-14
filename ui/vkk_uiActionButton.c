@@ -32,7 +32,8 @@
 ***********************************************************/
 
 static void
-vkk_uiActionButton_click(vkk_uiWidget_t* widget)
+vkk_uiActionButton_click(vkk_uiWidget_t* widget,
+                         float x, float y)
 {
 	ASSERT(widget);
 
@@ -58,7 +59,7 @@ vkk_uiActionButton_click(vkk_uiWidget_t* widget)
 
 	if(self->click_fn)
 	{
-		(*self->click_fn)(widget);
+		(*self->click_fn)(widget, x, y);
 	}
 }
 

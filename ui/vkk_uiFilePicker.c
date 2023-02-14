@@ -178,7 +178,8 @@ static int vkk_uiFilePicker_mkdir(const char* fname)
 }
 
 static void
-vkk_uiFilePicker_clickSelect(vkk_uiWidget_t* widget)
+vkk_uiFilePicker_clickSelect(vkk_uiWidget_t* widget,
+                             float x, float y)
 {
 	ASSERT(widget);
 
@@ -190,7 +191,8 @@ vkk_uiFilePicker_clickSelect(vkk_uiWidget_t* widget)
 }
 
 static void
-vkk_uiFilePicker_clickFolder(vkk_uiWidget_t* widget)
+vkk_uiFilePicker_clickFolder(vkk_uiWidget_t* widget,
+                             float x, float y)
 {
 	ASSERT(widget);
 

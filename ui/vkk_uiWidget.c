@@ -826,7 +826,9 @@ vkk_uiWidget_action(vkk_uiWidget_t* self,
 	{
 		if(info->action == VKK_UI_WIDGET_ACTION_CLICK)
 		{
-			(*click_fn)(self);
+			float x0 = info->coord0.x;
+			float y0 = info->coord0.y;
+			(*click_fn)(self, x0, y0);
 			return self;
 		}
 		if(info->action == VKK_UI_WIDGET_ACTION_DOWN)
@@ -1151,14 +1153,16 @@ void* vkk_uiWidget_priv(vkk_uiWidget_t* self)
 	return self->fn.priv;
 }
 
-void vkk_uiWidget_clickBack(vkk_uiWidget_t* widget)
+void vkk_uiWidget_clickBack(vkk_uiWidget_t* widget,
+                            float x0, float y0)
 {
 	ASSERT(widget);
 
 	vkk_uiScreen_windowPop(widget->screen);
 }
 
-void vkk_uiWidget_clickUrl(vkk_uiWidget_t* widget)
+void vkk_uiWidget_clickUrl(vkk_uiWidget_t* widget,
+                           float x0, float y0)
 {
 	ASSERT(widget);
 
@@ -1170,7 +1174,8 @@ void vkk_uiWidget_clickUrl(vkk_uiWidget_t* widget)
 	vkk_engine_platformCmdLoadUrl(screen->engine, url);
 }
 
-void vkk_uiWidget_clickTransition(vkk_uiWidget_t* widget)
+void vkk_uiWidget_clickTransition(vkk_uiWidget_t* widget,
+                                  float x0, float y0)
 {
 	ASSERT(widget);
 

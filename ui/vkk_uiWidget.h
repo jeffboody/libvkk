@@ -94,7 +94,8 @@ typedef vkk_uiWidget_t* (*vkk_uiWidgetAction_fn)(vkk_uiWidget_t* widget,
                                                  vkk_uiWidgetActionInfo_t* info);
 typedef void (*vkk_uiWidgetAspectRatio_fn)(vkk_uiWidget_t* widget,
                                            float* ar);
-typedef void (*vkk_uiWidgetClick_fn)(vkk_uiWidget_t* widget);
+typedef void (*vkk_uiWidgetClick_fn)(vkk_uiWidget_t* widget,
+                                     float x, float y);
 typedef void (*vkk_uiWidgetDrag_fn)(vkk_uiWidget_t* widget,
                                     float x, float y,
                                     float dx, float dy);
@@ -303,9 +304,12 @@ void*           vkk_uiWidget_priv(vkk_uiWidget_t* self);
 //    construction ordering issues
 // value:
 //    priv: int* _value;
-void vkk_uiWidget_clickBack(vkk_uiWidget_t* widget);
-void vkk_uiWidget_clickUrl(vkk_uiWidget_t* widget);
-void vkk_uiWidget_clickTransition(vkk_uiWidget_t* widget);
+void vkk_uiWidget_clickBack(vkk_uiWidget_t* widget,
+                            float x, float y);
+void vkk_uiWidget_clickUrl(vkk_uiWidget_t* widget,
+                           float x, float y);
+void vkk_uiWidget_clickTransition(vkk_uiWidget_t* widget,
+                                  float x, float y);
 void vkk_uiWidget_value(vkk_uiWidget_t* widget,
                         int value);
 

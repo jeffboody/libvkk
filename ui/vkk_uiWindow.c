@@ -99,7 +99,9 @@ vkk_uiWindow_action(vkk_uiWidget_t* widget,
 	return NULL;
 }
 
-static void vkk_uiWindow_clickTitle(vkk_uiWidget_t* widget)
+static void
+vkk_uiWindow_clickTitle(vkk_uiWidget_t* widget,
+                        float x, float y)
 {
 	ASSERT(widget);
 

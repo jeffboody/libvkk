@@ -138,7 +138,8 @@ vkk_uiFileList_setExt(vkk_uiFileList_t* self,
 }
 
 static void
-vkk_uiFileList_clickItem(vkk_uiWidget_t* widget)
+vkk_uiFileList_clickItem(vkk_uiWidget_t* widget,
+                         float x, float y)
 {
 	ASSERT(widget);
 

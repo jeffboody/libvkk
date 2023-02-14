@@ -34,7 +34,8 @@
 ***********************************************************/
 
 static void
-vkk_uiRadioBox_click(vkk_uiWidget_t* widget)
+vkk_uiRadioBox_click(vkk_uiWidget_t* widget,
+                     float x, float y)
 {
 	ASSERT(widget);
 

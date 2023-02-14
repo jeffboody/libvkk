@@ -34,7 +34,8 @@
 ***********************************************************/
 
 static void
-vkk_uiCheckBox_click(vkk_uiWidget_t* widget)
+vkk_uiCheckBox_click(vkk_uiWidget_t* widget,
+                     float x, float y)
 {
 	ASSERT(widget);
 

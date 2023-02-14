@@ -57,7 +57,8 @@ vkk_uiInputWindow_input(vkk_uiWidget_t* widget,
 }
 
 static void
-vkk_uiInputWindow_clickAccept(vkk_uiWidget_t* widget)
+vkk_uiInputWindow_clickAccept(vkk_uiWidget_t* widget,
+                              float x, float y)
 {
 	ASSERT(widget);
 

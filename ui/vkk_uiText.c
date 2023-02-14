@@ -143,7 +143,8 @@ vkk_uiText_size(vkk_uiWidget_t* widget, float* w, float* h)
 }
 
 static void
-vkk_uiText_click(vkk_uiWidget_t* widget)
+vkk_uiText_click(vkk_uiWidget_t* widget,
+                 float x, float y)
 {
 	ASSERT(widget);
 
@@ -159,7 +160,7 @@ vkk_uiText_click(vkk_uiWidget_t* widget)
 	vkk_uiWidgetClick_fn click_fn = self->click_fn;
 	if(click_fn)
 	{
-		(*click_fn)(widget);
+		(*click_fn)(widget, x, y);
 	}
 }
 
