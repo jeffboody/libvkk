@@ -67,6 +67,7 @@ add_library(vkk
             core/vkk_engine.c
             core/vkk_graphicsPipeline.c
             core/vkk_image.c
+            core/vkk_imageDownloader.c
             core/vkk_imageRenderer.c
             core/vkk_imageStreamRenderer.c
             core/vkk_imageUploader.c

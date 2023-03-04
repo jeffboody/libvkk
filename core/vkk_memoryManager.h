@@ -63,10 +63,14 @@ vkk_memory_t*        vkk_memoryManager_allocImage(vkk_memoryManager_t* self,
                                                   int local_memory);
 void                 vkk_memoryManager_free(vkk_memoryManager_t* self,
                                             vkk_memory_t** _memory);
-void                 vkk_memoryManager_update(vkk_memoryManager_t* self,
-                                              vkk_memory_t* memory,
-                                              size_t size,
-                                              const void* buf);
+void                 vkk_memoryManager_write(vkk_memoryManager_t* self,
+                                             vkk_memory_t* memory,
+                                             size_t size,
+                                             const void* buf);
+void                 vkk_memoryManager_read(vkk_memoryManager_t* self,
+                                            vkk_memory_t* memory,
+                                            size_t size,
+                                            void* buf);
 void                 vkk_memoryManager_meminfo(vkk_memoryManager_t* self,
                                                size_t* _count_chunks,
                                                size_t* _count_slots,

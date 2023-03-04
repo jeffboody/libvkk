@@ -39,7 +39,6 @@
 #include "vkk_graphicsPipeline.h"
 #include "vkk_imageRenderer.h"
 #include "vkk_imageStreamRenderer.h"
-#include "vkk_imageUploader.h"
 #include "vkk_image.h"
 #include "vkk_memoryManager.h"
 #include "vkk_pipelineLayout.h"
@@ -1398,7 +1397,7 @@ vkk_engine_t* vkk_engine_new(vkk_platform_t* platform,
 
 	self->version.major = 1;
 	self->version.minor = 1;
-	self->version.patch = 47;
+	self->version.patch = 48;
 
 	// app info
 	snprintf(self->app_name, 256, "%s", app_name);
@@ -1524,6 +1523,12 @@ vkk_engine_t* vkk_engine_new(vkk_platform_t* platform,
 		goto fail_img_uploader;
 	}
 
+	self->img_downloader = vkk_imageDownloader_new(self);
+	if(self->img_downloader == NULL)
+	{
+		goto fail_img_downloader;
+	}
+
 	if(vkk_engine_newPipelineCache(self) == 0)
 	{
 		goto fail_pipeline_cache;
@@ -1571,6 +1576,8 @@ vkk_engine_t* vkk_engine_new(vkk_platform_t* platform,
 		vkDestroyPipelineCache(self->device,
 		                       self->pipeline_cache, NULL);
 	fail_pipeline_cache:
+		vkk_imageDownloader_delete(&self->img_downloader);
+	fail_img_downloader:
 		vkk_imageUploader_delete(&self->img_uploader);
 	fail_img_uploader:
 		vkk_memoryManager_delete(&self->mm);
@@ -1640,6 +1647,7 @@ void vkk_engine_delete(vkk_engine_t** _self)
 		vkk_engine_exportPipelineCache(self);
 		vkDestroyPipelineCache(self->device,
 		                       self->pipeline_cache, NULL);
+		vkk_imageDownloader_delete(&self->img_downloader);
 		vkk_imageUploader_delete(&self->img_uploader);
 		vkk_memoryManager_delete(&self->mm);
 		vkDestroyDevice(self->device, NULL);
@@ -1670,6 +1678,7 @@ void vkk_engine_shutdown(vkk_engine_t* self)
 		vkk_engine_rendererSignal(self);
 		vkk_memoryManager_shutdown(self->mm);
 		vkk_imageUploader_shutdown(self->img_uploader);
+		vkk_imageDownloader_shutdown(self->img_downloader);
 	}
 	vkk_engine_rendererUnlock(self);
 }
@@ -1820,6 +1829,28 @@ vkk_engine_uploadImage(vkk_engine_t* self,
 
 	return vkk_imageUploader_upload(self->img_uploader,
 	                                image, pixels);
+}
+
+int
+vkk_engine_downloadImage(vkk_engine_t* self,
+                         vkk_image_t* image,
+                         void* pixels)
+{
+	ASSERT(self);
+	ASSERT(image);
+	ASSERT(pixels);
+
+	// check if image is in use
+	if(vkk_engine_rendererCheckTimestamp(self,
+	                                     image->ts) == 0)
+	{
+		LOGE("invalid image");
+		return 0;
+	}
+
+
+	return vkk_imageDownloader_download(self->img_downloader,
+	                                    image, pixels);
 }
 
 uint32_t vkk_engine_imageCount(vkk_engine_t* self)
@@ -2366,6 +2397,31 @@ void vkk_engine_rendererWait(vkk_engine_t* self)
 	pthread_cond_wait(&self->renderer_cond,
 	                  &self->renderer_mutex);
 	TRACE_BEGIN();
+}
+
+int vkk_engine_rendererCheckTimestamp(vkk_engine_t* self,
+                                      double ts)
+{
+	ASSERT(self);
+
+	vkk_renderer_t* renderer = self->renderer;
+
+	// ignore zero
+	if(ts == 0.0)
+	{
+		return 1;
+	}
+
+	// check timestamp status
+	int status = 1;
+	vkk_engine_rendererLock(self);
+	if(vkk_defaultRenderer_tsExpiredLocked(renderer) < ts)
+	{
+		status = 0;
+	}
+	vkk_engine_rendererUnlock(self);
+
+	return status;
 }
 
 void vkk_engine_rendererWaitForTimestamp(vkk_engine_t* self,

@@ -424,7 +424,7 @@ vkk_memoryManager_allocBuffer(vkk_memoryManager_t* self,
 
 	if(buf)
 	{
-		vkk_memoryManager_update(self, memory, size, buf);
+		vkk_memoryManager_write(self, memory, size, buf);
 	}
 
 	vkk_memoryManager_chunkLock(self, memory->chunk);
@@ -562,10 +562,10 @@ void vkk_memoryManager_free(vkk_memoryManager_t* self,
 	}
 }
 
-void vkk_memoryManager_update(vkk_memoryManager_t* self,
-                              vkk_memory_t* memory,
-                              size_t size,
-                              const void* buf)
+void vkk_memoryManager_write(vkk_memoryManager_t* self,
+                             vkk_memory_t* memory,
+                             size_t size,
+                             const void* buf)
 {
 	ASSERT(self);
 	ASSERT(memory);
@@ -593,6 +593,47 @@ void vkk_memoryManager_update(vkk_memoryManager_t* self,
 	               &data) == VK_SUCCESS)
 	{
 		memcpy(data, buf, size);
+		vkUnmapMemory(engine->device, chunk->memory);
+	}
+	else
+	{
+		LOGW("vkMapMemory failed");
+	}
+
+	vkk_memoryManager_chunkUnlock(self, chunk);
+}
+
+void vkk_memoryManager_read(vkk_memoryManager_t* self,
+                            vkk_memory_t* memory,
+                            size_t size,
+                            void* buf)
+{
+	ASSERT(self);
+	ASSERT(memory);
+	ASSERT(size > 0);
+	ASSERT(buf);
+
+	vkk_memoryChunk_t*   chunk  = memory->chunk;
+	vkk_memoryPool_t*    pool   = chunk->pool;
+	vkk_memoryManager_t* mm     = pool->mm;
+	vkk_engine_t*        engine = mm->engine;
+
+	vkk_memoryManager_chunkLock(self, chunk);
+
+	if(size > pool->stride)
+	{
+		LOGE("invalid size=%u, stride=%u",
+		     (uint32_t) size, (uint32_t) pool->stride);
+		vkk_memoryManager_chunkUnlock(self, chunk);
+		return;
+	}
+
+	void* data;
+	if(vkMapMemory(engine->device, chunk->memory,
+	               memory->offset, size, 0,
+	               &data) == VK_SUCCESS)
+	{
+		memcpy(buf, data, size);
 		vkUnmapMemory(engine->device, chunk->memory);
 	}
 	else

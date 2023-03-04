@@ -322,6 +322,9 @@ size_t            vkk_image_size(vkk_image_t* self,
                                  uint32_t* _width,
                                  uint32_t* _height,
                                  uint32_t* _depth);
+int               vkk_image_readPixels(vkk_image_t* self,
+                                       void* pixels);
+
 
 /*
  * uniform set API

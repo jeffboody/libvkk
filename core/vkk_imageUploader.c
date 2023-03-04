@@ -570,8 +570,8 @@ int vkk_imageUploader_upload(vkk_imageUploader_t* self,
 	{
 		ub = (vkk_uploaderBuffer_t*)
 		     cc_multimap_remove(self->buffer_map, &miter);
-		vkk_memoryManager_update(engine->mm, ub->memory,
-		                         size, pixels);
+		vkk_memoryManager_write(engine->mm, ub->memory,
+		                        size, pixels);
 	}
 	else
 	{

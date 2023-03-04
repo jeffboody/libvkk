@@ -373,3 +373,13 @@ size_t vkk_image_size(vkk_image_t* self,
 	return self->width*self->height*self->depth*
 	       bpp[self->format];
 }
+
+int vkk_image_readPixels(vkk_image_t* self,
+                         void* pixels)
+{
+	ASSERT(self);
+	ASSERT(pixels);
+
+	return vkk_engine_downloadImage(self->engine, self,
+	                                pixels);
+}

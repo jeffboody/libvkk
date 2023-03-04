@@ -310,6 +310,16 @@ image size, width and height.
 	                      uint32_t* _height,
 	                      uint32_t* _depth);
 
+The vkk\_image\_readPixels function allows the app to read
+the image pixels into a pre allocated buffer. The image
+must not be in use by another renderer prior to reading the
+pixels. Typically an app should render to the image using a
+synchronous image renderer then read the pixels immedately
+after calling vkk\_renderer\_end().
+
+	int vkk_image_readPixels(vkk_image_t* self,
+	                         void* pixels);
+
 See the _Engine_ section for details on querying image
 capabilities.
 

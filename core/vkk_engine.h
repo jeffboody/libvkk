@@ -40,6 +40,7 @@
 #include "../../libcc/cc_list.h"
 #include "../../libcc/cc_map.h"
 #include "../vkk.h"
+#include "vkk_imageDownloader.h"
 #include "vkk_imageUploader.h"
 #include "vkk_memory.h"
 
@@ -146,6 +147,9 @@ typedef struct vkk_engine_s
 	// image uploader
 	vkk_imageUploader_t* img_uploader;
 
+	// image downloader
+	vkk_imageDownloader_t* img_downloader;
+
 	VkPipelineCache pipeline_cache;
 
 	// shaders
@@ -186,6 +190,9 @@ void             vkk_engine_mipmapImage(vkk_engine_t* self,
 int              vkk_engine_uploadImage(vkk_engine_t* self,
                                         vkk_image_t* image,
                                         const void* pixels);
+int              vkk_engine_downloadImage(vkk_engine_t* self,
+                                          vkk_image_t* image,
+                                          void* pixels);
 uint32_t         vkk_engine_imageCount(vkk_engine_t* self);
 int              vkk_engine_queueSubmit(vkk_engine_t* self,
                                         uint32_t queue,
@@ -231,6 +238,8 @@ void             vkk_engine_rendererLock(vkk_engine_t* self);
 void             vkk_engine_rendererUnlock(vkk_engine_t* self);
 void             vkk_engine_rendererSignal(vkk_engine_t* self);
 void             vkk_engine_rendererWait(vkk_engine_t* self);
+int              vkk_engine_rendererCheckTimestamp(vkk_engine_t* self,
+                                                   double ts);
 void             vkk_engine_rendererWaitForTimestamp(vkk_engine_t* self,
                                                      double ts);
 int              vkk_engine_newSurface(vkk_engine_t* self);

@@ -7,6 +7,7 @@ CLASSES = \
 	core/vkk_engine              \
 	core/vkk_graphicsPipeline    \
 	core/vkk_image               \
+	core/vkk_imageDownloader     \
 	core/vkk_imageRenderer       \
 	core/vkk_imageStreamRenderer \
 	core/vkk_imageUploader       \
