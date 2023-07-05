@@ -283,8 +283,7 @@ vkk_imageRenderer_new(vkk_engine_t* engine,
 		goto fail_framebuffer;
 	}
 
-	self->cmd_buffer = vkk_commandBuffer_new(engine, 1,
-	                                         base->type);
+	self->cmd_buffer = vkk_commandBuffer_new(engine, 1, 0);
 	if(self->cmd_buffer == NULL)
 	{
 		goto fail_cmd_buffer;

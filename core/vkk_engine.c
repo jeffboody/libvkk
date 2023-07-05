@@ -34,6 +34,8 @@
 #include "../vkk_platform.h"
 #include "vkk_buffer.h"
 #include "vkk_commandBuffer.h"
+#include "vkk_computePipeline.h"
+#include "vkk_compute.h"
 #include "vkk_defaultRenderer.h"
 #include "vkk_engine.h"
 #include "vkk_graphicsPipeline.h"
@@ -456,7 +458,8 @@ static int vkk_engine_newDevice(vkk_engine_t* self)
 	self->queue_family_index = 0;
 	for(i = 0; i < qfp_count; ++i)
 	{
-		if(qfp[i].queueFlags & VK_QUEUE_GRAPHICS_BIT)
+		if((qfp[i].queueFlags & VK_QUEUE_GRAPHICS_BIT) &&
+		   (qfp[i].queueFlags & VK_QUEUE_COMPUTE_BIT))
 		{
 			if(vkk_engine_noDisplay())
 			{
@@ -920,6 +923,16 @@ vkk_engine_destructRenderer(vkk_engine_t* self, int wait,
 }
 
 static void
+vkk_engine_destructCompute(vkk_engine_t* self, int wait,
+                           vkk_compute_t** _compute)
+{
+	ASSERT(self);
+	ASSERT(_compute);
+
+	vkk_compute_destruct(_compute);
+}
+
+static void
 vkk_engine_destructBuffer(vkk_engine_t* self, int wait,
                           vkk_buffer_t** _buffer)
 {
@@ -1107,6 +1120,32 @@ vkk_engine_destructGraphicsPipeline(vkk_engine_t* self, int wait,
 }
 
 static void
+vkk_engine_destructComputePipeline(vkk_engine_t* self, int wait,
+                                   vkk_computePipeline_t** _cp)
+{
+	ASSERT(self);
+	ASSERT(_cp);
+
+	vkk_computePipeline_t* cp = *_cp;
+	if(cp)
+	{
+		if(wait)
+		{
+			vkk_engine_rendererWaitForTimestamp(self, cp->ts);
+		}
+		else if(cp->ts != 0.0)
+		{
+			vkk_engine_queueWaitIdle(self, VKK_QUEUE_FOREGROUND);
+		}
+
+		vkDestroyPipeline(self->device,
+		                  cp->pipeline, NULL);
+		FREE(cp);
+		*_cp = NULL;
+	}
+}
+
+static void
 vkk_engine_runDestructFn(int tid, void* owner, void* task)
 {
 	ASSERT(owner);
@@ -1121,6 +1160,11 @@ vkk_engine_runDestructFn(int tid, void* owner, void* task)
 	{
 		vkk_engine_destructRenderer(engine, 1,
 		                            &object->renderer);
+	}
+	else if(object->type == VKK_OBJECT_TYPE_COMPUTE)
+	{
+		vkk_engine_destructCompute(engine, 1,
+		                            &object->compute);
 	}
 	else if(object->type == VKK_OBJECT_TYPE_BUFFER)
 	{
@@ -1151,6 +1195,11 @@ vkk_engine_runDestructFn(int tid, void* owner, void* task)
 	{
 		vkk_engine_destructGraphicsPipeline(engine, 1,
 		                                    &object->gp);
+	}
+	else if(object->type == VKK_OBJECT_TYPE_COMPUTEPIPELINE)
+	{
+		vkk_engine_destructComputePipeline(engine, 1,
+		                                   &object->cp);
 	}
 	else
 	{
@@ -1442,7 +1491,7 @@ vkk_engine_t* vkk_engine_new(vkk_platform_t* platform,
 
 	self->version.major = 1;
 	self->version.minor = 1;
-	self->version.patch = 49;
+	self->version.patch = 50;
 
 	// app info
 	snprintf(self->app_name, 256, "%s", app_name);
@@ -2025,8 +2074,10 @@ vkk_engine_newDescriptorPoolLocked(vkk_engine_t* self,
 	VkDescriptorType dt_map[VKK_UNIFORM_TYPE_COUNT] =
 	{
 		VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
+		VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,
 		VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
 		VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
+		VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,
 		VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
 	};
 
@@ -2099,12 +2150,21 @@ vkk_engine_newDescriptorPoolLocked(vkk_engine_t* self,
 void
 vkk_engine_attachUniformBuffer(vkk_engine_t* self,
                                vkk_uniformSet_t* us,
-                               vkk_buffer_t* buffer,
-                               uint32_t binding)
+                               vkk_uniformAttachment_t* ua)
 {
 	ASSERT(self);
 	ASSERT(us);
-	ASSERT(buffer);
+	ASSERT(ua);
+
+	VkDescriptorType dt_map[VKK_UNIFORM_TYPE_COUNT] =
+	{
+		VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
+		VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,
+		VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
+		VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
+		VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,
+		VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
+	};
 
 	uint32_t count;
 	count = (us->usf->update == VKK_UPDATE_MODE_ASYNCHRONOUS) ?
@@ -2114,12 +2174,12 @@ vkk_engine_attachUniformBuffer(vkk_engine_t* self,
 	for(i = 0; i < count; ++i)
 	{
 		uint32_t idx;
-		idx = (buffer->update == VKK_UPDATE_MODE_ASYNCHRONOUS) ? i : 0;
+		idx = (ua->buffer->update == VKK_UPDATE_MODE_ASYNCHRONOUS) ? i : 0;
 		VkDescriptorBufferInfo db_info =
 		{
-			.buffer  = buffer->buffer[idx],
+			.buffer  = ua->buffer->buffer[idx],
 			.offset  = 0,
-			.range   = buffer->size
+			.range   = ua->buffer->size
 		};
 
 		VkWriteDescriptorSet writes =
@@ -2127,10 +2187,10 @@ vkk_engine_attachUniformBuffer(vkk_engine_t* self,
 			.sType            = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
 			.pNext            = NULL,
 			.dstSet           = us->ds_array[i],
-			.dstBinding       = binding,
+			.dstBinding       = ua->binding,
 			.dstArrayElement  = 0,
 			.descriptorCount  = 1,
-			.descriptorType   = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
+			.descriptorType   = dt_map[ua->type],
 			.pImageInfo       = NULL,
 			.pBufferInfo      = &db_info,
 			.pTexelBufferView = NULL,
@@ -2635,6 +2695,11 @@ vkk_engine_deleteObject(vkk_engine_t* self,
 			vkk_engine_destructRenderer(self, 0,
 			                            (vkk_renderer_t**) &obj);
 		}
+		else if(type == VKK_OBJECT_TYPE_COMPUTE)
+		{
+			vkk_engine_destructCompute(self, 0,
+			                           (vkk_compute_t**) &obj);
+		}
 		else if(type == VKK_OBJECT_TYPE_BUFFER)
 		{
 			vkk_engine_destructBuffer(self, 0,
@@ -2664,6 +2729,11 @@ vkk_engine_deleteObject(vkk_engine_t* self,
 		{
 			vkk_engine_destructGraphicsPipeline(self, 0,
 			                                    (vkk_graphicsPipeline_t**) &obj);
+		}
+		else if(type == VKK_OBJECT_TYPE_COMPUTEPIPELINE)
+		{
+			vkk_engine_destructComputePipeline(self, 0,
+			                                   (vkk_computePipeline_t**) &obj);
 		}
 		else
 		{

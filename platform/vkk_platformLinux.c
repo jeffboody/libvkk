@@ -541,7 +541,7 @@ static void vkk_platform_delete(vkk_platform_t** _self)
 	vkk_platform_t* self = *_self;
 	if(self)
 	{
-		if(self->paused == 0)
+		if(onPause && (self->paused == 0))
 		{
 			(*onPause)(self->priv);
 			self->paused = 1;

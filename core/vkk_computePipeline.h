@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019 Jeff Boody
+ * Copyright (c) 2023 Jeff Boody
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
  * copy of this software and associated documentation files (the "Software"),
@@ -21,8 +21,8 @@
  *
  */
 
-#ifndef vkk_commandBuffer_H
-#define vkk_commandBuffer_H
+#ifndef vkk_computePipeline_H
+#define vkk_computePipeline_H
 
 #ifdef ANDROID
 	#include <vulkan_wrapper.h>
@@ -31,23 +31,14 @@
 #endif
 
 #include "../vkk.h"
-#include "vkk_renderer.h"
 
-typedef struct vkk_commandBuffer_s
+typedef struct vkk_computePipeline_s
 {
-	vkk_engine_t* engine;
-
-	VkCommandPool command_pool;
-
-	uint32_t         cb_count;
-	VkCommandBuffer* cb_array;
-} vkk_commandBuffer_t;
-
-vkk_commandBuffer_t* vkk_commandBuffer_new(vkk_engine_t* engine,
-                                           uint32_t cb_count,
-                                           int secondary);
-void                 vkk_commandBuffer_delete(vkk_commandBuffer_t** _self);
-VkCommandBuffer      vkk_commandBuffer_get(vkk_commandBuffer_t* self,
-                                           uint32_t index);
+	vkk_engine_t*         engine;
+	vkk_compute_t*        compute;
+	vkk_pipelineLayout_t* pl;
+	double                ts;
+	VkPipeline            pipeline;
+} vkk_computePipeline_t;
 
 #endif

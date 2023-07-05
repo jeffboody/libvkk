@@ -63,6 +63,8 @@ add_library(vkk
             platform/vkk_platformAndroid.c
             core/vkk_buffer.c
             core/vkk_commandBuffer.c
+            core/vkk_computePipeline.c
+            core/vkk_compute.c
             core/vkk_defaultRenderer.c
             core/vkk_engine.c
             core/vkk_graphicsPipeline.c

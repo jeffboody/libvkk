@@ -38,7 +38,7 @@
 vkk_commandBuffer_t*
 vkk_commandBuffer_new(vkk_engine_t* engine,
                       uint32_t cb_count,
-                      vkk_rendererType_e renderer_type)
+                      int secondary)
 {
 	ASSERT(engine);
 
@@ -79,7 +79,7 @@ vkk_commandBuffer_new(vkk_engine_t* engine,
 	}
 
 	VkCommandBufferLevel level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
-	if(renderer_type == VKK_RENDERER_TYPE_SECONDARY)
+	if(secondary)
 	{
 		level = VK_COMMAND_BUFFER_LEVEL_SECONDARY;
 	}

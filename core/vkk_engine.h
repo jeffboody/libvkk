@@ -49,15 +49,17 @@
 typedef enum
 {
 	VKK_OBJECT_TYPE_RENDERER          = 0,
-	VKK_OBJECT_TYPE_BUFFER            = 1,
-	VKK_OBJECT_TYPE_IMAGE             = 2,
-	VKK_OBJECT_TYPE_UNIFORMSETFACTORY = 3,
-	VKK_OBJECT_TYPE_UNIFORMSET        = 4,
-	VKK_OBJECT_TYPE_PIPELINELAYOUT    = 5,
-	VKK_OBJECT_TYPE_GRAPHICSPIPELINE  = 6,
+	VKK_OBJECT_TYPE_COMPUTE           = 1,
+	VKK_OBJECT_TYPE_BUFFER            = 2,
+	VKK_OBJECT_TYPE_IMAGE             = 3,
+	VKK_OBJECT_TYPE_UNIFORMSETFACTORY = 4,
+	VKK_OBJECT_TYPE_UNIFORMSET        = 5,
+	VKK_OBJECT_TYPE_PIPELINELAYOUT    = 6,
+	VKK_OBJECT_TYPE_GRAPHICSPIPELINE  = 7,
+	VKK_OBJECT_TYPE_COMPUTEPIPELINE   = 8,
 } vkk_objectType_e;
 
-#define VKK_OBJECT_TYPE_COUNT             7
+#define VKK_OBJECT_TYPE_COUNT 9
 
 typedef struct vkk_object_s
 {
@@ -67,12 +69,14 @@ typedef struct vkk_object_s
 	{
 		void*                    obj;
 		vkk_renderer_t*          renderer;
+		vkk_compute_t*           compute;
 		vkk_buffer_t*            buffer;
 		vkk_image_t*             image;
 		vkk_uniformSetFactory_t* usf;
 		vkk_uniformSet_t*        us;
 		vkk_pipelineLayout_t*    pl;
 		vkk_graphicsPipeline_t*  gp;
+		vkk_computePipeline_t*   cp;
 	};
 } vkk_object_t;
 
@@ -213,8 +217,7 @@ VkDescriptorPool vkk_engine_newDescriptorPoolLocked(vkk_engine_t* self,
                                                     vkk_uniformSetFactory_t* usf);
 void             vkk_engine_attachUniformBuffer(vkk_engine_t* self,
                                                 vkk_uniformSet_t* us,
-                                                vkk_buffer_t* buffer,
-                                                uint32_t binding);
+                                                vkk_uniformAttachment_t* ua);
 void             vkk_engine_attachUniformSampler(vkk_engine_t* self,
                                                  vkk_uniformSet_t* us,
                                                  vkk_samplerInfo_t* si,

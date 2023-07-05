@@ -47,5 +47,9 @@ void     vkk_util_copyUniformAttachmentArray(vkk_uniformAttachment_t* dst,
                                              uint32_t src_ua_count,
                                              vkk_uniformAttachment_t* src,
                                              vkk_uniformSetFactory_t* usf);
+void     vkk_util_fillUniformAttachmentArray(vkk_uniformAttachment_t* dst,
+                                             uint32_t src_ua_count,
+                                             vkk_uniformAttachment_t* src,
+                                             vkk_uniformSetFactory_t* usf);
 
 #endif

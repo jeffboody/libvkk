@@ -43,9 +43,10 @@ typedef enum
 	VKK_BUFFER_USAGE_UNIFORM = 0,
 	VKK_BUFFER_USAGE_VERTEX  = 1,
 	VKK_BUFFER_USAGE_INDEX   = 2,
+	VKK_BUFFER_USAGE_STORAGE = 3,
 } vkk_bufferUsage_e;
 
-#define VKK_BUFFER_USAGE_COUNT 3
+#define VKK_BUFFER_USAGE_COUNT 4
 
 typedef enum
 {
@@ -104,23 +105,26 @@ typedef enum
 
 typedef enum
 {
-	VKK_STAGE_DEPTH = 0,
-	VKK_STAGE_VS    = 1,
-	VKK_STAGE_FS    = 2,
-	VKK_STAGE_VSFS  = 3,
+	VKK_STAGE_DEPTH   = 0,
+	VKK_STAGE_VS      = 1,
+	VKK_STAGE_FS      = 2,
+	VKK_STAGE_VSFS    = 3,
+	VKK_STAGE_COMPUTE = 4,
 } vkk_stage_e;
 
-#define VKK_STAGE_COUNT 4
+#define VKK_STAGE_COUNT 5
 
 typedef enum
 {
-	VKK_UNIFORM_TYPE_BUFFER     = 0,
-	VKK_UNIFORM_TYPE_IMAGE      = 1,
-	VKK_UNIFORM_TYPE_BUFFER_REF = 2,
-	VKK_UNIFORM_TYPE_IMAGE_REF  = 3,
+	VKK_UNIFORM_TYPE_BUFFER      = 0,
+	VKK_UNIFORM_TYPE_STORAGE     = 1,
+	VKK_UNIFORM_TYPE_IMAGE       = 2,
+	VKK_UNIFORM_TYPE_BUFFER_REF  = 3,
+	VKK_UNIFORM_TYPE_STORAGE_REF = 4,
+	VKK_UNIFORM_TYPE_IMAGE_REF   = 5,
 } vkk_uniformType_e;
 
-#define VKK_UNIFORM_TYPE_COUNT 4
+#define VKK_UNIFORM_TYPE_COUNT 6
 
 typedef enum
 {
@@ -153,6 +157,8 @@ typedef enum
  */
 
 typedef struct vkk_buffer_s            vkk_buffer_t;
+typedef struct vkk_computePipeline_s   vkk_computePipeline_t;
+typedef struct vkk_compute_s           vkk_compute_t;
 typedef struct vkk_engine_s            vkk_engine_t;
 typedef struct vkk_graphicsPipeline_s  vkk_graphicsPipeline_t;
 typedef struct vkk_image_s             vkk_image_t;
@@ -237,6 +243,13 @@ typedef struct
 	int                     depth_write;
 	vkk_blendMode_e         blend_mode;
 } vkk_graphicsPipelineInfo_t;
+
+typedef struct
+{
+	vkk_compute_t*        compute;
+	vkk_pipelineLayout_t* pl;
+	const char*           cs;
+} vkk_computePipelineInfo_t;
 
 /*
  * engine API
@@ -365,6 +378,14 @@ vkk_graphicsPipeline_t* vkk_graphicsPipeline_new(vkk_engine_t* engine,
 void                    vkk_graphicsPipeline_delete(vkk_graphicsPipeline_t** _self);
 
 /*
+ * compute pipeline API
+ */
+
+vkk_computePipeline_t* vkk_computePipeline_new(vkk_engine_t* engine,
+                                               vkk_computePipelineInfo_t* cpi);
+void                   vkk_computePipeline_delete(vkk_computePipeline_t** _self);
+
+/*
  * rendering API
  */
 
@@ -439,5 +460,36 @@ void             vkk_renderer_drawIndexed(vkk_renderer_t* self,
 void             vkk_renderer_execute(vkk_renderer_t* self,
                                       uint32_t secondary_count,
                                       vkk_renderer_t** secondary_array);
+
+/*
+ * compute API
+ */
+
+vkk_compute_t*   vkk_compute_new(vkk_engine_t* engine);
+void             vkk_compute_delete(vkk_compute_t** _self);
+int              vkk_compute_begin(vkk_compute_t* self);
+void             vkk_compute_end(vkk_compute_t* self);
+vkk_updateMode_e vkk_compute_updateMode(vkk_compute_t* self);
+void             vkk_compute_updateBuffer(vkk_compute_t* self,
+                                          vkk_buffer_t* buffer,
+                                          size_t size,
+                                          const void* buf);
+void             vkk_compute_readBuffer(vkk_compute_t* self,
+                                        vkk_buffer_t* buffer,
+                                        size_t size,
+                                        void* data);
+void             vkk_compute_updateUniformSetRefs(vkk_compute_t* self,
+                                                  vkk_uniformSet_t* us,
+                                                  uint32_t ua_count,
+                                                  vkk_uniformAttachment_t* ua_array);
+void             vkk_compute_bindComputePipeline(vkk_compute_t* self,
+                                                 vkk_computePipeline_t* cp);
+void             vkk_compute_bindUniformSets(vkk_compute_t* self,
+                                             uint32_t us_count,
+                                             vkk_uniformSet_t** us_array);
+void             vkk_compute_dispatch(vkk_compute_t* self,
+                                      uint32_t groupCountX,
+                                      uint32_t groupCountY,
+                                      uint32_t groupCountZ);
 
 #endif

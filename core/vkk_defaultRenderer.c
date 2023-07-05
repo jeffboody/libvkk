@@ -960,7 +960,7 @@ vkk_defaultRenderer_new(vkk_engine_t* engine)
 
 	self->cmd_buffers = vkk_commandBuffer_new(engine,
 	                                          self->swapchain_image_count,
-	                                          base->type);
+	                                          0);
 	if(self->cmd_buffers == NULL)
 	{
 		goto fail_cmd_buffers;

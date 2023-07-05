@@ -56,7 +56,8 @@ vkk_uniformSet_new(vkk_engine_t* engine,
 	#ifdef ASSERT_DEBUG
 		for(i = 0; i < ua_count; ++i)
 		{
-			if(ua_array[i].type == VKK_UNIFORM_TYPE_BUFFER)
+			if((ua_array[i].type == VKK_UNIFORM_TYPE_BUFFER) ||
+			   (ua_array[i].type == VKK_UNIFORM_TYPE_STORAGE))
 			{
 				vkk_buffer_t* buffer = ua_array[i].buffer;
 				ASSERT((buffer->update == usf->update) ||
@@ -191,11 +192,11 @@ vkk_uniformSet_new(vkk_engine_t* engine,
 	// attach buffers and images
 	for(i = 0; i < ua_count; ++i)
 	{
-		if(ua_array[i].type == VKK_UNIFORM_TYPE_BUFFER)
+		if((ua_array[i].type == VKK_UNIFORM_TYPE_BUFFER) ||
+		   (ua_array[i].type == VKK_UNIFORM_TYPE_STORAGE))
 		{
 			vkk_engine_attachUniformBuffer(engine, self,
-			                               ua_array[i].buffer,
-			                               ua_array[i].binding);
+			                               &ua_array[i]);
 		}
 		else if(ua_array[i].type == VKK_UNIFORM_TYPE_IMAGE)
 		{

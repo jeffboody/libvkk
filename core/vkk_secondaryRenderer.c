@@ -74,7 +74,7 @@ vkk_secondaryRenderer_new(vkk_renderer_t* executor)
 
 	self->cmd_buffers = vkk_commandBuffer_new(engine,
 	                                          swapchain_image_count,
-	                                          base->type);
+	                                          1);
 	if(self->cmd_buffers == NULL)
 	{
 		goto fail_cmd_buffers;

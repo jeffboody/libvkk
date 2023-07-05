@@ -41,6 +41,7 @@
 #include "vkk_secondaryRenderer.h"
 #include "vkk_uniformSet.h"
 #include "vkk_uniformSetFactory.h"
+#include "vkk_util.h"
 
 /***********************************************************
 * private                                                  *
@@ -101,52 +102,35 @@ static void vkk_renderer_updatefps(vkk_renderer_t* self)
 }
 
 static void
-vkk_fillUniformAttachmentArray(vkk_uniformAttachment_t* dst,
-                               uint32_t src_ua_count,
-                               vkk_uniformAttachment_t* src,
-                               vkk_uniformSetFactory_t* usf)
-{
-	ASSERT(dst);
-	ASSERT(src);
-	ASSERT(usf);
-
-	// dst binding/type already filled in
-	// validate and fill buffer/image union
-	uint32_t i;
-	for(i = 0; i < src_ua_count; ++i)
-	{
-		uint32_t b = src[i].binding;
-		ASSERT(b < usf->ub_count);
-		ASSERT(b == dst[b].binding);
-		ASSERT((src[i].type == VKK_UNIFORM_TYPE_BUFFER_REF) ||
-		       (src[i].type == VKK_UNIFORM_TYPE_IMAGE_REF));
-		ASSERT(src[i].type == dst[b].type);
-
-		dst[b].buffer = src[i].buffer;
-	}
-}
-
-static void
 vkk_renderer_updateUniformBufferRef(vkk_renderer_t* self,
                                     vkk_uniformSet_t* us,
                                     uint32_t frame,
-                                    vkk_buffer_t* buffer,
-                                    uint32_t binding)
+                                    vkk_uniformAttachment_t* ua)
 {
 	ASSERT(self);
 	ASSERT(us);
-	ASSERT(buffer);
+	ASSERT(ua);
 
 	vkk_engine_t* engine = self->engine;
 
+	VkDescriptorType dt_map[VKK_UNIFORM_TYPE_COUNT] =
+	{
+		VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
+		VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,
+		VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
+		VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
+		VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,
+		VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
+	};
+
 	uint32_t idx;
-	idx = (buffer->update == VKK_UPDATE_MODE_ASYNCHRONOUS) ?
+	idx = (ua->buffer->update == VKK_UPDATE_MODE_ASYNCHRONOUS) ?
 	      frame : 0;
 	VkDescriptorBufferInfo db_info =
 	{
-		.buffer  = buffer->buffer[idx],
+		.buffer  = ua->buffer->buffer[idx],
 		.offset  = 0,
-		.range   = buffer->size
+		.range   = ua->buffer->size
 	};
 
 	idx = (us->usf->update == VKK_UPDATE_MODE_ASYNCHRONOUS) ?
@@ -156,10 +140,10 @@ vkk_renderer_updateUniformBufferRef(vkk_renderer_t* self,
 		.sType            = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
 		.pNext            = NULL,
 		.dstSet           = us->ds_array[idx],
-		.dstBinding       = binding,
+		.dstBinding       = ua->binding,
 		.dstArrayElement  = 0,
 		.descriptorCount  = 1,
-		.descriptorType   = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
+		.descriptorType   = dt_map[ua->type],
 		.pImageInfo       = NULL,
 		.pBufferInfo      = &db_info,
 		.pTexelBufferView = NULL,
@@ -249,6 +233,7 @@ vkk_renderer_checkUpdateType(vkk_renderer_t* self,
                              vkk_buffer_t* buffer)
 {
 	ASSERT(self);
+	ASSERT(buffer);
 
 	// 1) update may NOT be STATIC
 	// 2) update may NOT be ASYNCHRONOUS if the updater
@@ -589,6 +574,7 @@ void vkk_renderer_delete(vkk_renderer_t** _self)
 			return;
 		}
 
+		// engine calls delete of derived object
 		vkk_engine_deleteObject(engine, VKK_OBJECT_TYPE_RENDERER,
 		                        (void*) self);
 		*_self = NULL;
@@ -878,8 +864,9 @@ vkk_renderer_updateUniformSetRefs(vkk_renderer_t* self,
 
 	vkk_uniformSetFactory_t* usf = us->usf;
 
-	vkk_fillUniformAttachmentArray(us->ua_array, ua_count,
-	                               ua_array, usf);
+	vkk_util_fillUniformAttachmentArray(us->ua_array,
+	                                    ua_count, ua_array,
+	                                    usf);
 
 	uint32_t frame = vkk_renderer_frame(self);
 
@@ -887,11 +874,11 @@ vkk_renderer_updateUniformSetRefs(vkk_renderer_t* self,
 	uint32_t i;
 	for(i = 0; i < ua_count; ++i)
 	{
-		if(ua_array[i].type == VKK_UNIFORM_TYPE_BUFFER_REF)
+		if((ua_array[i].type == VKK_UNIFORM_TYPE_BUFFER_REF) ||
+		   (ua_array[i].type == VKK_UNIFORM_TYPE_STORAGE_REF))
 		{
 			vkk_renderer_updateUniformBufferRef(self, us, frame,
-			                                    ua_array[i].buffer,
-			                                    ua_array[i].binding);
+			                                    &ua_array[i]);
 		}
 		else if(ua_array[i].type == VKK_UNIFORM_TYPE_IMAGE_REF)
 		{
@@ -959,8 +946,10 @@ void vkk_renderer_bindUniformSets(vkk_renderer_t* self,
 
 			if(ts != 0.0)
 			{
-				if((ua->type == VKK_UNIFORM_TYPE_BUFFER) ||
-				   (ua->type == VKK_UNIFORM_TYPE_BUFFER_REF))
+				if((ua->type == VKK_UNIFORM_TYPE_BUFFER)     ||
+				   (ua->type == VKK_UNIFORM_TYPE_STORAGE)    ||
+				   (ua->type == VKK_UNIFORM_TYPE_BUFFER_REF) ||
+				   (ua->type == VKK_UNIFORM_TYPE_STORAGE_REF))
 				{
 					ua->buffer->ts = ts;
 				}

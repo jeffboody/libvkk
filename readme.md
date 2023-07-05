@@ -52,6 +52,7 @@ The core graphics features exposed by VKK include.
 * Triangles are the only primitive supported
 * Transparency, depth clearing, viewport and scissors
 * 4x MSAA rendering is supported for the default renderer
+* Compute objects
 
 See [VKK Core](core/readme.md) for more details.
 
@@ -204,6 +205,12 @@ The
 [VKK VG](https://github.com/jeffboody/libvkk/tree/master/vg) and
 [VKK UI](https://github.com/jeffboody/libvkk/tree/master/ui) modules
 are also built on top of the VKK Core library.
+
+Compute Test
+------------
+
+See the compute-test for an example which demonstrates how
+to square an array of numbers.
 
 License
 =======

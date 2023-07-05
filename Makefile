@@ -3,6 +3,8 @@ CLASSES = \
 	platform/vkk_platformLinux   \
 	core/vkk_buffer              \
 	core/vkk_commandBuffer       \
+	core/vkk_computePipeline     \
+	core/vkk_compute             \
 	core/vkk_defaultRenderer     \
 	core/vkk_engine              \
 	core/vkk_graphicsPipeline    \

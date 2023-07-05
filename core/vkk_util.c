@@ -114,6 +114,7 @@ void vkk_util_imageMemoryBarrierRaw(VkImage image,
 		VK_PIPELINE_STAGE_VERTEX_SHADER_BIT,
 		VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
 		VK_PIPELINE_STAGE_VERTEX_SHADER_BIT | VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
+		VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
 	};
 
 
@@ -238,8 +239,36 @@ vkk_util_copyUniformAttachmentArray(vkk_uniformAttachment_t* dst,
 		uint32_t b = src[i].binding;
 		ASSERT(b < usf->ub_count);
 		ASSERT(b == dst[b].binding);
-		ASSERT((src[i].type == VKK_UNIFORM_TYPE_BUFFER) ||
+		ASSERT((src[i].type == VKK_UNIFORM_TYPE_BUFFER)  ||
+		       (src[i].type == VKK_UNIFORM_TYPE_STORAGE) ||
 		       (src[i].type == VKK_UNIFORM_TYPE_IMAGE));
+		ASSERT(src[i].type == dst[b].type);
+
+		dst[b].buffer = src[i].buffer;
+	}
+}
+
+void
+vkk_util_fillUniformAttachmentArray(vkk_uniformAttachment_t* dst,
+                                    uint32_t src_ua_count,
+                                    vkk_uniformAttachment_t* src,
+                                    vkk_uniformSetFactory_t* usf)
+{
+	ASSERT(dst);
+	ASSERT(src);
+	ASSERT(usf);
+
+	// dst binding/type already filled in
+	// validate and fill buffer/image union
+	uint32_t i;
+	for(i = 0; i < src_ua_count; ++i)
+	{
+		uint32_t b = src[i].binding;
+		ASSERT(b < usf->ub_count);
+		ASSERT(b == dst[b].binding);
+		ASSERT((src[i].type == VKK_UNIFORM_TYPE_BUFFER_REF)  ||
+		       (src[i].type == VKK_UNIFORM_TYPE_STORAGE_REF) ||
+		       (src[i].type == VKK_UNIFORM_TYPE_IMAGE_REF));
 		ASSERT(src[i].type == dst[b].type);
 
 		dst[b].buffer = src[i].buffer;

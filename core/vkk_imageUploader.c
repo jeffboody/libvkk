@@ -155,8 +155,7 @@ vkk_uploaderInstance_new(vkk_engine_t* engine)
 	}
 
 	// allocate a transfer command buffer
-	self->cmd_buffer = vkk_commandBuffer_new(engine, 1,
-	                                         VKK_RENDERER_TYPE_IMAGE);
+	self->cmd_buffer = vkk_commandBuffer_new(engine, 1, 0);
 	if(self->cmd_buffer == NULL)
 	{
 		goto fail_cmd_buffer;

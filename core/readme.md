@@ -221,6 +221,7 @@ can be used to create/destroy buffer objects.
 		VKK_BUFFER_USAGE_UNIFORM = 0,
 		VKK_BUFFER_USAGE_VERTEX  = 1,
 		VKK_BUFFER_USAGE_INDEX   = 2,
+		VKK_BUFFER_USAGE_STORAGE = 3,
 	} vkk_bufferUsage_e;
 
 	vkk_buffer_t* vkk_buffer_new(vkk_engine_t* engine,
@@ -281,10 +282,11 @@ which are then converted internally to half floats.
 
 	typedef enum
 	{
-		VKK_STAGE_DEPTH = 0,
-		VKK_STAGE_VS    = 1,
-		VKK_STAGE_FS    = 2,
-		VKK_STAGE_VSFS  = 3,
+		VKK_STAGE_DEPTH   = 0,
+		VKK_STAGE_VS      = 1,
+		VKK_STAGE_FS      = 2,
+		VKK_STAGE_VSFS    = 3,
+		VKK_STAGE_COMPUTE = 4,
 	} vkk_stage_e;
 
 	vkk_image_t* vkk_image_new(vkk_engine_t* engine,
@@ -347,10 +349,12 @@ functions can be used to create/destroy uniform set objects.
 
 	typedef enum
 	{
-		VKK_UNIFORM_TYPE_BUFFER     = 0,
-		VKK_UNIFORM_TYPE_IMAGE      = 1,
-		VKK_UNIFORM_TYPE_BUFFER_REF = 2,
-		VKK_UNIFORM_TYPE_IMAGE_REF  = 3,
+		VKK_UNIFORM_TYPE_BUFFER      = 0,
+		VKK_UNIFORM_TYPE_STORAGE     = 1,
+		VKK_UNIFORM_TYPE_IMAGE       = 2,
+		VKK_UNIFORM_TYPE_BUFFER_REF  = 3,
+		VKK_UNIFORM_TYPE_STORAGE_REF = 4,
+		VKK_UNIFORM_TYPE_IMAGE_REF   = 5,
 	} vkk_uniformType_e;
 
 	typedef struct
@@ -399,18 +403,21 @@ sampler filtering and mipmapping modes.
 
 	typedef enum
 	{
-		VKK_UNIFORM_TYPE_BUFFER     = 0,
-		VKK_UNIFORM_TYPE_IMAGE      = 1,
-		VKK_UNIFORM_TYPE_BUFFER_REF = 2,
-		VKK_UNIFORM_TYPE_IMAGE_REF  = 3,
+		VKK_UNIFORM_TYPE_BUFFER      = 0,
+		VKK_UNIFORM_TYPE_STORAGE     = 1,
+		VKK_UNIFORM_TYPE_IMAGE       = 2,
+		VKK_UNIFORM_TYPE_BUFFER_REF  = 3,
+		VKK_UNIFORM_TYPE_STORAGE_REF = 4,
+		VKK_UNIFORM_TYPE_IMAGE_REF   = 5,
 	} vkk_uniformType_e;
 
 	typedef enum
 	{
-		VKK_STAGE_DEPTH = 0,
-		VKK_STAGE_VS    = 1,
-		VKK_STAGE_FS    = 2,
-		VKK_STAGE_VSFS  = 3,
+		VKK_STAGE_DEPTH   = 0,
+		VKK_STAGE_VS      = 1,
+		VKK_STAGE_FS      = 2,
+		VKK_STAGE_VSFS    = 3,
+		VKK_STAGE_COMPUTE = 4,
 	} vkk_stage_e;
 
 	typedef enum
@@ -622,10 +629,11 @@ following functions.
 
 	typedef enum
 	{
-		VKK_STAGE_DEPTH = 0,
-		VKK_STAGE_VS    = 1,
-		VKK_STAGE_FS    = 2,
-		VKK_STAGE_VSFS  = 3,
+		VKK_STAGE_DEPTH   = 0,
+		VKK_STAGE_VS      = 1,
+		VKK_STAGE_FS      = 2,
+		VKK_STAGE_VSFS    = 3,
+		VKK_STAGE_COMPUTE = 4,
 	} vkk_stage_e;
 
 	vkk_renderer_t* vkk_renderer_newImage(vkk_engine_t* engine,
@@ -777,10 +785,12 @@ and only once per frame.
 
 	typedef enum
 	{
-		VKK_UNIFORM_TYPE_BUFFER     = 0,
-		VKK_UNIFORM_TYPE_IMAGE      = 1,
-		VKK_UNIFORM_TYPE_BUFFER_REF = 2,
-		VKK_UNIFORM_TYPE_IMAGE_REF  = 3,
+		VKK_UNIFORM_TYPE_BUFFER      = 0,
+		VKK_UNIFORM_TYPE_STORAGE     = 1,
+		VKK_UNIFORM_TYPE_IMAGE       = 2,
+		VKK_UNIFORM_TYPE_BUFFER_REF  = 3,
+		VKK_UNIFORM_TYPE_STORAGE_REF = 4,
+		VKK_UNIFORM_TYPE_IMAGE_REF   = 5,
 	} vkk_uniformType_e;
 
 	typedef struct
@@ -888,6 +898,164 @@ renderer to the graphics pipeline.
 See the _Threading/Synchronization_ section for threading
 and synchronization rules regarding the renderer.
 
+Compute Pipeline
+----------------
+
+Compute pipeline objects may be created by the app which
+describes the compute state required for rendering.
+Compute state may be swapped during processing by simply
+binding a new compute pipeline object. Compute pipelines
+are interchangeable when the pipeline layout and the
+compute are the same. The following compute state is
+described by a compute pipeline object.
+
+The compute shaders are specified by providing a path to
+the SPIR-V shader in the resource file.
+
+	typedef struct
+	{
+		vkk_compute_t*        compute;
+		vkk_pipelineLayout_t* pl;
+		const char*           cs;
+	} vkk_computePipelineInfo_t;
+
+The vkk\_computePipeline\_new() and
+vkk\_computePipeline\_delete() functions can be used to
+create/destroy compute pipeline objects.
+
+	vkk_computePipeline_t* vkk_computePipeline_new(vkk_engine_t* engine,
+	                                               vkk_computePipelineInfo_t* cpi);
+	void                   vkk_computePipeline_delete(vkk_computePipeline_t** _self);
+
+See the _Compute_ section for binding a compute pipeline.
+
+See the _Resource File_ section for including shaders in
+the resource file.
+
+Compute
+-------
+
+Compute objects are available to optimize use cases where
+the computations are suitable for vectorization.
+
+	vkk_compute_t* vkk_compute_new(vkk_engine_t* engine);
+	void           vkk_compute_delete(vkk_compute_t** _self);
+
+The compute commands are issued between begin() and
+end() functions. The begin() and end() functions serve as
+synchronization points which greatly simplify the app
+interface when compared with the underlying Vulkan
+implementation. If the begin() function succeeds then the
+app must also call the end() function. Multiple
+computations may be used simultaneously, however, their
+results are only valid once the end() function completes.
+
+	int  vkk_compute_begin(vkk_compute_t* self);
+	void vkk_compute_end(vkk_compute_t* self);
+
+The vkk\_compute\_updateMode() function may be used to
+query the non-static update mode supported by the compute.
+Currently, the compute engine only supports synchronous
+updates.
+
+	typedef enum
+	{
+		VKK_UPDATE_MODE_STATIC       = 0,
+		VKK_UPDATE_MODE_ASYNCHRONOUS = 1,
+		VKK_UPDATE_MODE_SYNCHRONOUS  = 2,
+	} vkk_updateMode_e;
+
+	vkk_updateMode_e vkk_compute_updateMode(vkk_compute_t* self);
+
+The vkk\_compute\_updateBuffer() function may be used to
+update uniform and storage buffers. A buffer is considered
+updatable when its update mode is not
+VKK\_UPDATE\_MODE\_STATIC. Uniform and storage buffers which
+are updatable must be updated once and only once per
+computation and the entire buffer must be updated.
+
+	void vkk_compute_updateBuffer(vkk_compute_t* self,
+	                              vkk_buffer_t* buffer,
+	                              size_t size,
+	                              const void* buf);
+
+The vkk\_compute\_readBuffer() function may be used to read
+results after ending a compute operation.
+
+	void vkk_compute_readBuffer(vkk_compute_t* self,
+	                            vkk_buffer_t* buffer,
+	                            size_t size,
+	                            void* data);
+
+The vkk\_compute\_updateUniformSetRefs() function may be
+used to update uniform set references. When a uniform set
+includes such a reference then they must be updated once
+and only once per frame.
+
+	typedef enum
+	{
+		VKK_UNIFORM_TYPE_BUFFER      = 0,
+		VKK_UNIFORM_TYPE_STORAGE     = 1,
+		VKK_UNIFORM_TYPE_IMAGE       = 2,
+		VKK_UNIFORM_TYPE_BUFFER_REF  = 3,
+		VKK_UNIFORM_TYPE_STORAGE_REF = 4,
+		VKK_UNIFORM_TYPE_IMAGE_REF   = 5,
+	} vkk_uniformType_e;
+
+	typedef struct
+	{
+		uint32_t          binding;
+		vkk_uniformType_e type;
+
+		union
+		{
+			vkk_buffer_t* buffer;
+			vkk_image_t*  image;
+		};
+	} vkk_uniformAttachment_t;
+
+	void vkk_compute_updateUniformSetRefs(vkk_compute_t* self,
+	                                      vkk_uniformSet_t* us,
+	                                      uint32_t ua_count,
+	                                      vkk_uniformAttachment_t* ua_array);
+
+The vkk\_compute\_bindComputePipeline() function may be
+used to bind a new compute pipeline state.
+
+	void vkk_compute_bindComputePipeline(vkk_compute_t* self,
+	                                     vkk_computePipeline_t* cp);
+
+The vkk\_compute\_bindUniformSets() function may be used to
+bind multiple uniform sets simultaneously. The function
+takes an array of uniform sets whose set indexes must be in
+order and without gaps. If a shader requires sets
+{ 0, 1, 3 } then the vkk\_compute\_bindUniformSets()
+function must be called twice with the uniform sets { 0, 1 }
+and { 3 } to meet the requirements of the underlying Vulkan
+API. Only the uniform sets for the shaders referenced by
+the current compute pipeline need to be bound.
+
+	void vkk_compute_bindUniformSets(vkk_compute_t* self,
+	                                 uint32_t us_count,
+	                                 vkk_uniformSet_t** us_array);
+
+The following dispatch function may be called by the app to
+issue compute commands.
+
+	void vkk_compute_dispatch(vkk_compute_t* self,
+	                          uint32_t groupCountX,
+	                          uint32_t groupCountY,
+	                          uint32_t groupCountZ);
+
+See the _Compute Pipeline_ section for attaching a
+renderer to the compute pipeline.
+
+See the _Threading/Synchronization_ section for threading
+and synchronization rules regarding the renderer.
+
+See the compute-test for an example which demonstrates how
+to square an array of numbers.
+
 Shaders
 -------
 
@@ -957,8 +1125,8 @@ generally means that the array stride between elements
 should be rounded up to vec4. For example, rather than
 passing a mat3 matrix you should instead pass a mat4 matrix
 then cast it to a mat3 in the shader. The VKK library does
-not restrict the types of layouts supported however it seems
-that std140 is most portable so this is recommended.
+not restrict the types of layouts supported, however, it
+seems that std140 is most portable so this is recommended.
 
 Note that the VKK library restricts the number of sets
 supported to 4 (set 0-3) since this is the minimum guaranteed

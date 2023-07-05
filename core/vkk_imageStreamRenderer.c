@@ -354,8 +354,7 @@ vkk_imageStreamRenderer_new(vkk_renderer_t* consumer,
 	}
 
 	self->cmd_buffers = vkk_commandBuffer_new(engine,
-	                                          image_count,
-	                                          base->type);
+	                                          image_count, 0);
 	if(self->cmd_buffers == NULL)
 	{
 		goto fail_cmd_buffers;
