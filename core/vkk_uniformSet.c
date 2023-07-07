@@ -51,8 +51,6 @@ vkk_uniformSet_new(vkk_engine_t* engine,
 	       ((ua_array == NULL) && (ua_count == 0)));
 	ASSERT(usf);
 
-	vkk_renderer_t* renderer = engine->renderer;
-
 	// validate the update method
 	int i;
 	#ifdef ASSERT_DEBUG
@@ -68,9 +66,14 @@ vkk_uniformSet_new(vkk_engine_t* engine,
 	#endif
 
 	// get the last expired timestamp
-	vkk_engine_rendererLock(engine);
-	double ets = vkk_defaultRenderer_tsExpiredLocked(renderer);
-	vkk_engine_rendererUnlock(engine);
+	double ets = 0.0;
+	vkk_renderer_t* renderer = engine->renderer;
+	if(renderer)
+	{
+		vkk_engine_rendererLock(engine);
+		ets = vkk_defaultRenderer_tsExpiredLocked(renderer);
+		vkk_engine_rendererUnlock(engine);
+	}
 
 	// check if a uniform set can be reused
 	vkk_engine_usfLock(engine);

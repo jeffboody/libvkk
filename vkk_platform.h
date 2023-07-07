@@ -289,6 +289,8 @@ typedef struct
  * called from the UI thread. This is because the app may
  * have requested GPS recording which can cause events to
  * be delivered when the app main thread is paused.
+ * The onMain callback may be used on Linux when no display
+ * is required (onPause, onDraw, onEvent are unsupported).
  */
 
 typedef void* (*vkk_platformOnCreate_fn)(vkk_engine_t* engine);
@@ -297,6 +299,8 @@ typedef void  (*vkk_platformOnPause_fn)(void* priv);
 typedef void  (*vkk_platformOnDraw_fn)(void* priv);
 typedef int   (*vkk_platformOnEvent_fn)(void* priv,
                                         vkk_platformEvent_t* event);
+typedef void  (*vkk_platformOnMain_fn)(void* priv, int argc,
+                                       char** argv);
 
 typedef struct
 {
@@ -308,6 +312,7 @@ typedef struct
 	vkk_platformOnPause_fn   onPause;
 	vkk_platformOnDraw_fn    onDraw;
 	vkk_platformOnEvent_fn   onEvent;
+	vkk_platformOnMain_fn    onMain;
 } vkk_platformInfo_t;
 
 extern vkk_platformInfo_t VKK_PLATFORM_INFO;

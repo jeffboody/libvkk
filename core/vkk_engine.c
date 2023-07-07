@@ -119,12 +119,34 @@ vkk_engine_hasDeviceExtensions(vkk_engine_t* self,
 	return 0;
 }
 
+static int
+vkk_engine_noDisplay(void)
+{
+	#ifndef ANDROID
+		vkk_platformOnMain_fn onMain;
+		onMain = VKK_PLATFORM_INFO.onMain;
+		if(onMain)
+		{
+			return 1;
+		}
+	#endif
+
+	return 0;
+}
+
 #ifndef ANDROID
+
 static int
 vkk_engine_initSDL(vkk_engine_t* self, const char* app_name)
 {
 	ASSERT(self);
 	ASSERT(app_name);
+
+	if(vkk_engine_noDisplay())
+	{
+		// skip SDL
+		return 1;
+	}
 
 	SDL_version version;
 	SDL_VERSION(&version);
@@ -187,6 +209,19 @@ vkk_engine_initSDL(vkk_engine_t* self, const char* app_name)
 	fail_window:
 		SDL_Quit();
 	return 0;
+}
+
+static void
+vkk_engine_shutdownSDL(vkk_engine_t* self)
+{
+	if(vkk_engine_noDisplay())
+	{
+		// skip SDL
+		return;
+	}
+
+	SDL_DestroyWindow(self->window);
+	SDL_Quit();
 }
 #endif
 
@@ -414,21 +449,28 @@ static int vkk_engine_newDevice(vkk_engine_t* self)
 	                                         &qfp_count,
 	                                         qfp);
 
-	int i;
-	int has_index   = 0;
-	int queue_count = 1;
+	int      i;
+	int      has_index   = 0;
+	int      queue_count = 1;
+	VkBool32 supported   = VK_TRUE;
 	self->queue_family_index = 0;
 	for(i = 0; i < qfp_count; ++i)
 	{
 		if(qfp[i].queueFlags & VK_QUEUE_GRAPHICS_BIT)
 		{
-			VkBool32 supported;
-			if(vkGetPhysicalDeviceSurfaceSupportKHR(self->physical_device,
-			                                        i, self->surface,
-			                                        &supported) != VK_SUCCESS)
+			if(vkk_engine_noDisplay())
 			{
-				LOGW("vkGetPhysicalDeviceSurfaceSupportKHR failed");
-				continue;
+				// skip surface check
+			}
+			else
+			{
+				if(vkGetPhysicalDeviceSurfaceSupportKHR(self->physical_device,
+				                                        i, self->surface,
+				                                        &supported) != VK_SUCCESS)
+				{
+					LOGW("vkGetPhysicalDeviceSurfaceSupportKHR failed");
+					continue;
+				}
 			}
 
 			if(supported && (has_index == 0))
@@ -441,6 +483,8 @@ static int vkk_engine_newDevice(vkk_engine_t* self)
 				{
 					queue_count = 2;
 				}
+
+				break;
 			}
 		}
 	}
@@ -1194,6 +1238,7 @@ vkk_engine_defaultRenderer(vkk_engine_t* self)
 {
 	ASSERT(self);
 
+	// default renderer will be NULL for no display mode
 	return self->renderer;
 }
 
@@ -1397,7 +1442,7 @@ vkk_engine_t* vkk_engine_new(vkk_platform_t* platform,
 
 	self->version.major = 1;
 	self->version.minor = 1;
-	self->version.patch = 48;
+	self->version.patch = 49;
 
 	// app info
 	snprintf(self->app_name, 256, "%s", app_name);
@@ -1548,10 +1593,17 @@ vkk_engine_t* vkk_engine_new(vkk_platform_t* platform,
 
 	vkk_engine_initImageUsage(self);
 
-	self->renderer = vkk_defaultRenderer_new(self);
-	if(self->renderer == NULL)
+	if(vkk_engine_noDisplay())
 	{
-		goto fail_renderer;
+		// skip default renderer
+	}
+	else
+	{
+		self->renderer = vkk_defaultRenderer_new(self);
+		if(self->renderer == NULL)
+		{
+			goto fail_renderer;
+		}
 	}
 
 	self->jobq_destruct = cc_jobq_new((void*) self, 1,
@@ -1601,8 +1653,7 @@ vkk_engine_t* vkk_engine_new(vkk_platform_t* platform,
 		pthread_mutex_destroy(&self->cmd_mutex);
 	fail_cmd_mutex:
 		#ifndef ANDROID
-			SDL_DestroyWindow(self->window);
-			SDL_Quit();
+			vkk_engine_shutdownSDL(self);
 		#endif
 		FREE(self);
 	return NULL;
@@ -1658,8 +1709,7 @@ void vkk_engine_delete(vkk_engine_t** _self)
 		pthread_mutex_destroy(&self->usf_mutex);
 		pthread_mutex_destroy(&self->cmd_mutex);
 		#ifndef ANDROID
-			SDL_DestroyWindow(self->window);
-			SDL_Quit();
+			vkk_engine_shutdownSDL(self);
 		#endif
 		FREE(self);
 		*_self = NULL;
@@ -1687,14 +1737,21 @@ void vkk_engine_deviceWaitIdle(vkk_engine_t* self)
 {
 	ASSERT(self);
 
-	vkk_defaultRenderer_deviceWaitIdle(self->renderer);
+	if(self->renderer)
+	{
+		vkk_defaultRenderer_deviceWaitIdle(self->renderer);
+	}
 }
 
 int vkk_engine_recreate(vkk_engine_t* self)
 {
 	ASSERT(self);
 
-	return vkk_defaultRenderer_recreate(self->renderer);
+	if(self->renderer)
+	{
+		return vkk_defaultRenderer_recreate(self->renderer);
+	}
+	return 1;
 }
 
 void vkk_engine_mipmapImage(vkk_engine_t* self,
@@ -1857,7 +1914,11 @@ uint32_t vkk_engine_imageCount(vkk_engine_t* self)
 {
 	ASSERT(self);
 
-	return vkk_defaultRenderer_imageCount(self->renderer);
+	if(self->renderer)
+	{
+		return vkk_defaultRenderer_imageCount(self->renderer);
+	}
+	return 1;
 }
 
 int vkk_engine_queueSubmit(vkk_engine_t* self,
@@ -2407,7 +2468,7 @@ int vkk_engine_rendererCheckTimestamp(vkk_engine_t* self,
 	vkk_renderer_t* renderer = self->renderer;
 
 	// ignore zero
-	if(ts == 0.0)
+	if((renderer == NULL) || (ts == 0.0))
 	{
 		return 1;
 	}
@@ -2432,7 +2493,7 @@ void vkk_engine_rendererWaitForTimestamp(vkk_engine_t* self,
 	vkk_renderer_t* renderer = self->renderer;
 
 	// ignore zero
-	if(ts == 0.0)
+	if((renderer == NULL) || (ts == 0.0))
 	{
 		return;
 	}
@@ -2502,11 +2563,19 @@ int vkk_engine_newSurface(vkk_engine_t* self)
 			}
 		}
 	#else
-		if(SDL_Vulkan_CreateSurface(self->window, self->instance,
-		                            &self->surface) == SDL_FALSE)
+		if(vkk_engine_noDisplay())
 		{
-			LOGE("SDL_Vulkan_CreateSurface failed: %s", SDL_GetError());
-			return 0;
+			// skip create surface
+		}
+		else
+		{
+			if(SDL_Vulkan_CreateSurface(self->window, self->instance,
+			                            &self->surface) == SDL_FALSE)
+			{
+				LOGE("SDL_Vulkan_CreateSurface failed: %s",
+				     SDL_GetError());
+				return 0;
+			}
 		}
 	#endif
 
