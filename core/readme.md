@@ -759,14 +759,16 @@ query the non-static update mode supported by the renderer.
 	vkk_updateMode_e vkk_renderer_updateMode(vkk_renderer_t* self);
 
 The vkk\_renderer\_updateBuffer() function may be used to
-update uniform, vertex and index buffers. A buffer is
+update uniform/vertex/index buffers. A buffer is
 considered updatable when its update mode is not
-VKK\_UPDATE\_MODE\_STATIC. Uniform buffers which are
-updatable must be updated once and only once per frame and
-the entire buffer must be updated. The rules for updating a
-vertex/index buffer are subtly different. When a
-vertex/index buffer is updatable then the app may update
-the buffer zero or one time per frame. The app may update a
+VKK\_UPDATE\_MODE\_STATIC. Asynchronous uniform buffers
+which MUST be updated once and only once per frame. The
+entire asynchronous buffer must be updated otherwise it may
+contain stale data. Synchronous uniform buffers may be
+updated once and only once per frame. The rules for
+updating a vertex/index buffer are subtly different. When a
+vertex/index buffer is updatable then the app may update the
+buffer zero or one time per frame. The app may update a
 subset of the vertex/index buffer but only the portion of
 the buffer which was updated is valid. The partial updates
 for vertex/index buffers allows the app to avoid
@@ -902,7 +904,7 @@ Compute Pipeline
 ----------------
 
 Compute pipeline objects may be created by the app which
-describes the compute state required for rendering.
+describes the compute state required for computing.
 Compute state may be swapped during processing by simply
 binding a new compute pipeline object. Compute pipelines
 are interchangeable when the pipeline layout and the
@@ -968,11 +970,10 @@ updates.
 	vkk_updateMode_e vkk_compute_updateMode(vkk_compute_t* self);
 
 The vkk\_compute\_updateBuffer() function may be used to
-update uniform and storage buffers. A buffer is considered
+update uniform/storage buffers. A buffer is considered
 updatable when its update mode is not
-VKK\_UPDATE\_MODE\_STATIC. Uniform and storage buffers which
-are updatable must be updated once and only once per
-computation and the entire buffer must be updated.
+VKK\_UPDATE\_MODE\_STATIC. Synchronous uniform/storage
+buffers may be updated once and only once per frame.
 
 	void vkk_compute_updateBuffer(vkk_compute_t* self,
 	                              vkk_buffer_t* buffer,
@@ -1048,10 +1049,10 @@ issue compute commands.
 	                          uint32_t groupCountZ);
 
 See the _Compute Pipeline_ section for attaching a
-renderer to the compute pipeline.
+compute object to the compute pipeline.
 
 See the _Threading/Synchronization_ section for threading
-and synchronization rules regarding the renderer.
+and synchronization rules regarding the compute object.
 
 See the compute-test for an example which demonstrates how
 to square an array of numbers.
@@ -1111,7 +1112,8 @@ process is a black art and there may be many different
 viable strategies but generally depends on achieving the
 following goals.
 
-1. Try to minimize the number of graphics pipelines required
+1. Try to minimize the number of graphics/compute pipelines
+   required
 2. Try to share uniform data across multiple shaders
 3. Try to minimize the number of calls to bind uniform sets
 
@@ -1140,7 +1142,8 @@ synchronization rules.
 
 1.  Objects may be created from any thread
 2.  Objects may be deleted from any thread as long as any
-    renderer which used the object has already called end()
+    renderer/compute which used the object has already
+    called end()
 3.  Objects must not be used by any thread once deleted
 4.  Object deletion is a non-blocking operation
 5.  Images should be created in a worker thread since the
@@ -1148,14 +1151,15 @@ synchronization rules.
     mipmap the image
 6.  The rendering begin() function may block while waiting
     for the next framebuffer to become available
-7.  Synchronization across separate renderers is not
-    required
-8.  Synchronization for a specific renderer is required when
-    called from multiple threads
+7.  Synchronization across separate renderers/compute
+    objects is not required
+8.  Synchronization for a specific renderer/compute object
+    is required when called from multiple threads
 9.  The default renderer completes asynchronously
 10. Image renderers completes synchronously
 11. Image stream and secondary renderers may complete
     synchronously or asynchronously depending on their
     corresponding consumer or executor renderers
-12. GPU synchronization is handled automatically by the
+12. Compute objects complete synchronously
+13. GPU synchronization is handled automatically by the
     engine
