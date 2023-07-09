@@ -206,11 +206,11 @@ The
 [VKK UI](https://github.com/jeffboody/libvkk/tree/master/ui) modules
 are also built on top of the VKK Core library.
 
-Compute Test
-------------
+XSQ Test
+--------
 
-See the compute-test for an example which demonstrates how
-to square an array of numbers.
+See the xsq-test for a compute example which demonstrates
+how to square an array of numbers.
 
 License
 =======

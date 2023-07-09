@@ -23,25 +23,25 @@
 
 #include <stdlib.h>
 
-#define LOG_TAG "compute-test"
+#define LOG_TAG "xsq-test"
 #include "libcc/cc_log.h"
 #include "libcc/rng/cc_rngUniform.h"
 #include "libcc/cc_memory.h"
-#include "compute_test.h"
+#include "xsq_test.h"
 
-#define COMPUTE_TEST_COUNT 64
+#define XSQ_TEST_COUNT 64
 
 /***********************************************************
 * public                                                   *
 ***********************************************************/
 
-compute_test_t* compute_test_new(vkk_engine_t* engine)
+xsq_test_t* xsq_test_new(vkk_engine_t* engine)
 {
 	ASSERT(engine);
 
-	compute_test_t* self;
-	self = (compute_test_t*)
-	       CALLOC(1, sizeof(compute_test_t));
+	xsq_test_t* self;
+	self = (xsq_test_t*)
+	       CALLOC(1, sizeof(xsq_test_t));
 	if(self == NULL)
 	{
 		LOGE("CALLOC failed");
@@ -74,7 +74,7 @@ compute_test_t* compute_test_new(vkk_engine_t* engine)
 		goto fail_usf;
 	}
 
-	size_t size = COMPUTE_TEST_COUNT*sizeof(float);
+	size_t size = XSQ_TEST_COUNT*sizeof(float);
 	self->bufx = vkk_buffer_new(engine,
 	                            VKK_UPDATE_MODE_SYNCHRONOUS,
 	                            VKK_BUFFER_USAGE_STORAGE,
@@ -162,11 +162,11 @@ compute_test_t* compute_test_new(vkk_engine_t* engine)
 	return NULL;
 }
 
-void compute_test_delete(compute_test_t** _self)
+void xsq_test_delete(xsq_test_t** _self)
 {
 	ASSERT(_self);
 
-	compute_test_t* self = *_self;
+	xsq_test_t* self = *_self;
 	if(self)
 	{
 		vkk_computePipeline_delete(&self->cp);
@@ -181,8 +181,8 @@ void compute_test_delete(compute_test_t** _self)
 	}
 }
 
-void compute_test_main(compute_test_t* self,
-                       int argc, char** argv)
+void xsq_test_main(xsq_test_t* self,
+                   int argc, char** argv)
 {
 	ASSERT(self);
 	ASSERT(argv);
@@ -198,10 +198,10 @@ void compute_test_main(compute_test_t* self,
 
 	// initialize data
 	int    i;
-	size_t size = COMPUTE_TEST_COUNT*sizeof(float);
-	float  x[COMPUTE_TEST_COUNT];
-	float  xx1[COMPUTE_TEST_COUNT];
-	for(i = 0; i < COMPUTE_TEST_COUNT; ++i)
+	size_t size = XSQ_TEST_COUNT*sizeof(float);
+	float  x[XSQ_TEST_COUNT];
+	float  xx1[XSQ_TEST_COUNT];
+	for(i = 0; i < XSQ_TEST_COUNT; ++i)
 	{
 		x[i]   = cc_rngUniform_rand2F(&rng, -1.0f, 1.0f);
 		xx1[i] = x[i]*x[i];
@@ -218,16 +218,16 @@ void compute_test_main(compute_test_t* self,
 	vkk_compute_bindComputePipeline(self->compute, self->cp);
 	vkk_compute_bindUniformSets(self->compute, 1, &self->us);
 	vkk_compute_dispatch(self->compute,
-	                     COMPUTE_TEST_COUNT/16, 1, 1);
+	                     XSQ_TEST_COUNT/16, 1, 1);
 	vkk_compute_end(self->compute);
 
 	// read buffer
-	float xx2[COMPUTE_TEST_COUNT];
+	float xx2[XSQ_TEST_COUNT];
 	vkk_compute_readBuffer(self->compute, self->bufxx,
 	                       size, xx2);
 
 	// output results
-	for(i = 0; i < COMPUTE_TEST_COUNT; ++i)
+	for(i = 0; i < XSQ_TEST_COUNT; ++i)
 	{
 		LOGI("i=%i, x=%f, xx1=%f, xx2=%f",
 		     i, x[i], xx1[i], xx2[i]);

@@ -23,48 +23,48 @@
 
 #include <stdlib.h>
 
-#define LOG_TAG "compute"
+#define LOG_TAG "xsq-test"
 #include "libcc/cc_log.h"
 #include "libvkk/vkk_platform.h"
-#include "compute_test.h"
+#include "xsq_test.h"
 
 /***********************************************************
 * callbacks                                                *
 ***********************************************************/
 
-static void* compute_test_onCreate(vkk_engine_t* engine)
+static void* xsq_test_onCreate(vkk_engine_t* engine)
 {
 	ASSERT(engine);
 
-	return (void*) compute_test_new(engine);
+	return (void*) xsq_test_new(engine);
 }
 
-static void compute_test_onDestroy(void** _priv)
+static void xsq_test_onDestroy(void** _priv)
 {
 	ASSERT(_priv);
 
-	compute_test_delete((compute_test_t**) _priv);
+	xsq_test_delete((xsq_test_t**) _priv);
 }
 
 static void
-compute_test_onMain(void* priv, int argc, char** argv)
+xsq_test_onMain(void* priv, int argc, char** argv)
 {
 	ASSERT(priv);
 
-	compute_test_main((compute_test_t*) priv, argc, argv);
+	xsq_test_main((xsq_test_t*) priv, argc, argv);
 }
 
 vkk_platformInfo_t VKK_PLATFORM_INFO =
 {
-	.app_name    = "Compute Test",
+	.app_name    = "XSQ-Test",
 	.app_version =
 	{
 		.major = 1,
 		.minor = 0,
 		.patch = 0,
 	},
-	.app_dir   = "ComputeTest",
-	.onCreate  = compute_test_onCreate,
-	.onDestroy = compute_test_onDestroy,
-	.onMain    = compute_test_onMain,
+	.app_dir   = "XSQTest",
+	.onCreate  = xsq_test_onCreate,
+	.onDestroy = xsq_test_onDestroy,
+	.onMain    = xsq_test_onMain,
 };

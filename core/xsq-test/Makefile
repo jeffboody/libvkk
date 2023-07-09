@@ -1,8 +1,8 @@
 export CC_USE_MATH = 1
 export CC_USE_RNG  = 1
 
-TARGET   = compute-test
-CLASSES  = compute_test
+TARGET   = xsq-test
+CLASSES  = xsq_test
 SOURCE   = $(TARGET).c $(CLASSES:%=%.c)
 OBJECTS  = $(TARGET).o $(CLASSES:%=%.o)
 HFILES   = $(CLASSES:%=%.h)

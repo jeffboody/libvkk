@@ -21,12 +21,12 @@
  *
  */
 
-#ifndef compute_test_H
-#define compute_test_H
+#ifndef xsq_test_H
+#define xsq_test_H
 
 #include "libvkk/vkk.h"
 
-typedef struct compute_test_s
+typedef struct xsq_test_s
 {
 	vkk_engine_t*            engine;
 	vkk_uniformSetFactory_t* usf;
@@ -36,11 +36,11 @@ typedef struct compute_test_s
 	vkk_pipelineLayout_t*    pl;
 	vkk_compute_t*           compute;
 	vkk_computePipeline_t*   cp;
-} compute_test_t;
+} xsq_test_t;
 
-compute_test_t* compute_test_new(vkk_engine_t* engine);
-void            compute_test_delete(compute_test_t** _self);
-void            compute_test_main(compute_test_t* self,
-                                  int argc, char** argv);
+xsq_test_t* xsq_test_new(vkk_engine_t* engine);
+void        xsq_test_delete(xsq_test_t** _self);
+void        xsq_test_main(xsq_test_t* self,
+                          int argc, char** argv);
 
 #endif
