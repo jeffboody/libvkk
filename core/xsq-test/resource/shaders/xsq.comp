@@ -2,24 +2,19 @@
 
 layout (local_size_x=4, local_size_y=1, local_size_z=1) in;
 
-layout(std140, set=0, binding=0) readonly buffer bufferIn
+layout(std430, set=0, binding=0) readonly buffer bufferIn
 {
-	vec4 x[];
+	float x[];
 };
 
-layout(std140, set=0, binding=1) writeonly buffer bufferOut
+layout(std430, set=0, binding=1) writeonly buffer bufferOut
 {
-	vec4 xx[];
+	float xx[];
 };
 
 void main()
 {
-	uint i  = gl_GlobalInvocationID.x;
-	vec4 xi = x[i];
-
 	// compute xsq
-	xx[i].x = xi.x*xi.x;
-	xx[i].y = xi.y*xi.y;
-	xx[i].z = xi.z*xi.z;
-	xx[i].w = xi.w*xi.w;
+	uint i = gl_GlobalInvocationID.x;
+	xx[i]  = x[i]*x[i];
 }

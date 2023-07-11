@@ -1095,6 +1095,13 @@ For uniform samplers:
 
 	layout(set=2, binding=1) uniform sampler2D image;
 
+For compute shader SSBO buffers:
+
+	layout(std430, set=0, binding=0) readonly buffer bufferIn
+	{
+		float x[];
+	};
+
 The location index corresponds to the value defined by
 vkk\_vertexBufferInfo\_t and also must match the array index
 of vertex_buffers data passed into
@@ -1129,6 +1136,12 @@ passing a mat3 matrix you should instead pass a mat4 matrix
 then cast it to a mat3 in the shader. The VKK library does
 not restrict the types of layouts supported, however, it
 seems that std140 is most portable so this is recommended.
+
+The std430 layout may also be used by compute shaders for
+SSBOs which includes a few optimizations over std140 such as
+the alignment/stride for arrays and structs of scalars. In
+particular, the stride of an array of floats is not rounded
+up to a vec4.
 
 Note that the VKK library restricts the number of sets
 supported to 4 (set 0-3) since this is the minimum guaranteed

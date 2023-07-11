@@ -211,14 +211,11 @@ void xsq_test_main(xsq_test_t* self,
 
 	// compute xsq
 	// groupCountX is determined by xsq.comp where local_size_x
-	// is 4 and x is a vec4 so we must divide the count by 16
-	// x is a vec4 due to the std140 layout requirements which
-	// generally means that the array stride between elements
-	// should be rounded up to vec4
+	// is 4 so we must divide the count by 4
 	vkk_compute_bindComputePipeline(self->compute, self->cp);
 	vkk_compute_bindUniformSets(self->compute, 1, &self->us);
 	vkk_compute_dispatch(self->compute,
-	                     XSQ_TEST_COUNT/16, 1, 1);
+	                     XSQ_TEST_COUNT/4, 1, 1);
 	vkk_compute_end(self->compute);
 
 	// read buffer
