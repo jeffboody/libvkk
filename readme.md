@@ -209,8 +209,15 @@ are also built on top of the VKK Core library.
 XSQ Test
 --------
 
-See the xsq-test for a compute example which demonstrates
-how to square an array of numbers.
+See xsq-test for a compute example which demonstrates how to
+square an array of numbers.
+
+XSUM Test
+---------
+
+See xsum-test for a compute example which demonstrates how
+compute the sum of an array of numbers using shared memory
+for intermediate results.
 
 License
 =======

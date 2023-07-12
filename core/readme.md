@@ -1054,8 +1054,12 @@ compute object to the compute pipeline.
 See the _Threading/Synchronization_ section for threading
 and synchronization rules regarding the compute object.
 
-See the xsq-test for a compute example which demonstrates
-how to square an array of numbers.
+See xsq-test for a compute example which demonstrates how to
+square an array of numbers.
+
+See xsum-test for a compute example which demonstrates how
+compute the sum of an array of numbers using shared memory
+for intermediate results.
 
 Shaders
 -------
