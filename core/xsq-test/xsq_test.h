@@ -29,10 +29,10 @@
 typedef struct xsq_test_s
 {
 	vkk_engine_t*            engine;
-	vkk_uniformSetFactory_t* usf;
-	vkk_buffer_t*            bufx;
-	vkk_buffer_t*            bufxx;
-	vkk_uniformSet_t*        us;
+	vkk_uniformSetFactory_t* usf0;
+	vkk_buffer_t*            sb00_x;
+	vkk_buffer_t*            sb01_xx;
+	vkk_uniformSet_t*        us0;
 	vkk_pipelineLayout_t*    pl;
 	vkk_compute_t*           compute;
 	vkk_computePipeline_t*   cp;
