@@ -1041,9 +1041,22 @@ the current compute pipeline need to be bound.
 	                                 vkk_uniformSet_t** us_array);
 
 The following dispatch function may be called by the app to
-issue compute commands.
+issue compute commands. Unlike draw commands, the execution
+order of dispatched commands is not guaranteed which can
+lead to write-after-read and read-after-write hazzards for
+storage buffers. The hazzard flag is required to determine
+if barriers must be inserted for correct operation.
+
+	typedef enum
+	{
+		VKK_HAZZARD_NONE = 0,
+		VKK_HAZZARD_WAR  = 1,
+		VKK_HAZZARD_RAW  = 2,
+		VKK_HAZZARD_ANY  = 3,
+	} vkk_hazzard_e;
 
 	void vkk_compute_dispatch(vkk_compute_t* self,
+	                          vkk_hazzard_e hazzard,
 	                          uint32_t groupCountX,
 	                          uint32_t groupCountY,
 	                          uint32_t groupCountZ);

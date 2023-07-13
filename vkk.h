@@ -152,6 +152,14 @@ typedef enum
 	VKK_RENDERER_MODE_EXECUTE = 1,
 } vkk_rendererMode_e;
 
+typedef enum
+{
+	VKK_HAZZARD_NONE = 0,
+	VKK_HAZZARD_WAR  = 1,
+	VKK_HAZZARD_RAW  = 2,
+	VKK_HAZZARD_ANY  = 3,
+} vkk_hazzard_e;
+
 /*
  * opaque objects
  */
@@ -488,6 +496,7 @@ void             vkk_compute_bindUniformSets(vkk_compute_t* self,
                                              uint32_t us_count,
                                              vkk_uniformSet_t** us_array);
 void             vkk_compute_dispatch(vkk_compute_t* self,
+                                      vkk_hazzard_e hazzard,
                                       uint32_t groupCountX,
                                       uint32_t groupCountY,
                                       uint32_t groupCountZ);

@@ -421,12 +421,38 @@ void vkk_compute_bindUniformSets(vkk_compute_t* self,
 }
 
 void vkk_compute_dispatch(vkk_compute_t* self,
+                          vkk_hazzard_e hazzard,
                           uint32_t groupCountX,
                           uint32_t groupCountY,
                           uint32_t groupCountZ)
 {
 	ASSERT(self);
 
-	VkCommandBuffer cb = vkk_compute_commandBuffer(self);
+	// See Compute to Compute Dependencies
+	// https://github.com/KhronosGroup/Vulkan-Docs/wiki/Synchronization-Examples
+
+	VkCommandBuffer      cb    = vkk_compute_commandBuffer(self);
+	VkPipelineStageFlags stage = VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT;
+
+	if((hazzard == VKK_HAZZARD_ANY) ||
+	   (hazzard == VKK_HAZZARD_RAW))
+	{
+		VkMemoryBarrier mb =
+		{
+			.sType         = VK_STRUCTURE_TYPE_MEMORY_BARRIER,
+			.pNext         = NULL,
+			.srcAccessMask = VK_ACCESS_SHADER_WRITE_BIT,
+			.dstAccessMask = VK_ACCESS_SHADER_READ_BIT,
+		};
+
+		vkCmdPipelineBarrier(cb, stage, stage, 0,
+		                     1, &mb, 0, NULL, 0, NULL);
+	}
+	else if(hazzard == VKK_HAZZARD_WAR)
+	{
+		vkCmdPipelineBarrier(cb, stage, stage, 0,
+		                     0, NULL, 0, NULL, 0, NULL);
+	}
+
 	vkCmdDispatch(cb, groupCountX, groupCountY, groupCountZ);
 }

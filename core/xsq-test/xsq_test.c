@@ -215,7 +215,7 @@ void xsq_test_main(xsq_test_t* self,
 	// is XSQ_TEST_IN so we must divide the count by XSQ_TEST_IN
 	vkk_compute_bindComputePipeline(self->compute, self->cp);
 	vkk_compute_bindUniformSets(self->compute, 1, &self->us0);
-	vkk_compute_dispatch(self->compute,
+	vkk_compute_dispatch(self->compute, VKK_HAZZARD_NONE,
 	                     XSQ_TEST_COUNT/XSQ_TEST_IN, 1, 1);
 	vkk_compute_end(self->compute);
 
