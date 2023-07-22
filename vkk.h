@@ -497,8 +497,11 @@ void             vkk_compute_bindUniformSets(vkk_compute_t* self,
                                              vkk_uniformSet_t** us_array);
 void             vkk_compute_dispatch(vkk_compute_t* self,
                                       vkk_hazzard_e hazzard,
-                                      uint32_t groupCountX,
-                                      uint32_t groupCountY,
-                                      uint32_t groupCountZ);
+                                      uint32_t count_x,
+                                      uint32_t count_y,
+                                      uint32_t count_z,
+                                      uint32_t local_size_x,
+                                      uint32_t local_size_y,
+                                      uint32_t local_size_z);
 
 #endif

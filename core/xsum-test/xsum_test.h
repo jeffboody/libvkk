@@ -32,7 +32,7 @@ typedef struct xsum_test_s
 	vkk_uniformSetFactory_t* usf0;
 	vkk_buffer_t*            sb00_x;
 	vkk_buffer_t*            sb01_xsum;
-	vkk_buffer_t*            sb02_stride;
+	vkk_buffer_t*            sb02_count;
 	vkk_uniformSet_t*        us0;
 	vkk_pipelineLayout_t*    pl;
 	vkk_compute_t*           compute;

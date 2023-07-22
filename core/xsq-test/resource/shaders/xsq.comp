@@ -1,20 +1,32 @@
 #version 450
 
-layout (local_size_x=4, local_size_y=1, local_size_z=1) in;
+layout (local_size_x=64, local_size_y=1, local_size_z=1) in;
 
-layout(std430, set=0, binding=0) readonly buffer bufferIn
+layout(std430, set=0, binding=0) readonly buffer sb00
 {
 	float x[];
 };
 
-layout(std430, set=0, binding=1) writeonly buffer bufferOut
+layout(std430, set=0, binding=1) writeonly buffer sb01
 {
 	float xx[];
 };
 
+layout(std430, set=0, binding=2) readonly buffer sb02
+{
+	uint count;
+};
+
 void main()
 {
-	// compute xsq
+	// dispatch(NONE, count, 1, 1, 64, 1, 1)
 	uint i = gl_GlobalInvocationID.x;
-	xx[i]  = x[i]*x[i];
+
+	if(i >= count)
+	{
+		return;
+	}
+
+	// compute xsq
+	xx[i] = x[i]*x[i];
 }

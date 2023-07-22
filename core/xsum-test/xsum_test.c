@@ -29,8 +29,9 @@
 #include "libcc/cc_memory.h"
 #include "xsum_test.h"
 
-#define XSUM_TEST_COUNT 64
-#define XSUM_TEST_IN    4
+// see xsum.comp
+#define XSUM_TEST_COUNT 1000
+#define XSUM_TEST_IN    64
 
 /***********************************************************
 * public                                                   *
@@ -53,19 +54,19 @@ xsum_test_t* xsum_test_new(vkk_engine_t* engine)
 
 	vkk_uniformBinding_t ub_array0[] =
 	{
-		// layout(std140, set=0, binding=0) readonly buffer bufferIn
+		// layout(std140, set=0, binding=0) readonly buffer sb00
 		{
 			.binding = 0,
 			.type    = VKK_UNIFORM_TYPE_STORAGE,
 			.stage   = VKK_STAGE_COMPUTE,
 		},
-		// layout(std140, set=0, binding=1) writeonly buffer bufferOut
+		// layout(std140, set=0, binding=1) writeonly buffer sb01
 		{
 			.binding = 1,
 			.type    = VKK_UNIFORM_TYPE_STORAGE,
 			.stage   = VKK_STAGE_COMPUTE,
 		},
-		// layout(std140, set=0, binding=2) readonly buffer bufferStride
+		// layout(std140, set=0, binding=2) readonly buffer sb02
 		{
 			.binding = 2,
 			.type    = VKK_UNIFORM_TYPE_STORAGE,
@@ -100,34 +101,34 @@ xsum_test_t* xsum_test_new(vkk_engine_t* engine)
 		goto fail_sb01_xsum;
 	}
 
-	self->sb02_stride = vkk_buffer_new(engine,
-	                                   VKK_UPDATE_MODE_SYNCHRONOUS,
-	                                   VKK_BUFFER_USAGE_STORAGE,
-	                                   sizeof(uint32_t), NULL);
-	if(self->sb02_stride == NULL)
+	self->sb02_count = vkk_buffer_new(engine,
+	                                  VKK_UPDATE_MODE_SYNCHRONOUS,
+	                                  VKK_BUFFER_USAGE_STORAGE,
+	                                  sizeof(uint32_t), NULL);
+	if(self->sb02_count == NULL)
 	{
-		goto fail_sb02_stride;
+		goto fail_sb02_count;
 	}
 
 	vkk_uniformAttachment_t ua_array0[] =
 	{
-		// layout(std140, set=0, binding=0) readonly buffer bufferIn
+		// layout(std140, set=0, binding=0) readonly buffer sb00
 		{
 			.binding = 0,
 			.type    = VKK_UNIFORM_TYPE_STORAGE,
 			.buffer  = self->sb00_x,
 		},
-		// layout(std140, set=0, binding=1) writeonly buffer bufferOut
+		// layout(std140, set=0, binding=1) writeonly buffer sb01
 		{
 			.binding = 1,
 			.type    = VKK_UNIFORM_TYPE_STORAGE,
 			.buffer  = self->sb01_xsum,
 		},
-		// layout(std140, set=0, binding=2) writeonly buffer bufferStride
+		// layout(std140, set=0, binding=2) writeonly buffer sb02
 		{
 			.binding = 2,
 			.type    = VKK_UNIFORM_TYPE_STORAGE,
-			.buffer  = self->sb02_stride,
+			.buffer  = self->sb02_count,
 		},
 	};
 
@@ -174,8 +175,8 @@ xsum_test_t* xsum_test_new(vkk_engine_t* engine)
 	fail_pl:
 		vkk_uniformSet_delete(&self->us0);
 	fail_us:
-		vkk_buffer_delete(&self->sb02_stride);
-	fail_sb02_stride:
+		vkk_buffer_delete(&self->sb02_count);
+	fail_sb02_count:
 		vkk_buffer_delete(&self->sb01_xsum);
 	fail_sb01_xsum:
 		vkk_buffer_delete(&self->sb00_x);
@@ -197,7 +198,7 @@ void xsum_test_delete(xsum_test_t** _self)
 		vkk_compute_delete(&self->compute);
 		vkk_pipelineLayout_delete(&self->pl);
 		vkk_uniformSet_delete(&self->us0);
-		vkk_buffer_delete(&self->sb02_stride);
+		vkk_buffer_delete(&self->sb02_count);
 		vkk_buffer_delete(&self->sb01_xsum);
 		vkk_buffer_delete(&self->sb00_x);
 		vkk_uniformSetFactory_delete(&self->usf0);
@@ -225,17 +226,19 @@ void xsum_test_main(xsum_test_t* self,
 	int      i;
 	size_t   size = XSUM_TEST_COUNT*sizeof(float);
 	float    x[XSUM_TEST_COUNT];
-	float    xsum1  = 0.0f;
-	uint32_t stride = XSUM_TEST_COUNT/XSUM_TEST_IN;
+	float    xsum1 = 0.0f;
 	for(i = 0; i < XSUM_TEST_COUNT; ++i)
 	{
 		x[i]   = cc_rngUniform_rand2F(&rng, -1.0f, 1.0f);
 		xsum1 += x[i];
 	}
+
 	vkk_compute_updateBuffer(self->compute, self->sb00_x,
 	                         size, x);
-	vkk_compute_updateBuffer(self->compute, self->sb02_stride,
-	                         sizeof(uint32_t), &stride);
+
+	uint32_t count = XSUM_TEST_COUNT;
+	vkk_compute_updateBuffer(self->compute, self->sb02_count,
+	                         sizeof(uint32_t), &count);
 
 	// compute xsum
 	// only dispatch one workgroup to compute the xsum since
@@ -247,7 +250,7 @@ void xsum_test_main(xsum_test_t* self,
 	vkk_compute_bindComputePipeline(self->compute, self->cp);
 	vkk_compute_bindUniformSets(self->compute, 1, &self->us0);
 	vkk_compute_dispatch(self->compute, VKK_HAZZARD_NONE,
-	                     1, 1, 1);
+	                     1, 1, 1, XSUM_TEST_IN, 1, 1);
 	vkk_compute_end(self->compute);
 
 	// read buffer

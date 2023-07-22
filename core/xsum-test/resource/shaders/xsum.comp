@@ -1,36 +1,46 @@
 #version 450
 
-layout (local_size_x=4, local_size_y=1, local_size_z=1) in;
+layout (local_size_x=64, local_size_y=1, local_size_z=1) in;
 
-layout(std430, set=0, binding=0) readonly buffer bufferIn
+layout(std430, set=0, binding=0) readonly buffer sb00
 {
 	float x[];
 };
 
-layout(std430, set=0, binding=1) writeonly buffer bufferOut
+layout(std430, set=0, binding=1) writeonly buffer sb01
 {
 	float xsum;
 };
 
-layout(std430, set=0, binding=2) readonly buffer bufferStride
+layout(std430, set=0, binding=2) readonly buffer sb02
 {
-	uint stride;
+	uint count;
 };
 
-shared float xsum_work[4];
+shared float xsum_work[64];
 
 void main()
 {
+	// dispatch(NONE, 1, 1, 1, 64, 1, 1)
 	uint i = gl_GlobalInvocationID.x;
-	uint j;
-	uint off;
 
-	// compute working xsum
+	// initialize working xsum
 	xsum_work[i] = 0.0f;
-	off          = stride*i;
-	for(j = 0; j < stride; ++j)
+
+	// compute range for invocation
+	uint stride = (count + 64 - 1)/64;
+	uint j0 = i*stride;
+	uint j1 = j0 + stride;
+	if(j1 > count)
 	{
-		xsum_work[i] += x[off + j];
+		j1 = count;
+	}
+
+	// compute working sum
+	uint j;
+	for(j = j0; j < j1; ++j)
+	{
+		xsum_work[i] += x[j];
 	}
 
 	// synchronize work
@@ -41,7 +51,7 @@ void main()
 	if(i == 0)
 	{
 		xsum = 0;
-		for(j = 0; j < 4; ++j)
+		for(j = 0; j < 64; ++j)
 		{
 			xsum += xsum_work[j];
 		}

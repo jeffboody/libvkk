@@ -29,8 +29,9 @@
 #include "libcc/cc_memory.h"
 #include "xsq_test.h"
 
-#define XSQ_TEST_COUNT 64
-#define XSQ_TEST_IN    4
+// see xsq.comp
+#define XSQ_TEST_COUNT 1000
+#define XSQ_TEST_IN    64
 
 /***********************************************************
 * public                                                   *
@@ -53,15 +54,21 @@ xsq_test_t* xsq_test_new(vkk_engine_t* engine)
 
 	vkk_uniformBinding_t ub_array0[] =
 	{
-		// layout(std140, set=0, binding=0) readonly buffer bufferIn
+		// layout(std140, set=0, binding=0) readonly buffer sb00
 		{
 			.binding = 0,
 			.type    = VKK_UNIFORM_TYPE_STORAGE,
 			.stage   = VKK_STAGE_COMPUTE,
 		},
-		// layout(std140, set=0, binding=1) writeonly buffer bufferOut
+		// layout(std140, set=0, binding=1) writeonly buffer sb01
 		{
 			.binding = 1,
+			.type    = VKK_UNIFORM_TYPE_STORAGE,
+			.stage   = VKK_STAGE_COMPUTE,
+		},
+		// layout(std140, set=0, binding=2) readonly buffer sb02
+		{
+			.binding = 2,
 			.type    = VKK_UNIFORM_TYPE_STORAGE,
 			.stage   = VKK_STAGE_COMPUTE,
 		},
@@ -69,7 +76,7 @@ xsq_test_t* xsq_test_new(vkk_engine_t* engine)
 
 	self->usf0 = vkk_uniformSetFactory_new(engine,
 	                                       VKK_UPDATE_MODE_SYNCHRONOUS,
-	                                       2, ub_array0);
+	                                       3, ub_array0);
 	if(self->usf0 == NULL)
 	{
 		goto fail_usf0;
@@ -94,23 +101,38 @@ xsq_test_t* xsq_test_new(vkk_engine_t* engine)
 		goto fail_sb01_xx;
 	}
 
+	self->sb02_count = vkk_buffer_new(engine,
+	                                  VKK_UPDATE_MODE_SYNCHRONOUS,
+	                                  VKK_BUFFER_USAGE_STORAGE,
+	                                  sizeof(uint32_t), NULL);
+	if(self->sb02_count == NULL)
+	{
+		goto fail_sb02_count;
+	}
+
 	vkk_uniformAttachment_t ua_array0[] =
 	{
-		// layout(std140, set=0, binding=0) readonly buffer bufferIn
+		// layout(std140, set=0, binding=0) readonly buffer sb00
 		{
 			.binding = 0,
 			.type    = VKK_UNIFORM_TYPE_STORAGE,
 			.buffer  = self->sb00_x,
 		},
-		// layout(std140, set=0, binding=1) writeonly buffer bufferOut
+		// layout(std140, set=0, binding=1) writeonly buffer sb01
 		{
 			.binding = 1,
 			.type    = VKK_UNIFORM_TYPE_STORAGE,
 			.buffer  = self->sb01_xx,
 		},
+		// layout(std140, set=0, binding=2) writeonly buffer sb02
+		{
+			.binding = 2,
+			.type    = VKK_UNIFORM_TYPE_STORAGE,
+			.buffer  = self->sb02_count,
+		},
 	};
 
-	self->us0 = vkk_uniformSet_new(engine, 0, 2, ua_array0,
+	self->us0 = vkk_uniformSet_new(engine, 0, 3, ua_array0,
 	                               self->usf0);
 	if(self->us0 == NULL)
 	{
@@ -153,6 +175,8 @@ xsq_test_t* xsq_test_new(vkk_engine_t* engine)
 	fail_pl:
 		vkk_uniformSet_delete(&self->us0);
 	fail_us:
+		vkk_buffer_delete(&self->sb02_count);
+	fail_sb02_count:
 		vkk_buffer_delete(&self->sb01_xx);
 	fail_sb01_xx:
 		vkk_buffer_delete(&self->sb00_x);
@@ -174,6 +198,7 @@ void xsq_test_delete(xsq_test_t** _self)
 		vkk_compute_delete(&self->compute);
 		vkk_pipelineLayout_delete(&self->pl);
 		vkk_uniformSet_delete(&self->us0);
+		vkk_buffer_delete(&self->sb02_count);
 		vkk_buffer_delete(&self->sb01_xx);
 		vkk_buffer_delete(&self->sb00_x);
 		vkk_uniformSetFactory_delete(&self->usf0);
@@ -207,16 +232,19 @@ void xsq_test_main(xsq_test_t* self,
 		x[i]   = cc_rngUniform_rand2F(&rng, -1.0f, 1.0f);
 		xx1[i] = x[i]*x[i];
 	}
+
 	vkk_compute_updateBuffer(self->compute, self->sb00_x,
 	                         size, x);
 
+	uint32_t count = XSQ_TEST_COUNT;
+	vkk_compute_updateBuffer(self->compute, self->sb02_count,
+	                         sizeof(uint32_t), &count);
+
 	// compute xsq
-	// groupCountX is determined by xsq.comp where local_size_x
-	// is XSQ_TEST_IN so we must divide the count by XSQ_TEST_IN
 	vkk_compute_bindComputePipeline(self->compute, self->cp);
 	vkk_compute_bindUniformSets(self->compute, 1, &self->us0);
 	vkk_compute_dispatch(self->compute, VKK_HAZZARD_NONE,
-	                     XSQ_TEST_COUNT/XSQ_TEST_IN, 1, 1);
+	                     XSQ_TEST_COUNT, 1, 1, XSQ_TEST_IN, 1, 1);
 	vkk_compute_end(self->compute);
 
 	// read buffer
@@ -224,8 +252,8 @@ void xsq_test_main(xsq_test_t* self,
 	vkk_compute_readBuffer(self->compute, self->sb01_xx,
 	                       size, xx2);
 
-	// output results
-	for(i = 0; i < XSQ_TEST_COUNT; ++i)
+	// output a subset of results
+	for(i = 0; i < XSQ_TEST_COUNT; i += 10)
 	{
 		LOGI("i=%i, x=%f, xx1=%f, xx2=%f",
 		     i, x[i], xx1[i], xx2[i]);

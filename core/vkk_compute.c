@@ -108,6 +108,14 @@ vkk_compute_checkUpdateType(vkk_buffer_t* buffer)
 
 #endif
 
+static uint32_t uceil(uint32_t count, uint32_t local_size)
+{
+	ASSERT(count > 0);
+	ASSERT(local_size > 0);
+
+	return (count + local_size - 1)/local_size;
+}
+
 /***********************************************************
 * protected                                                *
 ***********************************************************/
@@ -422,9 +430,12 @@ void vkk_compute_bindUniformSets(vkk_compute_t* self,
 
 void vkk_compute_dispatch(vkk_compute_t* self,
                           vkk_hazzard_e hazzard,
-                          uint32_t groupCountX,
-                          uint32_t groupCountY,
-                          uint32_t groupCountZ)
+                          uint32_t count_x,
+                          uint32_t count_y,
+                          uint32_t count_z,
+                          uint32_t local_size_x,
+                          uint32_t local_size_y,
+                          uint32_t local_size_z)
 {
 	ASSERT(self);
 
@@ -454,5 +465,8 @@ void vkk_compute_dispatch(vkk_compute_t* self,
 		                     0, NULL, 0, NULL, 0, NULL);
 	}
 
+	uint32_t groupCountX = uceil(count_x, local_size_x);
+	uint32_t groupCountY = uceil(count_y, local_size_y);
+	uint32_t groupCountZ = uceil(count_z, local_size_z);
 	vkCmdDispatch(cb, groupCountX, groupCountY, groupCountZ);
 }
