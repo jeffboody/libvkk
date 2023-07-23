@@ -54,19 +54,19 @@ xsum_test_t* xsum_test_new(vkk_engine_t* engine)
 
 	vkk_uniformBinding_t ub_array0[] =
 	{
-		// layout(std140, set=0, binding=0) readonly buffer sb00
+		// layout(std430, set=0, binding=0) readonly buffer sb00
 		{
 			.binding = 0,
 			.type    = VKK_UNIFORM_TYPE_STORAGE,
 			.stage   = VKK_STAGE_COMPUTE,
 		},
-		// layout(std140, set=0, binding=1) writeonly buffer sb01
+		// layout(std430, set=0, binding=1) writeonly buffer sb01
 		{
 			.binding = 1,
 			.type    = VKK_UNIFORM_TYPE_STORAGE,
 			.stage   = VKK_STAGE_COMPUTE,
 		},
-		// layout(std140, set=0, binding=2) readonly buffer sb02
+		// layout(std430, set=0, binding=2) readonly buffer sb02
 		{
 			.binding = 2,
 			.type    = VKK_UNIFORM_TYPE_STORAGE,
@@ -112,19 +112,19 @@ xsum_test_t* xsum_test_new(vkk_engine_t* engine)
 
 	vkk_uniformAttachment_t ua_array0[] =
 	{
-		// layout(std140, set=0, binding=0) readonly buffer sb00
+		// layout(std430, set=0, binding=0) readonly buffer sb00
 		{
 			.binding = 0,
 			.type    = VKK_UNIFORM_TYPE_STORAGE,
 			.buffer  = self->sb00_x,
 		},
-		// layout(std140, set=0, binding=1) writeonly buffer sb01
+		// layout(std430, set=0, binding=1) writeonly buffer sb01
 		{
 			.binding = 1,
 			.type    = VKK_UNIFORM_TYPE_STORAGE,
 			.buffer  = self->sb01_xsum,
 		},
-		// layout(std140, set=0, binding=2) writeonly buffer sb02
+		// layout(std430, set=0, binding=2) readonly buffer sb02
 		{
 			.binding = 2,
 			.type    = VKK_UNIFORM_TYPE_STORAGE,
