@@ -70,6 +70,7 @@ void                 vkk_memoryManager_write(vkk_memoryManager_t* self,
 void                 vkk_memoryManager_read(vkk_memoryManager_t* self,
                                             vkk_memory_t* memory,
                                             size_t size,
+                                            size_t offset,
                                             void* buf);
 void                 vkk_memoryManager_meminfo(vkk_memoryManager_t* self,
                                                size_t* _count_chunks,

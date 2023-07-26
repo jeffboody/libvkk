@@ -250,7 +250,7 @@ void xsq_test_main(xsq_test_t* self,
 	// read buffer
 	float xx2[XSQ_TEST_COUNT];
 	vkk_compute_readBuffer(self->compute, self->sb01_xx,
-	                       size, xx2);
+	                       size, 0, xx2);
 
 	// output a subset of results
 	for(i = 0; i < XSQ_TEST_COUNT; i += 10)

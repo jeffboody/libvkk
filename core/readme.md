@@ -986,6 +986,7 @@ results after ending a compute operation.
 	void vkk_compute_readBuffer(vkk_compute_t* self,
 	                            vkk_buffer_t* buffer,
 	                            size_t size,
+	                            size_t offset,
 	                            void* data);
 
 The vkk\_compute\_updateUniformSetRefs() function may be

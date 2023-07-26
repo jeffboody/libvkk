@@ -313,18 +313,18 @@ vkk_compute_updateBuffer(vkk_compute_t* self,
 void
 vkk_compute_readBuffer(vkk_compute_t* self,
                        vkk_buffer_t* buffer,
-                       size_t size, void* data)
+                       size_t size, size_t offset,
+                       void* data)
 {
 	ASSERT(self);
 	ASSERT(buffer);
 	ASSERT(buffer->update == VKK_UPDATE_MODE_SYNCHRONOUS);
-	ASSERT(size <= buffer->size);
 
 	vkk_engine_t* engine = self->engine;
 
 	uint32_t idx = 0;
 	vkk_memoryManager_read(engine->mm, buffer->memory[idx],
-	                       size, data);
+	                       size, offset, data);
 }
 
 void

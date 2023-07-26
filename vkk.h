@@ -485,6 +485,7 @@ void             vkk_compute_updateBuffer(vkk_compute_t* self,
 void             vkk_compute_readBuffer(vkk_compute_t* self,
                                         vkk_buffer_t* buffer,
                                         size_t size,
+                                        size_t offset,
                                         void* data);
 void             vkk_compute_updateUniformSetRefs(vkk_compute_t* self,
                                                   vkk_uniformSet_t* us,

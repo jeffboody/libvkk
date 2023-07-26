@@ -461,7 +461,7 @@ int vkk_imageDownloader_download(vkk_imageDownloader_t* self,
 	}
 
 	vkk_memoryManager_read(engine->mm, db->memory,
-	                       size, pixels);
+	                       size, 0, pixels);
 
 	vkk_imageDownloader_lock(self);
 	if(cc_list_append(self->instance_list, NULL,

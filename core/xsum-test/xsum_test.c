@@ -256,7 +256,7 @@ void xsum_test_main(xsum_test_t* self,
 	// read buffer
 	float xsum2;
 	vkk_compute_readBuffer(self->compute, self->sb01_xsum,
-	                       sizeof(float), &xsum2);
+	                       sizeof(float), 0, &xsum2);
 
 	// output results
 	LOGI("xsum1=%f, xsum2=%f", xsum1, xsum2);
