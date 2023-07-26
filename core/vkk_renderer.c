@@ -848,7 +848,7 @@ void vkk_renderer_updateBuffer(vkk_renderer_t* self,
 	}
 
 	vkk_memoryManager_write(engine->mm, buffer->memory[idx],
-	                        size, buf);
+	                        size, 0, buf);
 }
 
 void

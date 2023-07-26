@@ -969,16 +969,17 @@ updates.
 
 	vkk_updateMode_e vkk_compute_updateMode(vkk_compute_t* self);
 
-The vkk\_compute\_updateBuffer() function may be used to
+The vkk\_compute\_writeBuffer() function may be used to
 update uniform/storage buffers. A buffer is considered
 updatable when its update mode is not
 VKK\_UPDATE\_MODE\_STATIC. Synchronous uniform/storage
 buffers may be updated once and only once per frame.
 
-	void vkk_compute_updateBuffer(vkk_compute_t* self,
-	                              vkk_buffer_t* buffer,
-	                              size_t size,
-	                              const void* buf);
+	void vkk_compute_writeBuffer(vkk_compute_t* self,
+	                             vkk_buffer_t* buffer,
+	                             size_t size,
+	                             size_t offset,
+	                             const void* buf);
 
 The vkk\_compute\_readBuffer() function may be used to read
 results after ending a compute operation.

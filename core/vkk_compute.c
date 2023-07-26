@@ -292,14 +292,14 @@ vkk_compute_updateMode(vkk_compute_t* self)
 }
 
 void
-vkk_compute_updateBuffer(vkk_compute_t* self,
-                         vkk_buffer_t* buffer,
-                         size_t size,
-                         const void* buf)
+vkk_compute_writeBuffer(vkk_compute_t* self,
+                        vkk_buffer_t* buffer,
+                        size_t size,
+                        size_t offset,
+                        const void* buf)
 {
 	ASSERT(self);
 	ASSERT(buffer);
-	ASSERT((size > 0) && (size <= buffer->size));
 	ASSERT(buf);
 	ASSERT(vkk_compute_checkUpdateType(buffer));
 
@@ -307,7 +307,7 @@ vkk_compute_updateBuffer(vkk_compute_t* self,
 
 	uint32_t idx = 0;
 	vkk_memoryManager_write(engine->mm, buffer->memory[idx],
-	                        size, buf);
+	                        size, offset, buf);
 }
 
 void

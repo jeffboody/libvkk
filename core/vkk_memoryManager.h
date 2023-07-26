@@ -66,6 +66,7 @@ void                 vkk_memoryManager_free(vkk_memoryManager_t* self,
 void                 vkk_memoryManager_write(vkk_memoryManager_t* self,
                                              vkk_memory_t* memory,
                                              size_t size,
+                                             size_t offset,
                                              const void* buf);
 void                 vkk_memoryManager_read(vkk_memoryManager_t* self,
                                             vkk_memory_t* memory,

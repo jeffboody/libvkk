@@ -233,12 +233,12 @@ void xsum_test_main(xsum_test_t* self,
 		xsum1 += x[i];
 	}
 
-	vkk_compute_updateBuffer(self->compute, self->sb00_x,
-	                         size, x);
+	vkk_compute_writeBuffer(self->compute, self->sb00_x,
+	                        size, 0, x);
 
 	uint32_t count = XSUM_TEST_COUNT;
-	vkk_compute_updateBuffer(self->compute, self->sb02_count,
-	                         sizeof(uint32_t), &count);
+	vkk_compute_writeBuffer(self->compute, self->sb02_count,
+	                        sizeof(uint32_t), 0, &count);
 
 	// compute xsum
 	// only dispatch one workgroup to compute the xsum since

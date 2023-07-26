@@ -233,12 +233,12 @@ void xsq_test_main(xsq_test_t* self,
 		xx1[i] = x[i]*x[i];
 	}
 
-	vkk_compute_updateBuffer(self->compute, self->sb00_x,
-	                         size, x);
+	vkk_compute_writeBuffer(self->compute, self->sb00_x,
+	                        size, 0, x);
 
 	uint32_t count = XSQ_TEST_COUNT;
-	vkk_compute_updateBuffer(self->compute, self->sb02_count,
-	                         sizeof(uint32_t), &count);
+	vkk_compute_writeBuffer(self->compute, self->sb02_count,
+	                        sizeof(uint32_t), 0, &count);
 
 	// compute xsq
 	vkk_compute_bindComputePipeline(self->compute, self->cp);

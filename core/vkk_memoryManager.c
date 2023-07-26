@@ -425,7 +425,7 @@ vkk_memoryManager_allocBuffer(vkk_memoryManager_t* self,
 
 	if(buf)
 	{
-		vkk_memoryManager_write(self, memory, size, buf);
+		vkk_memoryManager_write(self, memory, size, 0, buf);
 	}
 
 	vkk_memoryManager_chunkLock(self, memory->chunk);
@@ -566,11 +566,11 @@ void vkk_memoryManager_free(vkk_memoryManager_t* self,
 void vkk_memoryManager_write(vkk_memoryManager_t* self,
                              vkk_memory_t* memory,
                              size_t size,
+                             size_t offset,
                              const void* buf)
 {
 	ASSERT(self);
 	ASSERT(memory);
-	ASSERT(size > 0);
 	ASSERT(buf);
 
 	vkk_memoryChunk_t*   chunk  = memory->chunk;
@@ -578,19 +578,19 @@ void vkk_memoryManager_write(vkk_memoryManager_t* self,
 	vkk_memoryManager_t* mm     = pool->mm;
 	vkk_engine_t*        engine = mm->engine;
 
-	vkk_memoryManager_chunkLock(self, chunk);
-
-	if(size > pool->stride)
+	if((size == 0) || (size + offset > pool->stride))
 	{
-		LOGE("invalid size=%" PRIu64 ", stride=%" PRIu64,
-		     (uint64_t) size, (uint64_t) pool->stride);
+		LOGE("invalid size=%" PRIu64 ", offset=%" PRIu64
+		     ", stride=%" PRIu64,
+		     (uint64_t) size, (uint64_t) offset,
+		     (uint64_t) pool->stride);
 		vkk_memoryManager_chunkUnlock(self, chunk);
 		return;
 	}
 
 	void* data;
 	if(vkMapMemory(engine->device, chunk->memory,
-	               memory->offset, size, 0,
+	               memory->offset + offset, size, 0,
 	               &data) == VK_SUCCESS)
 	{
 		memcpy(data, buf, size);
