@@ -207,15 +207,15 @@ void xsq_test_delete(xsq_test_t** _self)
 	}
 }
 
-void xsq_test_main(xsq_test_t* self,
-                   int argc, char** argv)
+int xsq_test_main(xsq_test_t* self,
+                  int argc, char** argv)
 {
 	ASSERT(self);
 	ASSERT(argv);
 
 	if(vkk_compute_begin(self->compute) == 0)
 	{
-		return;
+		return EXIT_FAILURE;
 	}
 
 	// create rng
@@ -258,4 +258,6 @@ void xsq_test_main(xsq_test_t* self,
 		LOGI("i=%i, x=%f, xx1=%f, xx2=%f",
 		     i, x[i], xx1[i], xx2[i]);
 	}
+
+	return EXIT_SUCCESS;
 }

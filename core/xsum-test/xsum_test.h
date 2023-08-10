@@ -41,7 +41,7 @@ typedef struct xsum_test_s
 
 xsum_test_t* xsum_test_new(vkk_engine_t* engine);
 void         xsum_test_delete(xsum_test_t** _self);
-void         xsum_test_main(xsum_test_t* self,
+int          xsum_test_main(xsum_test_t* self,
                             int argc, char** argv);
 
 #endif

@@ -431,10 +431,29 @@ vkk_platformTouch_action(vkk_platformTouch_t* self,
 
 static vkk_platform_t* vkk_platform_new(void)
 {
-	vkk_platformOnCreate_fn onCreate;
-	vkk_platformOnEvent_fn  onEvent;
-	onCreate = VKK_PLATFORM_INFO.onCreate;
-	onEvent  = VKK_PLATFORM_INFO.onEvent;
+	vkk_platformOnCreate_fn  onCreate;
+	vkk_platformOnDestroy_fn onDestroy;
+	vkk_platformOnPause_fn   onPause;
+	vkk_platformOnDraw_fn    onDraw;
+	vkk_platformOnEvent_fn   onEvent;
+	vkk_platformOnMain_fn    onMain;
+	onCreate  = VKK_PLATFORM_INFO.onCreate;
+	onDestroy = VKK_PLATFORM_INFO.onDestroy;
+	onPause   = VKK_PLATFORM_INFO.onPause;
+	onDraw    = VKK_PLATFORM_INFO.onDraw;
+	onEvent   = VKK_PLATFORM_INFO.onEvent;
+	onMain    = VKK_PLATFORM_INFO.onMain;
+
+	if(onMain)
+	{
+		// disallow all other callbacks when onMain is defined
+		if(onCreate || onDestroy || onPause ||
+		   onDraw   || onEvent)
+		{
+			LOGE("invalid");
+			return NULL;
+		}
+	}
 
 	// initialize home
 	char home[256];
@@ -503,10 +522,13 @@ static vkk_platform_t* vkk_platform_new(void)
 		goto fail_engine;
 	}
 
-	self->priv = (*onCreate)(self->engine);
-	if(self->priv == NULL)
+	if(onCreate)
 	{
-		goto fail_priv;
+		self->priv = (*onCreate)(self->engine);
+		if(self->priv == NULL)
+		{
+			goto fail_priv;
+		}
 	}
 
 	if(onEvent)
@@ -553,7 +575,10 @@ static void vkk_platform_delete(vkk_platform_t** _self)
 		}
 
 		vkk_engine_shutdown(self->engine);
-		(*onDestroy)(&self->priv);
+		if(onDestroy)
+		{
+			(*onDestroy)(&self->priv);
+		}
 		vkk_engine_delete(&self->engine);
 		FREE(self);
 		*_self = NULL;
@@ -653,11 +678,12 @@ int main(int argc, char** argv)
 	int button_count = (int) (sizeof(button_map)/
 	                          sizeof(vkk_platformButton_e));
 
+	int status = EXIT_SUCCESS;
 	vkk_platformTouch_t t;
 	vkk_platformTouch_init(&t, platform);
 	if(onMain)
 	{
-		(*onMain)(platform->priv, argc, argv);
+		status = (*onMain)(platform->engine, argc, argv);
 	}
 	else
 	{
@@ -994,7 +1020,7 @@ int main(int argc, char** argv)
 	bfs_util_shutdown();
 
 	// success
-	return EXIT_SUCCESS;
+	return status;
 
 	// failure
 	fail_platform:

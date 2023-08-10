@@ -41,7 +41,7 @@ typedef struct xsq_test_s
 
 xsq_test_t* xsq_test_new(vkk_engine_t* engine);
 void        xsq_test_delete(xsq_test_t** _self);
-void        xsq_test_main(xsq_test_t* self,
+int         xsq_test_main(xsq_test_t* self,
                           int argc, char** argv);
 
 #endif

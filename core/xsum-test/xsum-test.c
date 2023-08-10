@@ -32,26 +32,20 @@
 * callbacks                                                *
 ***********************************************************/
 
-static void* xsum_test_onCreate(vkk_engine_t* engine)
+static int
+xsum_test_onMain(vkk_engine_t* engine, int argc, char** argv)
 {
 	ASSERT(engine);
 
-	return (void*) xsum_test_new(engine);
-}
+	xsum_test_t* self = xsum_test_new(engine);
+	if(self == NULL)
+	{
+		return EXIT_FAILURE;
+	}
 
-static void xsum_test_onDestroy(void** _priv)
-{
-	ASSERT(_priv);
-
-	xsum_test_delete((xsum_test_t**) _priv);
-}
-
-static void
-xsum_test_onMain(void* priv, int argc, char** argv)
-{
-	ASSERT(priv);
-
-	xsum_test_main((xsum_test_t*) priv, argc, argv);
+	int ret = xsum_test_main(self, argc, argv);
+	xsum_test_delete(&self);
+	return ret;
 }
 
 vkk_platformInfo_t VKK_PLATFORM_INFO =
@@ -63,8 +57,6 @@ vkk_platformInfo_t VKK_PLATFORM_INFO =
 		.minor = 0,
 		.patch = 0,
 	},
-	.app_dir   = "XSUMTest",
-	.onCreate  = xsum_test_onCreate,
-	.onDestroy = xsum_test_onDestroy,
-	.onMain    = xsum_test_onMain,
+	.app_dir = "XSUMTest",
+	.onMain  = xsum_test_onMain,
 };

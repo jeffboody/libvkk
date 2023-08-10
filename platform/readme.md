@@ -14,7 +14,7 @@ called from the UI thread. This is because the app may have
 requested GPS recording which can cause events to be
 delivered when the app main thread is paused. The onMain
 callback may be used on Linux when no display is required
-(onPause, onDraw, onEvent are unsupported).
+(all other callbacks are unsupported).
 
 	typedef void* (*vkk_platformOnCreate_fn)(vkk_engine_t* engine);
 	typedef void  (*vkk_platformOnDestroy_fn)(void** _priv);

@@ -207,15 +207,15 @@ void xsum_test_delete(xsum_test_t** _self)
 	}
 }
 
-void xsum_test_main(xsum_test_t* self,
-                    int argc, char** argv)
+int xsum_test_main(xsum_test_t* self,
+                   int argc, char** argv)
 {
 	ASSERT(self);
 	ASSERT(argv);
 
 	if(vkk_compute_begin(self->compute) == 0)
 	{
-		return;
+		return EXIT_FAILURE;
 	}
 
 	// create rng
@@ -260,4 +260,6 @@ void xsum_test_main(xsum_test_t* self,
 
 	// output results
 	LOGI("xsum1=%f, xsum2=%f", xsum1, xsum2);
+
+	return EXIT_SUCCESS;
 }
