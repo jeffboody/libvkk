@@ -69,10 +69,8 @@ add_library(vkk
             core/vkk_engine.c
             core/vkk_graphicsPipeline.c
             core/vkk_image.c
-            core/vkk_imageDownloader.c
             core/vkk_imageRenderer.c
             core/vkk_imageStreamRenderer.c
-            core/vkk_imageUploader.c
             core/vkk_memory.c
             core/vkk_memoryChunk.c
             core/vkk_memoryManager.c
@@ -83,6 +81,7 @@ add_library(vkk
             core/vkk_uniformSet.c
             core/vkk_uniformSetFactory.c
             core/vkk_util.c
+            core/vkk_xferManager.c
             ${SOURCE_UI}
             ${SOURCE_VG})
 

@@ -28,7 +28,7 @@
 #include "../../libcc/cc_memory.h"
 #include "vkk_commandBuffer.h"
 #include "vkk_engine.h"
-#include "vkk_imageUploader.h"
+#include "vkk_xferManager.h"
 #include "vkk_image.h"
 #include "vkk_memoryChunk.h"
 #include "vkk_memoryManager.h"
@@ -37,32 +37,32 @@
 #include "vkk_renderer.h"
 #include "vkk_util.h"
 
-typedef struct vkk_uploaderBuffer_s
+typedef struct vkk_xferBuffer_s
 {
 	VkBuffer      buffer;
 	vkk_memory_t* memory;
-} vkk_uploaderBuffer_t;
+} vkk_xferBuffer_t;
 
-typedef struct vkk_uploaderInstance_s
+typedef struct vkk_xferInstance_s
 {
 	VkFence              fence;
 	vkk_commandBuffer_t* cmd_buffer;
-} vkk_uploaderInstance_t;
+} vkk_xferInstance_t;
 
 /***********************************************************
 * private                                                  *
 ***********************************************************/
 
-static vkk_uploaderBuffer_t*
-vkk_uploaderBuffer_new(vkk_engine_t* engine, size_t size,
-                       const void* pixels)
+static vkk_xferBuffer_t*
+vkk_xferBuffer_new(vkk_engine_t* engine, size_t size,
+                   const void* pixels)
 {
+	// pixels may be NULL
 	ASSERT(engine);
-	ASSERT(pixels);
 
-	vkk_uploaderBuffer_t* self;
-	self = (vkk_uploaderBuffer_t*)
-	       CALLOC(1, sizeof(vkk_uploaderBuffer_t));
+	vkk_xferBuffer_t* self;
+	self = (vkk_xferBuffer_t*)
+	       CALLOC(1, sizeof(vkk_xferBuffer_t));
 	if(self == NULL)
 	{
 		LOGE("CALLOC failed");
@@ -76,7 +76,8 @@ vkk_uploaderBuffer_new(vkk_engine_t* engine, size_t size,
 		.pNext                 = NULL,
 		.flags                 = 0,
 		.size                  = size,
-		.usage                 = VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
+		.usage                 = VK_BUFFER_USAGE_TRANSFER_DST_BIT |
+		                         VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
 		.sharingMode           = VK_SHARING_MODE_EXCLUSIVE,
 		.queueFamilyIndexCount = 1,
 		.pQueueFamilyIndices   = &engine->queue_family_index
@@ -109,11 +110,11 @@ vkk_uploaderBuffer_new(vkk_engine_t* engine, size_t size,
 }
 
 static void
-vkk_uploaderBuffer_delete(vkk_uploaderBuffer_t** _self)
+vkk_xferBuffer_delete(vkk_xferBuffer_t** _self)
 {
 	ASSERT(_self);
 
-	vkk_uploaderBuffer_t* self = *_self;
+	vkk_xferBuffer_t* self = *_self;
 	if(self)
 	{
 		vkk_engine_t* engine;
@@ -126,14 +127,14 @@ vkk_uploaderBuffer_delete(vkk_uploaderBuffer_t** _self)
 	}
 }
 
-static vkk_uploaderInstance_t*
-vkk_uploaderInstance_new(vkk_engine_t* engine)
+static vkk_xferInstance_t*
+vkk_xferInstance_new(vkk_engine_t* engine)
 {
 	ASSERT(engine);
 
-	vkk_uploaderInstance_t* self;
-	self = (vkk_uploaderInstance_t*)
-	       CALLOC(1, sizeof(vkk_uploaderInstance_t));
+	vkk_xferInstance_t* self;
+	self = (vkk_xferInstance_t*)
+	       CALLOC(1, sizeof(vkk_xferInstance_t));
 	if(self == NULL)
 	{
 		LOGE("CALLOC failed");
@@ -173,11 +174,11 @@ vkk_uploaderInstance_new(vkk_engine_t* engine)
 }
 
 static void
-vkk_uploaderInstance_delete(vkk_uploaderInstance_t** _self)
+vkk_xferInstance_delete(vkk_xferInstance_t** _self)
 {
 	ASSERT(_self);
 
-	vkk_uploaderInstance_t* self = *_self;
+	vkk_xferInstance_t* self = *_self;
 	if(self)
 	{
 		vkk_engine_t* engine;
@@ -191,7 +192,7 @@ vkk_uploaderInstance_delete(vkk_uploaderInstance_t** _self)
 }
 
 static void
-vkk_imageUploader_lock(vkk_imageUploader_t* self)
+vkk_xferManager_lock(vkk_xferManager_t* self)
 {
 	ASSERT(self);
 
@@ -200,7 +201,7 @@ vkk_imageUploader_lock(vkk_imageUploader_t* self)
 }
 
 static void
-vkk_imageUploader_unlock(vkk_imageUploader_t* self)
+vkk_xferManager_unlock(vkk_xferManager_t* self)
 {
 	ASSERT(self);
 
@@ -209,9 +210,9 @@ vkk_imageUploader_unlock(vkk_imageUploader_t* self)
 }
 
 static int
-vkk_imageUploader_uploadF16(vkk_imageUploader_t* self,
-                            vkk_image_t* image,
-                            const void* pixels)
+vkk_xferManager_writeImageF16(vkk_xferManager_t* self,
+                              vkk_image_t* image,
+                              const void* pixels)
 {
 	ASSERT(self);
 	ASSERT(image);
@@ -231,30 +232,30 @@ vkk_imageUploader_uploadF16(vkk_imageUploader_t* self,
 		return 0;
 	}
 
-	vkk_imageUploader_lock(self);
+	vkk_xferManager_lock(self);
 
-	vkk_uploaderInstance_t* ui;
+	vkk_xferInstance_t* xi;
 	cc_listIter_t* iter = cc_list_head(self->instance_list);
 	if(iter)
 	{
-		ui = (vkk_uploaderInstance_t*)
+		xi = (vkk_xferInstance_t*)
 		     cc_list_remove(self->instance_list, &iter);
 	}
 	else
 	{
-		ui = vkk_uploaderInstance_new(engine);
-		if(ui == NULL)
+		xi = vkk_xferInstance_new(engine);
+		if(xi == NULL)
 		{
-			vkk_imageUploader_unlock(self);
-			goto fail_ui;
+			vkk_xferManager_unlock(self);
+			goto fail_xi;
 		}
 	}
-	vkk_imageUploader_unlock(self);
+	vkk_xferManager_unlock(self);
 
 	VkCommandBuffer cb;
-	cb = vkk_commandBuffer_get(ui->cmd_buffer, 0);
+	cb = vkk_commandBuffer_get(xi->cmd_buffer, 0);
 
-	vkResetFences(engine->device, 1, &ui->fence);
+	vkResetFences(engine->device, 1, &xi->fence);
 	if(vkResetCommandBuffer(cb, 0) != VK_SUCCESS)
 	{
 		LOGE("vkResetCommandBuffer failed");
@@ -394,26 +395,26 @@ vkk_imageUploader_uploadF16(vkk_imageUploader_t* self,
 	// submit the commands
 	if(vkk_engine_queueSubmit(engine, VKK_QUEUE_BACKGROUND, &cb,
 	                          0, NULL, NULL, NULL,
-	                          ui->fence) == 0)
+	                          xi->fence) == 0)
 	{
 		goto fail_submit;
 	}
 
 	uint64_t timeout = UINT64_MAX;
-	if(vkWaitForFences(engine->device, 1, &ui->fence, VK_TRUE,
+	if(vkWaitForFences(engine->device, 1, &xi->fence, VK_TRUE,
 	                   timeout) != VK_SUCCESS)
 	{
 		LOGW("vkWaitForFences failed");
 		vkk_engine_queueWaitIdle(engine, VKK_QUEUE_BACKGROUND);
 	}
 
-	vkk_imageUploader_lock(self);
+	vkk_xferManager_lock(self);
 	if(cc_list_append(self->instance_list, NULL,
-	                  (const void*) ui) == NULL)
+	                  (const void*) xi) == NULL)
 	{
-		vkk_uploaderInstance_delete(&ui);
+		vkk_xferInstance_delete(&xi);
 	}
-	vkk_imageUploader_unlock(self);
+	vkk_xferManager_unlock(self);
 
 	vkk_image_delete(&tmp);
 
@@ -424,8 +425,8 @@ vkk_imageUploader_uploadF16(vkk_imageUploader_t* self,
 	fail_submit:
 	fail_begin_cb:
 	fail_cb:
-		vkk_uploaderInstance_delete(&ui);
-	fail_ui:
+		vkk_xferInstance_delete(&xi);
+	fail_xi:
 		vkk_image_delete(&tmp);
 	return 0;
 }
@@ -434,14 +435,14 @@ vkk_imageUploader_uploadF16(vkk_imageUploader_t* self,
 * public                                                   *
 ***********************************************************/
 
-vkk_imageUploader_t*
-vkk_imageUploader_new(vkk_engine_t* engine)
+vkk_xferManager_t*
+vkk_xferManager_new(vkk_engine_t* engine)
 {
 	ASSERT(engine);
 
-	vkk_imageUploader_t* self;
-	self = (vkk_imageUploader_t*)
-	       CALLOC(1, sizeof(vkk_imageUploader_t));
+	vkk_xferManager_t* self;
+	self = (vkk_xferManager_t*)
+	       CALLOC(1, sizeof(vkk_xferManager_t));
 	if(self == NULL)
 	{
 		LOGE("CALLOC failed");
@@ -481,20 +482,20 @@ vkk_imageUploader_new(vkk_engine_t* engine)
 	return NULL;
 }
 
-void vkk_imageUploader_delete(vkk_imageUploader_t** _self)
+void vkk_xferManager_delete(vkk_xferManager_t** _self)
 {
 	ASSERT(_self);
 
-	vkk_imageUploader_t* self = *_self;
+	vkk_xferManager_t* self = *_self;
 	if(self)
 	{
 		cc_listIter_t* iter = cc_list_head(self->instance_list);
 		while(iter)
 		{
-			vkk_uploaderInstance_t* ui;
-			ui = (vkk_uploaderInstance_t*)
+			vkk_xferInstance_t* xi;
+			xi = (vkk_xferInstance_t*)
 			     cc_list_remove(self->instance_list, &iter);
-			vkk_uploaderInstance_delete(&ui);
+			vkk_xferInstance_delete(&xi);
 		}
 
 		cc_multimapIter_t  miterator;
@@ -502,10 +503,10 @@ void vkk_imageUploader_delete(vkk_imageUploader_t** _self)
 		miter = cc_multimap_head(self->buffer_map, &miterator);
 		while(miter)
 		{
-			vkk_uploaderBuffer_t* ub;
-			ub = (vkk_uploaderBuffer_t*)
+			vkk_xferBuffer_t* xb;
+			xb = (vkk_xferBuffer_t*)
 			     cc_multimap_remove(self->buffer_map, &miter);
-			vkk_uploaderBuffer_delete(&ub);
+			vkk_xferBuffer_delete(&xb);
 		}
 
 		pthread_mutex_destroy(&self->mutex);
@@ -516,18 +517,18 @@ void vkk_imageUploader_delete(vkk_imageUploader_t** _self)
 	}
 }
 
-void vkk_imageUploader_shutdown(vkk_imageUploader_t* self)
+void vkk_xferManager_shutdown(vkk_xferManager_t* self)
 {
 	ASSERT(self);
 
-	vkk_imageUploader_lock(self);
+	vkk_xferManager_lock(self);
 	self->shutdown = 1;
-	vkk_imageUploader_unlock(self);
+	vkk_xferManager_unlock(self);
 }
 
-int vkk_imageUploader_upload(vkk_imageUploader_t* self,
-                             vkk_image_t* image,
-                             const void* pixels)
+int vkk_xferManager_readImage(vkk_xferManager_t* self,
+                              vkk_image_t* image,
+                              void* pixels)
 {
 	ASSERT(self);
 	ASSERT(image);
@@ -535,10 +536,198 @@ int vkk_imageUploader_upload(vkk_imageUploader_t* self,
 
 	vkk_engine_t* engine = self->engine;
 
-	vkk_imageUploader_lock(self);
+	vkk_xferManager_lock(self);
 	if(self->shutdown)
 	{
-		vkk_imageUploader_unlock(self);
+		vkk_xferManager_unlock(self);
+		return 0;
+	}
+
+	uint32_t width;
+	uint32_t height;
+	uint32_t depth;
+	size_t   size;
+	size = vkk_image_size(image, &width, &height, &depth);
+
+	vkk_xferBuffer_t*  xb;
+	cc_multimapIter_t  miterator;
+	cc_multimapIter_t* miter = &miterator;
+	if(cc_multimap_findp(self->buffer_map, miter,
+	                     sizeof(size_t), &size))
+	{
+		xb = (vkk_xferBuffer_t*)
+		     cc_multimap_remove(self->buffer_map, &miter);
+	}
+	else
+	{
+		xb = vkk_xferBuffer_new(engine, size, NULL);
+		if(xb == NULL)
+		{
+			vkk_xferManager_unlock(self);
+			return 0;
+		}
+	}
+
+	vkk_xferInstance_t* xi;
+	cc_listIter_t* iter = cc_list_head(self->instance_list);
+	if(iter)
+	{
+		xi = (vkk_xferInstance_t*)
+		     cc_list_remove(self->instance_list, &iter);
+	}
+	else
+	{
+		xi = vkk_xferInstance_new(engine);
+		if(xi == NULL)
+		{
+			vkk_xferManager_unlock(self);
+			goto fail_xi;
+		}
+	}
+	vkk_xferManager_unlock(self);
+
+	VkCommandBuffer cb;
+	cb = vkk_commandBuffer_get(xi->cmd_buffer, 0);
+
+	vkResetFences(engine->device, 1, &xi->fence);
+	if(vkResetCommandBuffer(cb, 0) != VK_SUCCESS)
+	{
+		LOGE("vkResetCommandBuffer failed");
+		goto fail_cb;
+	}
+
+	// begin the transfer commands
+	VkCommandBufferInheritanceInfo cbi_info =
+	{
+		.sType                = VK_STRUCTURE_TYPE_COMMAND_BUFFER_INHERITANCE_INFO,
+		.pNext                = NULL,
+		.renderPass           = VK_NULL_HANDLE,
+		.subpass              = 0,
+		.framebuffer          = VK_NULL_HANDLE,
+		.occlusionQueryEnable = VK_FALSE,
+		.queryFlags           = 0,
+		.pipelineStatistics   = 0
+	};
+
+	VkCommandBufferBeginInfo cb_info =
+	{
+		.sType            = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,
+		.pNext            = NULL,
+		.flags            = 0,
+		.pInheritanceInfo = &cbi_info
+	};
+
+	if(vkBeginCommandBuffer(cb, &cb_info) != VK_SUCCESS)
+	{
+		LOGE("vkBeginCommandBuffer failed");
+		goto fail_begin_cb;
+	}
+
+	// transition the image to copy the image to the
+	// transfer buffer
+	vkk_util_imageMemoryBarrier(image, cb,
+	                            VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
+	                            0, image->mip_levels);
+
+	// copy the image to the transfer buffer
+	VkBufferImageCopy bic =
+	{
+		.bufferOffset      = 0,
+		.bufferRowLength   = 0,
+		.bufferImageHeight = 0,
+		.imageSubresource  =
+		{
+			.aspectMask     = VK_IMAGE_ASPECT_COLOR_BIT,
+			.mipLevel       = 0,
+			.baseArrayLayer = 0,
+			.layerCount     = 1
+		},
+		.imageOffset =
+		{
+			.x = 0,
+			.y = 0,
+			.z = 0,
+		},
+		.imageExtent =
+		{
+			.width  = image->width,
+			.height = image->height,
+			.depth  = image->depth
+		}
+	};
+
+	vkCmdCopyImageToBuffer(cb, image->image,
+	                       VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+	                       xb->buffer, 1, &bic);
+
+	// transition the image from transfer mode to shading mode
+	vkk_util_imageMemoryBarrier(image, cb,
+	                            VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+	                            0, image->mip_levels);
+
+	// end the transfer commands
+	vkEndCommandBuffer(cb);
+
+	// submit the commands
+	if(vkk_engine_queueSubmit(engine, VKK_QUEUE_BACKGROUND, &cb,
+	                          0, NULL, NULL, NULL,
+	                          xi->fence) == 0)
+	{
+		goto fail_submit;
+	}
+
+	uint64_t timeout = UINT64_MAX;
+	if(vkWaitForFences(engine->device, 1, &xi->fence, VK_TRUE,
+	                   timeout) != VK_SUCCESS)
+	{
+		LOGW("vkWaitForFences failed");
+		vkk_engine_queueWaitIdle(engine, VKK_QUEUE_BACKGROUND);
+	}
+
+	vkk_memoryManager_read(engine->mm, xb->memory,
+	                       size, 0, pixels);
+
+	vkk_xferManager_lock(self);
+	if(cc_list_append(self->instance_list, NULL,
+	                  (const void*) xi) == NULL)
+	{
+		vkk_xferInstance_delete(&xi);
+	}
+
+	if(cc_multimap_addp(self->buffer_map, (const void*) xb,
+	                    sizeof(size_t), &size) == 0)
+	{
+		vkk_xferBuffer_delete(&xb);
+	}
+	vkk_xferManager_unlock(self);
+
+	// success
+	return 1;
+
+	// failure
+	fail_submit:
+	fail_begin_cb:
+	fail_cb:
+		vkk_xferInstance_delete(&xi);
+	fail_xi:
+		vkk_xferBuffer_delete(&xb);
+	return 0;
+}
+
+int vkk_xferManager_writeImage(vkk_xferManager_t* self,
+                               vkk_image_t* image,
+                               const void* pixels)
+{
+	ASSERT(self);
+	ASSERT(image);
+	ASSERT(pixels);
+
+	vkk_engine_t* engine = self->engine;
+
+	vkk_xferManager_lock(self);
+	if(self->shutdown)
+	{
+		vkk_xferManager_unlock(self);
 		return 0;
 	}
 
@@ -551,8 +740,9 @@ int vkk_imageUploader_upload(vkk_imageUploader_t* self,
 	   (image->format == VKK_IMAGE_FORMAT_RGF16)   ||
 	   (image->format == VKK_IMAGE_FORMAT_RF16))
 	{
-		vkk_imageUploader_unlock(self);
-		return vkk_imageUploader_uploadF16(self, image, pixels);
+		vkk_xferManager_unlock(self);
+		return vkk_xferManager_writeImageF16(self, image,
+		                                     pixels);
 	}
 
 	uint32_t width;
@@ -561,49 +751,49 @@ int vkk_imageUploader_upload(vkk_imageUploader_t* self,
 	size_t   size;
 	size = vkk_image_size(image, &width, &height, &depth);
 
-	vkk_uploaderBuffer_t* ub;
-	cc_multimapIter_t     miterator;
-	cc_multimapIter_t*    miter = &miterator;
+	vkk_xferBuffer_t*  xb;
+	cc_multimapIter_t  miterator;
+	cc_multimapIter_t* miter = &miterator;
 	if(cc_multimap_findp(self->buffer_map, miter,
 	                     sizeof(size_t), &size))
 	{
-		ub = (vkk_uploaderBuffer_t*)
+		xb = (vkk_xferBuffer_t*)
 		     cc_multimap_remove(self->buffer_map, &miter);
-		vkk_memoryManager_write(engine->mm, ub->memory,
+		vkk_memoryManager_write(engine->mm, xb->memory,
 		                        size, 0, pixels);
 	}
 	else
 	{
-		ub = vkk_uploaderBuffer_new(engine, size, pixels);
-		if(ub == NULL)
+		xb = vkk_xferBuffer_new(engine, size, pixels);
+		if(xb == NULL)
 		{
-			vkk_imageUploader_unlock(self);
+			vkk_xferManager_unlock(self);
 			return 0;
 		}
 	}
 
-	vkk_uploaderInstance_t* ui;
+	vkk_xferInstance_t* xi;
 	cc_listIter_t* iter = cc_list_head(self->instance_list);
 	if(iter)
 	{
-		ui = (vkk_uploaderInstance_t*)
+		xi = (vkk_xferInstance_t*)
 		     cc_list_remove(self->instance_list, &iter);
 	}
 	else
 	{
-		ui = vkk_uploaderInstance_new(engine);
-		if(ui == NULL)
+		xi = vkk_xferInstance_new(engine);
+		if(xi == NULL)
 		{
-			vkk_imageUploader_unlock(self);
-			goto fail_ui;
+			vkk_xferManager_unlock(self);
+			goto fail_xi;
 		}
 	}
-	vkk_imageUploader_unlock(self);
+	vkk_xferManager_unlock(self);
 
 	VkCommandBuffer cb;
-	cb = vkk_commandBuffer_get(ui->cmd_buffer, 0);
+	cb = vkk_commandBuffer_get(xi->cmd_buffer, 0);
 
-	vkResetFences(engine->device, 1, &ui->fence);
+	vkResetFences(engine->device, 1, &xi->fence);
 	if(vkResetCommandBuffer(cb, 0) != VK_SUCCESS)
 	{
 		LOGE("vkResetCommandBuffer failed");
@@ -670,7 +860,7 @@ int vkk_imageUploader_upload(vkk_imageUploader_t* self,
 		}
 	};
 
-	vkCmdCopyBufferToImage(cb, ub->buffer, image->image,
+	vkCmdCopyBufferToImage(cb, xb->buffer, image->image,
 	                       VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
 	                       1, &bic);
 
@@ -692,32 +882,32 @@ int vkk_imageUploader_upload(vkk_imageUploader_t* self,
 	// submit the commands
 	if(vkk_engine_queueSubmit(engine, VKK_QUEUE_BACKGROUND, &cb,
 	                          0, NULL, NULL, NULL,
-	                          ui->fence) == 0)
+	                          xi->fence) == 0)
 	{
 		goto fail_submit;
 	}
 
 	uint64_t timeout = UINT64_MAX;
-	if(vkWaitForFences(engine->device, 1, &ui->fence, VK_TRUE,
+	if(vkWaitForFences(engine->device, 1, &xi->fence, VK_TRUE,
 	                   timeout) != VK_SUCCESS)
 	{
 		LOGW("vkWaitForFences failed");
 		vkk_engine_queueWaitIdle(engine, VKK_QUEUE_BACKGROUND);
 	}
 
-	vkk_imageUploader_lock(self);
+	vkk_xferManager_lock(self);
 	if(cc_list_append(self->instance_list, NULL,
-	                  (const void*) ui) == NULL)
+	                  (const void*) xi) == NULL)
 	{
-		vkk_uploaderInstance_delete(&ui);
+		vkk_xferInstance_delete(&xi);
 	}
 
-	if(cc_multimap_addp(self->buffer_map, (const void*) ub,
+	if(cc_multimap_addp(self->buffer_map, (const void*) xb,
 	                    sizeof(size_t), &size) == 0)
 	{
-		vkk_uploaderBuffer_delete(&ub);
+		vkk_xferBuffer_delete(&xb);
 	}
-	vkk_imageUploader_unlock(self);
+	vkk_xferManager_unlock(self);
 
 	// success
 	return 1;
@@ -726,8 +916,8 @@ int vkk_imageUploader_upload(vkk_imageUploader_t* self,
 	fail_submit:
 	fail_begin_cb:
 	fail_cb:
-		vkk_uploaderInstance_delete(&ui);
-	fail_ui:
-		vkk_uploaderBuffer_delete(&ub);
+		vkk_xferInstance_delete(&xi);
+	fail_xi:
+		vkk_xferBuffer_delete(&xb);
 	return 0;
 }

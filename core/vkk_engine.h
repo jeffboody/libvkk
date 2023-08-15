@@ -40,8 +40,7 @@
 #include "../../libcc/cc_list.h"
 #include "../../libcc/cc_map.h"
 #include "../vkk.h"
-#include "vkk_imageDownloader.h"
-#include "vkk_imageUploader.h"
+#include "vkk_xferManager.h"
 #include "vkk_memory.h"
 
 #define VKK_DESCRIPTOR_POOL_SIZE 64
@@ -148,11 +147,8 @@ typedef struct vkk_engine_s
 	// memory manager
 	vkk_memoryManager_t* mm;
 
-	// image uploader
-	vkk_imageUploader_t* img_uploader;
-
-	// image downloader
-	vkk_imageDownloader_t* img_downloader;
+	// transfer manager
+	vkk_xferManager_t* xfer;
 
 	VkPipelineCache pipeline_cache;
 
@@ -191,12 +187,6 @@ int           vkk_engine_recreate(vkk_engine_t* self);
 void             vkk_engine_mipmapImage(vkk_engine_t* self,
                                         vkk_image_t* image,
                                         VkCommandBuffer cb);
-int              vkk_engine_uploadImage(vkk_engine_t* self,
-                                        vkk_image_t* image,
-                                        const void* pixels);
-int              vkk_engine_downloadImage(vkk_engine_t* self,
-                                          vkk_image_t* image,
-                                          void* pixels);
 uint32_t         vkk_engine_imageCount(vkk_engine_t* self);
 int              vkk_engine_queueSubmit(vkk_engine_t* self,
                                         uint32_t queue,

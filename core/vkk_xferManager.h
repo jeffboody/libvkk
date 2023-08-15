@@ -21,8 +21,8 @@
  *
  */
 
-#ifndef vkk_imageUploader_H
-#define vkk_imageUploader_H
+#ifndef vkk_xferManager_H
+#define vkk_xferManager_H
 
 #include <pthread.h>
 #ifdef ANDROID
@@ -35,25 +35,28 @@
 #include "../../libcc/cc_multimap.h"
 #include "../vkk.h"
 
-typedef struct vkk_imageUploader_s
+typedef struct vkk_xferManager_s
 {
 	vkk_engine_t* engine;
 
 	int shutdown;
 
-	// uploader instance
+	// xfer instance
 	cc_list_t* instance_list;
 
-	// multimap from size to uploaderBuffers
+	// multimap from size to xfer buffer
 	cc_multimap_t* buffer_map;
 
 	pthread_mutex_t mutex;
-} vkk_imageUploader_t;
+} vkk_xferManager_t;
 
-vkk_imageUploader_t* vkk_imageUploader_new(vkk_engine_t* engine);
-void                 vkk_imageUploader_delete(vkk_imageUploader_t** _self);
-void                 vkk_imageUploader_shutdown(vkk_imageUploader_t* self);
-int                  vkk_imageUploader_upload(vkk_imageUploader_t* self,
+vkk_xferManager_t* vkk_xferManager_new(vkk_engine_t* engine);
+void               vkk_xferManager_delete(vkk_xferManager_t** _self);
+void               vkk_xferManager_shutdown(vkk_xferManager_t* self);
+int                vkk_xferManager_readImage(vkk_xferManager_t* self,
+                                             vkk_image_t* image,
+                                             void* pixels);
+int                vkk_xferManager_writeImage(vkk_xferManager_t* self,
                                               vkk_image_t* image,
                                               const void* pixels);
 

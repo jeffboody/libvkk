@@ -9,10 +9,8 @@ CLASSES = \
 	core/vkk_engine              \
 	core/vkk_graphicsPipeline    \
 	core/vkk_image               \
-	core/vkk_imageDownloader     \
 	core/vkk_imageRenderer       \
 	core/vkk_imageStreamRenderer \
-	core/vkk_imageUploader       \
 	core/vkk_memory              \
 	core/vkk_memoryChunk         \
 	core/vkk_memoryManager       \
@@ -22,7 +20,8 @@ CLASSES = \
 	core/vkk_secondaryRenderer   \
 	core/vkk_uniformSet          \
 	core/vkk_uniformSetFactory   \
-	core/vkk_util
+	core/vkk_util                \
+	core/vkk_xferManager
 ifeq ($(VKK_USE_UI),1)
 	CLASSES += \
 		ui/vkk_uiActionBar    \
