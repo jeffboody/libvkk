@@ -578,6 +578,8 @@ void vkk_memoryManager_write(vkk_memoryManager_t* self,
 	vkk_memoryManager_t* mm     = pool->mm;
 	vkk_engine_t*        engine = mm->engine;
 
+	vkk_memoryManager_chunkLock(self, chunk);
+
 	if((size == 0) || (size + offset > pool->stride))
 	{
 		LOGE("invalid size=%" PRIu64 ", offset=%" PRIu64
