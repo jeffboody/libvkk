@@ -166,13 +166,18 @@ vkk_image_t* vkk_image_new(vkk_engine_t* engine,
 	VkImageUsageFlags     usage;
 	VkImageAspectFlags    aspectMask;
 	VkSampleCountFlagBits samples;
-	int                   local_memory;
-	usage        = VK_IMAGE_USAGE_TRANSFER_SRC_BIT |
-	               VK_IMAGE_USAGE_TRANSFER_DST_BIT |
-	               VK_IMAGE_USAGE_SAMPLED_BIT;
-	aspectMask   = VK_IMAGE_ASPECT_COLOR_BIT;
-	samples      = VK_SAMPLE_COUNT_1_BIT;
-	local_memory = 0;
+	usage      = VK_IMAGE_USAGE_TRANSFER_SRC_BIT |
+	             VK_IMAGE_USAGE_TRANSFER_DST_BIT |
+	             VK_IMAGE_USAGE_SAMPLED_BIT;
+	aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+	samples    = VK_SAMPLE_COUNT_1_BIT;
+
+	#ifdef ANDROID
+	int local_memory = 0;
+	#else
+	int local_memory = 1;
+	#endif
+
 	if(format == VKK_IMAGE_FORMAT_DEPTH1X)
 	{
 		usage        = VK_IMAGE_USAGE_TRANSIENT_ATTACHMENT_BIT |

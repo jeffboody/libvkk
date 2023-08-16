@@ -478,12 +478,12 @@ void             vkk_compute_delete(vkk_compute_t** _self);
 int              vkk_compute_begin(vkk_compute_t* self);
 void             vkk_compute_end(vkk_compute_t* self);
 vkk_updateMode_e vkk_compute_updateMode(vkk_compute_t* self);
-void             vkk_compute_writeBuffer(vkk_compute_t* self,
+int              vkk_compute_writeBuffer(vkk_compute_t* self,
                                          vkk_buffer_t* buffer,
                                          size_t size,
                                          size_t offset,
-                                         const void* buf);
-void             vkk_compute_readBuffer(vkk_compute_t* self,
+                                         const void* data);
+int              vkk_compute_readBuffer(vkk_compute_t* self,
                                         vkk_buffer_t* buffer,
                                         size_t size,
                                         size_t offset,

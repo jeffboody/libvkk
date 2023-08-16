@@ -206,18 +206,29 @@ The
 [VKK UI](https://github.com/jeffboody/libvkk/tree/master/ui) modules
 are also built on top of the VKK Core library.
 
+Neural Network
+--------------
+
+The
+[Neural Network](https://github.com/jeffboody/libnn) library
+(libnn) optimizes performance with VKK compute.
+
 XSQ Test
 --------
 
-See xsq-test for a compute example which demonstrates how to
-square an array of numbers.
+See
+[xsq-test](https://github.com/jeffboody/libvkk/tree/master/core/xsq-test)
+for a compute example which demonstrates how to square an
+array of numbers.
 
 XSUM Test
 ---------
 
-See xsum-test for a compute example which demonstrates how
-compute the sum of an array of numbers using shared memory
-for intermediate results.
+See
+[xsum-test](https://github.com/jeffboody/libvkk/tree/master/core/xsum-test)
+for a compute example which demonstrates how compute the sum
+of an array of numbers using shared memory for intermediate
+results.
 
 License
 =======

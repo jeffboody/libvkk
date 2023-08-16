@@ -401,6 +401,7 @@ void vkk_memoryManager_shutdown(vkk_memoryManager_t* self)
 vkk_memory_t*
 vkk_memoryManager_allocBuffer(vkk_memoryManager_t* self,
                               VkBuffer buffer,
+                              int local_memory,
                               size_t size,
                               const void* buf)
 {
@@ -415,6 +416,10 @@ vkk_memoryManager_allocBuffer(vkk_memoryManager_t* self,
 
 	VkFlags mp_flags = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT |
 	                   VK_MEMORY_PROPERTY_HOST_COHERENT_BIT;
+	if(local_memory)
+	{
+		mp_flags = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
+	}
 
 	vkk_memory_t* memory;
 	memory = vkk_memoryManager_alloc(self, &mr, mp_flags);

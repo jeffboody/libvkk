@@ -56,6 +56,7 @@ void                 vkk_memoryManager_delete(vkk_memoryManager_t** _self);
 void                 vkk_memoryManager_shutdown(vkk_memoryManager_t* self);
 vkk_memory_t*        vkk_memoryManager_allocBuffer(vkk_memoryManager_t* self,
                                                    VkBuffer buffer,
+                                                   int local_memory,
                                                    size_t size,
                                                    const void* buf);
 vkk_memory_t*        vkk_memoryManager_allocImage(vkk_memoryManager_t* self,

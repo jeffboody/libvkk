@@ -44,9 +44,25 @@ vkk_buffer_new(vkk_engine_t* engine,
 	// buf may be NULL
 	ASSERT(engine);
 
-	uint32_t count;
-	count = (update == VKK_UPDATE_MODE_ASYNCHRONOUS) ?
-	        vkk_engine_imageCount(engine) : 1;
+	uint32_t count = 1;
+	if(update == VKK_UPDATE_MODE_ASYNCHRONOUS)
+	{
+		if(usage == VKK_BUFFER_USAGE_STORAGE)
+		{
+			LOGE("invalid");
+			return NULL;
+		}
+
+		count = vkk_engine_imageCount(engine);
+	}
+
+	int local_memory = 0;
+	#ifndef ANDROID
+	if(usage == VKK_BUFFER_USAGE_STORAGE)
+	{
+		local_memory = 1;
+	}
+	#endif
 
 	VkBufferUsageFlags usage_map[VKK_BUFFER_USAGE_COUNT] =
 	{
@@ -97,6 +113,15 @@ vkk_buffer_new(vkk_engine_t* engine,
 		.pQueueFamilyIndices   = &engine->queue_family_index
 	};
 
+	#ifndef ANDROID
+	if(usage == VKK_BUFFER_USAGE_STORAGE)
+	{
+		b_info.usage = VK_BUFFER_USAGE_STORAGE_BUFFER_BIT |
+		               VK_BUFFER_USAGE_TRANSFER_DST_BIT   |
+		               VK_BUFFER_USAGE_TRANSFER_SRC_BIT;
+	}
+	#endif
+
 	int i;
 	for(i = 0; i < count; ++i)
 	{
@@ -107,13 +132,44 @@ vkk_buffer_new(vkk_engine_t* engine,
 			goto fail_create_buffer;
 		}
 
-		self->memory[i] = vkk_memoryManager_allocBuffer(engine->mm,
-		                                                self->buffer[i],
-		                                                size,
-		                                                buf);
-		if(self->memory[i] == NULL)
+		#ifndef ANDROID
+		if(usage == VKK_BUFFER_USAGE_STORAGE)
 		{
-			goto fail_alloc;
+			self->memory[i] = vkk_memoryManager_allocBuffer(engine->mm,
+			                                                self->buffer[i],
+			                                                local_memory,
+			                                                size,
+			                                                NULL);
+			if(self->memory[i] == NULL)
+			{
+				goto fail_alloc;
+			}
+
+			// optionally blit buf
+			if(buf)
+			{
+				// cast away const since blitStorage is read/write
+				if(vkk_xferManager_blitStorage(engine->xfer,
+				                               VKK_XFER_MODE_WRITE,
+				                               self, size, 0,
+				                               (void*) buf) == 0)
+				{
+					goto fail_blit;
+				}
+			}
+		}
+		else
+		#endif
+		{
+			self->memory[i] = vkk_memoryManager_allocBuffer(engine->mm,
+			                                                self->buffer[i],
+			                                                local_memory,
+			                                                size,
+			                                                buf);
+			if(self->memory[i] == NULL)
+			{
+				goto fail_alloc;
+			}
 		}
 	}
 
@@ -121,6 +177,7 @@ vkk_buffer_new(vkk_engine_t* engine,
 	return self;
 
 	// failure
+	fail_blit:
 	fail_alloc:
 	fail_create_buffer:
 	{

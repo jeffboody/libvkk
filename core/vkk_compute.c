@@ -92,14 +92,25 @@ vkk_compute_updateUniformBufferRef(vkk_compute_t* self,
 #ifdef ASSERT_DEBUG
 
 static int
-vkk_compute_checkUpdateType(vkk_buffer_t* buffer)
+vkk_compute_checkUpdate(vkk_buffer_t* buffer)
 {
 	ASSERT(buffer);
+
+	if((buffer->usage == VKK_BUFFER_USAGE_UNIFORM) ||
+	   (buffer->usage == VKK_BUFFER_USAGE_STORAGE))
+	{
+		// ok
+	}
+	else
+	{
+		LOGW("invalid usage=%i", (int) buffer->usage);
+		return 0;
+	}
 
 	// update must be SYNCHRONOUS
 	if(buffer->update != VKK_UPDATE_MODE_SYNCHRONOUS)
 	{
-		LOGW("invalid update=%i, buffer->update");
+		LOGW("invalid update=%i", buffer->update);
 		return 0;
 	}
 
@@ -291,40 +302,66 @@ vkk_compute_updateMode(vkk_compute_t* self)
 	return VKK_UPDATE_MODE_SYNCHRONOUS;
 }
 
-void
+int
 vkk_compute_writeBuffer(vkk_compute_t* self,
                         vkk_buffer_t* buffer,
                         size_t size,
                         size_t offset,
-                        const void* buf)
+                        const void* data)
 {
 	ASSERT(self);
-	ASSERT(buffer);
-	ASSERT(buf);
-	ASSERT(vkk_compute_checkUpdateType(buffer));
+	ASSERT(vkk_compute_checkUpdate(buffer));
+	ASSERT(data);
 
 	vkk_engine_t* engine = self->engine;
 
-	uint32_t idx = 0;
-	vkk_memoryManager_write(engine->mm, buffer->memory[idx],
-	                        size, offset, buf);
+	#ifndef ANDROID
+	if(buffer->usage == VKK_BUFFER_USAGE_STORAGE)
+	{
+		// cast away const since blitStorage is read/write
+		return vkk_xferManager_blitStorage(engine->xfer,
+		                                   VKK_XFER_MODE_WRITE,
+		                                   buffer, size, offset,
+		                                   (void*) data);
+	}
+	else
+	#endif
+	{
+		uint32_t idx = 0;
+		vkk_memoryManager_write(engine->mm, buffer->memory[idx],
+		                        size, offset, data);
+		return 1;
+	}
 }
 
-void
+int
 vkk_compute_readBuffer(vkk_compute_t* self,
                        vkk_buffer_t* buffer,
                        size_t size, size_t offset,
                        void* data)
 {
 	ASSERT(self);
-	ASSERT(buffer);
-	ASSERT(buffer->update == VKK_UPDATE_MODE_SYNCHRONOUS);
+	ASSERT(vkk_compute_checkUpdate(buffer));
+	ASSERT(data);
 
 	vkk_engine_t* engine = self->engine;
 
-	uint32_t idx = 0;
-	vkk_memoryManager_read(engine->mm, buffer->memory[idx],
-	                       size, offset, data);
+	#ifndef ANDROID
+	if(buffer->usage == VKK_BUFFER_USAGE_STORAGE)
+	{
+		return vkk_xferManager_blitStorage(engine->xfer,
+		                                   VKK_XFER_MODE_READ,
+		                                   buffer, size, offset,
+		                                   data);
+	}
+	else
+	#endif
+	{
+		uint32_t idx = 0;
+		vkk_memoryManager_read(engine->mm, buffer->memory[idx],
+		                       size, offset, data);
+		return 1;
+	}
 }
 
 void

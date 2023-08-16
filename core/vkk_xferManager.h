@@ -35,6 +35,12 @@
 #include "../../libcc/cc_multimap.h"
 #include "../vkk.h"
 
+typedef enum
+{
+	VKK_XFER_MODE_READ  = 0,
+	VKK_XFER_MODE_WRITE = 1,
+} vkk_xferMode_e;
+
 typedef struct vkk_xferManager_s
 {
 	vkk_engine_t* engine;
@@ -53,6 +59,12 @@ typedef struct vkk_xferManager_s
 vkk_xferManager_t* vkk_xferManager_new(vkk_engine_t* engine);
 void               vkk_xferManager_delete(vkk_xferManager_t** _self);
 void               vkk_xferManager_shutdown(vkk_xferManager_t* self);
+int                vkk_xferManager_blitStorage(vkk_xferManager_t* self,
+                                               vkk_xferMode_e mode,
+                                               vkk_buffer_t* buffer,
+                                               size_t size,
+                                               size_t offset,
+                                               void* data);
 int                vkk_xferManager_readImage(vkk_xferManager_t* self,
                                              vkk_image_t* image,
                                              void* pixels);

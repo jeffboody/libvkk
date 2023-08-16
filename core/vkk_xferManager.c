@@ -26,6 +26,7 @@
 #define LOG_TAG "vkk"
 #include "../../libcc/cc_log.h"
 #include "../../libcc/cc_memory.h"
+#include "vkk_buffer.h"
 #include "vkk_commandBuffer.h"
 #include "vkk_engine.h"
 #include "vkk_xferManager.h"
@@ -55,9 +56,9 @@ typedef struct vkk_xferInstance_s
 
 static vkk_xferBuffer_t*
 vkk_xferBuffer_new(vkk_engine_t* engine, size_t size,
-                   const void* pixels)
+                   const void* data)
 {
-	// pixels may be NULL
+	// data may be NULL
 	ASSERT(engine);
 
 	vkk_xferBuffer_t* self;
@@ -92,7 +93,7 @@ vkk_xferBuffer_new(vkk_engine_t* engine, size_t size,
 
 	self->memory = vkk_memoryManager_allocBuffer(engine->mm,
 	                                             self->buffer,
-	                                             size, pixels);
+	                                             0, size, data);
 	if(self->memory == NULL)
 	{
 		goto fail_alloc;
@@ -524,6 +525,192 @@ void vkk_xferManager_shutdown(vkk_xferManager_t* self)
 	vkk_xferManager_lock(self);
 	self->shutdown = 1;
 	vkk_xferManager_unlock(self);
+}
+
+int vkk_xferManager_blitStorage(vkk_xferManager_t* self,
+                                vkk_xferMode_e mode,
+                                vkk_buffer_t* buffer,
+                                size_t size,
+                                size_t offset,
+                                void* data)
+{
+	ASSERT(self);
+	ASSERT(buffer);
+	ASSERT((size + offset) <= vkk_buffer_size(buffer));
+	ASSERT(data);
+
+	vkk_engine_t* engine = self->engine;
+
+	vkk_xferManager_lock(self);
+	if(self->shutdown)
+	{
+		vkk_xferManager_unlock(self);
+		return 0;
+	}
+
+	vkk_xferBuffer_t*  xb;
+	cc_multimapIter_t  miterator;
+	cc_multimapIter_t* miter = &miterator;
+	if(cc_multimap_findp(self->buffer_map, miter,
+	                     sizeof(size_t), &size))
+	{
+		xb = (vkk_xferBuffer_t*)
+		     cc_multimap_remove(self->buffer_map, &miter);
+		if(mode == VKK_XFER_MODE_WRITE)
+		{
+			vkk_memoryManager_write(engine->mm, xb->memory,
+			                        size, 0, data);
+		}
+	}
+	else
+	{
+		if(mode == VKK_XFER_MODE_WRITE)
+		{
+			xb = vkk_xferBuffer_new(engine, size, data);
+		}
+		else
+		{
+			xb = vkk_xferBuffer_new(engine, size, NULL);
+		}
+
+		if(xb == NULL)
+		{
+			vkk_xferManager_unlock(self);
+			return 0;
+		}
+	}
+
+	vkk_xferInstance_t* xi;
+	cc_listIter_t* iter = cc_list_head(self->instance_list);
+	if(iter)
+	{
+		xi = (vkk_xferInstance_t*)
+		     cc_list_remove(self->instance_list, &iter);
+	}
+	else
+	{
+		xi = vkk_xferInstance_new(engine);
+		if(xi == NULL)
+		{
+			vkk_xferManager_unlock(self);
+			goto fail_xi;
+		}
+	}
+	vkk_xferManager_unlock(self);
+
+	VkCommandBuffer cb;
+	cb = vkk_commandBuffer_get(xi->cmd_buffer, 0);
+
+	vkResetFences(engine->device, 1, &xi->fence);
+	if(vkResetCommandBuffer(cb, 0) != VK_SUCCESS)
+	{
+		LOGE("vkResetCommandBuffer failed");
+		goto fail_cb;
+	}
+
+	// begin the transfer commands
+	VkCommandBufferInheritanceInfo cbi_info =
+	{
+		.sType                = VK_STRUCTURE_TYPE_COMMAND_BUFFER_INHERITANCE_INFO,
+		.pNext                = NULL,
+		.renderPass           = VK_NULL_HANDLE,
+		.subpass              = 0,
+		.framebuffer          = VK_NULL_HANDLE,
+		.occlusionQueryEnable = VK_FALSE,
+		.queryFlags           = 0,
+		.pipelineStatistics   = 0
+	};
+
+	VkCommandBufferBeginInfo cb_info =
+	{
+		.sType            = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,
+		.pNext            = NULL,
+		.flags            = 0,
+		.pInheritanceInfo = &cbi_info
+	};
+
+	if(vkBeginCommandBuffer(cb, &cb_info) != VK_SUCCESS)
+	{
+		LOGE("vkBeginCommandBuffer failed");
+		goto fail_begin_cb;
+	}
+
+	int idx = 0;
+	if(mode == VKK_XFER_MODE_WRITE)
+	{
+		VkBufferCopy bc =
+		{
+			.srcOffset = 0,
+			.dstOffset = offset,
+			.size      = size,
+		};
+
+		vkCmdCopyBuffer(cb, xb->buffer,
+		                buffer->buffer[idx], 1, &bc);
+	}
+	else
+	{
+		VkBufferCopy bc =
+		{
+			.srcOffset = offset,
+			.dstOffset = 0,
+			.size      = size,
+		};
+
+		vkCmdCopyBuffer(cb, buffer->buffer[idx],
+		                xb->buffer, 1, &bc);
+	}
+
+	// end the transfer commands
+	vkEndCommandBuffer(cb);
+
+	// submit the commands
+	if(vkk_engine_queueSubmit(engine, VKK_QUEUE_BACKGROUND, &cb,
+	                          0, NULL, NULL, NULL,
+	                          xi->fence) == 0)
+	{
+		goto fail_submit;
+	}
+
+	uint64_t timeout = UINT64_MAX;
+	if(vkWaitForFences(engine->device, 1, &xi->fence, VK_TRUE,
+	                   timeout) != VK_SUCCESS)
+	{
+		LOGW("vkWaitForFences failed");
+		vkk_engine_queueWaitIdle(engine, VKK_QUEUE_BACKGROUND);
+	}
+
+	if(mode == VKK_XFER_MODE_READ)
+	{
+		vkk_memoryManager_read(engine->mm, xb->memory,
+		                       size, 0, data);
+	}
+
+	vkk_xferManager_lock(self);
+	if(cc_list_append(self->instance_list, NULL,
+	                  (const void*) xi) == NULL)
+	{
+		vkk_xferInstance_delete(&xi);
+	}
+
+	if(cc_multimap_addp(self->buffer_map, (const void*) xb,
+	                    sizeof(size_t), &size) == 0)
+	{
+		vkk_xferBuffer_delete(&xb);
+	}
+	vkk_xferManager_unlock(self);
+
+	// success
+	return 1;
+
+	// failure
+	fail_submit:
+	fail_begin_cb:
+	fail_cb:
+		vkk_xferInstance_delete(&xi);
+	fail_xi:
+		vkk_xferBuffer_delete(&xb);
+	return 0;
 }
 
 int vkk_xferManager_readImage(vkk_xferManager_t* self,

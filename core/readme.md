@@ -204,7 +204,7 @@ Buffers
 -------
 
 Buffers objects may be created by the app for uniform
-buffers, vertex buffers and index arrays.
+buffers, vertex buffers, index arrays and storage buffers.
 
 The vkk\_buffer\_new() and vkk\_buffer\_delete() functions
 can be used to create/destroy buffer objects.
@@ -230,6 +230,11 @@ can be used to create/destroy buffer objects.
 	                             size_t size,
 	                             const void* buf);
 	void vkk_buffer_delete(vkk_buffer_t** _self);
+
+Storage buffers are only supported for compute shaders and
+may not use the asynchronous update mode. Storage buffers
+may also be updated by compute shaders regardless of the
+update mode.
 
 The vkk\_buffer\_size() function allows the app to query the
 buffer size.
@@ -782,8 +787,12 @@ underlying geometry may be changing shape.
 
 The vkk\_renderer\_updateUniformSetRefs() function may be
 used to update uniform set references. When a uniform set
-includes such a reference then they must be updated once
-and only once per frame.
+includes such a reference then they must be updated as
+follows. When the update mode is synchronous then the
+uniform set references must be updated once before first use
+and up to once per frame afterwards. When the update mode is
+asynchronous then the uniform set references must be updated
+once per frame.
 
 	typedef enum
 	{
@@ -975,25 +984,25 @@ updatable when its update mode is not
 VKK\_UPDATE\_MODE\_STATIC. Synchronous uniform/storage
 buffers may be updated once and only once per frame.
 
-	void vkk_compute_writeBuffer(vkk_compute_t* self,
-	                             vkk_buffer_t* buffer,
-	                             size_t size,
-	                             size_t offset,
-	                             const void* buf);
+	int vkk_compute_writeBuffer(vkk_compute_t* self,
+	                            vkk_buffer_t* buffer,
+	                            size_t size,
+	                            size_t offset,
+	                            const void* data);
 
 The vkk\_compute\_readBuffer() function may be used to read
 results after ending a compute operation.
 
-	void vkk_compute_readBuffer(vkk_compute_t* self,
-	                            vkk_buffer_t* buffer,
-	                            size_t size,
-	                            size_t offset,
-	                            void* data);
+	int vkk_compute_readBuffer(vkk_compute_t* self,
+	                           vkk_buffer_t* buffer,
+	                           size_t size,
+	                           size_t offset,
+	                           void* data);
 
 The vkk\_compute\_updateUniformSetRefs() function may be
 used to update uniform set references. When a uniform set
 includes such a reference then they must be updated once
-and only once per frame.
+before first use and up to once per frame afterwards.
 
 	typedef enum
 	{

@@ -229,11 +229,17 @@ vkk_renderer_getUpdaterType(vkk_renderer_t* self)
 }
 
 static int
-vkk_renderer_checkUpdateType(vkk_renderer_t* self,
-                             vkk_buffer_t* buffer)
+vkk_renderer_checkUpdate(vkk_renderer_t* self,
+                         vkk_buffer_t* buffer)
 {
 	ASSERT(self);
 	ASSERT(buffer);
+
+	if(buffer->usage == VKK_BUFFER_USAGE_STORAGE)
+	{
+		LOGW("invalid");
+		return 0;
+	}
 
 	// 1) update may NOT be STATIC
 	// 2) update may NOT be ASYNCHRONOUS if the updater
@@ -821,11 +827,10 @@ void vkk_renderer_updateBuffer(vkk_renderer_t* self,
                                const void* buf)
 {
 	ASSERT(self);
-	ASSERT(buffer);
+	ASSERT(self->mode == VKK_RENDERER_MODE_DRAW);
+	ASSERT(vkk_renderer_checkUpdate(self, buffer));
 	ASSERT((size > 0) && (size <= buffer->size));
 	ASSERT(buf);
-	ASSERT(self->mode == VKK_RENDERER_MODE_DRAW);
-	ASSERT(vkk_renderer_checkUpdateType(self, buffer));
 
 	vkk_engine_t* engine = self->engine;
 
@@ -1070,8 +1075,10 @@ void vkk_renderer_draw(vkk_renderer_t* self,
                        vkk_buffer_t** vertex_buffers)
 {
 	ASSERT(self);
-	ASSERT(vertex_buffer_count <= 16);
 	ASSERT(self->mode == VKK_RENDERER_MODE_DRAW);
+	ASSERT(vertex_buffer_count >  0);
+	ASSERT(vertex_buffer_count <= 16);
+	ASSERT(vertex_buffers);
 
 	VkDeviceSize vb_offsets[16] =
 	{
@@ -1087,6 +1094,8 @@ void vkk_renderer_draw(vkk_renderer_t* self,
 	VkBuffer vb_buffers[16];
 	for(i = 0; i < vertex_buffer_count; ++i)
 	{
+		ASSERT(vertex_buffers[i]->usage == VKK_BUFFER_USAGE_VERTEX);
+
 		idx = vertex_buffers[i]->vbib_index;
 		vb_buffers[i] = vertex_buffers[i]->buffer[idx];
 	}
@@ -1115,8 +1124,13 @@ void vkk_renderer_drawIndexed(vkk_renderer_t* self,
                               vkk_buffer_t** vertex_buffers)
 {
 	ASSERT(self);
-	ASSERT(vertex_buffer_count <= 16);
 	ASSERT(self->mode == VKK_RENDERER_MODE_DRAW);
+	ASSERT(index_count > 0);
+	ASSERT(vertex_buffer_count > 0);
+	ASSERT(vertex_buffer_count <= 16);
+	ASSERT(index_buffer);
+	ASSERT(index_buffer->usage == VKK_BUFFER_USAGE_INDEX);
+	ASSERT(vertex_buffers);
 
 	VkDeviceSize vb_offsets[16] =
 	{
@@ -1132,6 +1146,8 @@ void vkk_renderer_drawIndexed(vkk_renderer_t* self,
 	VkBuffer vb_buffers[16];
 	for(i = 0; i < vertex_buffer_count; ++i)
 	{
+		ASSERT(vertex_buffers[i]->usage == VKK_BUFFER_USAGE_VERTEX);
+
 		idx = vertex_buffers[i]->vbib_index;
 		vb_buffers[i] = vertex_buffers[i]->buffer[idx];
 	}
