@@ -154,7 +154,7 @@ vkk_buffer_new(vkk_engine_t* engine,
 				                               self, size, 0,
 				                               (void*) buf) == 0)
 				{
-					goto fail_blit;
+					goto fail_alloc;
 				}
 			}
 		}
@@ -177,7 +177,6 @@ vkk_buffer_new(vkk_engine_t* engine,
 	return self;
 
 	// failure
-	fail_blit:
 	fail_alloc:
 	fail_create_buffer:
 	{
