@@ -52,7 +52,6 @@ add_library(native_app_glue
             STATIC
 
             # Source
-            ${ANDROID_NDK}/sources/third_party/vulkan/src/common/vulkan_wrapper.cpp
             ${ANDROID_NDK}/sources/android/native_app_glue/android_native_app_glue.c)
 
 # Submodule library
@@ -90,8 +89,7 @@ target_include_directories(vkk
                            PRIVATE
 
                            # PATH
-                           ${ANDROID_NDK}/sources/third_party/vulkan/src/include/vulkan
-                           ${ANDROID_NDK}/sources/third_party/vulkan/src/common
+                           ${ANDROID_NDK}/sources/third_party/vulkan/src/include
                            ${ANDROID_NDK}/sources/android/native_app_glue)
 
 # Linking
@@ -107,4 +105,5 @@ target_link_libraries(vkk
                       # NDK libraries
                       log
                       native_app_glue
+                      vulkan
                       z)

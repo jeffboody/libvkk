@@ -24,11 +24,7 @@
 #ifndef vkk_buffer_H
 #define vkk_buffer_H
 
-#ifdef ANDROID
-	#include <vulkan_wrapper.h>
-#else
-	#include <vulkan/vulkan.h>
-#endif
+#include <vulkan/vulkan.h>
 
 #include "../vkk.h"
 #include "vkk_memory.h"

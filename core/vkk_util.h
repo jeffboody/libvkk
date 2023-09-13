@@ -24,11 +24,7 @@
 #ifndef vkk_util_H
 #define vkk_util_H
 
-#ifdef ANDROID
-	#include <vulkan_wrapper.h>
-#else
-	#include <vulkan/vulkan.h>
-#endif
+#include <vulkan/vulkan.h>
 
 void     vkk_util_imageMemoryBarrier(vkk_image_t* image,
                                      VkCommandBuffer cb,

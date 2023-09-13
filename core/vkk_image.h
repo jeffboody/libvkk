@@ -24,11 +24,7 @@
 #ifndef vkk_image_H
 #define vkk_image_H
 
-#ifdef ANDROID
-	#include <vulkan_wrapper.h>
-#else
-	#include <vulkan/vulkan.h>
-#endif
+#include <vulkan/vulkan.h>
 
 #include "../vkk.h"
 

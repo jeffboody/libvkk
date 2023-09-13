@@ -25,12 +25,12 @@
 #include <android/window.h>
 #include <sys/stat.h>
 #include <sys/types.h>
+#include <vulkan/vulkan.h>
 #include <jni.h>
 #include <math.h>
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
-#include <vulkan_wrapper.h>
 
 #define LOG_TAG "vkk"
 #include "../../libbfs/bfs_util.h"
@@ -1286,12 +1286,6 @@ void android_main(struct android_app* app)
 		goto fail_bfs;
 	}
 
-	if(InitVulkan() == 0)
-	{
-		LOGE("InitVulkan failed");
-		goto fail_vulkan;
-	}
-
 	// workaround for android_native_app_glue which does not
 	// implement APP_CMD_CONTENT_RECT_CHANGED
 	app->activity->callbacks->onContentRectChanged = onContentRectChanged;
@@ -1446,7 +1440,6 @@ void android_main(struct android_app* app)
 	// failure
 	fail_platform:
 	fail_update_resource:
-	fail_vulkan:
 		bfs_util_shutdown();
 	fail_bfs:
 		check_memory();

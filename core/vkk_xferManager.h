@@ -25,11 +25,7 @@
 #define vkk_xferManager_H
 
 #include <pthread.h>
-#ifdef ANDROID
-	#include <vulkan_wrapper.h>
-#else
-	#include <vulkan/vulkan.h>
-#endif
+#include <vulkan/vulkan.h>
 
 #include "../../libcc/cc_list.h"
 #include "../../libcc/cc_multimap.h"

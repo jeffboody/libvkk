@@ -24,11 +24,7 @@
 #ifndef vkk_uniformSet_H
 #define vkk_uniformSet_H
 
-#ifdef ANDROID
-	#include <vulkan_wrapper.h>
-#else
-	#include <vulkan/vulkan.h>
-#endif
+#include <vulkan/vulkan.h>
 
 #include "../vkk.h"
 
