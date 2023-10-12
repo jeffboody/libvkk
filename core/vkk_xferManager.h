@@ -61,6 +61,12 @@ int                vkk_xferManager_blitStorage(vkk_xferManager_t* self,
                                                size_t size,
                                                size_t offset,
                                                void* data);
+int                vkk_xferManager_blitStorage2(vkk_xferManager_t* self,
+                                                vkk_buffer_t* src_buffer,
+                                                vkk_buffer_t* dst_buffer,
+                                                size_t size,
+                                                size_t src_offset,
+                                                size_t dst_offset);
 int                vkk_xferManager_readImage(vkk_xferManager_t* self,
                                              vkk_image_t* image,
                                              void* pixels);

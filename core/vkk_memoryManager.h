@@ -74,6 +74,12 @@ void                 vkk_memoryManager_read(vkk_memoryManager_t* self,
                                             size_t size,
                                             size_t offset,
                                             void* buf);
+void                 vkk_memoryManager_blit(vkk_memoryManager_t* self,
+                                            vkk_memory_t* src_memory,
+                                            vkk_memory_t* dst_memory,
+                                            size_t size,
+                                            size_t src_offset,
+                                            size_t dst_offset);
 void                 vkk_memoryManager_meminfo(vkk_memoryManager_t* self,
                                                size_t* _count_chunks,
                                                size_t* _count_slots,

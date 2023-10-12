@@ -364,6 +364,48 @@ vkk_compute_readBuffer(vkk_compute_t* self,
 	}
 }
 
+int
+vkk_compute_blitBuffer(vkk_compute_t* self,
+                       vkk_buffer_t* src,
+                       vkk_buffer_t* dst,
+                       size_t size,
+                       size_t src_offset,
+                       size_t dst_offset)
+{
+	ASSERT(self);
+	ASSERT(src);
+	ASSERT(dst);
+
+	vkk_engine_t* engine = self->engine;
+
+	#ifndef ANDROID
+	// on Linux both buffers must be either
+	// storage or non-storage usage
+	if((src->usage == VKK_BUFFER_USAGE_STORAGE) &&
+	   (dst->usage == VKK_BUFFER_USAGE_STORAGE))
+	{
+		return vkk_xferManager_blitStorage2(engine->xfer,
+		                                    src, dst, size,
+		                                    src_offset,
+		                                    dst_offset);
+	}
+	else if((src->usage == VKK_BUFFER_USAGE_STORAGE) ||
+	        (dst->usage == VKK_BUFFER_USAGE_STORAGE))
+	{
+		LOGE("unsupported");
+		return 0;
+	}
+	else
+	#endif
+	{
+		uint32_t idx = 0;
+		vkk_memoryManager_blit(engine->mm,
+		                       src->memory[idx], dst->memory[idx],
+		                       size, src_offset, dst_offset);
+		return 1;
+	}
+}
+
 void
 vkk_compute_updateUniformSetRefs(vkk_compute_t* self,
                                  vkk_uniformSet_t* us,

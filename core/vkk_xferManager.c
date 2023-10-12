@@ -713,6 +713,131 @@ int vkk_xferManager_blitStorage(vkk_xferManager_t* self,
 	return 0;
 }
 
+int vkk_xferManager_blitStorage2(vkk_xferManager_t* self,
+                                 vkk_buffer_t* src_buffer,
+                                 vkk_buffer_t* dst_buffer,
+                                 size_t size,
+                                 size_t src_offset,
+                                 size_t dst_offset)
+{
+	ASSERT(self);
+	ASSERT(src_buffer);
+	ASSERT(dst_buffer);
+
+	vkk_engine_t* engine = self->engine;
+
+	vkk_xferManager_lock(self);
+	if(self->shutdown)
+	{
+		vkk_xferManager_unlock(self);
+		return 0;
+	}
+
+	vkk_xferInstance_t* xi;
+	cc_listIter_t* iter = cc_list_head(self->instance_list);
+	if(iter)
+	{
+		xi = (vkk_xferInstance_t*)
+		     cc_list_remove(self->instance_list, &iter);
+	}
+	else
+	{
+		xi = vkk_xferInstance_new(engine);
+		if(xi == NULL)
+		{
+			vkk_xferManager_unlock(self);
+			return 0;
+		}
+	}
+	vkk_xferManager_unlock(self);
+
+	VkCommandBuffer cb;
+	cb = vkk_commandBuffer_get(xi->cmd_buffer, 0);
+
+	vkResetFences(engine->device, 1, &xi->fence);
+	if(vkResetCommandBuffer(cb, 0) != VK_SUCCESS)
+	{
+		LOGE("vkResetCommandBuffer failed");
+		goto fail_cb;
+	}
+
+	// begin the transfer commands
+	VkCommandBufferInheritanceInfo cbi_info =
+	{
+		.sType                = VK_STRUCTURE_TYPE_COMMAND_BUFFER_INHERITANCE_INFO,
+		.pNext                = NULL,
+		.renderPass           = VK_NULL_HANDLE,
+		.subpass              = 0,
+		.framebuffer          = VK_NULL_HANDLE,
+		.occlusionQueryEnable = VK_FALSE,
+		.queryFlags           = 0,
+		.pipelineStatistics   = 0
+	};
+
+	VkCommandBufferBeginInfo cb_info =
+	{
+		.sType            = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,
+		.pNext            = NULL,
+		.flags            = 0,
+		.pInheritanceInfo = &cbi_info
+	};
+
+	if(vkBeginCommandBuffer(cb, &cb_info) != VK_SUCCESS)
+	{
+		LOGE("vkBeginCommandBuffer failed");
+		goto fail_begin_cb;
+	}
+
+	int idx = 0;
+
+	VkBufferCopy bc =
+	{
+		.srcOffset = src_offset,
+		.dstOffset = dst_offset,
+		.size      = size,
+	};
+
+	vkCmdCopyBuffer(cb, src_buffer->buffer[idx],
+	                dst_buffer->buffer[idx], 1, &bc);
+
+	// end the transfer commands
+	vkEndCommandBuffer(cb);
+
+	// submit the commands
+	if(vkk_engine_queueSubmit(engine, VKK_QUEUE_BACKGROUND, &cb,
+	                          0, NULL, NULL, NULL,
+	                          xi->fence) == 0)
+	{
+		goto fail_submit;
+	}
+
+	uint64_t timeout = UINT64_MAX;
+	if(vkWaitForFences(engine->device, 1, &xi->fence, VK_TRUE,
+	                   timeout) != VK_SUCCESS)
+	{
+		LOGW("vkWaitForFences failed");
+		vkk_engine_queueWaitIdle(engine, VKK_QUEUE_BACKGROUND);
+	}
+
+	vkk_xferManager_lock(self);
+	if(cc_list_append(self->instance_list, NULL,
+	                  (const void*) xi) == NULL)
+	{
+		vkk_xferInstance_delete(&xi);
+	}
+	vkk_xferManager_unlock(self);
+
+	// success
+	return 1;
+
+	// failure
+	fail_submit:
+	fail_begin_cb:
+	fail_cb:
+		vkk_xferInstance_delete(&xi);
+	return 0;
+}
+
 int vkk_xferManager_readImage(vkk_xferManager_t* self,
                               vkk_image_t* image,
                               void* pixels)

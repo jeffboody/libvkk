@@ -653,6 +653,92 @@ void vkk_memoryManager_read(vkk_memoryManager_t* self,
 	vkk_memoryManager_chunkUnlock(self, chunk);
 }
 
+void vkk_memoryManager_blit(vkk_memoryManager_t* self,
+                            vkk_memory_t* src_memory,
+                            vkk_memory_t* dst_memory,
+                            size_t size,
+                            size_t src_offset,
+                            size_t dst_offset)
+{
+	ASSERT(self);
+	ASSERT(src_memory);
+	ASSERT(dst_memory);
+
+	vkk_memoryChunk_t*   src_chunk = src_memory->chunk;
+	vkk_memoryChunk_t*   dst_chunk = dst_memory->chunk;
+	vkk_memoryPool_t*    src_pool  = src_chunk->pool;
+	vkk_memoryPool_t*    dst_pool  = dst_chunk->pool;
+	vkk_memoryManager_t* mm        = src_pool->mm;
+	vkk_engine_t*        engine    = mm->engine;
+
+	vkk_memoryManager_chunkLock(self, src_chunk);
+	if(src_chunk != dst_chunk)
+	{
+		vkk_memoryManager_chunkLock(self, dst_chunk);
+	}
+
+	if((size == 0) ||
+	   (size + src_offset > src_pool->stride) ||
+	   (size + dst_offset > dst_pool->stride))
+	{
+		LOGE("invalid size=%" PRIu64 ", src_offset=%" PRIu64
+		     ", stride=%" PRIu64,
+		     (uint64_t) size, (uint64_t) src_offset,
+		     (uint64_t) src_pool->stride);
+		LOGE("invalid size=%" PRIu64 ", dst_offset=%" PRIu64
+		     ", stride=%" PRIu64,
+		     (uint64_t) size, (uint64_t) dst_offset,
+		     (uint64_t) dst_pool->stride);
+
+		goto fail_size;
+	}
+
+	void* src_data;
+	if(vkMapMemory(engine->device, src_chunk->memory,
+	               src_memory->offset + src_offset, size, 0,
+	               &src_data) != VK_SUCCESS)
+	{
+		LOGW("vkMapMemory failed");
+		goto fail_src;
+	}
+
+	void* dst_data;
+	if(vkMapMemory(engine->device, dst_chunk->memory,
+	               dst_memory->offset + dst_offset, size, 0,
+	               &dst_data) != VK_SUCCESS)
+	{
+		LOGW("vkMapMemory failed");
+		goto fail_dst;
+	}
+
+	memcpy(dst_data, src_data, size);
+
+	vkUnmapMemory(engine->device, dst_chunk->memory);
+	vkUnmapMemory(engine->device, src_chunk->memory);
+
+	if(src_chunk != dst_chunk)
+	{
+		vkk_memoryManager_chunkUnlock(self, dst_chunk);
+	}
+	vkk_memoryManager_chunkUnlock(self, src_chunk);
+
+	// success
+	return;
+
+	// failure
+	fail_dst:
+		vkUnmapMemory(engine->device, src_chunk->memory);
+	fail_src:
+	fail_size:
+	{
+		if(src_chunk != dst_chunk)
+		{
+			vkk_memoryManager_chunkUnlock(self, dst_chunk);
+		}
+		vkk_memoryManager_chunkUnlock(self, src_chunk);
+	}
+}
+
 void vkk_memoryManager_meminfo(vkk_memoryManager_t* self,
                                size_t* _count_chunks,
                                size_t* _count_slots,

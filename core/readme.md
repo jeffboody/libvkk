@@ -999,6 +999,17 @@ results after ending a compute operation.
 	                           size_t offset,
 	                           void* data);
 
+The vkk\_compute\_blitBuffer() function may be used to blit
+data between buffers. On Linux, buffers with storage usage
+may not be blit between buffers with non-storage usage.
+
+	int vkk_compute_blitBuffer(vkk_compute_t* self,
+	                           vkk_buffer_t* src,
+	                           vkk_buffer_t* dst,
+	                           size_t size,
+	                           size_t src_offset,
+	                           size_t dst_offset);
+
 The vkk\_compute\_updateUniformSetRefs() function may be
 used to update uniform set references. When a uniform set
 includes such a reference then they must be updated once
