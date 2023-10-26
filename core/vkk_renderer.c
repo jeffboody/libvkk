@@ -597,6 +597,12 @@ int vkk_renderer_beginDefault(vkk_renderer_t* self,
 
 	vkk_engine_t* engine = self->engine;
 
+	if(self->active)
+	{
+		LOGE("invalid");
+		return 0;
+	}
+
 	vkk_engine_rendererLock(engine);
 	if(engine->shutdown)
 	{
@@ -614,7 +620,9 @@ int vkk_renderer_beginDefault(vkk_renderer_t* self,
 
 	vkk_renderer_updatefps(self);
 
-	self->mode = mode;
+	self->mode   = mode;
+	self->active = 1;
+
 	return 1;
 }
 
@@ -629,6 +637,12 @@ int vkk_renderer_beginImage(vkk_renderer_t* self,
 	ASSERT(self->type == VKK_RENDERER_TYPE_IMAGE);
 
 	vkk_engine_t* engine = self->engine;
+
+	if(self->active)
+	{
+		LOGE("invalid");
+		return 0;
+	}
 
 	vkk_engine_rendererLock(engine);
 	if(engine->shutdown)
@@ -647,7 +661,9 @@ int vkk_renderer_beginImage(vkk_renderer_t* self,
 
 	vkk_renderer_updatefps(self);
 
-	self->mode = mode;
+	self->mode   = mode;
+	self->active = 1;
+
 	return 1;
 }
 
@@ -661,6 +677,12 @@ vkk_renderer_beginImageStream(vkk_renderer_t* self,
 	ASSERT(self->type == VKK_RENDERER_TYPE_IMAGESTREAM);
 
 	vkk_engine_t* engine = self->engine;
+
+	if(self->active)
+	{
+		LOGE("invalid");
+		return NULL;
+	}
 
 	vkk_engine_rendererLock(engine);
 	if(engine->shutdown)
@@ -681,7 +703,9 @@ vkk_renderer_beginImageStream(vkk_renderer_t* self,
 
 	vkk_renderer_updatefps(self);
 
-	self->mode = mode;
+	self->mode   = mode;
+	self->active = 1;
+
 	return image;
 }
 
@@ -691,6 +715,12 @@ int vkk_renderer_beginSecondary(vkk_renderer_t* self)
 	ASSERT(self->type == VKK_RENDERER_TYPE_SECONDARY);
 
 	vkk_engine_t* engine = self->engine;
+
+	if(self->active)
+	{
+		LOGE("invalid");
+		return 0;
+	}
 
 	vkk_engine_rendererLock(engine);
 	if(engine->shutdown)
@@ -708,6 +738,8 @@ int vkk_renderer_beginSecondary(vkk_renderer_t* self)
 
 	vkk_renderer_updatefps(self);
 
+	self->active = 1;
+
 	return 1;
 }
 
@@ -715,26 +747,36 @@ void vkk_renderer_end(vkk_renderer_t* self)
 {
 	ASSERT(self);
 
-	if(self->type == VKK_RENDERER_TYPE_DEFAULT)
+	if(self->active)
 	{
-		vkk_defaultRenderer_end(self);
-	}
-	else if(self->type == VKK_RENDERER_TYPE_IMAGE)
-	{
-		vkk_imageRenderer_end(self);
-	}
-	else if(self->type == VKK_RENDERER_TYPE_IMAGESTREAM)
-	{
-		vkk_imageStreamRenderer_end(self);
-	}
-	else if(self->type == VKK_RENDERER_TYPE_SECONDARY)
-	{
-		vkk_secondaryRenderer_end(self);
-	}
+		if(self->type == VKK_RENDERER_TYPE_DEFAULT)
+		{
+			vkk_defaultRenderer_end(self);
+		}
+		else if(self->type == VKK_RENDERER_TYPE_IMAGE)
+		{
+			vkk_imageRenderer_end(self);
+		}
+		else if(self->type == VKK_RENDERER_TYPE_IMAGESTREAM)
+		{
+			vkk_imageStreamRenderer_end(self);
+		}
+		else if(self->type == VKK_RENDERER_TYPE_SECONDARY)
+		{
+			vkk_secondaryRenderer_end(self);
+		}
 
-	self->gp = NULL;
+		self->gp         = NULL;
+		self->wait_count = 0;
+		self->active     = 0;
+	}
+}
 
-	self->wait_count = 0;
+int vkk_renderer_active(vkk_renderer_t* self)
+{
+	ASSERT(self);
+
+	return self->active;
 }
 
 int vkk_renderer_fps(vkk_renderer_t* self)

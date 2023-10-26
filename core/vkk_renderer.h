@@ -42,6 +42,8 @@ typedef struct vkk_renderer_s
 {
 	vkk_engine_t* engine;
 
+	int active;
+
 	vkk_rendererType_e type;
 	vkk_rendererMode_e mode;
 

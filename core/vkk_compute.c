@@ -233,6 +233,12 @@ int vkk_compute_begin(vkk_compute_t* self)
 
 	vkk_engine_t* engine = self->engine;
 
+	if(self->active)
+	{
+		LOGE("invalid");
+		return 0;
+	}
+
 	vkk_engine_rendererLock(engine);
 	if(engine->shutdown)
 	{
@@ -261,6 +267,8 @@ int vkk_compute_begin(vkk_compute_t* self)
 		return 0;
 	}
 
+	self->active = 1;
+
 	return 1;
 }
 
@@ -270,28 +278,39 @@ void vkk_compute_end(vkk_compute_t* self)
 
 	vkk_engine_t* engine = self->engine;
 
-	VkCommandBuffer cb;
-	cb = vkk_commandBuffer_get(self->cmd_buffer, 0);
-	vkEndCommandBuffer(cb);
-
-	vkResetFences(engine->device, 1, &self->fence);
-	if(vkk_engine_queueSubmit(engine, VKK_QUEUE_BACKGROUND,
-	                          &cb, 0, NULL, NULL, NULL,
-	                          self->fence) == 0)
+	if(self->active)
 	{
-		LOGW("vkk_engine_queueSubmit failed");
-		return;
-	}
+		VkCommandBuffer cb;
+		cb = vkk_commandBuffer_get(self->cmd_buffer, 0);
+		vkEndCommandBuffer(cb);
 
-	uint64_t timeout = UINT64_MAX;
-	if(vkWaitForFences(engine->device, 1, &self->fence, VK_TRUE,
-	                   timeout) != VK_SUCCESS)
-	{
-		LOGW("vkWaitForFences failed");
-		vkk_engine_queueWaitIdle(engine, VKK_QUEUE_BACKGROUND);
-	}
+		vkResetFences(engine->device, 1, &self->fence);
+		if(vkk_engine_queueSubmit(engine, VKK_QUEUE_BACKGROUND,
+		                          &cb, 0, NULL, NULL, NULL,
+		                          self->fence) == 0)
+		{
+			LOGW("vkk_engine_queueSubmit failed");
+			return;
+		}
 
-	self->cp = NULL;
+		uint64_t timeout = UINT64_MAX;
+		if(vkWaitForFences(engine->device, 1, &self->fence, VK_TRUE,
+		                   timeout) != VK_SUCCESS)
+		{
+			LOGW("vkWaitForFences failed");
+			vkk_engine_queueWaitIdle(engine, VKK_QUEUE_BACKGROUND);
+		}
+
+		self->cp     = NULL;
+		self->active = 0;
+	}
+}
+
+int vkk_compute_active(vkk_compute_t* self)
+{
+	ASSERT(self);
+
+	return self->active;
 }
 
 vkk_updateMode_e

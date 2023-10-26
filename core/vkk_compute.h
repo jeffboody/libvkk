@@ -33,6 +33,8 @@ typedef struct vkk_compute_s
 {
 	vkk_engine_t* engine;
 
+	int active;
+
 	// currently bound compute pipeline
 	vkk_computePipeline_t* cp;
 

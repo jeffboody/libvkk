@@ -732,6 +732,12 @@ sets when update is set to VKK\_UPDATE\_MODE\_STATIC or
 when one renderer is the consumer/executor of the other.
 Renderers may not share graphics pipelines.
 
+The vkk\_renderer\_active() function may be called to
+determine if rendering has been started with a begin()
+function.
+
+	int vkk_renderer_active(vkk_renderer_t* self);
+
 The vkk\_renderer\_fps() function allows the app to
 query the average fps for the renderer.
 
@@ -963,6 +969,12 @@ results are only valid once the end() function completes.
 
 	int  vkk_compute_begin(vkk_compute_t* self);
 	void vkk_compute_end(vkk_compute_t* self);
+
+The vkk\_compute\_active() function may be called to
+determine if computing has been started with a begin()
+function.
+
+	int vkk_compute_active(vkk_compute_t* self);
 
 The vkk\_compute\_updateMode() function may be used to
 query the non-static update mode supported by the compute.

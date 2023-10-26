@@ -421,6 +421,7 @@ vkk_image_t*     vkk_renderer_beginImageStream(vkk_renderer_t* self,
                                                float* clear_color);
 int              vkk_renderer_beginSecondary(vkk_renderer_t* self);
 void             vkk_renderer_end(vkk_renderer_t* self);
+int              vkk_renderer_active(vkk_renderer_t* self);
 int              vkk_renderer_fps(vkk_renderer_t* self);
 void             vkk_renderer_surfaceSize(vkk_renderer_t* self,
                                           uint32_t* _width,
@@ -477,6 +478,7 @@ vkk_compute_t*   vkk_compute_new(vkk_engine_t* engine);
 void             vkk_compute_delete(vkk_compute_t** _self);
 int              vkk_compute_begin(vkk_compute_t* self);
 void             vkk_compute_end(vkk_compute_t* self);
+int              vkk_compute_active(vkk_compute_t* self);
 vkk_updateMode_e vkk_compute_updateMode(vkk_compute_t* self);
 int              vkk_compute_writeBuffer(vkk_compute_t* self,
                                          vkk_buffer_t* buffer,
