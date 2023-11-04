@@ -654,16 +654,18 @@ following functions.
 	vkk_renderer_t* vkk_renderer_newSecondary(vkk_renderer_t* executor);
 	void            vkk_renderer_delete(vkk_renderer_t** _self);
 
-The rendering commands are issued between begin() and
-end() functions. The begin() and end() functions serve as
-synchronization points which greatly simplify the app
-interface when compared with the underlying Vulkan
-implementation. If the begin() function succeeds then the
-app must also call the end() function. When one renderer
-depends on another, its dependent renderer must be started
-first and ended in the reverse order. For example an image
-stream which produces images for the default renderer must
-perform the following sequence.
+The rendering commands are issued between
+vkk\_renderer\_begin() and vkk\_renderer\_end() functions.
+The vkk\_renderer\_begin() and vkk\_renderer\_end()
+functions serve as synchronization points which greatly
+simplify the app interface when compared with the underlying
+Vulkan implementation. If the vkk\_renderer\_begin()
+function succeeds then the app must also call the
+vkk\_renderer\_end() function. When one renderer depends on
+another, its dependent renderer must be started first and
+ended in the reverse order. For example an image stream
+which produces images for the default renderer must perform
+the following sequence.
 
 	vkk_renderer_beginDefault(default, ...);
 	vkk_renderer_beginImageStream(image_stream, ...);
@@ -673,7 +675,7 @@ perform the following sequence.
 
 The drawing commands for the image stream/secondary
 renderers can be issued in a different thread once both
-begin() functions complete.
+begin functions complete.
 
 The rendering mode determines the type of rendering commands
 that may be issued. The VKK\_RENDERER\_MODE\_DRAW rendering
@@ -684,7 +686,7 @@ vkk\_renderer\_execute() and vkk\_renderer\_surfaceSize()
 functions. The vkk\_renderer\_beginImage() function accepts
 an image that will be used as a render target. Note that
 the depth buffer, viewport and scissor are initialized
-automatically by the begin() functions.
+automatically by the begin functions.
 
 	typedef enum
 	{
@@ -708,9 +710,9 @@ automatically by the begin() functions.
 The image renderer images may only be used as a render
 target for a single image renderer at once. Images must
 not be in use by another renderer (e.g. used between the
-renderer begin()/end() functions) prior to beginning image
-rendering with the image. Images must match the size and
-format of the image renderer.
+vkk\_renderer\_begin() vkk\_renderer\_end() functions) prior
+to beginning image rendering with the image. Images must
+match the size and format of the image renderer.
 
 The image stream renderer returns an image reference that
 may be used by the consumer for the current frame even
@@ -733,7 +735,7 @@ when one renderer is the consumer/executor of the other.
 Renderers may not share graphics pipelines.
 
 The vkk\_renderer\_active() function may be called to
-determine if rendering has been started with a begin()
+determine if rendering has been started with a begin
 function.
 
 	int vkk_renderer_active(vkk_renderer_t* self);
@@ -958,20 +960,22 @@ the computations are suitable for vectorization.
 	vkk_compute_t* vkk_compute_new(vkk_engine_t* engine);
 	void           vkk_compute_delete(vkk_compute_t** _self);
 
-The compute commands are issued between begin() and
-end() functions. The begin() and end() functions serve as
-synchronization points which greatly simplify the app
-interface when compared with the underlying Vulkan
-implementation. If the begin() function succeeds then the
-app must also call the end() function. Multiple
-computations may be used simultaneously, however, their
-results are only valid once the end() function completes.
+The compute commands are issued between
+vkk\_compute\_begin() and vkk\_compute\_end() functions. The
+vkk\_compute\_begin() and vkk\_compute\_end() functions
+serve as synchronization points which greatly simplify the
+app interface when compared with the underlying Vulkan
+implementation. If the vkk\_compute\_begin() function
+succeeds then the app must also call the vkk\_compute\_end()
+function. Multiple computations may be used simultaneously,
+however, their results are only valid once the
+vkk\_compute\_end() function completes.
 
 	int  vkk_compute_begin(vkk_compute_t* self);
 	void vkk_compute_end(vkk_compute_t* self);
 
 The vkk\_compute\_active() function may be called to
-determine if computing has been started with a begin()
+determine if computing has been started with a begin
 function.
 
 	int vkk_compute_active(vkk_compute_t* self);
@@ -990,31 +994,23 @@ updates.
 
 	vkk_updateMode_e vkk_compute_updateMode(vkk_compute_t* self);
 
-The vkk\_compute\_writeBuffer() function may be used to
-update uniform/storage buffers. A buffer is considered
-updatable when its update mode is not
-VKK\_UPDATE\_MODE\_STATIC. Synchronous uniform/storage
-buffers may be updated once and only once per frame.
+The compute handle may also be used to read buffers, write
+buffers and blit between storage buffers. However, the
+vkk\_compute\_readBuffer() and vkk\_compute\_blitBuffer()
+functions may only be used outside of vkk\_compute\_begin()
+and vkk\_compute\_end() to ensure the buffers are properly
+synchronized.
 
 	int vkk_compute_writeBuffer(vkk_compute_t* self,
 	                            vkk_buffer_t* buffer,
 	                            size_t size,
 	                            size_t offset,
 	                            const void* data);
-
-The vkk\_compute\_readBuffer() function may be used to read
-results after ending a compute operation.
-
 	int vkk_compute_readBuffer(vkk_compute_t* self,
 	                           vkk_buffer_t* buffer,
 	                           size_t size,
 	                           size_t offset,
 	                           void* data);
-
-The vkk\_compute\_blitBuffer() function may be used to blit
-data between buffers. On Linux, buffers with storage usage
-may not be blit between buffers with non-storage usage.
-
 	int vkk_compute_blitBuffer(vkk_compute_t* self,
 	                           vkk_buffer_t* src,
 	                           vkk_buffer_t* dst,
@@ -1213,13 +1209,13 @@ synchronization rules.
 1.  Objects may be created from any thread
 2.  Objects may be deleted from any thread as long as any
     renderer/compute which used the object has already
-    called end()
+    called vkk\_renderer\_end() or vkk\_compute\_end()
 3.  Objects must not be used by any thread once deleted
 4.  Object deletion is a non-blocking operation
 5.  Images should be created in a worker thread since the
     GPU is required to transfer the pixels and optionally
     mipmap the image
-6.  The rendering begin() function may block while waiting
+6.  The rendering begin function may block while waiting
     for the next framebuffer to become available
 7.  Synchronization across separate renderers/compute
     objects is not required

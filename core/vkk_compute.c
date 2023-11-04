@@ -365,6 +365,12 @@ vkk_compute_readBuffer(vkk_compute_t* self,
 
 	vkk_engine_t* engine = self->engine;
 
+	if(vkk_compute_active(self))
+	{
+		LOGE("invalid");
+		return 0;
+	}
+
 	#ifndef ANDROID
 	if(buffer->usage == VKK_BUFFER_USAGE_STORAGE)
 	{
@@ -396,6 +402,12 @@ vkk_compute_blitBuffer(vkk_compute_t* self,
 	ASSERT(dst);
 
 	vkk_engine_t* engine = self->engine;
+
+	if(vkk_compute_active(self))
+	{
+		LOGE("invalid");
+		return 0;
+	}
 
 	#ifndef ANDROID
 	// on Linux both buffers must be either
