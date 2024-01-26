@@ -34,6 +34,7 @@
 
 typedef enum
 {
+	VKK_VG_LINECAP_NONE    = -1, // disable AA with square cap
 	VKK_VG_LINECAP_SQUARE  = 0,
 	VKK_VG_LINECAP_ROUNDED = 1,
 } vkk_vgLineCap_e;

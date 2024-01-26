@@ -109,9 +109,15 @@ void main()
 	// |eeE                   Eee|
 	// |                         |
 
-	float E     = 0.25;
-	float C     = w2 - E;
-	float T     = w2*t;
+	// check if anti-aliasing is supported
+	float E = 0.25;
+	if(cap < 0.0f)
+	{
+		E = 0.0f;
+	}
+
+	float C = w2 - E;
+	float T = w2*t;
 	if(T > C)
 	{
 		float tc = 1.0 - (T - C)/E;
