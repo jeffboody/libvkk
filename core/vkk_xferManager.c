@@ -527,6 +527,120 @@ void vkk_xferManager_shutdown(vkk_xferManager_t* self)
 	vkk_xferManager_unlock(self);
 }
 
+int vkk_xferManager_clearStorage(vkk_xferManager_t* self,
+                                 vkk_buffer_t* buffer,
+                                 size_t size,
+                                 size_t offset)
+{
+	ASSERT(self);
+	ASSERT(buffer);
+
+	vkk_engine_t* engine = self->engine;
+
+	vkk_xferManager_lock(self);
+	if(self->shutdown)
+	{
+		vkk_xferManager_unlock(self);
+		return 0;
+	}
+
+	vkk_xferInstance_t* xi;
+	cc_listIter_t* iter = cc_list_head(self->instance_list);
+	if(iter)
+	{
+		xi = (vkk_xferInstance_t*)
+		     cc_list_remove(self->instance_list, &iter);
+	}
+	else
+	{
+		xi = vkk_xferInstance_new(engine);
+		if(xi == NULL)
+		{
+			vkk_xferManager_unlock(self);
+			return 0;
+		}
+	}
+	vkk_xferManager_unlock(self);
+
+	VkCommandBuffer cb;
+	cb = vkk_commandBuffer_get(xi->cmd_buffer, 0);
+
+	vkResetFences(engine->device, 1, &xi->fence);
+	if(vkResetCommandBuffer(cb, 0) != VK_SUCCESS)
+	{
+		LOGE("vkResetCommandBuffer failed");
+		goto fail_cb;
+	}
+
+	// begin the transfer commands
+	VkCommandBufferInheritanceInfo cbi_info =
+	{
+		.sType                = VK_STRUCTURE_TYPE_COMMAND_BUFFER_INHERITANCE_INFO,
+		.pNext                = NULL,
+		.renderPass           = VK_NULL_HANDLE,
+		.subpass              = 0,
+		.framebuffer          = VK_NULL_HANDLE,
+		.occlusionQueryEnable = VK_FALSE,
+		.queryFlags           = 0,
+		.pipelineStatistics   = 0
+	};
+
+	VkCommandBufferBeginInfo cb_info =
+	{
+		.sType            = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,
+		.pNext            = NULL,
+		.flags            = 0,
+		.pInheritanceInfo = &cbi_info
+	};
+
+	if(vkBeginCommandBuffer(cb, &cb_info) != VK_SUCCESS)
+	{
+		LOGE("vkBeginCommandBuffer failed");
+		goto fail_begin_cb;
+	}
+
+	int idx = 0;
+
+	vkCmdFillBuffer(cb, buffer->buffer[idx], offset, size, 0);
+
+	// end the transfer commands
+	vkEndCommandBuffer(cb);
+
+	// submit the commands
+	if(vkk_engine_queueSubmit(engine, VKK_QUEUE_BACKGROUND, &cb,
+	                          0, NULL, NULL, NULL,
+	                          xi->fence) == 0)
+	{
+		goto fail_submit;
+	}
+
+	uint64_t timeout = UINT64_MAX;
+	if(vkWaitForFences(engine->device, 1, &xi->fence, VK_TRUE,
+	                   timeout) != VK_SUCCESS)
+	{
+		LOGW("vkWaitForFences failed");
+		vkk_engine_queueWaitIdle(engine, VKK_QUEUE_BACKGROUND);
+	}
+
+	vkk_xferManager_lock(self);
+	if(cc_list_append(self->instance_list, NULL,
+	                  (const void*) xi) == NULL)
+	{
+		vkk_xferInstance_delete(&xi);
+	}
+	vkk_xferManager_unlock(self);
+
+	// success
+	return 1;
+
+	// failure
+	fail_submit:
+	fail_begin_cb:
+	fail_cb:
+		vkk_xferInstance_delete(&xi);
+	return 0;
+}
+
 int vkk_xferManager_blitStorage(vkk_xferManager_t* self,
                                 vkk_xferMode_e mode,
                                 vkk_buffer_t* buffer,

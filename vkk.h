@@ -324,6 +324,22 @@ vkk_buffer_t* vkk_buffer_new(vkk_engine_t* engine,
                              const void* buf);
 void          vkk_buffer_delete(vkk_buffer_t** _self);
 size_t        vkk_buffer_size(vkk_buffer_t* self);
+int           vkk_buffer_clearStorage(vkk_buffer_t* self,
+                                      size_t size,
+                                      size_t offset);
+int           vkk_buffer_copyStorage(vkk_buffer_t* src,
+                                     vkk_buffer_t* dst,
+                                     size_t size,
+                                     size_t src_offset,
+                                     size_t dst_offset);
+int           vkk_buffer_readStorage(vkk_buffer_t* self,
+                                     size_t size,
+                                     size_t offset,
+                                     void* data);
+int           vkk_buffer_writeStorage(vkk_buffer_t* self,
+                                      size_t size,
+                                      size_t offset,
+                                      const void* data);
 
 /*
  * image API
@@ -480,22 +496,6 @@ int              vkk_compute_begin(vkk_compute_t* self);
 void             vkk_compute_end(vkk_compute_t* self);
 int              vkk_compute_active(vkk_compute_t* self);
 vkk_updateMode_e vkk_compute_updateMode(vkk_compute_t* self);
-int              vkk_compute_writeBuffer(vkk_compute_t* self,
-                                         vkk_buffer_t* buffer,
-                                         size_t size,
-                                         size_t offset,
-                                         const void* data);
-int              vkk_compute_readBuffer(vkk_compute_t* self,
-                                        vkk_buffer_t* buffer,
-                                        size_t size,
-                                        size_t offset,
-                                        void* data);
-int              vkk_compute_blitBuffer(vkk_compute_t* self,
-                                        vkk_buffer_t* src,
-                                        vkk_buffer_t* dst,
-                                        size_t size,
-                                        size_t src_offset,
-                                        size_t dst_offset);
 void             vkk_compute_updateUniformSetRefs(vkk_compute_t* self,
                                                   vkk_uniformSet_t* us,
                                                   uint32_t ua_count,

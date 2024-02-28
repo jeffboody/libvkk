@@ -55,6 +55,10 @@ typedef struct vkk_xferManager_s
 vkk_xferManager_t* vkk_xferManager_new(vkk_engine_t* engine);
 void               vkk_xferManager_delete(vkk_xferManager_t** _self);
 void               vkk_xferManager_shutdown(vkk_xferManager_t* self);
+int                vkk_xferManager_clearStorage(vkk_xferManager_t* self,
+                                                vkk_buffer_t* buffer,
+                                                size_t size,
+                                                size_t offset);
 int                vkk_xferManager_blitStorage(vkk_xferManager_t* self,
                                                vkk_xferMode_e mode,
                                                vkk_buffer_t* buffer,

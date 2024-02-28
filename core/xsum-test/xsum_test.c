@@ -213,11 +213,6 @@ int xsum_test_main(xsum_test_t* self,
 	ASSERT(self);
 	ASSERT(argv);
 
-	if(vkk_compute_begin(self->compute) == 0)
-	{
-		return EXIT_FAILURE;
-	}
-
 	// create rng
 	cc_rngUniform_t rng;
 	cc_rngUniform_init(&rng);
@@ -232,12 +227,10 @@ int xsum_test_main(xsum_test_t* self,
 		x[i]   = cc_rngUniform_rand2F(&rng, -1.0f, 1.0f);
 		xsum1 += x[i];
 	}
-
-	vkk_compute_writeBuffer(self->compute, self->sb00_x,
-	                        size, 0, x);
+	vkk_buffer_writeStorage(self->sb00_x, size, 0, x);
 
 	uint32_t count = XSUM_TEST_COUNT;
-	vkk_compute_writeBuffer(self->compute, self->sb02_count,
+	vkk_buffer_writeStorage(self->sb02_count,
 	                        sizeof(uint32_t), 0, &count);
 
 	// compute xsum
@@ -247,6 +240,10 @@ int xsum_test_main(xsum_test_t* self,
 	// See "Modern OpenGL Tutorial - Compute Shaders" for a
 	// detailed explaination of workgroups and invocations
 	// https://www.youtube.com/watch?v=nF4X9BIUzx0
+	if(vkk_compute_begin(self->compute) == 0)
+	{
+		return EXIT_FAILURE;
+	}
 	vkk_compute_bindComputePipeline(self->compute, self->cp);
 	vkk_compute_bindUniformSets(self->compute, 1, &self->us0);
 	vkk_compute_dispatch(self->compute, VKK_HAZARD_NONE,
@@ -255,7 +252,7 @@ int xsum_test_main(xsum_test_t* self,
 
 	// read buffer
 	float xsum2;
-	vkk_compute_readBuffer(self->compute, self->sb01_xsum,
+	vkk_buffer_readStorage(self->sb01_xsum,
 	                       sizeof(float), 0, &xsum2);
 
 	// output results

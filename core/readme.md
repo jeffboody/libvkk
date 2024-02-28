@@ -231,21 +231,52 @@ can be used to create/destroy buffer objects.
 	                             const void* buf);
 	void vkk_buffer_delete(vkk_buffer_t** _self);
 
-Storage buffers are only supported for compute shaders and
-may not use the asynchronous update mode. Storage buffers
-may also be updated by compute shaders regardless of the
-update mode.
+The uniform, vertex and index buffer usage is only supported
+for rendering while the storage buffer usage is only
+supported for compute.
 
 The vkk\_buffer\_size() function allows the app to query the
 buffer size.
 
 	size_t vkk_buffer_size(vkk_buffer_t* self);
 
+The vkk\_buffer\_clearStorage(), vkk\_buffer\_copyStorage(),
+vkk\_buffer\_readStorage() and vkk\_buffer\_writeStorage()
+functions are the interface between CPU accessible memory
+and GPU only memory for storage buffers.
+
+	int vkk_buffer_clearStorage(vkk_buffer_t* self,
+	                            size_t size,
+	                            size_t offset);
+	int vkk_buffer_copyStorage(vkk_buffer_t* src,
+	                           vkk_buffer_t* dst,
+	                           size_t size,
+	                           size_t src_offset,
+	                           size_t dst_offset);
+	int vkk_buffer_readStorage(vkk_buffer_t* self,
+	                           size_t size,
+	                           size_t offset,
+	                           void* data);
+	int vkk_buffer_writeStorage(vkk_buffer_t* self,
+	                            size_t size,
+	                            size_t offset,
+	                            const void* data);
+
+The compute functions are asynchronous and therefore the
+contents of the storage buffers may be undefined between the
+vkk\_compute\_begin() and the vkk\_compute\_end() functions.
+
+Compute shaders may update storage buffers regardless of the
+update mode.
+
 See the _Renderer_ section for details on updating buffers
 and drawing with index/vertex buffers.
 
 See the _Uniform Set_ section for details on attaching a
 buffer to a uniform set.
+
+See the _Compute_ section for details on updating storage
+buffers while compute is active.
 
 Images
 ------
@@ -994,30 +1025,6 @@ updates.
 
 	vkk_updateMode_e vkk_compute_updateMode(vkk_compute_t* self);
 
-The compute handle may also be used to read buffers, write
-buffers and blit between storage buffers. However, the
-vkk\_compute\_readBuffer() and vkk\_compute\_blitBuffer()
-functions may only be used outside of vkk\_compute\_begin()
-and vkk\_compute\_end() to ensure the buffers are properly
-synchronized.
-
-	int vkk_compute_writeBuffer(vkk_compute_t* self,
-	                            vkk_buffer_t* buffer,
-	                            size_t size,
-	                            size_t offset,
-	                            const void* data);
-	int vkk_compute_readBuffer(vkk_compute_t* self,
-	                           vkk_buffer_t* buffer,
-	                           size_t size,
-	                           size_t offset,
-	                           void* data);
-	int vkk_compute_blitBuffer(vkk_compute_t* self,
-	                           vkk_buffer_t* src,
-	                           vkk_buffer_t* dst,
-	                           size_t size,
-	                           size_t src_offset,
-	                           size_t dst_offset);
-
 The vkk\_compute\_updateUniformSetRefs() function may be
 used to update uniform set references. When a uniform set
 includes such a reference then they must be updated once
@@ -1097,8 +1104,13 @@ corresponding compute shaders.
 	                          uint32_t local_size_y,
 	                          uint32_t local_size_z);
 
+Note that compute has not been validated on Android.
+
 See the _Compute Pipeline_ section for attaching a
 compute object to the compute pipeline.
+
+See the _Buffer_ section for details on storage buffer
+usage.
 
 See the _Threading/Synchronization_ section for threading
 and synchronization rules regarding the compute object.

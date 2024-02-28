@@ -213,11 +213,6 @@ int xsq_test_main(xsq_test_t* self,
 	ASSERT(self);
 	ASSERT(argv);
 
-	if(vkk_compute_begin(self->compute) == 0)
-	{
-		return EXIT_FAILURE;
-	}
-
 	// create rng
 	cc_rngUniform_t rng;
 	cc_rngUniform_init(&rng);
@@ -232,15 +227,17 @@ int xsq_test_main(xsq_test_t* self,
 		x[i]   = cc_rngUniform_rand2F(&rng, -1.0f, 1.0f);
 		xx1[i] = x[i]*x[i];
 	}
-
-	vkk_compute_writeBuffer(self->compute, self->sb00_x,
-	                        size, 0, x);
+	vkk_buffer_writeStorage(self->sb00_x, size, 0, x);
 
 	uint32_t count = XSQ_TEST_COUNT;
-	vkk_compute_writeBuffer(self->compute, self->sb02_count,
+	vkk_buffer_writeStorage(self->sb02_count,
 	                        sizeof(uint32_t), 0, &count);
 
 	// compute xsq
+	if(vkk_compute_begin(self->compute) == 0)
+	{
+		return EXIT_FAILURE;
+	}
 	vkk_compute_bindComputePipeline(self->compute, self->cp);
 	vkk_compute_bindUniformSets(self->compute, 1, &self->us0);
 	vkk_compute_dispatch(self->compute, VKK_HAZARD_NONE,
@@ -249,8 +246,7 @@ int xsq_test_main(xsq_test_t* self,
 
 	// read buffer
 	float xx2[XSQ_TEST_COUNT];
-	vkk_compute_readBuffer(self->compute, self->sb01_xx,
-	                       size, 0, xx2);
+	vkk_buffer_readStorage(self->sb01_xx, size, 0, xx2);
 
 	// output a subset of results
 	for(i = 0; i < XSQ_TEST_COUNT; i += 10)

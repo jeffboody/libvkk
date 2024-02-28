@@ -32,6 +32,31 @@
 #include "vkk_memoryManager.h"
 
 /***********************************************************
+* private                                                  *
+***********************************************************/
+
+// debug functions only used by ASSERT
+#ifdef ASSERT_DEBUG
+
+static int
+vkk_buffer_checkStorage(vkk_buffer_t* self)
+{
+	ASSERT(self);
+
+	if((self->update != VKK_UPDATE_MODE_SYNCHRONOUS) ||
+	   (self->usage  != VKK_BUFFER_USAGE_STORAGE))
+	{
+		LOGW("invalid update=%i, usage=%i",
+		     (int) self->update, (int) self->usage);
+		return 0;
+	}
+
+	return 1;
+}
+
+#endif
+
+/***********************************************************
 * public                                                   *
 ***********************************************************/
 
@@ -57,12 +82,10 @@ vkk_buffer_new(vkk_engine_t* engine,
 	}
 
 	int local_memory = 0;
-	#ifndef ANDROID
 	if(usage == VKK_BUFFER_USAGE_STORAGE)
 	{
 		local_memory = 1;
 	}
-	#endif
 
 	VkBufferUsageFlags usage_map[VKK_BUFFER_USAGE_COUNT] =
 	{
@@ -113,14 +136,12 @@ vkk_buffer_new(vkk_engine_t* engine,
 		.pQueueFamilyIndices   = &engine->queue_family_index
 	};
 
-	#ifndef ANDROID
 	if(usage == VKK_BUFFER_USAGE_STORAGE)
 	{
 		b_info.usage = VK_BUFFER_USAGE_STORAGE_BUFFER_BIT |
 		               VK_BUFFER_USAGE_TRANSFER_DST_BIT   |
 		               VK_BUFFER_USAGE_TRANSFER_SRC_BIT;
 	}
-	#endif
 
 	int i;
 	for(i = 0; i < count; ++i)
@@ -132,7 +153,6 @@ vkk_buffer_new(vkk_engine_t* engine,
 			goto fail_create_buffer;
 		}
 
-		#ifndef ANDROID
 		if(usage == VKK_BUFFER_USAGE_STORAGE)
 		{
 			self->memory[i] = vkk_memoryManager_allocBuffer(engine->mm,
@@ -159,7 +179,6 @@ vkk_buffer_new(vkk_engine_t* engine,
 			}
 		}
 		else
-		#endif
 		{
 			self->memory[i] = vkk_memoryManager_allocBuffer(engine->mm,
 			                                                self->buffer[i],
@@ -216,4 +235,66 @@ size_t vkk_buffer_size(vkk_buffer_t* self)
 	ASSERT(self);
 
 	return self->size;
+}
+
+int vkk_buffer_clearStorage(vkk_buffer_t* self,
+                            size_t size,
+                            size_t offset)
+{
+	ASSERT(vkk_buffer_checkStorage(self));
+
+	vkk_engine_t* engine = self->engine;
+
+	return vkk_xferManager_clearStorage(engine->xfer,
+	                                    self, size, offset);
+}
+
+int vkk_buffer_copyStorage(vkk_buffer_t* src,
+                           vkk_buffer_t* dst,
+                           size_t size,
+                           size_t src_offset,
+                           size_t dst_offset)
+{
+	ASSERT(vkk_buffer_checkStorage(src));
+	ASSERT(vkk_buffer_checkStorage(dst));
+
+	vkk_engine_t* engine = src->engine;
+
+	return vkk_xferManager_blitStorage2(engine->xfer,
+	                                    src, dst, size,
+	                                    src_offset,
+	                                    dst_offset);
+}
+
+int
+vkk_buffer_readStorage(vkk_buffer_t* self,
+                       size_t size, size_t offset,
+                       void* data)
+{
+	ASSERT(vkk_buffer_checkStorage(self));
+	ASSERT(data);
+
+	vkk_engine_t* engine = self->engine;
+
+	return vkk_xferManager_blitStorage(engine->xfer,
+	                                   VKK_XFER_MODE_READ,
+	                                   self, size, offset,
+	                                   data);
+}
+
+int
+vkk_buffer_writeStorage(vkk_buffer_t* self,
+                        size_t size, size_t offset,
+                        const void* data)
+{
+	ASSERT(vkk_buffer_checkStorage(self));
+	ASSERT(data);
+
+	vkk_engine_t* engine = self->engine;
+
+	// cast away const since blitStorage is read/write
+	return vkk_xferManager_blitStorage(engine->xfer,
+	                                   VKK_XFER_MODE_WRITE,
+	                                   self, size, offset,
+	                                   (void*) data);
 }
