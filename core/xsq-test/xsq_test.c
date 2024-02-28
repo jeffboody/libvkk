@@ -243,7 +243,7 @@ int xsq_test_main(xsq_test_t* self,
 	// compute xsq
 	vkk_compute_bindComputePipeline(self->compute, self->cp);
 	vkk_compute_bindUniformSets(self->compute, 1, &self->us0);
-	vkk_compute_dispatch(self->compute, VKK_HAZZARD_NONE,
+	vkk_compute_dispatch(self->compute, VKK_HAZARD_NONE,
 	                     XSQ_TEST_COUNT, 1, 1, XSQ_TEST_IN, 1, 1);
 	vkk_compute_end(self->compute);
 

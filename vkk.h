@@ -154,11 +154,11 @@ typedef enum
 
 typedef enum
 {
-	VKK_HAZZARD_NONE = 0,
-	VKK_HAZZARD_WAR  = 1,
-	VKK_HAZZARD_RAW  = 2,
-	VKK_HAZZARD_ANY  = 3,
-} vkk_hazzard_e;
+	VKK_HAZARD_NONE = 0,
+	VKK_HAZARD_WAR  = 1,
+	VKK_HAZARD_RAW  = 2,
+	VKK_HAZARD_ANY  = 3,
+} vkk_hazard_e;
 
 /*
  * opaque objects
@@ -506,7 +506,7 @@ void             vkk_compute_bindUniformSets(vkk_compute_t* self,
                                              uint32_t us_count,
                                              vkk_uniformSet_t** us_array);
 void             vkk_compute_dispatch(vkk_compute_t* self,
-                                      vkk_hazzard_e hazzard,
+                                      vkk_hazard_e hazard,
                                       uint32_t count_x,
                                       uint32_t count_y,
                                       uint32_t count_z,

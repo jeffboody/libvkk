@@ -539,7 +539,7 @@ void vkk_compute_bindUniformSets(vkk_compute_t* self,
 }
 
 void vkk_compute_dispatch(vkk_compute_t* self,
-                          vkk_hazzard_e hazzard,
+                          vkk_hazard_e hazard,
                           uint32_t count_x,
                           uint32_t count_y,
                           uint32_t count_z,
@@ -555,8 +555,8 @@ void vkk_compute_dispatch(vkk_compute_t* self,
 	VkCommandBuffer      cb    = vkk_compute_commandBuffer(self);
 	VkPipelineStageFlags stage = VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT;
 
-	if((hazzard == VKK_HAZZARD_ANY) ||
-	   (hazzard == VKK_HAZZARD_RAW))
+	if((hazard == VKK_HAZARD_ANY) ||
+	   (hazard == VKK_HAZARD_RAW))
 	{
 		VkMemoryBarrier mb =
 		{
@@ -569,7 +569,7 @@ void vkk_compute_dispatch(vkk_compute_t* self,
 		vkCmdPipelineBarrier(cb, stage, stage, 0,
 		                     1, &mb, 0, NULL, 0, NULL);
 	}
-	else if(hazzard == VKK_HAZZARD_WAR)
+	else if(hazard == VKK_HAZARD_WAR)
 	{
 		vkCmdPipelineBarrier(cb, stage, stage, 0,
 		                     0, NULL, 0, NULL, 0, NULL);

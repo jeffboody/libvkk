@@ -249,7 +249,7 @@ int xsum_test_main(xsum_test_t* self,
 	// https://www.youtube.com/watch?v=nF4X9BIUzx0
 	vkk_compute_bindComputePipeline(self->compute, self->cp);
 	vkk_compute_bindUniformSets(self->compute, 1, &self->us0);
-	vkk_compute_dispatch(self->compute, VKK_HAZZARD_NONE,
+	vkk_compute_dispatch(self->compute, VKK_HAZARD_NONE,
 	                     1, 1, 1, XSUM_TEST_IN, 1, 1);
 	vkk_compute_end(self->compute);
 

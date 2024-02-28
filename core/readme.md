@@ -1074,7 +1074,7 @@ The vkk\_compute\_dispatch() function may be called by the
 app to issue compute commands. Unlike draw commands, the
 execution order of dispatched commands is not guaranteed
 which can lead to write-after-read and read-after-write
-hazzards for storage buffers. The hazzard flag is required
+hazards for storage buffers. The hazard flag is required
 to determine if barriers must be inserted for correct
 operation. The local\_size parameters are used to compute
 the group size and must match the values found in the
@@ -1082,14 +1082,14 @@ corresponding compute shaders.
 
 	typedef enum
 	{
-		VKK_HAZZARD_NONE = 0,
-		VKK_HAZZARD_WAR  = 1,
-		VKK_HAZZARD_RAW  = 2,
-		VKK_HAZZARD_ANY  = 3,
-	} vkk_hazzard_e;
+		VKK_HAZARD_NONE = 0,
+		VKK_HAZARD_WAR  = 1,
+		VKK_HAZARD_RAW  = 2,
+		VKK_HAZARD_ANY  = 3,
+	} vkk_hazard_e;
 
 	void vkk_compute_dispatch(vkk_compute_t* self,
-	                          vkk_hazzard_e hazzard,
+	                          vkk_hazard_e hazard,
 	                          uint32_t count_x,
 	                          uint32_t count_y,
 	                          uint32_t count_z,
