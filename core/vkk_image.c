@@ -236,6 +236,7 @@ vkk_image_t* vkk_image_new(vkk_engine_t* engine,
 		goto fail_create_image;
 	}
 
+	// image memory is uninitialized
 	self->memory =
 		vkk_memoryManager_allocImage(engine->mm,
 		                             self->image,
@@ -279,12 +280,7 @@ vkk_image_t* vkk_image_new(vkk_engine_t* engine,
 	}
 
 	// upload pixel data
-	if((format == VKK_IMAGE_FORMAT_DEPTH1X) ||
-	   (format == VKK_IMAGE_FORMAT_DEPTH4X))
-	{
-		// skip depth
-	}
-	else if(pixels)
+	if(pixels)
 	{
 		if(vkk_xferManager_writeImage(engine->xfer, self,
 		                              pixels) == 0)

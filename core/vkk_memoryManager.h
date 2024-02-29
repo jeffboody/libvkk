@@ -64,16 +64,20 @@ vkk_memory_t*        vkk_memoryManager_allocImage(vkk_memoryManager_t* self,
                                                   int local_memory);
 void                 vkk_memoryManager_free(vkk_memoryManager_t* self,
                                             vkk_memory_t** _memory);
-void                 vkk_memoryManager_write(vkk_memoryManager_t* self,
+void                 vkk_memoryManager_clear(vkk_memoryManager_t* self,
                                              vkk_memory_t* memory,
                                              size_t size,
-                                             size_t offset,
-                                             const void* buf);
+                                             size_t offset);
 void                 vkk_memoryManager_read(vkk_memoryManager_t* self,
                                             vkk_memory_t* memory,
                                             size_t size,
                                             size_t offset,
                                             void* buf);
+void                 vkk_memoryManager_write(vkk_memoryManager_t* self,
+                                             vkk_memory_t* memory,
+                                             size_t size,
+                                             size_t offset,
+                                             const void* buf);
 void                 vkk_memoryManager_blit(vkk_memoryManager_t* self,
                                             vkk_memory_t* src_memory,
                                             vkk_memory_t* dst_memory,

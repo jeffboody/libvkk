@@ -244,7 +244,7 @@ vkk_memoryManager_alloc(vkk_memoryManager_t* self,
 		locked = vkk_memoryManager_poolLock(self, pool);
 	}
 
-	// allocate memory
+	// memory is unitialized
 	vkk_memory_t* memory = vkk_memoryPool_alloc(pool);
 	if(memory == NULL)
 	{
@@ -421,6 +421,7 @@ vkk_memoryManager_allocBuffer(vkk_memoryManager_t* self,
 		mp_flags = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
 	}
 
+	// memory is unitialized
 	vkk_memory_t* memory;
 	memory = vkk_memoryManager_alloc(self, &mr, mp_flags);
 	if(memory == NULL)
@@ -428,9 +429,17 @@ vkk_memoryManager_allocBuffer(vkk_memoryManager_t* self,
 		return NULL;
 	}
 
-	if(buf)
+	// initialize non-local memory
+	if(local_memory == 0)
 	{
-		vkk_memoryManager_write(self, memory, size, 0, buf);
+		if(buf)
+		{
+			vkk_memoryManager_write(self, memory, size, 0, buf);
+		}
+		else
+		{
+			vkk_memoryManager_clear(self, memory, size, 0);
+		}
 	}
 
 	vkk_memoryManager_chunkLock(self, memory->chunk);
@@ -486,6 +495,7 @@ vkk_memoryManager_allocImage(vkk_memoryManager_t* self,
 		}
 	}
 
+	// memory is unitialized
 	vkk_memory_t* memory;
 	memory = vkk_memoryManager_alloc(self, &mr, mp_flags);
 	if(memory == NULL)
@@ -568,15 +578,13 @@ void vkk_memoryManager_free(vkk_memoryManager_t* self,
 	}
 }
 
-void vkk_memoryManager_write(vkk_memoryManager_t* self,
+void vkk_memoryManager_clear(vkk_memoryManager_t* self,
                              vkk_memory_t* memory,
                              size_t size,
-                             size_t offset,
-                             const void* buf)
+                             size_t offset)
 {
 	ASSERT(self);
 	ASSERT(memory);
-	ASSERT(buf);
 
 	vkk_memoryChunk_t*   chunk  = memory->chunk;
 	vkk_memoryPool_t*    pool   = chunk->pool;
@@ -600,7 +608,7 @@ void vkk_memoryManager_write(vkk_memoryManager_t* self,
 	               memory->offset + offset, size, 0,
 	               &data) == VK_SUCCESS)
 	{
-		memcpy(data, buf, size);
+		memset(data, 0, size);
 		vkUnmapMemory(engine->device, chunk->memory);
 	}
 	else
@@ -643,6 +651,49 @@ void vkk_memoryManager_read(vkk_memoryManager_t* self,
 	               &data) == VK_SUCCESS)
 	{
 		memcpy(buf, data, size);
+		vkUnmapMemory(engine->device, chunk->memory);
+	}
+	else
+	{
+		LOGW("vkMapMemory failed");
+	}
+
+	vkk_memoryManager_chunkUnlock(self, chunk);
+}
+
+void vkk_memoryManager_write(vkk_memoryManager_t* self,
+                             vkk_memory_t* memory,
+                             size_t size,
+                             size_t offset,
+                             const void* buf)
+{
+	ASSERT(self);
+	ASSERT(memory);
+	ASSERT(buf);
+
+	vkk_memoryChunk_t*   chunk  = memory->chunk;
+	vkk_memoryPool_t*    pool   = chunk->pool;
+	vkk_memoryManager_t* mm     = pool->mm;
+	vkk_engine_t*        engine = mm->engine;
+
+	vkk_memoryManager_chunkLock(self, chunk);
+
+	if((size == 0) || (size + offset > pool->stride))
+	{
+		LOGE("invalid size=%" PRIu64 ", offset=%" PRIu64
+		     ", stride=%" PRIu64,
+		     (uint64_t) size, (uint64_t) offset,
+		     (uint64_t) pool->stride);
+		vkk_memoryManager_chunkUnlock(self, chunk);
+		return;
+	}
+
+	void* data;
+	if(vkMapMemory(engine->device, chunk->memory,
+	               memory->offset + offset, size, 0,
+	               &data) == VK_SUCCESS)
+	{
+		memcpy(data, buf, size);
 		vkUnmapMemory(engine->device, chunk->memory);
 	}
 	else

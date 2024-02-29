@@ -91,6 +91,7 @@ vkk_xferBuffer_new(vkk_engine_t* engine, size_t size,
 		goto fail_buffer;
 	}
 
+	// memory is initialized
 	self->memory = vkk_memoryManager_allocBuffer(engine->mm,
 	                                             self->buffer,
 	                                             0, size, data);

@@ -456,9 +456,10 @@ vkk_defaultRenderer_newMSAA(vkk_renderer_t* base)
 		return 0;
 	}
 
+	// msaa memory is uninitialized
 	self->msaa_memory =
 		vkk_memoryManager_allocImage(engine->mm,
-	                                 self->msaa_image, 1);
+		                             self->msaa_image, 1);
 	if(self->msaa_memory == NULL)
 	{
 		goto fail_alloc;

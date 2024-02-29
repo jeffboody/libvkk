@@ -81,12 +81,6 @@ vkk_buffer_new(vkk_engine_t* engine,
 		count = vkk_engine_imageCount(engine);
 	}
 
-	int local_memory = 0;
-	if(usage == VKK_BUFFER_USAGE_STORAGE)
-	{
-		local_memory = 1;
-	}
-
 	VkBufferUsageFlags usage_map[VKK_BUFFER_USAGE_COUNT] =
 	{
 		VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
@@ -155,17 +149,17 @@ vkk_buffer_new(vkk_engine_t* engine,
 
 		if(usage == VKK_BUFFER_USAGE_STORAGE)
 		{
+			// local memory is uninitialized
 			self->memory[i] = vkk_memoryManager_allocBuffer(engine->mm,
 			                                                self->buffer[i],
-			                                                local_memory,
-			                                                size,
+			                                                1, size,
 			                                                NULL);
 			if(self->memory[i] == NULL)
 			{
 				goto fail_alloc;
 			}
 
-			// optionally blit buf
+			// initialize local memory
 			if(buf)
 			{
 				// cast away const since blitStorage is read/write
@@ -177,13 +171,21 @@ vkk_buffer_new(vkk_engine_t* engine,
 					goto fail_alloc;
 				}
 			}
+			else
+			{
+				if(vkk_xferManager_clearStorage(engine->xfer, self,
+				                                size, 0) == 0)
+				{
+					goto fail_alloc;
+				}
+			}
 		}
 		else
 		{
+			// memory is initialized
 			self->memory[i] = vkk_memoryManager_allocBuffer(engine->mm,
 			                                                self->buffer[i],
-			                                                local_memory,
-			                                                size,
+			                                                0, size,
 			                                                buf);
 			if(self->memory[i] == NULL)
 			{
