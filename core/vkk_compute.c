@@ -92,25 +92,15 @@ vkk_compute_updateUniformBufferRef(vkk_compute_t* self,
 #ifdef ASSERT_DEBUG
 
 static int
-vkk_compute_checkUpdate(vkk_buffer_t* buffer)
+vkk_compute_checkStorage(vkk_buffer_t* buffer)
 {
 	ASSERT(buffer);
 
-	if((buffer->usage == VKK_BUFFER_USAGE_UNIFORM) ||
-	   (buffer->usage == VKK_BUFFER_USAGE_STORAGE))
+	if((buffer->update != VKK_UPDATE_MODE_SYNCHRONOUS) ||
+	   (buffer->usage  != VKK_BUFFER_USAGE_STORAGE))
 	{
-		// ok
-	}
-	else
-	{
-		LOGW("invalid usage=%i", (int) buffer->usage);
-		return 0;
-	}
-
-	// update must be SYNCHRONOUS
-	if(buffer->update != VKK_UPDATE_MODE_SYNCHRONOUS)
-	{
-		LOGW("invalid update=%i", buffer->update);
+		LOGW("invalid update=%i, usage=%i",
+		     (int) buffer->update, (int) buffer->usage);
 		return 0;
 	}
 
@@ -125,6 +115,38 @@ static uint32_t uceil(uint32_t count, uint32_t local_size)
 	ASSERT(local_size > 0);
 
 	return (count + local_size - 1)/local_size;
+}
+
+static void
+vkk_compute_hazard(vkk_compute_t* self, vkk_hazard_e hazard)
+{
+	ASSERT(self);
+
+	// See Compute to Compute Dependencies
+	// https://github.com/KhronosGroup/Vulkan-Docs/wiki/Synchronization-Examples
+
+	VkCommandBuffer      cb    = vkk_compute_commandBuffer(self);
+	VkPipelineStageFlags stage = VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT;
+
+	if((hazard == VKK_HAZARD_ANY) ||
+	   (hazard == VKK_HAZARD_RAW))
+	{
+		VkMemoryBarrier mb =
+		{
+			.sType         = VK_STRUCTURE_TYPE_MEMORY_BARRIER,
+			.pNext         = NULL,
+			.srcAccessMask = VK_ACCESS_SHADER_WRITE_BIT,
+			.dstAccessMask = VK_ACCESS_SHADER_READ_BIT,
+		};
+
+		vkCmdPipelineBarrier(cb, stage, stage, 0,
+		                     1, &mb, 0, NULL, 0, NULL);
+	}
+	else if(hazard == VKK_HAZARD_WAR)
+	{
+		vkCmdPipelineBarrier(cb, stage, stage, 0,
+		                     0, NULL, 0, NULL, 0, NULL);
+	}
 }
 
 /***********************************************************
@@ -422,6 +444,47 @@ void vkk_compute_bindUniformSets(vkk_compute_t* self,
 	                        0, NULL);
 }
 
+void vkk_compute_clearStorage(vkk_compute_t* self,
+                              vkk_hazard_e hazard,
+                              vkk_buffer_t* buffer,
+                              size_t size,
+                              size_t offset)
+{
+	ASSERT(self);
+	ASSERT(vkk_compute_checkStorage(buffer));
+
+	VkCommandBuffer cb = vkk_compute_commandBuffer(self);
+
+	vkk_compute_hazard(self, hazard);
+	vkCmdFillBuffer(cb, buffer->buffer[0], offset, size, 0);
+}
+
+void vkk_compute_copyStorage(vkk_compute_t* self,
+                             vkk_hazard_e hazard,
+                             vkk_buffer_t* src,
+                             vkk_buffer_t* dst,
+                             size_t size,
+                             size_t src_offset,
+                             size_t dst_offset)
+{
+	ASSERT(self);
+	ASSERT(vkk_compute_checkStorage(src));
+	ASSERT(vkk_compute_checkStorage(dst));
+
+	VkCommandBuffer cb = vkk_compute_commandBuffer(self);
+
+	VkBufferCopy region =
+	{
+		.srcOffset = src_offset,
+		.dstOffset = dst_offset,
+		.size      = size,
+	};
+
+	vkk_compute_hazard(self, hazard);
+	vkCmdCopyBuffer(cb, src->buffer[0], dst->buffer[0], 1,
+	                &region);
+}
+
 void vkk_compute_dispatch(vkk_compute_t* self,
                           vkk_hazard_e hazard,
                           uint32_t count_x,
@@ -433,34 +496,12 @@ void vkk_compute_dispatch(vkk_compute_t* self,
 {
 	ASSERT(self);
 
-	// See Compute to Compute Dependencies
-	// https://github.com/KhronosGroup/Vulkan-Docs/wiki/Synchronization-Examples
-
-	VkCommandBuffer      cb    = vkk_compute_commandBuffer(self);
-	VkPipelineStageFlags stage = VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT;
-
-	if((hazard == VKK_HAZARD_ANY) ||
-	   (hazard == VKK_HAZARD_RAW))
-	{
-		VkMemoryBarrier mb =
-		{
-			.sType         = VK_STRUCTURE_TYPE_MEMORY_BARRIER,
-			.pNext         = NULL,
-			.srcAccessMask = VK_ACCESS_SHADER_WRITE_BIT,
-			.dstAccessMask = VK_ACCESS_SHADER_READ_BIT,
-		};
-
-		vkCmdPipelineBarrier(cb, stage, stage, 0,
-		                     1, &mb, 0, NULL, 0, NULL);
-	}
-	else if(hazard == VKK_HAZARD_WAR)
-	{
-		vkCmdPipelineBarrier(cb, stage, stage, 0,
-		                     0, NULL, 0, NULL, 0, NULL);
-	}
+	VkCommandBuffer cb = vkk_compute_commandBuffer(self);
 
 	uint32_t groupCountX = uceil(count_x, local_size_x);
 	uint32_t groupCountY = uceil(count_y, local_size_y);
 	uint32_t groupCountZ = uceil(count_z, local_size_z);
+
+	vkk_compute_hazard(self, hazard);
 	vkCmdDispatch(cb, groupCountX, groupCountY, groupCountZ);
 }

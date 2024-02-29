@@ -1077,15 +1077,35 @@ the current compute pipeline need to be bound.
 	                                 uint32_t us_count,
 	                                 vkk_uniformSet_t** us_array);
 
+The vkk\_compute\_clearStorage() and
+vkk\_compute\_copyStorage() functions are the interface
+to GPU only memory for storage buffers.
+
+	typedef enum
+	{
+		VKK_HAZARD_NONE = 0,
+		VKK_HAZARD_WAR  = 1,
+		VKK_HAZARD_RAW  = 2,
+		VKK_HAZARD_ANY  = 3,
+	} vkk_hazard_e;
+
+	void vkk_compute_clearStorage(vkk_compute_t* self,
+	                              vkk_hazard_e hazard,
+	                              vkk_buffer_t* buffer,
+	                              size_t size,
+	                              size_t offset);
+	void vkk_compute_copyStorage(vkk_compute_t* self,
+	                             vkk_hazard_e hazard,
+	                             vkk_buffer_t* src,
+	                             vkk_buffer_t* dst,
+	                             size_t size,
+	                             size_t src_offset,
+	                             size_t dst_offset);
+
 The vkk\_compute\_dispatch() function may be called by the
-app to issue compute commands. Unlike draw commands, the
-execution order of dispatched commands is not guaranteed
-which can lead to write-after-read and read-after-write
-hazards for storage buffers. The hazard flag is required
-to determine if barriers must be inserted for correct
-operation. The local\_size parameters are used to compute
-the group size and must match the values found in the
-corresponding compute shaders.
+app to issue compute commands. The local\_size parameters
+are used to compute the group size and must match the values
+found in the corresponding compute shaders.
 
 	typedef enum
 	{
@@ -1103,6 +1123,12 @@ corresponding compute shaders.
 	                          uint32_t local_size_x,
 	                          uint32_t local_size_y,
 	                          uint32_t local_size_z);
+
+Unlike draw commands, the execution order of compute
+commands is not guaranteed which can lead to
+write-after-read and read-after-write hazards for storage
+buffers. The hazard flag is required to determine if
+barriers must be inserted for correct operation.
 
 Note that compute has not been validated on Android.
 

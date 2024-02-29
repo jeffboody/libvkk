@@ -505,6 +505,18 @@ void             vkk_compute_bindComputePipeline(vkk_compute_t* self,
 void             vkk_compute_bindUniformSets(vkk_compute_t* self,
                                              uint32_t us_count,
                                              vkk_uniformSet_t** us_array);
+void             vkk_compute_clearStorage(vkk_compute_t* self,
+                                          vkk_hazard_e hazard,
+                                          vkk_buffer_t* buffer,
+                                          size_t size,
+                                          size_t offset);
+void             vkk_compute_copyStorage(vkk_compute_t* self,
+                                         vkk_hazard_e hazard,
+                                         vkk_buffer_t* src,
+                                         vkk_buffer_t* dst,
+                                         size_t size,
+                                         size_t src_offset,
+                                         size_t dst_offset);
 void             vkk_compute_dispatch(vkk_compute_t* self,
                                       vkk_hazard_e hazard,
                                       uint32_t count_x,
