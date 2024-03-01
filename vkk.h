@@ -324,21 +324,22 @@ vkk_buffer_t* vkk_buffer_new(vkk_engine_t* engine,
                              const void* buf);
 void          vkk_buffer_delete(vkk_buffer_t** _self);
 size_t        vkk_buffer_size(vkk_buffer_t* self);
-int           vkk_buffer_clearStorage(vkk_buffer_t* self,
-                                      size_t size,
-                                      size_t offset);
+int           vkk_buffer_fillStorage(vkk_buffer_t* self,
+                                     size_t offset,
+                                     size_t size,
+                                     uint32_t data);
 int           vkk_buffer_copyStorage(vkk_buffer_t* src,
                                      vkk_buffer_t* dst,
-                                     size_t size,
                                      size_t src_offset,
-                                     size_t dst_offset);
+                                     size_t dst_offset,
+                                     size_t size);
 int           vkk_buffer_readStorage(vkk_buffer_t* self,
-                                     size_t size,
                                      size_t offset,
+                                     size_t size,
                                      void* data);
 int           vkk_buffer_writeStorage(vkk_buffer_t* self,
-                                      size_t size,
                                       size_t offset,
+                                      size_t size,
                                       const void* data);
 
 /*
@@ -505,18 +506,19 @@ void             vkk_compute_bindComputePipeline(vkk_compute_t* self,
 void             vkk_compute_bindUniformSets(vkk_compute_t* self,
                                              uint32_t us_count,
                                              vkk_uniformSet_t** us_array);
-void             vkk_compute_clearStorage(vkk_compute_t* self,
-                                          vkk_hazard_e hazard,
-                                          vkk_buffer_t* buffer,
-                                          size_t size,
-                                          size_t offset);
+void             vkk_compute_fillStorage(vkk_compute_t* self,
+                                         vkk_hazard_e hazard,
+                                         vkk_buffer_t* buffer,
+                                         size_t offset,
+                                         size_t size,
+                                         uint32_t data);
 void             vkk_compute_copyStorage(vkk_compute_t* self,
                                          vkk_hazard_e hazard,
                                          vkk_buffer_t* src,
                                          vkk_buffer_t* dst,
-                                         size_t size,
                                          size_t src_offset,
-                                         size_t dst_offset);
+                                         size_t dst_offset,
+                                         size_t size);
 void             vkk_compute_dispatch(vkk_compute_t* self,
                                       vkk_hazard_e hazard,
                                       uint32_t count_x,

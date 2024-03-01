@@ -240,26 +240,27 @@ buffer size.
 
 	size_t vkk_buffer_size(vkk_buffer_t* self);
 
-The vkk\_buffer\_clearStorage(), vkk\_buffer\_copyStorage(),
+The vkk\_buffer\_fillStorage(), vkk\_buffer\_copyStorage(),
 vkk\_buffer\_readStorage() and vkk\_buffer\_writeStorage()
 functions are the interface between CPU accessible memory
 and GPU only memory for storage buffers.
 
-	int vkk_buffer_clearStorage(vkk_buffer_t* self,
-	                            size_t size,
-	                            size_t offset);
+	int vkk_buffer_fillStorage(vkk_buffer_t* self,
+	                           size_t offset,
+	                           size_t size,
+	                           uint32_t data);
 	int vkk_buffer_copyStorage(vkk_buffer_t* src,
 	                           vkk_buffer_t* dst,
-	                           size_t size,
 	                           size_t src_offset,
-	                           size_t dst_offset);
+	                           size_t dst_offset,
+	                           size_t size);
 	int vkk_buffer_readStorage(vkk_buffer_t* self,
-	                           size_t size,
 	                           size_t offset,
+	                           size_t size,
 	                           void* data);
 	int vkk_buffer_writeStorage(vkk_buffer_t* self,
-	                            size_t size,
 	                            size_t offset,
+	                            size_t size,
 	                            const void* data);
 
 The compute functions are asynchronous and therefore the
@@ -1077,7 +1078,7 @@ the current compute pipeline need to be bound.
 	                                 uint32_t us_count,
 	                                 vkk_uniformSet_t** us_array);
 
-The vkk\_compute\_clearStorage() and
+The vkk\_compute\_fillStorage() and
 vkk\_compute\_copyStorage() functions are the interface
 to GPU only memory for storage buffers.
 
@@ -1089,18 +1090,19 @@ to GPU only memory for storage buffers.
 		VKK_HAZARD_ANY  = 3,
 	} vkk_hazard_e;
 
-	void vkk_compute_clearStorage(vkk_compute_t* self,
-	                              vkk_hazard_e hazard,
-	                              vkk_buffer_t* buffer,
-	                              size_t size,
-	                              size_t offset);
+	void vkk_compute_fillStorage(vkk_compute_t* self,
+	                             vkk_hazard_e hazard,
+	                             vkk_buffer_t* buffer,
+	                             size_t offset,
+	                             size_t size,
+	                             uint32_t data);
 	void vkk_compute_copyStorage(vkk_compute_t* self,
 	                             vkk_hazard_e hazard,
 	                             vkk_buffer_t* src,
 	                             vkk_buffer_t* dst,
-	                             size_t size,
 	                             size_t src_offset,
-	                             size_t dst_offset);
+	                             size_t dst_offset,
+	                             size_t size);
 
 The vkk\_compute\_dispatch() function may be called by the
 app to issue compute commands. The local\_size parameters

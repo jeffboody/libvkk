@@ -227,11 +227,11 @@ int xsum_test_main(xsum_test_t* self,
 		x[i]   = cc_rngUniform_rand2F(&rng, -1.0f, 1.0f);
 		xsum1 += x[i];
 	}
-	vkk_buffer_writeStorage(self->sb00_x, size, 0, x);
+	vkk_buffer_writeStorage(self->sb00_x, 0, size, x);
 
 	uint32_t count = XSUM_TEST_COUNT;
 	vkk_buffer_writeStorage(self->sb02_count,
-	                        sizeof(uint32_t), 0, &count);
+	                        0, sizeof(uint32_t), &count);
 
 	// compute xsum
 	// only dispatch one workgroup to compute the xsum since
@@ -253,7 +253,7 @@ int xsum_test_main(xsum_test_t* self,
 	// read buffer
 	float xsum2;
 	vkk_buffer_readStorage(self->sb01_xsum,
-	                       sizeof(float), 0, &xsum2);
+	                       0, sizeof(float), &xsum2);
 
 	// output results
 	LOGI("xsum1=%f, xsum2=%f", xsum1, xsum2);

@@ -528,10 +528,11 @@ void vkk_xferManager_shutdown(vkk_xferManager_t* self)
 	vkk_xferManager_unlock(self);
 }
 
-int vkk_xferManager_clearStorage(vkk_xferManager_t* self,
-                                 vkk_buffer_t* buffer,
-                                 size_t size,
-                                 size_t offset)
+int vkk_xferManager_fillStorage(vkk_xferManager_t* self,
+                                vkk_buffer_t* buffer,
+                                size_t offset,
+                                size_t size,
+                                uint32_t data)
 {
 	ASSERT(self);
 	ASSERT(buffer);
@@ -602,7 +603,8 @@ int vkk_xferManager_clearStorage(vkk_xferManager_t* self,
 
 	int idx = 0;
 
-	vkCmdFillBuffer(cb, buffer->buffer[idx], offset, size, 0);
+	vkCmdFillBuffer(cb, buffer->buffer[idx],
+	                offset, size, data);
 
 	// end the transfer commands
 	vkEndCommandBuffer(cb);
@@ -645,8 +647,8 @@ int vkk_xferManager_clearStorage(vkk_xferManager_t* self,
 int vkk_xferManager_blitStorage(vkk_xferManager_t* self,
                                 vkk_xferMode_e mode,
                                 vkk_buffer_t* buffer,
-                                size_t size,
                                 size_t offset,
+                                size_t size,
                                 void* data)
 {
 	ASSERT(self);
@@ -674,7 +676,7 @@ int vkk_xferManager_blitStorage(vkk_xferManager_t* self,
 		if(mode == VKK_XFER_MODE_WRITE)
 		{
 			vkk_memoryManager_write(engine->mm, xb->memory,
-			                        size, 0, data);
+			                        0, size, data);
 		}
 	}
 	else
@@ -798,7 +800,7 @@ int vkk_xferManager_blitStorage(vkk_xferManager_t* self,
 	if(mode == VKK_XFER_MODE_READ)
 	{
 		vkk_memoryManager_read(engine->mm, xb->memory,
-		                       size, 0, data);
+		                       0, size, data);
 	}
 
 	vkk_xferManager_lock(self);
@@ -831,9 +833,9 @@ int vkk_xferManager_blitStorage(vkk_xferManager_t* self,
 int vkk_xferManager_blitStorage2(vkk_xferManager_t* self,
                                  vkk_buffer_t* src_buffer,
                                  vkk_buffer_t* dst_buffer,
-                                 size_t size,
                                  size_t src_offset,
-                                 size_t dst_offset)
+                                 size_t dst_offset,
+                                 size_t size)
 {
 	ASSERT(self);
 	ASSERT(src_buffer);
@@ -1112,7 +1114,7 @@ int vkk_xferManager_readImage(vkk_xferManager_t* self,
 	}
 
 	vkk_memoryManager_read(engine->mm, xb->memory,
-	                       size, 0, pixels);
+	                       0, size, pixels);
 
 	vkk_xferManager_lock(self);
 	if(cc_list_append(self->instance_list, NULL,
@@ -1187,7 +1189,7 @@ int vkk_xferManager_writeImage(vkk_xferManager_t* self,
 		xb = (vkk_xferBuffer_t*)
 		     cc_multimap_remove(self->buffer_map, &miter);
 		vkk_memoryManager_write(engine->mm, xb->memory,
-		                        size, 0, pixels);
+		                        0, size, pixels);
 	}
 	else
 	{

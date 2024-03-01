@@ -444,11 +444,12 @@ void vkk_compute_bindUniformSets(vkk_compute_t* self,
 	                        0, NULL);
 }
 
-void vkk_compute_clearStorage(vkk_compute_t* self,
-                              vkk_hazard_e hazard,
-                              vkk_buffer_t* buffer,
-                              size_t size,
-                              size_t offset)
+void vkk_compute_fillStorage(vkk_compute_t* self,
+                             vkk_hazard_e hazard,
+                             vkk_buffer_t* buffer,
+                             size_t offset,
+                             size_t size,
+                             uint32_t data)
 {
 	ASSERT(self);
 	ASSERT(vkk_compute_checkStorage(buffer));
@@ -456,16 +457,17 @@ void vkk_compute_clearStorage(vkk_compute_t* self,
 	VkCommandBuffer cb = vkk_compute_commandBuffer(self);
 
 	vkk_compute_hazard(self, hazard);
-	vkCmdFillBuffer(cb, buffer->buffer[0], offset, size, 0);
+	vkCmdFillBuffer(cb, buffer->buffer[0],
+	                offset, size, data);
 }
 
 void vkk_compute_copyStorage(vkk_compute_t* self,
                              vkk_hazard_e hazard,
                              vkk_buffer_t* src,
                              vkk_buffer_t* dst,
-                             size_t size,
                              size_t src_offset,
-                             size_t dst_offset)
+                             size_t dst_offset,
+                             size_t size)
 {
 	ASSERT(self);
 	ASSERT(vkk_compute_checkStorage(src));

@@ -165,7 +165,7 @@ vkk_buffer_new(vkk_engine_t* engine,
 				// cast away const since blitStorage is read/write
 				if(vkk_xferManager_blitStorage(engine->xfer,
 				                               VKK_XFER_MODE_WRITE,
-				                               self, size, 0,
+				                               self, 0, size,
 				                               (void*) buf) == 0)
 				{
 					goto fail_alloc;
@@ -173,8 +173,8 @@ vkk_buffer_new(vkk_engine_t* engine,
 			}
 			else
 			{
-				if(vkk_xferManager_clearStorage(engine->xfer, self,
-				                                size, 0) == 0)
+				if(vkk_xferManager_fillStorage(engine->xfer, self,
+				                               0, size, 0) == 0)
 				{
 					goto fail_alloc;
 				}
@@ -239,23 +239,24 @@ size_t vkk_buffer_size(vkk_buffer_t* self)
 	return self->size;
 }
 
-int vkk_buffer_clearStorage(vkk_buffer_t* self,
-                            size_t size,
-                            size_t offset)
+int vkk_buffer_fillStorage(vkk_buffer_t* self,
+                           size_t offset,
+                           size_t size,
+                           uint32_t data)
 {
 	ASSERT(vkk_buffer_checkStorage(self));
 
 	vkk_engine_t* engine = self->engine;
 
-	return vkk_xferManager_clearStorage(engine->xfer,
-	                                    self, size, offset);
+	return vkk_xferManager_fillStorage(engine->xfer, self,
+	                                   offset, size, data);
 }
 
 int vkk_buffer_copyStorage(vkk_buffer_t* src,
                            vkk_buffer_t* dst,
-                           size_t size,
                            size_t src_offset,
-                           size_t dst_offset)
+                           size_t dst_offset,
+                           size_t size)
 {
 	ASSERT(vkk_buffer_checkStorage(src));
 	ASSERT(vkk_buffer_checkStorage(dst));
@@ -263,14 +264,13 @@ int vkk_buffer_copyStorage(vkk_buffer_t* src,
 	vkk_engine_t* engine = src->engine;
 
 	return vkk_xferManager_blitStorage2(engine->xfer,
-	                                    src, dst, size,
-	                                    src_offset,
-	                                    dst_offset);
+	                                    src, dst, src_offset,
+	                                    dst_offset, size);
 }
 
 int
 vkk_buffer_readStorage(vkk_buffer_t* self,
-                       size_t size, size_t offset,
+                       size_t offset, size_t size,
                        void* data)
 {
 	ASSERT(vkk_buffer_checkStorage(self));
@@ -280,13 +280,13 @@ vkk_buffer_readStorage(vkk_buffer_t* self,
 
 	return vkk_xferManager_blitStorage(engine->xfer,
 	                                   VKK_XFER_MODE_READ,
-	                                   self, size, offset,
+	                                   self, offset, size,
 	                                   data);
 }
 
 int
 vkk_buffer_writeStorage(vkk_buffer_t* self,
-                        size_t size, size_t offset,
+                        size_t offset, size_t size,
                         const void* data)
 {
 	ASSERT(vkk_buffer_checkStorage(self));
@@ -297,6 +297,6 @@ vkk_buffer_writeStorage(vkk_buffer_t* self,
 	// cast away const since blitStorage is read/write
 	return vkk_xferManager_blitStorage(engine->xfer,
 	                                   VKK_XFER_MODE_WRITE,
-	                                   self, size, offset,
+	                                   self, offset, size,
 	                                   (void*) data);
 }

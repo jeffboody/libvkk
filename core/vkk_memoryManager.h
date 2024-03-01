@@ -66,24 +66,24 @@ void                 vkk_memoryManager_free(vkk_memoryManager_t* self,
                                             vkk_memory_t** _memory);
 void                 vkk_memoryManager_clear(vkk_memoryManager_t* self,
                                              vkk_memory_t* memory,
-                                             size_t size,
-                                             size_t offset);
+                                             size_t offset,
+                                             size_t size);
 void                 vkk_memoryManager_read(vkk_memoryManager_t* self,
                                             vkk_memory_t* memory,
-                                            size_t size,
                                             size_t offset,
+                                            size_t size,
                                             void* buf);
 void                 vkk_memoryManager_write(vkk_memoryManager_t* self,
                                              vkk_memory_t* memory,
-                                             size_t size,
                                              size_t offset,
+                                             size_t size,
                                              const void* buf);
 void                 vkk_memoryManager_blit(vkk_memoryManager_t* self,
                                             vkk_memory_t* src_memory,
                                             vkk_memory_t* dst_memory,
-                                            size_t size,
                                             size_t src_offset,
-                                            size_t dst_offset);
+                                            size_t dst_offset,
+                                            size_t size);
 void                 vkk_memoryManager_meminfo(vkk_memoryManager_t* self,
                                                size_t* _count_chunks,
                                                size_t* _count_slots,

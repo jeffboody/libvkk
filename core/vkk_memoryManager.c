@@ -434,11 +434,11 @@ vkk_memoryManager_allocBuffer(vkk_memoryManager_t* self,
 	{
 		if(buf)
 		{
-			vkk_memoryManager_write(self, memory, size, 0, buf);
+			vkk_memoryManager_write(self, memory, 0, size, buf);
 		}
 		else
 		{
-			vkk_memoryManager_clear(self, memory, size, 0);
+			vkk_memoryManager_clear(self, memory, 0, size);
 		}
 	}
 
@@ -580,8 +580,8 @@ void vkk_memoryManager_free(vkk_memoryManager_t* self,
 
 void vkk_memoryManager_clear(vkk_memoryManager_t* self,
                              vkk_memory_t* memory,
-                             size_t size,
-                             size_t offset)
+                             size_t offset,
+                             size_t size)
 {
 	ASSERT(self);
 	ASSERT(memory);
@@ -595,9 +595,9 @@ void vkk_memoryManager_clear(vkk_memoryManager_t* self,
 
 	if((size == 0) || (size + offset > pool->stride))
 	{
-		LOGE("invalid size=%" PRIu64 ", offset=%" PRIu64
+		LOGE("invalid offset=%" PRIu64 ", size=%" PRIu64
 		     ", stride=%" PRIu64,
-		     (uint64_t) size, (uint64_t) offset,
+		     (uint64_t) offset, (uint64_t) size,
 		     (uint64_t) pool->stride);
 		vkk_memoryManager_chunkUnlock(self, chunk);
 		return;
@@ -621,7 +621,7 @@ void vkk_memoryManager_clear(vkk_memoryManager_t* self,
 
 void vkk_memoryManager_read(vkk_memoryManager_t* self,
                             vkk_memory_t* memory,
-                            size_t size, size_t offset,
+                            size_t offset, size_t size,
                             void* buf)
 {
 	ASSERT(self);
@@ -637,9 +637,9 @@ void vkk_memoryManager_read(vkk_memoryManager_t* self,
 
 	if((size == 0) || (size + offset > pool->stride))
 	{
-		LOGE("invalid size=%" PRIu64 ", offset=%" PRIu64
+		LOGE("invalid offset=%" PRIu64 ", size=%" PRIu64
 		     ", stride=%" PRIu64,
-		     (uint64_t) size, (uint64_t) offset,
+		     (uint64_t) offset, (uint64_t) size,
 		     (uint64_t) pool->stride);
 		vkk_memoryManager_chunkUnlock(self, chunk);
 		return;
@@ -663,8 +663,8 @@ void vkk_memoryManager_read(vkk_memoryManager_t* self,
 
 void vkk_memoryManager_write(vkk_memoryManager_t* self,
                              vkk_memory_t* memory,
-                             size_t size,
                              size_t offset,
+                             size_t size,
                              const void* buf)
 {
 	ASSERT(self);
@@ -680,9 +680,9 @@ void vkk_memoryManager_write(vkk_memoryManager_t* self,
 
 	if((size == 0) || (size + offset > pool->stride))
 	{
-		LOGE("invalid size=%" PRIu64 ", offset=%" PRIu64
+		LOGE("invalid offset=%" PRIu64 ", size=%" PRIu64
 		     ", stride=%" PRIu64,
-		     (uint64_t) size, (uint64_t) offset,
+		     (uint64_t) offset, (uint64_t) size,
 		     (uint64_t) pool->stride);
 		vkk_memoryManager_chunkUnlock(self, chunk);
 		return;
@@ -707,9 +707,9 @@ void vkk_memoryManager_write(vkk_memoryManager_t* self,
 void vkk_memoryManager_blit(vkk_memoryManager_t* self,
                             vkk_memory_t* src_memory,
                             vkk_memory_t* dst_memory,
-                            size_t size,
                             size_t src_offset,
-                            size_t dst_offset)
+                            size_t dst_offset,
+                            size_t size)
 {
 	ASSERT(self);
 	ASSERT(src_memory);
@@ -732,13 +732,13 @@ void vkk_memoryManager_blit(vkk_memoryManager_t* self,
 	   (size + src_offset > src_pool->stride) ||
 	   (size + dst_offset > dst_pool->stride))
 	{
-		LOGE("invalid size=%" PRIu64 ", src_offset=%" PRIu64
+		LOGE("invalid src_offset=%" PRIu64 ", size=%" PRIu64
 		     ", stride=%" PRIu64,
-		     (uint64_t) size, (uint64_t) src_offset,
+		     (uint64_t) src_offset, (uint64_t) size,
 		     (uint64_t) src_pool->stride);
-		LOGE("invalid size=%" PRIu64 ", dst_offset=%" PRIu64
+		LOGE("invalid dst_offset=%" PRIu64 ", size=%" PRIu64
 		     ", stride=%" PRIu64,
-		     (uint64_t) size, (uint64_t) dst_offset,
+		     (uint64_t) dst_offset, (uint64_t) size,
 		     (uint64_t) dst_pool->stride);
 
 		goto fail_size;

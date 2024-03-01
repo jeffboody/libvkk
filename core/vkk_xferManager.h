@@ -55,22 +55,23 @@ typedef struct vkk_xferManager_s
 vkk_xferManager_t* vkk_xferManager_new(vkk_engine_t* engine);
 void               vkk_xferManager_delete(vkk_xferManager_t** _self);
 void               vkk_xferManager_shutdown(vkk_xferManager_t* self);
-int                vkk_xferManager_clearStorage(vkk_xferManager_t* self,
-                                                vkk_buffer_t* buffer,
-                                                size_t size,
-                                                size_t offset);
+int                vkk_xferManager_fillStorage(vkk_xferManager_t* self,
+                                               vkk_buffer_t* buffer,
+                                               size_t offset,
+                                               size_t size,
+                                               uint32_t data);
 int                vkk_xferManager_blitStorage(vkk_xferManager_t* self,
                                                vkk_xferMode_e mode,
                                                vkk_buffer_t* buffer,
-                                               size_t size,
                                                size_t offset,
+                                               size_t size,
                                                void* data);
 int                vkk_xferManager_blitStorage2(vkk_xferManager_t* self,
                                                 vkk_buffer_t* src_buffer,
                                                 vkk_buffer_t* dst_buffer,
-                                                size_t size,
                                                 size_t src_offset,
-                                                size_t dst_offset);
+                                                size_t dst_offset,
+                                                size_t size);
 int                vkk_xferManager_readImage(vkk_xferManager_t* self,
                                              vkk_image_t* image,
                                              void* pixels);
