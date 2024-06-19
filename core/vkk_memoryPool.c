@@ -182,12 +182,11 @@ void vkk_memoryPool_meminfo(vkk_memoryPool_t* self)
 {
 	ASSERT(self);
 
-	int   chunk_count = cc_list_size(self->chunks);
-	float MB          = 1024.0f*1024.0f;
-	float chunk_size  = (float)
-	                    (self->count*self->stride*chunk_count)/MB;
-	LOGI("POOL: count=%i, stride=%i, chunk_count=%i, chunk_size=%0.1f MB",
-	     (int) self->count, (int) self->stride, chunk_count, chunk_size);
+	uint32_t chunk_count = cc_list_size(self->chunks);
+	size_t   chunk_size  = self->count*self->stride*chunk_count;
+	LOGI("POOL: count=%u, stride=%u, chunk_count=%i, chunk_size=%" PRIu64,
+	     (uint32_t) self->count, (uint32_t) self->stride,
+	     chunk_count, (uint64_t) chunk_size);
 
 	cc_listIter_t* iter = cc_list_head(self->chunks);
 	while(iter)

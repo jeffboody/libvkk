@@ -426,6 +426,15 @@ vkk_memoryManager_allocBuffer(vkk_memoryManager_t* self,
 	memory = vkk_memoryManager_alloc(self, &mr, mp_flags);
 	if(memory == NULL)
 	{
+		size_t count_chunks;
+		size_t count_slots;
+		size_t size_chunks;
+		size_t size_slots;
+		vkk_memoryManager_meminfo(self,
+		                          &count_chunks,
+		                          &count_slots,
+		                          &size_chunks,
+		                          &size_slots);
 		return NULL;
 	}
 
@@ -810,9 +819,14 @@ void vkk_memoryManager_meminfo(vkk_memoryManager_t* self,
 
 	// optionally dump debug information
 	#if 0
-		LOGI("MEMINFO: count_chunks=%i, count_slots=%i, size_chunks=%i, size_slots=%i",
-		     (int) self->count_chunks, (int) self->count_slots,
-		     (int) self->size_chunks, (int) self->size_slots);
+		LOGI("MEMINFO: count_chunks=%" PRIu64
+		     ", count_slots=%" PRIu64
+		     ", size_chunks=%" PRIu64
+		     ", size_slots=%" PRIu64,
+		     (uint64_t) self->count_chunks,
+		     (uint64_t) self->count_slots,
+		     (uint64_t) self->size_chunks,
+		     (uint64_t) self->size_slots);
 
 		cc_mapIter_t* miter = cc_map_head(self->pools);
 		while(miter)
