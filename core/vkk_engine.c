@@ -1248,21 +1248,15 @@ const char* vkk_engine_externalPath(vkk_engine_t* self)
 	return self->external_path;
 }
 
-void vkk_engine_meminfo(vkk_engine_t* self,
-                        size_t* _count_chunks,
-                        size_t* _count_slots,
-                        size_t* _size_chunks,
-                        size_t* _size_slots)
+void vkk_engine_memoryInfo(vkk_engine_t* self,
+                           int verbose,
+                           vkk_memoryType_e type,
+                           vkk_memoryInfo_t* info)
 {
 	ASSERT(self);
-	ASSERT(_count_chunks);
-	ASSERT(_count_slots);
-	ASSERT(_size_chunks);
-	ASSERT(_size_slots);
+	ASSERT(info);
 
-	vkk_memoryManager_meminfo(self->mm,
-	                          _count_chunks, _count_slots,
-	                          _size_chunks, _size_slots);
+	vkk_memoryManager_memoryInfo(self->mm, verbose, type, info);
 }
 
 void vkk_engine_imageCaps(vkk_engine_t* self,
@@ -1491,7 +1485,7 @@ vkk_engine_t* vkk_engine_new(vkk_platform_t* platform,
 
 	self->version.major = 1;
 	self->version.minor = 1;
-	self->version.patch = 67;
+	self->version.patch = 68;
 
 	// app info
 	snprintf(self->app_name, 256, "%s", app_name);

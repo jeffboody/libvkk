@@ -39,9 +39,11 @@ vkk_memoryPool_t*
 vkk_memoryPool_new(vkk_memoryManager_t* mm,
                    uint32_t count,
                    VkDeviceSize stride,
-                   uint32_t mt_index)
+                   uint32_t mt_index,
+                   vkk_memoryType_e type)
 {
 	ASSERT(mm);
+	ASSERT(type != VKK_MEMORY_TYPE_ANY);
 
 	vkk_memoryPool_t* self;
 	self = (vkk_memoryPool_t*)
@@ -56,6 +58,7 @@ vkk_memoryPool_new(vkk_memoryManager_t* mm,
 	self->count    = count;
 	self->stride   = stride;
 	self->mt_index = mt_index;
+	self->type     = type;
 
 	self->chunks = cc_list_new();
 	if(self->chunks == NULL)
@@ -88,9 +91,11 @@ void vkk_memoryPool_delete(vkk_memoryPool_t** _self)
 }
 
 vkk_memory_t*
-vkk_memoryPool_alloc(vkk_memoryPool_t* self)
+vkk_memoryPool_alloc(vkk_memoryPool_t* self,
+                     vkk_memoryInfo_t* info)
 {
 	ASSERT(self);
+	ASSERT(info);
 
 	// try to allocate from an existing slot
 	vkk_memoryChunk_t* chunk;
@@ -102,14 +107,14 @@ vkk_memoryPool_alloc(vkk_memoryPool_t* self)
 
 		if(vkk_memoryChunk_slots(chunk))
 		{
-			return vkk_memoryChunk_alloc(chunk);
+			return vkk_memoryChunk_alloc(chunk, info);
 		}
 
 		iter = cc_list_next(iter);
 	}
 
 	// create a new chunk
-	chunk = vkk_memoryChunk_new(self);
+	chunk = vkk_memoryChunk_new(self, info);
 	if(chunk == NULL)
 	{
 		return NULL;
@@ -123,8 +128,9 @@ vkk_memoryPool_alloc(vkk_memoryPool_t* self)
 		goto fail_chunk_iter;
 	}
 
+	// info invalid if alloc fails
 	vkk_memory_t* memory;
-	memory = vkk_memoryChunk_alloc(chunk);
+	memory = vkk_memoryChunk_alloc(chunk, info);
 	if(memory == NULL)
 	{
 		goto fail_memory;
@@ -137,25 +143,27 @@ vkk_memoryPool_alloc(vkk_memoryPool_t* self)
 	fail_memory:
 		cc_list_remove(self->chunks, &chunk_iter);
 	fail_chunk_iter:
-		vkk_memoryChunk_delete(&chunk);
+		vkk_memoryChunk_delete(&chunk, info);
 	return NULL;
 }
 
 int vkk_memoryPool_free(vkk_memoryPool_t* self,
                         int shutdown,
                         vkk_memory_t** _memory,
-                        vkk_memoryChunk_t** _chunk)
+                        vkk_memoryChunk_t** _chunk,
+                        vkk_memoryInfo_t* info)
 {
 	ASSERT(self);
 	ASSERT(_memory);
 	ASSERT(_chunk);
+	ASSERT(info);
 
 	vkk_memory_t* memory = *_memory;
 	if(memory)
 	{
 		// free memory and delete chunk (if needed)
 		vkk_memoryChunk_t* chunk = memory->chunk;
-		if(vkk_memoryChunk_free(chunk, shutdown, _memory))
+		if(vkk_memoryChunk_free(chunk, shutdown, _memory, info))
 		{
 			cc_listIter_t* iter = cc_list_head(self->chunks);
 			while(iter)
@@ -178,22 +186,42 @@ int vkk_memoryPool_free(vkk_memoryPool_t* self,
 	return (cc_list_size(self->chunks) == 0) ? 1 : 0;
 }
 
-void vkk_memoryPool_meminfo(vkk_memoryPool_t* self)
+void vkk_memoryPool_memoryInfo(vkk_memoryPool_t* self,
+                               vkk_memoryType_e type)
 {
 	ASSERT(self);
 
+	if((type == VKK_MEMORY_TYPE_ANY) ||
+	   (type == self->type))
+	{
+		// continue
+	}
+	else
+	{
+		// ignore
+		return;
+	}
+
+	const char* type_name[VKK_MEMORY_TYPE_COUNT] =
+	{
+		"system",
+		"device",
+		"transient",
+	};
+
 	uint32_t chunk_count = cc_list_size(self->chunks);
 	size_t   chunk_size  = self->count*self->stride*chunk_count;
-	LOGI("POOL: count=%u, stride=%u, chunk_count=%i, chunk_size=%" PRIu64,
-	     (uint32_t) self->count, (uint32_t) self->stride,
-	     chunk_count, (uint64_t) chunk_size);
+	LOGI("POOL: type=%s, count=%u, stride=%u, chunk_count=%i, chunk_size=%" PRIu64,
+	     type_name[self->type], (uint32_t) self->count,
+	     (uint32_t) self->stride, chunk_count,
+	     (uint64_t) chunk_size);
 
 	cc_listIter_t* iter = cc_list_head(self->chunks);
 	while(iter)
 	{
 		vkk_memoryChunk_t* chunk;
 		chunk = (vkk_memoryChunk_t*) cc_list_peekIter(iter);
-		vkk_memoryChunk_meminfo(chunk);
+		vkk_memoryChunk_memoryInfo(chunk);
 		iter = cc_list_next(iter);
 	}
 }

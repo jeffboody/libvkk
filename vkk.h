@@ -32,6 +32,16 @@
 
 typedef enum
 {
+	VKK_MEMORY_TYPE_SYSTEM    = 0,
+	VKK_MEMORY_TYPE_DEVICE    = 1,
+	VKK_MEMORY_TYPE_TRANSIENT = 2,
+	VKK_MEMORY_TYPE_ANY       = 3, // not-a-type
+} vkk_memoryType_e;
+
+#define VKK_MEMORY_TYPE_COUNT 3
+
+typedef enum
+{
 	VKK_BLEND_MODE_DISABLED     = 0,
 	VKK_BLEND_MODE_TRANSPARENCY = 1,
 } vkk_blendMode_e;
@@ -192,6 +202,14 @@ typedef struct
 
 typedef struct
 {
+	size_t count_chunks;
+	size_t count_slots;
+	size_t size_chunks;
+	size_t size_slots;
+} vkk_memoryInfo_t;
+
+typedef struct
+{
 	unsigned int texture:1;
 	unsigned int mipmap:1;
 	unsigned int filter_linear:1;
@@ -270,11 +288,10 @@ void            vkk_engine_appInfo(vkk_engine_t* self,
                                    const vkk_version_t** app_version);
 const char*     vkk_engine_internalPath(vkk_engine_t* self);
 const char*     vkk_engine_externalPath(vkk_engine_t* self);
-void            vkk_engine_meminfo(vkk_engine_t* self,
-                                   size_t* _count_chunks,
-                                   size_t* _count_slots,
-                                   size_t* _size_chunks,
-                                   size_t* _size_slots);
+void            vkk_engine_memoryInfo(vkk_engine_t* self,
+                                      int verbose,
+                                      vkk_memoryType_e type,
+                                      vkk_memoryInfo_t* _info);
 void            vkk_engine_imageCaps(vkk_engine_t* self,
                                      vkk_imageFormat_e format,
                                      vkk_imageCaps_t* caps);
@@ -317,30 +334,31 @@ void            vkk_engine_platformCmdDocumentName(vkk_engine_t* self,
  * buffer API
  */
 
-vkk_buffer_t* vkk_buffer_new(vkk_engine_t* engine,
-                             vkk_updateMode_e update,
-                             vkk_bufferUsage_e usage,
-                             size_t size,
-                             const void* buf);
-void          vkk_buffer_delete(vkk_buffer_t** _self);
-size_t        vkk_buffer_size(vkk_buffer_t* self);
-int           vkk_buffer_fillStorage(vkk_buffer_t* self,
-                                     size_t offset,
-                                     size_t size,
-                                     uint32_t data);
-int           vkk_buffer_copyStorage(vkk_buffer_t* src,
-                                     vkk_buffer_t* dst,
-                                     size_t src_offset,
-                                     size_t dst_offset,
-                                     size_t size);
-int           vkk_buffer_readStorage(vkk_buffer_t* self,
-                                     size_t offset,
-                                     size_t size,
-                                     void* data);
-int           vkk_buffer_writeStorage(vkk_buffer_t* self,
-                                      size_t offset,
-                                      size_t size,
-                                      const void* data);
+vkk_buffer_t*    vkk_buffer_new(vkk_engine_t* engine,
+                                vkk_updateMode_e update,
+                                vkk_bufferUsage_e usage,
+                                size_t size,
+                                const void* buf);
+void             vkk_buffer_delete(vkk_buffer_t** _self);
+vkk_memoryType_e vkk_buffer_memoryType(vkk_buffer_t* self);
+size_t           vkk_buffer_size(vkk_buffer_t* self);
+int              vkk_buffer_fillStorage(vkk_buffer_t* self,
+                                        size_t offset,
+                                        size_t size,
+                                        uint32_t data);
+int              vkk_buffer_copyStorage(vkk_buffer_t* src,
+                                        vkk_buffer_t* dst,
+                                        size_t src_offset,
+                                        size_t dst_offset,
+                                        size_t size);
+int              vkk_buffer_readStorage(vkk_buffer_t* self,
+                                        size_t offset,
+                                        size_t size,
+                                        void* data);
+int              vkk_buffer_writeStorage(vkk_buffer_t* self,
+                                         size_t offset,
+                                         size_t size,
+                                         const void* data);
 
 /*
  * image API
@@ -356,6 +374,7 @@ vkk_image_t*      vkk_image_new(vkk_engine_t* engine,
                                 const void* pixels);
 void              vkk_image_delete(vkk_image_t** _self);
 vkk_imageFormat_e vkk_image_format(vkk_image_t* self);
+vkk_memoryType_e  vkk_image_memoryType(vkk_image_t* self);
 size_t            vkk_image_size(vkk_image_t* self,
                                  uint32_t* _width,
                                  uint32_t* _height,

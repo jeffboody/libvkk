@@ -28,7 +28,9 @@
 #include "../../libcc/cc_memory.h"
 #include "vkk_engine.h"
 #include "vkk_image.h"
+#include "vkk_memoryChunk.h"
 #include "vkk_memoryManager.h"
+#include "vkk_memoryPool.h"
 #include "vkk_util.h"
 
 /***********************************************************
@@ -160,9 +162,9 @@ vkk_image_t* vkk_image_new(vkk_engine_t* engine,
 		self->layout_array[i] = VK_IMAGE_LAYOUT_UNDEFINED;
 	}
 
-	// note that the depth images are allocated as transient
-	// buffers with the local_memory flag which allows the
-	// allocation to be performed in tiled memory
+	// depth/MSAA images are allocated as transient memory (if
+	// supported) for improved performance on mobile GPUs by
+	// eliminating the copy from graphics cache to graphics RAM
 	VkImageUsageFlags     usage;
 	VkImageAspectFlags    aspectMask;
 	VkSampleCountFlagBits samples;
@@ -172,28 +174,36 @@ vkk_image_t* vkk_image_new(vkk_engine_t* engine,
 	aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
 	samples    = VK_SAMPLE_COUNT_1_BIT;
 
+	// Android devices have a unified memory architecture so
+	// there is no need for device local memory except for
+	// depth/MSAA buffers
 	#ifdef ANDROID
-	int local_memory = 0;
+	int device_memory = 0;
 	#else
-	int local_memory = 1;
+	int device_memory = 1;
 	#endif
+	int transient_memory = 0;
 
 	if(format == VKK_IMAGE_FORMAT_DEPTH1X)
 	{
-		usage        = VK_IMAGE_USAGE_TRANSIENT_ATTACHMENT_BIT |
-		               VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT;
-		aspectMask   = VK_IMAGE_ASPECT_DEPTH_BIT |
-		               VK_IMAGE_ASPECT_STENCIL_BIT;
-		local_memory = 1;
+		usage      = VK_IMAGE_USAGE_TRANSIENT_ATTACHMENT_BIT |
+		             VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT;
+		aspectMask = VK_IMAGE_ASPECT_DEPTH_BIT |
+		             VK_IMAGE_ASPECT_STENCIL_BIT;
+
+		device_memory    = 1;
+		transient_memory = 1;
 	}
 	else if(format == VKK_IMAGE_FORMAT_DEPTH4X)
 	{
-		usage        = VK_IMAGE_USAGE_TRANSIENT_ATTACHMENT_BIT |
-		               VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT;
-		aspectMask   = VK_IMAGE_ASPECT_DEPTH_BIT |
-		               VK_IMAGE_ASPECT_STENCIL_BIT;
-		samples      = VK_SAMPLE_COUNT_4_BIT;
-		local_memory = 1;
+		usage      = VK_IMAGE_USAGE_TRANSIENT_ATTACHMENT_BIT |
+		             VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT;
+		aspectMask = VK_IMAGE_ASPECT_DEPTH_BIT |
+		             VK_IMAGE_ASPECT_STENCIL_BIT;
+		samples    = VK_SAMPLE_COUNT_4_BIT;
+
+		device_memory    = 1;
+		transient_memory = 1;
 	}
 	else
 	{
@@ -240,7 +250,8 @@ vkk_image_t* vkk_image_new(vkk_engine_t* engine,
 	self->memory =
 		vkk_memoryManager_allocImage(engine->mm,
 		                             self->image,
-		                             local_memory);
+		                             device_memory,
+		                             transient_memory);
 	if(self->memory == NULL)
 	{
 		goto fail_alloc;
@@ -336,6 +347,13 @@ vkk_imageFormat_e vkk_image_format(vkk_image_t* self)
 	ASSERT(self);
 
 	return self->format;
+}
+
+vkk_memoryType_e vkk_image_memoryType(vkk_image_t* self)
+{
+	ASSERT(self);
+
+	return self->memory->chunk->pool->type;
 }
 
 size_t vkk_image_size(vkk_image_t* self,

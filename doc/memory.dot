@@ -27,7 +27,7 @@ digraph MEMORY
 	size="3,1";
 	ratio=fill;
 
-	APP                           [fillcolor=green, style=filled];
+	VKK                           [fillcolor=green, style=filled];
 	vkk_memory_t                  [shape=box, fillcolor=royalblue, style=filled, label="vkk_memory_t\nchunk\noffset"];
 	vkk_memory_delete             [fillcolor=royalblue, style=filled, label="vkk_memory_delete"];
 	vkk_memory_new                [fillcolor=royalblue, style=filled, label="vkk_memory_new"];
@@ -44,10 +44,10 @@ digraph MEMORY
 	vkk_memoryPool_delete         [fillcolor=cyan, style=filled, label="vkk_memoryPool_delete(_self)"];
 	vkk_memoryManager_t           [shape=box, fillcolor=aquamarine, style=filled, label="vkk_memoryManager_t\nengine\nshutdown\ncc_map_t* pools\ncount_chunks\ncount_slots\nsize_chunks\nsize_slots\nmanager_mutex\nchunk_mutex\nchunk_cond"];
 	vkk_memoryManager_alloc       [fillcolor=aquamarine, style=filled, label="vkk_memoryManager_alloc(self, mr)\nLOCK_MANAGER\npool = find(pools) or pool = vkk_memoryPool_new\nLOCK_POOL\nvkk_memoryPool_alloc\nUNLOCK_POOL\nUNLOCK_MANAGER"];
-	vkk_memoryManager_allocImage  [fillcolor=aquamarine, style=filled, label="vkk_memoryManager_allocImage(self, image)\nvkGetImageMemoryRequirements\nvkk_memoryManager_alloc\nvkBindImageMemory"];
-	vkk_memoryManager_allocBuffer [fillcolor=aquamarine, style=filled, label="vkk_memoryManager_allocBuffer(self, buffer, size, buf)\nvkGetBufferMemoryRequirements\nvkk_memoryManager_alloc\nvkk_memoryManager_update\nvkBindBufferMemory"];
+	vkk_memoryManager_allocImage  [fillcolor=aquamarine, style=filled, label="vkk_memoryManager_allocImage(self, device_memory, transient_memory, image)\nvkGetImageMemoryRequirements\nvkk_memoryManager_alloc\nvkBindImageMemory"];
+	vkk_memoryManager_allocBuffer [fillcolor=aquamarine, style=filled, label="vkk_memoryManager_allocBuffer(self, device_memory, buffer, size, buf)\nvkGetBufferMemoryRequirements\nvkk_memoryManager_alloc\nvkk_memoryManager_write or vkk_memoryManager_clear\nvkBindBufferMemory"];
 	vkk_memoryManager_free        [fillcolor=aquamarine, style=filled, label="vkk_memoryManager_free(self, _memory)\nLOCK_MANAGER\nLOCK_POOL\nvkk_memoryPool_free\nUNLOCK_POOL\nUNLOCK_MANAGER\nvkk_memoryChunk_delete\nvkk_memoryPool_delete"];
-	vkk_memoryManager_update      [fillcolor=aquamarine, style=filled, label="vkk_memoryManager_update(self, memory, size, buf)\nLOCK_CHUNK\nvkMapMemory\nmemcpy\nvkUnmapMemory\nUNLOCK_CHUNK"];
+	vkk_memoryManager_update      [fillcolor=aquamarine, style=filled, label="vkk_memoryManager_clear(self, memory, offset, size)\nvkk_memoryManager_read(self, memory, offset, size, buf)\nvkk_memoryManager_write(self, memory, offset, size, buf)\nvkk_memoryManager_blit(self, src, dst, src_offset, dst_offset, size)\nLOCK_CHUNK\nvkMapMemory\nmemcpy\nvkUnmapMemory\nUNLOCK_CHUNK"];
 	vkBindImageMemory             [fillcolor=palegreen,  style=filled];
 	vkBindBufferMemory            [fillcolor=palegreen,  style=filled];
 	vkAllocateMemory              [fillcolor=palegreen,  style=filled];
@@ -63,10 +63,10 @@ digraph MEMORY
 	vkk_memoryPool_t    -> vkk_memoryManager_t [label="pool"];
 	vkk_memoryManager_t -> vkk_memoryPool_t    [label="mm"];
 
-	APP                           -> vkk_memoryManager_allocImage;
-	APP                           -> vkk_memoryManager_allocBuffer;
-	APP                           -> vkk_memoryManager_free;
-	APP                           -> vkk_memoryManager_update;
+	VKK                           -> vkk_memoryManager_allocImage;
+	VKK                           -> vkk_memoryManager_allocBuffer;
+	VKK                           -> vkk_memoryManager_free;
+	VKK                           -> vkk_memoryManager_update;
 	vkk_memoryManager_free        -> vkk_memoryPool_free;
 	vkk_memoryManager_free        -> vkk_memoryPool_delete         [label="if(free)"];
 	vkk_memoryManager_free        -> vkk_memoryChunk_delete        [label="if(chunk)"];

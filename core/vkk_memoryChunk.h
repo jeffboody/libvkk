@@ -40,13 +40,17 @@ typedef struct vkk_memoryChunk_s
 	cc_list_t* slots;
 } vkk_memoryChunk_t;
 
-vkk_memoryChunk_t* vkk_memoryChunk_new(vkk_memoryPool_t* pool);
-void               vkk_memoryChunk_delete(vkk_memoryChunk_t** _self);
+vkk_memoryChunk_t* vkk_memoryChunk_new(vkk_memoryPool_t* pool,
+                                       vkk_memoryInfo_t* info);
+void               vkk_memoryChunk_delete(vkk_memoryChunk_t** _self,
+                                          vkk_memoryInfo_t* info);
 int                vkk_memoryChunk_slots(vkk_memoryChunk_t* self);
-vkk_memory_t*      vkk_memoryChunk_alloc(vkk_memoryChunk_t* self);
+vkk_memory_t*      vkk_memoryChunk_alloc(vkk_memoryChunk_t* self,
+                                         vkk_memoryInfo_t* info);
 int                vkk_memoryChunk_free(vkk_memoryChunk_t* self,
                                         int shutdown,
-                                        vkk_memory_t** _memory);
-void               vkk_memoryChunk_meminfo(vkk_memoryChunk_t* self);
+                                        vkk_memory_t** _memory,
+                                        vkk_memoryInfo_t* info);
+void               vkk_memoryChunk_memoryInfo(vkk_memoryChunk_t* self);
 
 #endif

@@ -37,9 +37,11 @@
 ***********************************************************/
 
 vkk_memoryChunk_t*
-vkk_memoryChunk_new(vkk_memoryPool_t* pool)
+vkk_memoryChunk_new(vkk_memoryPool_t* pool,
+                    vkk_memoryInfo_t* info)
 {
 	ASSERT(pool);
+	ASSERT(info);
 
 	vkk_memoryManager_t* mm     = pool->mm;
 	vkk_engine_t*        engine = mm->engine;
@@ -88,8 +90,9 @@ vkk_memoryChunk_new(vkk_memoryPool_t* pool)
 		goto fail_slots;
 	}
 
-	++mm->count_chunks;
-	mm->size_chunks += (size_t) pool->stride*pool->count;
+	// update performed by manager
+	++info->count_chunks;
+	info->size_chunks += (size_t) pool->stride*pool->count;
 
 	// success
 	return self;
@@ -102,9 +105,11 @@ vkk_memoryChunk_new(vkk_memoryPool_t* pool)
 	return NULL;
 }
 
-void vkk_memoryChunk_delete(vkk_memoryChunk_t** _self)
+void vkk_memoryChunk_delete(vkk_memoryChunk_t** _self,
+                            vkk_memoryInfo_t* info)
 {
 	ASSERT(_self);
+	ASSERT(info);
 
 	vkk_memoryChunk_t* self = *_self;
 	if(self)
@@ -115,8 +120,9 @@ void vkk_memoryChunk_delete(vkk_memoryChunk_t** _self)
 		vkk_memoryManager_t* mm     = pool->mm;
 		vkk_engine_t*        engine = mm->engine;
 
-		--mm->count_chunks;
-		mm->size_chunks -= (size_t) pool->stride*pool->count;
+		// update performed by manager
+		++info->count_chunks;
+		info->size_chunks += (size_t) pool->stride*pool->count;
 
 		cc_listIter_t* iter;
 		iter = cc_list_head(self->slots);
@@ -146,12 +152,13 @@ int vkk_memoryChunk_slots(vkk_memoryChunk_t* self)
 }
 
 vkk_memory_t*
-vkk_memoryChunk_alloc(vkk_memoryChunk_t* self)
+vkk_memoryChunk_alloc(vkk_memoryChunk_t* self,
+                      vkk_memoryInfo_t* info)
 {
 	ASSERT(self);
+	ASSERT(info);
 
-	vkk_memoryPool_t*    pool = self->pool;
-	vkk_memoryManager_t* mm   = pool->mm;
+	vkk_memoryPool_t* pool = self->pool;
 
 	// try to reuse an existing slot
 	vkk_memory_t* memory;
@@ -161,8 +168,11 @@ vkk_memoryChunk_alloc(vkk_memoryChunk_t* self)
 		memory = (vkk_memory_t*)
 		         cc_list_remove(self->slots, &iter);
 		++self->usecount;
-		++mm->count_slots;
-		mm->size_slots += (size_t) pool->stride;
+
+		// update performed by manager
+		++info->count_slots;
+		info->size_slots += (size_t) pool->stride;
+
 		return memory;
 	}
 
@@ -180,28 +190,33 @@ vkk_memoryChunk_alloc(vkk_memoryChunk_t* self)
 
 	++self->slot;
 	++self->usecount;
-	++mm->count_slots;
-	mm->size_slots += (size_t) pool->stride;
+
+	// update performed by manager
+	++info->count_slots;
+	info->size_slots += (size_t) pool->stride;
 
 	return memory;
 }
 
 int vkk_memoryChunk_free(vkk_memoryChunk_t* self,
                          int shutdown,
-                         vkk_memory_t** _memory)
+                         vkk_memory_t** _memory,
+                         vkk_memoryInfo_t* info)
 {
 	ASSERT(self);
 	ASSERT(_memory);
+	ASSERT(info);
 
 	vkk_memory_t* memory = *_memory;
 	if(memory)
 	{
-		vkk_memoryPool_t*    pool = self->pool;
-		vkk_memoryManager_t* mm   = pool->mm;
+		vkk_memoryPool_t* pool = self->pool;
 
 		--self->usecount;
-		--mm->count_slots;
-		mm->size_slots -= (size_t) pool->stride;
+
+		// update performed by manager
+		++info->count_slots;
+		info->size_slots += (size_t) pool->stride;
 
 		if(shutdown)
 		{
@@ -219,7 +234,7 @@ int vkk_memoryChunk_free(vkk_memoryChunk_t* self,
 	return (self->usecount == 0) ? 1 : 0;
 }
 
-void vkk_memoryChunk_meminfo(vkk_memoryChunk_t* self)
+void vkk_memoryChunk_memoryInfo(vkk_memoryChunk_t* self)
 {
 	ASSERT(self);
 
@@ -227,5 +242,6 @@ void vkk_memoryChunk_meminfo(vkk_memoryChunk_t* self)
 
 	float usage = ((float) self->usecount)/
 	              ((float) pool->count);
-	LOGI("CHUNK: usecount=%i, usage=%0.1f", (int) self->usecount, usage);
+	LOGI("CHUNK: usecount=%i, usage=%0.1f",
+	     (int) self->usecount, usage);
 }

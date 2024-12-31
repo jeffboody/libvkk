@@ -35,6 +35,8 @@ typedef struct vkk_memoryPool_s
 	VkDeviceSize stride;
 	uint32_t     mt_index;
 
+	vkk_memoryType_e type;
+
 	// memory chunks
 	cc_list_t* chunks;
 } vkk_memoryPool_t;
@@ -42,13 +44,17 @@ typedef struct vkk_memoryPool_s
 vkk_memoryPool_t* vkk_memoryPool_new(vkk_memoryManager_t* mm,
                                      uint32_t count,
                                      VkDeviceSize stride,
-                                     uint32_t mt_index);
+                                     uint32_t mt_index,
+                                     vkk_memoryType_e type);
 void              vkk_memoryPool_delete(vkk_memoryPool_t** _self);
-vkk_memory_t*     vkk_memoryPool_alloc(vkk_memoryPool_t* self);
+vkk_memory_t*     vkk_memoryPool_alloc(vkk_memoryPool_t* self,
+                                       vkk_memoryInfo_t* info);
 int               vkk_memoryPool_free(vkk_memoryPool_t* self,
                                       int shutdown,
                                       vkk_memory_t** _memory,
-                                      vkk_memoryChunk_t** _chunk);
-void              vkk_memoryPool_meminfo(vkk_memoryPool_t* self);
+                                      vkk_memoryChunk_t** _chunk,
+                                      vkk_memoryInfo_t* info);
+void              vkk_memoryPool_memoryInfo(vkk_memoryPool_t* self,
+                                            vkk_memoryType_e type);
 
 #endif

@@ -32,7 +32,6 @@
 #include "vkk_computePipeline.h"
 #include "vkk_compute.h"
 #include "vkk_engine.h"
-#include "vkk_memoryManager.h"
 #include "vkk_pipelineLayout.h"
 #include "vkk_uniformSetFactory.h"
 #include "vkk_uniformSet.h"

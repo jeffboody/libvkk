@@ -46,6 +46,38 @@ typedef struct
 ***********************************************************/
 
 static void
+vkk_memoryManager_addInfo(vkk_memoryManager_t* self,
+                          vkk_memoryType_e type,
+                          vkk_memoryInfo_t* info)
+{
+	ASSERT(self);
+	ASSERT(info);
+
+	vkk_memoryInfo_t* pinfo = &self->info[type];
+
+	pinfo->count_chunks += info->count_chunks;
+	pinfo->count_slots  += info->count_slots;
+	pinfo->size_chunks  += info->size_chunks;
+	pinfo->size_slots   += info->size_slots;
+}
+
+static void
+vkk_memoryManager_subInfo(vkk_memoryManager_t* self,
+                          vkk_memoryType_e type,
+                          vkk_memoryInfo_t* info)
+{
+	ASSERT(self);
+	ASSERT(info);
+
+	vkk_memoryInfo_t* pinfo = &self->info[type];
+
+	pinfo->count_chunks -= info->count_chunks;
+	pinfo->count_slots  -= info->count_slots;
+	pinfo->size_chunks  -= info->size_chunks;
+	pinfo->size_slots   -= info->size_slots;
+}
+
+static void
 vkk_memoryManager_lock(vkk_memoryManager_t* self)
 {
 	ASSERT(self);
@@ -176,7 +208,8 @@ static size_t computePoolCount(size_t stride)
 static vkk_memory_t*
 vkk_memoryManager_alloc(vkk_memoryManager_t* self,
                         VkMemoryRequirements* mr,
-                        VkFlags mp_flags)
+                        VkFlags mp_flags,
+                        vkk_memoryType_e type)
 {
 	ASSERT(self);
 	ASSERT(mr);
@@ -221,7 +254,8 @@ vkk_memoryManager_alloc(vkk_memoryManager_t* self,
 		{
 			// otherwise create a new pool
 			uint32_t count = computePoolCount((size_t) stride);
-			pool = vkk_memoryPool_new(self, count, stride, mt_index);
+			pool = vkk_memoryPool_new(self, count, stride, mt_index,
+			                          type);
 			if(pool == NULL)
 			{
 				goto fail_pool;
@@ -245,13 +279,15 @@ vkk_memoryManager_alloc(vkk_memoryManager_t* self,
 	}
 
 	// memory is unitialized
-	vkk_memory_t* memory = vkk_memoryPool_alloc(pool);
+	vkk_memoryInfo_t info   = { 0 };
+	vkk_memory_t*    memory = vkk_memoryPool_alloc(pool, &info);
 	if(memory == NULL)
 	{
 		vkk_memoryManager_poolUnlock(self, pool);
 		goto fail_alloc;
 	}
 	vkk_memoryManager_poolUnlock(self, pool);
+	vkk_memoryManager_addInfo(self, type, &info);
 	vkk_memoryManager_unlock(self);
 
 	// success
@@ -274,7 +310,10 @@ vkk_memoryManager_alloc(vkk_memoryManager_t* self,
 	}
 	fail_pool:
 	fail_memory_type:
+	{
 		vkk_memoryManager_unlock(self);
+		LOGE("alloc failed");
+	}
 	return NULL;
 }
 
@@ -401,7 +440,7 @@ void vkk_memoryManager_shutdown(vkk_memoryManager_t* self)
 vkk_memory_t*
 vkk_memoryManager_allocBuffer(vkk_memoryManager_t* self,
                               VkBuffer buffer,
-                              int local_memory,
+                              int device_memory,
                               size_t size,
                               const void* buf)
 {
@@ -410,36 +449,31 @@ vkk_memoryManager_allocBuffer(vkk_memoryManager_t* self,
 
 	vkk_engine_t* engine = self->engine;
 
+	vkk_memoryType_e type = VKK_MEMORY_TYPE_SYSTEM;
+
 	VkMemoryRequirements mr;
 	vkGetBufferMemoryRequirements(engine->device,
 	                              buffer, &mr);
 
 	VkFlags mp_flags = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT |
 	                   VK_MEMORY_PROPERTY_HOST_COHERENT_BIT;
-	if(local_memory)
+	if(device_memory)
 	{
 		mp_flags = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
+		type     = VKK_MEMORY_TYPE_DEVICE;
 	}
 
 	// memory is unitialized
 	vkk_memory_t* memory;
-	memory = vkk_memoryManager_alloc(self, &mr, mp_flags);
+	memory = vkk_memoryManager_alloc(self, &mr, mp_flags,
+	                                 type);
 	if(memory == NULL)
 	{
-		size_t count_chunks;
-		size_t count_slots;
-		size_t size_chunks;
-		size_t size_slots;
-		vkk_memoryManager_meminfo(self,
-		                          &count_chunks,
-		                          &count_slots,
-		                          &size_chunks,
-		                          &size_slots);
 		return NULL;
 	}
 
-	// initialize non-local memory
-	if(local_memory == 0)
+	// initialize non-device memory
+	if(device_memory == 0)
 	{
 		if(buf)
 		{
@@ -474,25 +508,28 @@ vkk_memoryManager_allocBuffer(vkk_memoryManager_t* self,
 vkk_memory_t*
 vkk_memoryManager_allocImage(vkk_memoryManager_t* self,
                              VkImage image,
-                             int local_memory)
+                             int device_memory,
+                             int transient_memory)
 {
 	ASSERT(self);
 
 	vkk_engine_t* engine = self->engine;
 
+	vkk_memoryType_e type = VKK_MEMORY_TYPE_SYSTEM;
+
 	VkMemoryRequirements mr;
 	vkGetImageMemoryRequirements(engine->device,
 	                             image, &mr);
 
-	// note that the local_memory flag allows the allocation
-	// to be performed in tiled memory
-	// this is used for cases where the image memory is used
-	// for rendering and is not visible to the user
-	// e.g. the depth and MSAA images
+	// transient_memory is an optional flag allows the
+	// allocation to be performed in tiled memory
+	// use cases include image memory for depth/MSAA buffers
+	// where rendering is not visible to the user
 	VkFlags mp_flags = 0;
-	if(local_memory)
+	if(transient_memory)
 	{
 		mp_flags = VK_MEMORY_PROPERTY_LAZILY_ALLOCATED_BIT;
+		type     = VKK_MEMORY_TYPE_TRANSIENT;
 
 		uint32_t mt_index;
 		if(vkk_engine_getMemoryTypeIndex(engine,
@@ -501,12 +538,19 @@ vkk_memoryManager_allocImage(vkk_memoryManager_t* self,
 		                                 &mt_index) == 0)
 		{
 			mp_flags = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
+			type     = VKK_MEMORY_TYPE_DEVICE;
 		}
+	}
+	else if(device_memory)
+	{
+		mp_flags = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
+		type     = VKK_MEMORY_TYPE_DEVICE;
 	}
 
 	// memory is unitialized
 	vkk_memory_t* memory;
-	memory = vkk_memoryManager_alloc(self, &mr, mp_flags);
+	memory = vkk_memoryManager_alloc(self, &mr, mp_flags,
+	                                 type);
 	if(memory == NULL)
 	{
 		return NULL;
@@ -538,13 +582,15 @@ void vkk_memoryManager_free(vkk_memoryManager_t* self,
 	ASSERT(self);
 	ASSERT(_memory);
 
-	vkk_memory_t* memory = *_memory;
+	vkk_memory_t*    memory = *_memory;
+	vkk_memoryInfo_t info   = { 0 };
 	if(memory)
 	{
 		vkk_memoryManager_lock(self);
 
 		// free the memory and delete pool (if necessary);
 		vkk_memoryPool_t* pool = memory->chunk->pool;
+		vkk_memoryType_e  type = pool->type;
 
 		int locked = 0;
 		while(locked == 0)
@@ -558,9 +604,10 @@ void vkk_memoryManager_free(vkk_memoryManager_t* self,
 			.stride   = (uint32_t) pool->stride
 		};
 
+		// call subInfo for either case
 		vkk_memoryChunk_t* chunk = NULL;
 		if(vkk_memoryPool_free(pool, self->shutdown,
-		                       _memory, &chunk))
+		                       _memory, &chunk, &info))
 		{
 			cc_mapIter_t* miter;
 			miter = cc_map_findp(self->pools,
@@ -578,11 +625,12 @@ void vkk_memoryManager_free(vkk_memoryManager_t* self,
 			vkk_memoryManager_poolUnlock(self, pool);
 			pool = NULL;
 		}
+		vkk_memoryChunk_delete(&chunk, &info);
+		vkk_memoryManager_subInfo(self, type, &info);
 		vkk_memoryManager_unlock(self);
 
-		// chunk and pool may be deleted while unlocked
-		// since they have been detached from the manager
-		vkk_memoryChunk_delete(&chunk);
+		// pool may be deleted while unlocked since it has been
+		// detached from the manager
 		vkk_memoryPool_delete(&pool);
 	}
 }
@@ -799,43 +847,79 @@ void vkk_memoryManager_blit(vkk_memoryManager_t* self,
 	}
 }
 
-void vkk_memoryManager_meminfo(vkk_memoryManager_t* self,
-                               size_t* _count_chunks,
-                               size_t* _count_slots,
-                               size_t* _size_chunks,
-                               size_t* _size_slots)
+void vkk_memoryManager_memoryInfo(vkk_memoryManager_t* self,
+                                  int verbose,
+                                  vkk_memoryType_e type,
+                                  vkk_memoryInfo_t* info)
 {
 	ASSERT(self);
-	ASSERT(_count_chunks);
-	ASSERT(_count_slots);
-	ASSERT(_size_chunks);
-	ASSERT(_size_slots);
+	ASSERT(info);
 
 	vkk_memoryManager_lock(self);
-	*_count_chunks = self->count_chunks;
-	*_count_slots  = self->count_slots;
-	*_size_chunks  = self->size_chunks;
-	*_size_slots   = self->size_slots;
+
+	vkk_memoryInfo_t info_any = { 0 };
+
+	int i;
+	for(i = 0; i < VKK_MEMORY_TYPE_COUNT; ++i)
+	{
+		info_any.count_chunks += self->info[i].count_chunks;
+		info_any.count_slots  += self->info[i].count_slots;
+		info_any.size_chunks  += self->info[i].size_chunks;
+		info_any.size_slots   += self->info[i].size_slots;
+	}
+
+	// store the requested memory info
+	if(type == VKK_MEMORY_TYPE_ANY)
+	{
+		memcpy(info, &info_any,
+		       sizeof(vkk_memoryInfo_t));
+	}
+	else
+	{
+		memcpy(info, &self->info[type],
+		       sizeof(vkk_memoryInfo_t));
+	}
 
 	// optionally dump debug information
-	#if 0
-		LOGI("MEMINFO: count_chunks=%" PRIu64
+	if(verbose)
+	{
+		const char* type_name[VKK_MEMORY_TYPE_COUNT] =
+		{
+			"system",
+			"device",
+			"transient",
+		};
+
+		LOGI("MEMINFO: type=any, count_chunks=%" PRIu64
 		     ", count_slots=%" PRIu64
 		     ", size_chunks=%" PRIu64
 		     ", size_slots=%" PRIu64,
-		     (uint64_t) self->count_chunks,
-		     (uint64_t) self->count_slots,
-		     (uint64_t) self->size_chunks,
-		     (uint64_t) self->size_slots);
+		     (uint64_t) info_any.count_chunks,
+		     (uint64_t) info_any.count_slots,
+		     (uint64_t) info_any.size_chunks,
+		     (uint64_t) info_any.size_slots);
+
+		for(i = 0; i < VKK_MEMORY_TYPE_COUNT; ++i)
+		{
+			LOGI("MEMINFO: type=%s, count_chunks=%" PRIu64
+			     ", count_slots=%" PRIu64
+			     ", size_chunks=%" PRIu64
+			     ", size_slots=%" PRIu64,
+			     type_name[i],
+			     (uint64_t) self->info[i].count_chunks,
+			     (uint64_t) self->info[i].count_slots,
+			     (uint64_t) self->info[i].size_chunks,
+			     (uint64_t) self->info[i].size_slots);
+		}
 
 		cc_mapIter_t* miter = cc_map_head(self->pools);
 		while(miter)
 		{
 			vkk_memoryPool_t* pool;
 			pool = (vkk_memoryPool_t*) cc_map_val(miter);
-			vkk_memoryPool_meminfo(pool);
+			vkk_memoryPool_memoryInfo(pool, type);
 			miter = cc_map_next(miter);
 		}
-	#endif
+	}
 	vkk_memoryManager_unlock(self);
 }

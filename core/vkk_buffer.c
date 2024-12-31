@@ -29,7 +29,9 @@
 #include "../../libcc/cc_memory.h"
 #include "vkk_buffer.h"
 #include "vkk_engine.h"
+#include "vkk_memoryChunk.h"
 #include "vkk_memoryManager.h"
+#include "vkk_memoryPool.h"
 
 /***********************************************************
 * private                                                  *
@@ -230,6 +232,13 @@ void vkk_buffer_delete(vkk_buffer_t** _self)
 		                        (void*) self);
 		*_self = NULL;
 	}
+}
+
+vkk_memoryType_e vkk_buffer_memoryType(vkk_buffer_t* self)
+{
+	ASSERT(self);
+
+	return self->memory[0]->chunk->pool->type;
 }
 
 size_t vkk_buffer_size(vkk_buffer_t* self)

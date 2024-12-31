@@ -40,10 +40,7 @@ typedef struct vkk_memoryManager_s
 	// map from mt_index/stride to memory pool
 	cc_map_t* pools;
 
-	size_t count_chunks;
-	size_t count_slots;
-	size_t size_chunks;
-	size_t size_slots;
+	vkk_memoryInfo_t info[VKK_MEMORY_TYPE_COUNT];
 
 	pthread_mutex_t manager_mutex;
 	pthread_mutex_t chunk_mutex[VKK_CHUNK_UPDATERS];
@@ -56,12 +53,13 @@ void                 vkk_memoryManager_delete(vkk_memoryManager_t** _self);
 void                 vkk_memoryManager_shutdown(vkk_memoryManager_t* self);
 vkk_memory_t*        vkk_memoryManager_allocBuffer(vkk_memoryManager_t* self,
                                                    VkBuffer buffer,
-                                                   int local_memory,
+                                                   int device_memory,
                                                    size_t size,
                                                    const void* buf);
 vkk_memory_t*        vkk_memoryManager_allocImage(vkk_memoryManager_t* self,
                                                   VkImage image,
-                                                  int local_memory);
+                                                  int device_memory,
+                                                  int transient_memory);
 void                 vkk_memoryManager_free(vkk_memoryManager_t* self,
                                             vkk_memory_t** _memory);
 void                 vkk_memoryManager_clear(vkk_memoryManager_t* self,
@@ -84,10 +82,9 @@ void                 vkk_memoryManager_blit(vkk_memoryManager_t* self,
                                             size_t src_offset,
                                             size_t dst_offset,
                                             size_t size);
-void                 vkk_memoryManager_meminfo(vkk_memoryManager_t* self,
-                                               size_t* _count_chunks,
-                                               size_t* _count_slots,
-                                               size_t* _size_chunks,
-                                               size_t* _size_slots);
+void                 vkk_memoryManager_memoryInfo(vkk_memoryManager_t* self,
+                                                  int verbose,
+                                                  vkk_memoryType_e type,
+                                                  vkk_memoryInfo_t* info);
 
 #endif
