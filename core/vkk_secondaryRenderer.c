@@ -60,7 +60,7 @@ vkk_secondaryRenderer_new(vkk_renderer_t* executor)
 
 	vkk_renderer_t* base = &(self->base);
 	vkk_renderer_init(base, VKK_RENDERER_TYPE_SECONDARY,
-	                  engine);
+	                  executor->msaa, engine);
 
 	self->executor = executor;
 

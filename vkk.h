@@ -164,6 +164,12 @@ typedef enum
 
 typedef enum
 {
+	VKK_RENDERER_MSAA_DISABLE = 0,
+	VKK_RENDERER_MSAA_ENABLE  = 1,
+} vkk_rendererMsaa_e;
+
+typedef enum
+{
 	VKK_HAZARD_NONE = 0,
 	VKK_HAZARD_WAR  = 1,
 	VKK_HAZARD_RAW  = 2,
@@ -436,11 +442,13 @@ void                   vkk_computePipeline_delete(vkk_computePipeline_t** _self)
 vkk_renderer_t*  vkk_renderer_newImage(vkk_engine_t* engine,
                                        uint32_t width,
                                        uint32_t height,
-                                       vkk_imageFormat_e format);
+                                       vkk_imageFormat_e format,
+                                       vkk_rendererMsaa_e msaa);
 vkk_renderer_t*  vkk_renderer_newImageStream(vkk_renderer_t* consumer,
                                              uint32_t width,
                                              uint32_t height,
                                              vkk_imageFormat_e format,
+                                             vkk_rendererMsaa_e msaa,
                                              int mipmap,
                                              vkk_stage_e stage);
 vkk_renderer_t*  vkk_renderer_newSecondary(vkk_renderer_t* executor);

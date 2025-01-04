@@ -26,16 +26,23 @@
 
 #include "../vkk.h"
 #include "vkk_commandBuffer.h"
+#include "vkk_memory.h"
 #include "vkk_renderer.h"
 
 typedef struct
 {
-	vkk_renderer_t       base;
-	vkk_renderer_t*      consumer;
-	vkk_image_t**        images;
-	VkImageView*         image_views;
-	VkRenderPass         render_pass;
-	vkk_image_t*         depth_image;
+	vkk_renderer_t  base;
+	vkk_renderer_t* consumer;
+	vkk_image_t**   images;
+	VkImageView*    image_views;
+	VkRenderPass    render_pass;
+	vkk_image_t*    depth_image;
+
+	// msaa buffer
+	VkImage       msaa_image;
+	vkk_memory_t* msaa_memory;
+	VkImageView   msaa_image_view;
+
 	VkFramebuffer*       framebuffers;
 	vkk_commandBuffer_t* cmd_buffers;
 
@@ -50,6 +57,7 @@ vkk_renderer_t* vkk_imageStreamRenderer_new(vkk_renderer_t* consumer,
                                             uint32_t width,
                                             uint32_t height,
                                             vkk_imageFormat_e format,
+                                            vkk_rendererMsaa_e msaa,
                                             int mipmap,
                                             vkk_stage_e stage);
 void            vkk_imageStreamRenderer_delete(vkk_renderer_t** _base);

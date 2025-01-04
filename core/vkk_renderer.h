@@ -45,6 +45,7 @@ typedef struct vkk_renderer_s
 	int active;
 
 	vkk_rendererType_e type;
+	vkk_rendererMsaa_e msaa;
 	vkk_rendererMode_e mode;
 
 	// currently bound graphics pipeline
@@ -67,6 +68,7 @@ typedef struct vkk_renderer_s
 
 void            vkk_renderer_init(vkk_renderer_t* self,
                                   vkk_rendererType_e type,
+                                  vkk_rendererMsaa_e msaa,
                                   vkk_engine_t* engine);
 void            vkk_renderer_addWaitSemaphore(vkk_renderer_t* self,
                                               VkSemaphore semaphore);

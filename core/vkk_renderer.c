@@ -277,6 +277,7 @@ vkk_renderer_checkUpdate(vkk_renderer_t* self,
 
 void vkk_renderer_init(vkk_renderer_t* self,
                        vkk_rendererType_e type,
+                       vkk_rendererMsaa_e msaa,
                        vkk_engine_t* engine)
 {
 	ASSERT(self);
@@ -284,6 +285,7 @@ void vkk_renderer_init(vkk_renderer_t* self,
 
 	self->engine = engine;
 	self->type   = type;
+	self->msaa   = msaa;
 }
 
 void vkk_renderer_addWaitSemaphore(vkk_renderer_t* self,
@@ -535,12 +537,13 @@ vkk_renderer_tsCurrent(vkk_renderer_t* self)
 vkk_renderer_t*
 vkk_renderer_newImage(vkk_engine_t* engine,
                       uint32_t width, uint32_t height,
-                      vkk_imageFormat_e format)
+                      vkk_imageFormat_e format,
+                      vkk_rendererMsaa_e msaa)
 {
 	ASSERT(engine);
 
 	return vkk_imageRenderer_new(engine, width, height,
-	                             format);
+	                             format, msaa);
 }
 
 vkk_renderer_t*
@@ -548,13 +551,15 @@ vkk_renderer_newImageStream(vkk_renderer_t* consumer,
                             uint32_t width,
                             uint32_t height,
                             vkk_imageFormat_e format,
+                            vkk_rendererMsaa_e msaa,
                             int mipmap,
                             vkk_stage_e stage)
 {
 	ASSERT(consumer);
 
 	return vkk_imageStreamRenderer_new(consumer, width, height,
-	                                   format, mipmap, stage);
+	                                   format, msaa, mipmap,
+	                                   stage);
 }
 
 vkk_renderer_t*
@@ -819,15 +824,9 @@ uint32_t vkk_renderer_msaaSampleCount(vkk_renderer_t* self)
 
 	vkk_engine_t* engine = self->engine;
 
-	if(self->type == VKK_RENDERER_TYPE_DEFAULT)
+	if(self->msaa)
 	{
 		return engine->msaa_sample_count;
-	}
-	else if(self->type == VKK_RENDERER_TYPE_SECONDARY)
-	{
-		vkk_secondaryRenderer_t* sr;
-		sr = (vkk_secondaryRenderer_t*) self;
-		return vkk_renderer_msaaSampleCount(sr->executor);
 	}
 
 	return 1;

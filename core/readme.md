@@ -666,6 +666,12 @@ following functions.
 
 	typedef enum
 	{
+		VKK_RENDERER_MSAA_DISABLE = 0,
+		VKK_RENDERER_MSAA_ENABLE  = 1,
+	} vkk_rendererMsaa_e;
+
+	typedef enum
+	{
 		VKK_STAGE_DEPTH   = 0,
 		VKK_STAGE_VS      = 1,
 		VKK_STAGE_FS      = 2,
@@ -676,11 +682,13 @@ following functions.
 	vkk_renderer_t* vkk_renderer_newImage(vkk_engine_t* engine,
 	                                      uint32_t width,
 	                                      uint32_t height,
-	                                      vkk_imageFormat_e format);
+	                                      vkk_imageFormat_e format,
+	                                      vkk_rendererMsaa_e msaa);
 	vkk_renderer_t* vkk_renderer_newImageStream(vkk_renderer_t* consumer,
 	                                            uint32_t width,
 	                                            uint32_t height,
 	                                            vkk_imageFormat_e format,
+	                                            vkk_rendererMsaa_e msaa,
 	                                            int mipmap,
 	                                            vkk_stage_e stage);
 	vkk_renderer_t* vkk_renderer_newSecondary(vkk_renderer_t* executor);
@@ -785,9 +793,7 @@ query the renderer for the surface size.
 	                              uint32_t* _height);
 
 The vkk\_renderer\_msaaSampleCount() function allows the
-app to query the renderer for the MSAA sample count. MSAA
-is currently only supported for the default renderer and
-will be automatically enabled if supported by the hardware.
+app to query the renderer for the MSAA sample count.
 
 	uint32_t vkk_renderer_msaaSampleCount(vkk_renderer_t* self);
 

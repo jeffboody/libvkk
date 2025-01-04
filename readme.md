@@ -51,7 +51,7 @@ The core graphics features exposed by VKK include.
 * 2D and 3D images with optional mipmapping are supported
 * Triangles are the only primitive supported
 * Transparency, depth clearing, viewport and scissors
-* 4x MSAA rendering is supported for the default renderer
+* 4x MSAA rendering is supported
 * Compute objects
 
 See [VKK Core](core/readme.md) for more details.

@@ -31,6 +31,7 @@
 #include "vkk_engine.h"
 #include "vkk_image.h"
 #include "vkk_imageStreamRenderer.h"
+#include "vkk_memoryManager.h"
 #include "vkk_util.h"
 
 /***********************************************************
@@ -48,13 +49,33 @@ vkk_imageStreamRenderer_newRenderpass(vkk_renderer_t* base,
 
 	vkk_engine_t* engine = base->engine;
 
-	VkAttachmentDescription attachments[2] =
+	// when MSAA is enabled
+	// 1. rendering is performed on a MS attachment
+	// 2. the MS attachment is resolved to the color
+	//    attachment at the end of the renderpass
+	// 3. the depth attachment has the same number of samples
+	//    as the MS attachment
+	//
+	// otherwise
+	// 1. rendering is performed on the color attachment
+	// 2. the resolve step is not required
+	VkSampleCountFlagBits samples;
+	VkAttachmentLoadOp    load_op;
+	samples = VK_SAMPLE_COUNT_4_BIT;
+	load_op = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+	if(vkk_renderer_msaaSampleCount(base) == 1)
+	{
+		samples = VK_SAMPLE_COUNT_1_BIT;
+		load_op = VK_ATTACHMENT_LOAD_OP_CLEAR;
+	}
+
+	VkAttachmentDescription attachments[] =
 	{
 		{
 			.flags          = 0,
 			.format         = vkk_util_imageFormat(format),
 			.samples        = VK_SAMPLE_COUNT_1_BIT,
-			.loadOp         = VK_ATTACHMENT_LOAD_OP_CLEAR,
+			.loadOp         = load_op,
 			.storeOp        = VK_ATTACHMENT_STORE_OP_STORE,
 			.stencilLoadOp  = VK_ATTACHMENT_LOAD_OP_DONT_CARE,
 			.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE,
@@ -64,14 +85,25 @@ vkk_imageStreamRenderer_newRenderpass(vkk_renderer_t* base,
 		{
 			.flags          = 0,
 			.format         = VK_FORMAT_D24_UNORM_S8_UINT,
-			.samples        = VK_SAMPLE_COUNT_1_BIT,
+			.samples        = samples,
 			.loadOp         = VK_ATTACHMENT_LOAD_OP_CLEAR,
 			.storeOp        = VK_ATTACHMENT_STORE_OP_DONT_CARE,
 			.stencilLoadOp  = VK_ATTACHMENT_LOAD_OP_DONT_CARE,
 			.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE,
 			.initialLayout  = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL,
 			.finalLayout    = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL
-		}
+		},
+		{
+			.flags          = 0,
+			.format         = vkk_util_imageFormat(format),
+			.samples        = samples,
+			.loadOp         = VK_ATTACHMENT_LOAD_OP_CLEAR,
+			.storeOp        = VK_ATTACHMENT_STORE_OP_DONT_CARE,
+			.stencilLoadOp  = VK_ATTACHMENT_LOAD_OP_DONT_CARE,
+			.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE,
+			.initialLayout  = VK_IMAGE_LAYOUT_UNDEFINED,
+			.finalLayout    = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL
+		},
 	};
 
 	VkAttachmentReference color_attachment =
@@ -86,6 +118,22 @@ vkk_imageStreamRenderer_newRenderpass(vkk_renderer_t* base,
 		.layout     = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL
 	};
 
+	VkAttachmentReference msaa_attachment =
+	{
+		.attachment = 2,
+		.layout     = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL
+	};
+
+	uint32_t attachment_count = 3;
+	VkAttachmentReference* _color_attachment   = &msaa_attachment;
+	VkAttachmentReference* _resolve_attachment = &color_attachment;
+	if(vkk_renderer_msaaSampleCount(base) == 1)
+	{
+		attachment_count    = 2;
+		_color_attachment   = &color_attachment;
+		_resolve_attachment = NULL;
+	}
+
 	VkSubpassDescription subpass =
 	{
 		.flags = 0,
@@ -93,8 +141,8 @@ vkk_imageStreamRenderer_newRenderpass(vkk_renderer_t* base,
 		.inputAttachmentCount    = 0,
 		.pInputAttachments       = NULL,
 		.colorAttachmentCount    = 1,
-		.pColorAttachments       = &color_attachment,
-		.pResolveAttachments     = NULL,
+		.pColorAttachments       = _color_attachment,
+		.pResolveAttachments     = _resolve_attachment,
 		.pDepthStencilAttachment = &depth_attachment,
 		.preserveAttachmentCount = 0,
 		.pPreserveAttachments    = NULL,
@@ -105,7 +153,7 @@ vkk_imageStreamRenderer_newRenderpass(vkk_renderer_t* base,
 		.sType           = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO,
 		.pNext           = NULL,
 		.flags           = 0,
-		.attachmentCount = 2,
+		.attachmentCount = attachment_count,
 		.pAttachments    = attachments,
 		.subpassCount    = 1,
 		.pSubpasses      = &subpass,
@@ -121,6 +169,139 @@ vkk_imageStreamRenderer_newRenderpass(vkk_renderer_t* base,
 	}
 
 	return 1;
+}
+
+static int
+vkk_imageStreamRenderer_newMSAA(vkk_renderer_t* base,
+                                uint32_t width,
+                                uint32_t height,
+                                vkk_imageFormat_e format)
+{
+	ASSERT(base);
+
+	vkk_imageStreamRenderer_t* self;
+	self = (vkk_imageStreamRenderer_t*) base;
+
+	vkk_engine_t* engine = base->engine;
+
+	// check if MSAA is supported
+	if(vkk_renderer_msaaSampleCount(base) == 1)
+	{
+		return 1;
+	}
+
+	// when MSAA is enabled
+	// 1. create a transient MS image with 4x samples
+	// 2. it is important to note that the MS image
+	//    sets the local_memory flag which allows the
+	//    allocation to be performed in tiled memory
+	// 3. the MS image only requires a single backing image
+	//    since only one frame is rendered at a time
+	VkImageUsageFlags  usage      = VK_IMAGE_USAGE_TRANSIENT_ATTACHMENT_BIT |
+	                                VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
+	VkImageAspectFlags aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+	VkImageCreateInfo i_info =
+	{
+		.sType       = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,
+		.pNext       = NULL,
+		.flags       = 0,
+		.imageType   = VK_IMAGE_TYPE_2D,
+		.format      = vkk_util_imageFormat(format),
+		.extent      =
+		{
+			.width  = width,
+			.height = height,
+			.depth  = 1
+		},
+		.mipLevels   = 1,
+		.arrayLayers = 1,
+		.samples     = VK_SAMPLE_COUNT_4_BIT,
+		.tiling      = VK_IMAGE_TILING_OPTIMAL,
+		.usage       = usage,
+		.sharingMode = VK_SHARING_MODE_EXCLUSIVE,
+		.queueFamilyIndexCount = 1,
+		.pQueueFamilyIndices   = &engine->queue_family_index,
+		.initialLayout         = VK_IMAGE_LAYOUT_UNDEFINED
+	};
+
+	if(vkCreateImage(engine->device, &i_info, NULL,
+	                 &self->msaa_image) != VK_SUCCESS)
+	{
+		LOGE("vkCreateImage failed");
+		return 0;
+	}
+
+	// msaa memory is uninitialized
+	self->msaa_memory =
+		vkk_memoryManager_allocImage(engine->mm,
+		                             self->msaa_image, 1, 1);
+	if(self->msaa_memory == NULL)
+	{
+		goto fail_alloc;
+	}
+
+	VkImageViewCreateInfo iv_info =
+	{
+		.sType      = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO,
+		.pNext      = NULL,
+		.flags      = 0,
+		.image      = self->msaa_image,
+		.viewType   = VK_IMAGE_VIEW_TYPE_2D,
+		.format     = vkk_util_imageFormat(format),
+		.components =
+		{
+			.r = VK_COMPONENT_SWIZZLE_IDENTITY,
+			.g = VK_COMPONENT_SWIZZLE_IDENTITY,
+			.b = VK_COMPONENT_SWIZZLE_IDENTITY,
+			.a = VK_COMPONENT_SWIZZLE_IDENTITY
+		},
+		.subresourceRange =
+		{
+			.aspectMask     = aspectMask,
+			.baseMipLevel   = 0,
+			.levelCount     = 1,
+			.baseArrayLayer = 0,
+			.layerCount     = 1
+		}
+	};
+
+	if(vkCreateImageView(engine->device, &iv_info, NULL,
+	                     &self->msaa_image_view) != VK_SUCCESS)
+	{
+		LOGE("vkCreateImageView failed");
+		goto fail_image_view;
+	}
+
+	// success
+	return 1;
+
+	// failure
+	fail_image_view:
+		vkk_memoryManager_free(engine->mm, &self->msaa_memory);
+	fail_alloc:
+	{
+		vkDestroyImage(engine->device, self->msaa_image, NULL);
+		self->msaa_image = VK_NULL_HANDLE;
+	}
+	return 0;
+}
+
+static void
+vkk_imageStreamRenderer_deleteMSAA(vkk_renderer_t* base)
+{
+	ASSERT(base);
+
+	vkk_imageStreamRenderer_t* self;
+	self = (vkk_imageStreamRenderer_t*) base;
+
+	vkk_engine_t* engine = base->engine;
+
+	vkDestroyImageView(engine->device, self->msaa_image_view,
+	                   NULL);
+	vkk_memoryManager_free(engine->mm, &self->msaa_memory);
+	vkDestroyImage(engine->device, self->msaa_image, NULL);
+	self->msaa_image_view = VK_NULL_HANDLE;
+	self->msaa_image      = VK_NULL_HANDLE;
 }
 
 static int
@@ -147,13 +328,20 @@ vkk_imageStreamRenderer_newFramebuffer(vkk_renderer_t* base,
 		return 0;
 	}
 
+	int attachment_count = 3;
+	if(vkk_renderer_msaaSampleCount(base) == 1)
+	{
+		attachment_count = 2;
+	}
+
 	int i;
 	for(i = 0; i < image_count; ++i)
 	{
-		VkImageView attachments[2] =
+		VkImageView attachments[] =
 		{
 			self->image_views[i],
 			self->depth_image->image_view,
+			self->msaa_image_view,
 		};
 
 		VkFramebufferCreateInfo f_info =
@@ -162,7 +350,7 @@ vkk_imageStreamRenderer_newFramebuffer(vkk_renderer_t* base,
 			.pNext           = NULL,
 			.flags           = 0,
 			.renderPass      = self->render_pass,
-			.attachmentCount = 2,
+			.attachmentCount = attachment_count,
 			.pAttachments    = attachments,
 			.width           = width,
 			.height          = height,
@@ -235,6 +423,7 @@ vkk_renderer_t*
 vkk_imageStreamRenderer_new(vkk_renderer_t* consumer,
                             uint32_t width, uint32_t height,
                             vkk_imageFormat_e format,
+                            vkk_rendererMsaa_e msaa,
                             int mipmap,
                             vkk_stage_e stage)
 {
@@ -258,7 +447,7 @@ vkk_imageStreamRenderer_new(vkk_renderer_t* consumer,
 
 	vkk_renderer_t* base = &(self->base);
 	vkk_renderer_init(base, VKK_RENDERER_TYPE_IMAGESTREAM,
-	                  engine);
+	                  msaa, engine);
 
 	self->images = (vkk_image_t**)
 	               CALLOC(image_count, sizeof(vkk_image_t*));
@@ -339,12 +528,25 @@ vkk_imageStreamRenderer_new(vkk_renderer_t* consumer,
 		goto fail_renderpass;
 	}
 
+	vkk_imageFormat_e format_depth;
+	format_depth = VKK_IMAGE_FORMAT_DEPTH4X;
+	if(vkk_renderer_msaaSampleCount(base) == 1)
+	{
+		format_depth = VKK_IMAGE_FORMAT_DEPTH1X;
+	}
+
 	self->depth_image = vkk_image_new(engine, width, height,
-	                                  1, VKK_IMAGE_FORMAT_DEPTH1X,
+	                                  1, format_depth,
 	                                  0, VKK_STAGE_DEPTH, NULL);
 	if(self->depth_image == NULL)
 	{
 		goto fail_depth;
+	}
+
+	if(vkk_imageStreamRenderer_newMSAA(base, width, height,
+	                                   format) == 0)
+	{
+		goto fail_msaa;
 	}
 
 	if(vkk_imageStreamRenderer_newFramebuffer(base, width,
@@ -368,6 +570,8 @@ vkk_imageStreamRenderer_new(vkk_renderer_t* consumer,
 	fail_cmd_buffers:
 		vkk_imageStreamRenderer_deleteFramebuffer(base);
 	fail_framebuffer:
+		vkk_imageStreamRenderer_deleteMSAA(base);
+	fail_msaa:
 		vkk_image_delete(&self->depth_image);
 	fail_depth:
 		vkDestroyRenderPass(engine->device,
@@ -416,6 +620,7 @@ void vkk_imageStreamRenderer_delete(vkk_renderer_t** _base)
 
 		vkk_commandBuffer_delete(&self->cmd_buffers);
 		vkk_imageStreamRenderer_deleteFramebuffer(base);
+		vkk_imageStreamRenderer_deleteMSAA(base);
 		vkk_image_delete(&self->depth_image);
 		vkDestroyRenderPass(engine->device,
 		                    self->render_pass, NULL);
@@ -529,7 +734,7 @@ vkk_imageStreamRenderer_begin(vkk_renderer_t* base,
 		vkCmdSetScissor(cb, 0, 1, &scissor);
 	}
 
-	VkClearValue cv[2] =
+	VkClearValue cv[] =
 	{
 		{
 			.color =
@@ -549,8 +754,26 @@ vkk_imageStreamRenderer_begin(vkk_renderer_t* base,
 				.depth   = 1.0f,
 				.stencil = 0
 			}
-		}
+		},
+		{
+			.color =
+			{
+				.float32 =
+				{
+					clear_color[0],
+					clear_color[1],
+					clear_color[2],
+					clear_color[3]
+				}
+			},
+		},
 	};
+
+	uint32_t cv_count = 3;
+	if(vkk_renderer_msaaSampleCount(base) == 1)
+	{
+		cv_count = 2;
+	}
 
 	VkRenderPassBeginInfo rp_info =
 	{
@@ -561,7 +784,7 @@ vkk_imageStreamRenderer_begin(vkk_renderer_t* base,
 		.renderArea      = { { .x=0, .y=0 },
 		                     { .width=image->width,
 		                       .height=image->height } },
-		.clearValueCount = 2,
+		.clearValueCount = cv_count,
 		.pClearValues    = cv
 	};
 

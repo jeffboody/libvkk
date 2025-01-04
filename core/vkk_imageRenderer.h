@@ -26,6 +26,7 @@
 
 #include "../vkk.h"
 #include "vkk_commandBuffer.h"
+#include "vkk_memory.h"
 #include "vkk_renderer.h"
 
 typedef struct
@@ -44,6 +45,11 @@ typedef struct
 	// depth buffer
 	vkk_image_t* depth_image;
 
+	// msaa buffer
+	VkImage       msaa_image;
+	vkk_memory_t* msaa_memory;
+	VkImageView   msaa_image_view;
+
 	// framebuffer state
 	vkk_image_t*  src_image;
 	VkFramebuffer framebuffer;
@@ -59,7 +65,8 @@ typedef struct
 vkk_renderer_t* vkk_imageRenderer_new(vkk_engine_t* engine,
                                       uint32_t width,
                                       uint32_t height,
-                                      vkk_imageFormat_e format);
+                                      vkk_imageFormat_e format,
+                                      vkk_rendererMsaa_e msaa);
 void            vkk_imageRenderer_delete(vkk_renderer_t** _base);
 
 /*

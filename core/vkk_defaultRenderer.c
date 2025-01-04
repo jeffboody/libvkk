@@ -408,9 +408,10 @@ vkk_defaultRenderer_newMSAA(vkk_renderer_t* base)
 	vkk_defaultRenderer_t* self;
 	self = (vkk_defaultRenderer_t*) base;
 
-	// check if MSAA is supported
 	vkk_engine_t* engine = base->engine;
-	if(engine->msaa_sample_count == 1)
+
+	// check if MSAA is supported
+	if(vkk_renderer_msaaSampleCount(base) == 1)
 	{
 		return 1;
 	}
@@ -930,8 +931,14 @@ vkk_defaultRenderer_new(vkk_engine_t* engine)
 		return NULL;
 	}
 
+	// optionally disable MSAA for the default renderer
+	vkk_rendererMsaa_e msaa = VKK_RENDERER_MSAA_ENABLE;
+	#ifdef VKK_ENGINE_DISABLE_MSAA
+		msaa = VKK_RENDERER_MSAA_DISABLE;
+	#endif
+
 	vkk_renderer_t* base = &(self->base);
-	vkk_renderer_init(base, VKK_RENDERER_TYPE_DEFAULT,
+	vkk_renderer_init(base, VKK_RENDERER_TYPE_DEFAULT, msaa,
 	                  engine);
 
 	if(vkk_defaultRenderer_newSwapchain(base) == 0)
