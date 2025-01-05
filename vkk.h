@@ -297,7 +297,7 @@ const char*     vkk_engine_externalPath(vkk_engine_t* self);
 void            vkk_engine_memoryInfo(vkk_engine_t* self,
                                       int verbose,
                                       vkk_memoryType_e type,
-                                      vkk_memoryInfo_t* _info);
+                                      vkk_memoryInfo_t* info);
 void            vkk_engine_imageCaps(vkk_engine_t* self,
                                      vkk_imageFormat_e format,
                                      vkk_imageCaps_t* caps);

@@ -41,21 +41,34 @@ in the internal path.
 
 	const char* vkk_engine_externalPath(vkk_engine_t* self);
 
-The vkk\_engine\_meminfo() function can be used to determine
+The vkk\_engine\_memoryInfo() function can be used to determine
 the amount of graphics memory allocated by the engine. A
 chunk represents a block of Vulkan memory from which a pool
 will perform suballocations. A slot is an individual
 suballocation from a chunk. The size\_chunks is the total
 amount of graphics memory allocated and size\_slots is the
-amount of memory actually used. Note that there is a compile
-time debug setting in vkk\_engine\_meminfo() that can be
-used to print all allocations.
+amount of memory actually used.
 
-	void vkk_engine_meminfo(vkk_engine_t* self,
-	                        size_t* _count_chunks,
-	                        size_t* _count_slots,
-	                        size_t* _size_chunks,
-	                        size_t* _size_slots);
+	typedef enum
+	{
+		VKK_MEMORY_TYPE_SYSTEM    = 0,
+		VKK_MEMORY_TYPE_DEVICE    = 1,
+		VKK_MEMORY_TYPE_TRANSIENT = 2,
+		VKK_MEMORY_TYPE_ANY       = 3, // not-a-type
+	} vkk_memoryType_e;
+
+	typedef struct
+	{
+		size_t count_chunks;
+		size_t count_slots;
+		size_t size_chunks;
+		size_t size_slots;
+	} vkk_memoryInfo_t;
+
+	void vkk_engine_memoryInfo(vkk_engine_t* self,
+	                           int verbose,
+	                           vkk_memoryType_e type,
+	                           vkk_memoryInfo_t* info);
 
 The vkk\_engine\_imageCaps() function allows the app to
 query the capabilities supported for a given image format.
@@ -231,6 +244,19 @@ can be used to create/destroy buffer objects.
 	                             const void* buf);
 	void vkk_buffer_delete(vkk_buffer_t** _self);
 
+The vkk\_buffer\_memoryType() function allows the app to
+query the internal buffer memory type.
+
+	typedef enum
+	{
+		VKK_MEMORY_TYPE_SYSTEM    = 0,
+		VKK_MEMORY_TYPE_DEVICE    = 1,
+		VKK_MEMORY_TYPE_TRANSIENT = 2,
+		VKK_MEMORY_TYPE_ANY       = 3, // not-a-type
+	} vkk_memoryType_e;
+
+	vkk_memoryType_e vkk_buffer_memoryType(vkk_buffer_t* self);
+
 The uniform, vertex and index buffer usage is only supported
 for rendering while the storage buffer usage is only
 supported for compute.
@@ -339,7 +365,40 @@ which are then converted internally to half floats.
 The vkk\_image\_format() function allows the app to query
 the image format.
 
+	typedef enum
+	{
+		VKK_IMAGE_FORMAT_RGBA8888 = 0,
+		VKK_IMAGE_FORMAT_RGBA4444 = 1,
+		VKK_IMAGE_FORMAT_RGBAF32  = 2,
+		VKK_IMAGE_FORMAT_RGBAF16  = 3,
+		VKK_IMAGE_FORMAT_RGB888   = 4,
+		VKK_IMAGE_FORMAT_RGB565   = 5,
+		VKK_IMAGE_FORMAT_RGBF32   = 6,
+		VKK_IMAGE_FORMAT_RGBF16   = 7,
+		VKK_IMAGE_FORMAT_RG88     = 8,
+		VKK_IMAGE_FORMAT_RGF32    = 9,
+		VKK_IMAGE_FORMAT_RGF16    = 10,
+		VKK_IMAGE_FORMAT_R8       = 11,
+		VKK_IMAGE_FORMAT_RF32     = 12,
+		VKK_IMAGE_FORMAT_RF16     = 13,
+		VKK_IMAGE_FORMAT_DEPTH1X  = 14,
+		VKK_IMAGE_FORMAT_DEPTH4X  = 15,
+	} vkk_imageFormat_e;
+
 	vkk_imageFormat_e vkk_image_format(vkk_image_t* self);
+
+The vkk\_image\_memoryType() function allows the app to
+query the internal image memory type.
+
+	typedef enum
+	{
+		VKK_MEMORY_TYPE_SYSTEM    = 0,
+		VKK_MEMORY_TYPE_DEVICE    = 1,
+		VKK_MEMORY_TYPE_TRANSIENT = 2,
+		VKK_MEMORY_TYPE_ANY       = 3, // not-a-type
+	} vkk_memoryType_e;
+
+	vkk_memoryType_e vkk_image_memoryType(vkk_image_t* self);
 
 The vkk\_image\_size() function allows the app to query the
 image size, width and height.
