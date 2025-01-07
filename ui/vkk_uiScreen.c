@@ -1721,7 +1721,7 @@ void vkk_uiScreen_draw(vkk_uiScreen_t* self)
 	}
 
 	cc_mat4f_t mvp;
-	cc_mat4f_orthoVK(&mvp, 1, 0.0f, w, h, 0.0f, 0.0f, 2.0f);
+	cc_mat4f_ortho(&mvp, 1, 0.0f, w, h, 0.0f, 0.0f, 2.0f);
 	vkk_renderer_updateBuffer(self->renderer, self->ub00_mvp,
 	                          sizeof(cc_mat4f_t),
 	                          (const void*) &mvp);
