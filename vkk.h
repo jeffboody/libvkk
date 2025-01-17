@@ -221,7 +221,7 @@ typedef struct
 	unsigned int filter_linear:1;
 	unsigned int target:1;
 	unsigned int target_blend:1;
-	unsigned int pad:17;
+	unsigned int pad:27;
 } vkk_imageCaps_t;
 
 typedef struct
