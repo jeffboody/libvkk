@@ -74,11 +74,9 @@ typedef enum
 	VKK_IMAGE_FORMAT_R8       = 11,
 	VKK_IMAGE_FORMAT_RF32     = 12,
 	VKK_IMAGE_FORMAT_RF16     = 13,
-	VKK_IMAGE_FORMAT_DEPTH1X  = 14,
-	VKK_IMAGE_FORMAT_DEPTH4X  = 15,
 } vkk_imageFormat_e;
 
-#define VKK_IMAGE_FORMAT_COUNT 16
+#define VKK_IMAGE_FORMAT_COUNT 14
 
 typedef enum
 {
@@ -115,14 +113,13 @@ typedef enum
 
 typedef enum
 {
-	VKK_STAGE_DEPTH   = 0,
-	VKK_STAGE_VS      = 1,
-	VKK_STAGE_FS      = 2,
-	VKK_STAGE_VSFS    = 3,
-	VKK_STAGE_COMPUTE = 4,
+	VKK_STAGE_VS      = 0,
+	VKK_STAGE_FS      = 1,
+	VKK_STAGE_VSFS    = 2,
+	VKK_STAGE_COMPUTE = 3,
 } vkk_stage_e;
 
-#define VKK_STAGE_COUNT 5
+#define VKK_STAGE_COUNT 4
 
 typedef enum
 {

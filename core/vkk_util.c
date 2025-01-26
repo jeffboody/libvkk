@@ -110,13 +110,11 @@ void vkk_util_imageMemoryBarrierRaw(VkImage image,
 
 	VkPipelineStageFlagBits ps_map[VKK_STAGE_COUNT] =
 	{
-		0,
 		VK_PIPELINE_STAGE_VERTEX_SHADER_BIT,
 		VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
 		VK_PIPELINE_STAGE_VERTEX_SHADER_BIT | VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
 		VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
 	};
-
 
 	// derive the access masks and stage flags from the
 	// image layouts
@@ -206,8 +204,6 @@ VkFormat vkk_util_imageFormat(vkk_imageFormat_e format)
 		VK_FORMAT_R8_UNORM,
 		VK_FORMAT_R32_SFLOAT,
 		VK_FORMAT_R16_SFLOAT,
-		VK_FORMAT_D24_UNORM_S8_UINT,
-		VK_FORMAT_D24_UNORM_S8_UINT,
 	};
 
 	return format_map[format];

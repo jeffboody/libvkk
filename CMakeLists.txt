@@ -60,6 +60,7 @@ add_library(vkk
 
             # Source
             platform/vkk_platformAndroid.c
+            core/vkk_auxImage.c
             core/vkk_buffer.c
             core/vkk_commandBuffer.c
             core/vkk_computePipeline.c

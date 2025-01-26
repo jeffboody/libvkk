@@ -55,7 +55,6 @@ vkk_uniformSetFactory_new(vkk_engine_t* engine,
 
 	VkShaderStageFlags ss_map[VKK_STAGE_COUNT] =
 	{
-		0,
 		VK_SHADER_STAGE_VERTEX_BIT,
 		VK_SHADER_STAGE_FRAGMENT_BIT,
 		VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT,

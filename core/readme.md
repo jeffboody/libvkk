@@ -94,8 +94,6 @@ transparency blending.
 		VKK_IMAGE_FORMAT_R8       = 11,
 		VKK_IMAGE_FORMAT_RF32     = 12,
 		VKK_IMAGE_FORMAT_RF16     = 13,
-		VKK_IMAGE_FORMAT_DEPTH1X  = 14,
-		VKK_IMAGE_FORMAT_DEPTH4X  = 15,
 	} vkk_imageFormat_e;
 
 	typedef struct
@@ -311,12 +309,10 @@ Images
 Image objects may be created by the app for textures and
 image rendering. However, you must query the image
 capabilities to determine if the image format is supported.
-The VKK\_IMAGE\_FORMAT\_DEPTH formats and stage are only
-used internally by the engine. Images whose width, height
-and depth are a power-of-two may be mipmapped. The stage
-flag indicates if the image will be used as a texture for
-vertex shaders and/or fragment shaders. The pixels may be
-NULL for image rendering.
+Images whose width, height and depth are a power-of-two may
+be mipmapped. The stage flag indicates if the image will be
+used as a texture for vertex shaders and/or fragment
+shaders. The pixels may be NULL for image rendering.
 
 The vkk\_image\_new() and vkk\_image\_delete() functions can
 be used to create/destroy image objects. Note that the F16
@@ -339,17 +335,14 @@ which are then converted internally to half floats.
 		VKK_IMAGE_FORMAT_R8       = 11,
 		VKK_IMAGE_FORMAT_RF32     = 12,
 		VKK_IMAGE_FORMAT_RF16     = 13,
-		VKK_IMAGE_FORMAT_DEPTH1X  = 14,
-		VKK_IMAGE_FORMAT_DEPTH4X  = 15,
 	} vkk_imageFormat_e;
 
 	typedef enum
 	{
-		VKK_STAGE_DEPTH   = 0,
-		VKK_STAGE_VS      = 1,
-		VKK_STAGE_FS      = 2,
-		VKK_STAGE_VSFS    = 3,
-		VKK_STAGE_COMPUTE = 4,
+		VKK_STAGE_VS      = 0,
+		VKK_STAGE_FS      = 1,
+		VKK_STAGE_VSFS    = 2,
+		VKK_STAGE_COMPUTE = 3,
 	} vkk_stage_e;
 
 	vkk_image_t* vkk_image_new(vkk_engine_t* engine,
@@ -381,8 +374,6 @@ the image format.
 		VKK_IMAGE_FORMAT_R8       = 11,
 		VKK_IMAGE_FORMAT_RF32     = 12,
 		VKK_IMAGE_FORMAT_RF16     = 13,
-		VKK_IMAGE_FORMAT_DEPTH1X  = 14,
-		VKK_IMAGE_FORMAT_DEPTH4X  = 15,
 	} vkk_imageFormat_e;
 
 	vkk_imageFormat_e vkk_image_format(vkk_image_t* self);
@@ -509,11 +500,10 @@ sampler filtering and mipmapping modes.
 
 	typedef enum
 	{
-		VKK_STAGE_DEPTH   = 0,
-		VKK_STAGE_VS      = 1,
-		VKK_STAGE_FS      = 2,
-		VKK_STAGE_VSFS    = 3,
-		VKK_STAGE_COMPUTE = 4,
+		VKK_STAGE_VS      = 0,
+		VKK_STAGE_FS      = 1,
+		VKK_STAGE_VSFS    = 2,
+		VKK_STAGE_COMPUTE = 3,
 	} vkk_stage_e;
 
 	typedef enum
@@ -719,8 +709,6 @@ following functions.
 		VKK_IMAGE_FORMAT_R8       = 11,
 		VKK_IMAGE_FORMAT_RF32     = 12,
 		VKK_IMAGE_FORMAT_RF16     = 13,
-		VKK_IMAGE_FORMAT_DEPTH1X  = 14,
-		VKK_IMAGE_FORMAT_DEPTH4X  = 15,
 	} vkk_imageFormat_e;
 
 	typedef enum
@@ -731,11 +719,10 @@ following functions.
 
 	typedef enum
 	{
-		VKK_STAGE_DEPTH   = 0,
-		VKK_STAGE_VS      = 1,
-		VKK_STAGE_FS      = 2,
-		VKK_STAGE_VSFS    = 3,
-		VKK_STAGE_COMPUTE = 4,
+		VKK_STAGE_VS      = 0,
+		VKK_STAGE_FS      = 1,
+		VKK_STAGE_VSFS    = 2,
+		VKK_STAGE_COMPUTE = 3,
 	} vkk_stage_e;
 
 	vkk_renderer_t* vkk_renderer_newImage(vkk_engine_t* engine,

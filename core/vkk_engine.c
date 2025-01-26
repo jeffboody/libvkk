@@ -1481,7 +1481,7 @@ vkk_engine_t* vkk_engine_new(vkk_platform_t* platform,
 
 	self->version.major = 1;
 	self->version.minor = 1;
-	self->version.patch = 71;
+	self->version.patch = 72;
 
 	// app info
 	snprintf(self->app_name, 256, "%s", app_name);
@@ -2594,16 +2594,6 @@ void vkk_engine_deleteSurface(vkk_engine_t* self)
 	vkDestroySurfaceKHR(self->instance,
 	                    self->surface, NULL);
 	self->surface = VK_NULL_HANDLE;
-}
-
-void
-vkk_engine_deleteDefaultDepthImage(vkk_engine_t* self,
-                                   vkk_image_t** _image)
-{
-	ASSERT(self);
-	ASSERT(_image);
-
-	vkk_engine_destructImage(self, 0, _image);
 }
 
 void

@@ -1,6 +1,7 @@
 TARGET  = libvkk.a
 CLASSES = \
 	platform/vkk_platformLinux   \
+	core/vkk_auxImage            \
 	core/vkk_buffer              \
 	core/vkk_commandBuffer       \
 	core/vkk_computePipeline     \

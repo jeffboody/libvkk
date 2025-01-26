@@ -28,6 +28,7 @@
 #include "../../libcc/cc_log.h"
 #include "../../libcc/cc_memory.h"
 #include "../../libcc/cc_timestamp.h"
+#include "vkk_auxImage.h"
 #include "vkk_defaultRenderer.h"
 #include "vkk_commandBuffer.h"
 #include "vkk_engine.h"
@@ -366,38 +367,22 @@ vkk_defaultRenderer_newDepth(vkk_renderer_t* base)
 
 	vkk_engine_t* engine = base->engine;
 
-	vkk_imageFormat_e format_depth;
-	format_depth = VKK_IMAGE_FORMAT_DEPTH4X;
+	int use_msaa = 1;
 	if(vkk_renderer_msaaSampleCount(base) == 1)
 	{
-		format_depth = VKK_IMAGE_FORMAT_DEPTH1X;
+		use_msaa = 0;
 	}
 
-	self->depth_image = vkk_image_new(engine,
-	                                  self->swapchain_extent.width,
-	                                  self->swapchain_extent.height,
-	                                  1, format_depth,
-	                                  0, VKK_STAGE_DEPTH, NULL);
+	self->depth_image = vkk_auxImage_newDepth(engine,
+	                                          self->swapchain_extent.width,
+	                                          self->swapchain_extent.height,
+	                                          use_msaa);
 	if(self->depth_image == NULL)
 	{
 		return 0;
 	}
 
 	return 1;
-}
-
-static void
-vkk_defaultRenderer_deleteDepth(vkk_renderer_t* base)
-{
-	ASSERT(base);
-
-	vkk_defaultRenderer_t* self;
-	self = (vkk_defaultRenderer_t*) base;
-
-	vkk_engine_t* engine = base->engine;
-
-	vkk_engine_deleteDefaultDepthImage(engine,
-	                                   &self->depth_image);
 }
 
 static int
@@ -416,118 +401,16 @@ vkk_defaultRenderer_newMSAA(vkk_renderer_t* base)
 		return 1;
 	}
 
-	// when MSAA is enabled
-	// 1. create a transient MS image with 4x samples
-	// 2. it is important to note that the MS image
-	//    sets the local_memory flag which allows the
-	//    allocation to be performed in tiled memory
-	// 3. the MS image only requires a single backing image
-	//    since only one frame is rendered at a time
-	VkImageUsageFlags  usage      = VK_IMAGE_USAGE_TRANSIENT_ATTACHMENT_BIT |
-	                                VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
-	VkImageAspectFlags aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-	VkImageCreateInfo i_info =
+	self->msaa_image = vkk_auxImage_newMSAA(engine,
+	                                        self->swapchain_extent.width,
+	                                        self->swapchain_extent.height,
+	                                        self->swapchain_format);
+	if(self->msaa_image == NULL)
 	{
-		.sType       = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,
-		.pNext       = NULL,
-		.flags       = 0,
-		.imageType   = VK_IMAGE_TYPE_2D,
-		.format      = self->swapchain_format,
-		.extent      =
-		{
-			.width  = self->swapchain_extent.width,
-			.height = self->swapchain_extent.height,
-			.depth  = 1
-		},
-		.mipLevels   = 1,
-		.arrayLayers = 1,
-		.samples     = VK_SAMPLE_COUNT_4_BIT,
-		.tiling      = VK_IMAGE_TILING_OPTIMAL,
-		.usage       = usage,
-		.sharingMode = VK_SHARING_MODE_EXCLUSIVE,
-		.queueFamilyIndexCount = 1,
-		.pQueueFamilyIndices   = &engine->queue_family_index,
-		.initialLayout         = VK_IMAGE_LAYOUT_UNDEFINED
-	};
-
-	if(vkCreateImage(engine->device, &i_info, NULL,
-	                 &self->msaa_image) != VK_SUCCESS)
-	{
-		LOGE("vkCreateImage failed");
 		return 0;
 	}
 
-	// msaa memory is uninitialized
-	self->msaa_memory =
-		vkk_memoryManager_allocImage(engine->mm,
-		                             self->msaa_image, 1, 1);
-	if(self->msaa_memory == NULL)
-	{
-		goto fail_alloc;
-	}
-
-	VkImageViewCreateInfo iv_info =
-	{
-		.sType      = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO,
-		.pNext      = NULL,
-		.flags      = 0,
-		.image      = self->msaa_image,
-		.viewType   = VK_IMAGE_VIEW_TYPE_2D,
-		.format     = self->swapchain_format,
-		.components =
-		{
-			.r = VK_COMPONENT_SWIZZLE_IDENTITY,
-			.g = VK_COMPONENT_SWIZZLE_IDENTITY,
-			.b = VK_COMPONENT_SWIZZLE_IDENTITY,
-			.a = VK_COMPONENT_SWIZZLE_IDENTITY
-		},
-		.subresourceRange =
-		{
-			.aspectMask     = aspectMask,
-			.baseMipLevel   = 0,
-			.levelCount     = 1,
-			.baseArrayLayer = 0,
-			.layerCount     = 1
-		}
-	};
-
-	if(vkCreateImageView(engine->device, &iv_info, NULL,
-	                     &self->msaa_image_view) != VK_SUCCESS)
-	{
-		LOGE("vkCreateImageView failed");
-		goto fail_image_view;
-	}
-
-	// success
 	return 1;
-
-	// failure
-	fail_image_view:
-		vkk_memoryManager_free(engine->mm, &self->msaa_memory);
-	fail_alloc:
-	{
-		vkDestroyImage(engine->device, self->msaa_image, NULL);
-		self->msaa_image = VK_NULL_HANDLE;
-	}
-	return 0;
-}
-
-static void
-vkk_defaultRenderer_deleteMSAA(vkk_renderer_t* base)
-{
-	ASSERT(base);
-
-	vkk_defaultRenderer_t* self;
-	self = (vkk_defaultRenderer_t*) base;
-
-	vkk_engine_t* engine = base->engine;
-
-	vkDestroyImageView(engine->device, self->msaa_image_view,
-	                   NULL);
-	vkk_memoryManager_free(engine->mm, &self->msaa_memory);
-	vkDestroyImage(engine->device, self->msaa_image, NULL);
-	self->msaa_image_view = VK_NULL_HANDLE;
-	self->msaa_image      = VK_NULL_HANDLE;
 }
 
 static int
@@ -597,7 +480,8 @@ vkk_defaultRenderer_newFramebuffer(vkk_renderer_t* base)
 		{
 			self->framebuffer_image_views[i],
 			self->depth_image->image_view,
-			self->msaa_image_view,
+			self->msaa_image ? self->msaa_image->image_view :
+			                   VK_NULL_HANDLE,
 		};
 
 		int attachment_count = 3;
@@ -744,7 +628,7 @@ vkk_defaultRenderer_newRenderpass(vkk_renderer_t* base)
 			.storeOp        = VK_ATTACHMENT_STORE_OP_DONT_CARE,
 			.stencilLoadOp  = VK_ATTACHMENT_LOAD_OP_DONT_CARE,
 			.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE,
-			.initialLayout  = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL,
+			.initialLayout  = VK_IMAGE_LAYOUT_UNDEFINED,
 			.finalLayout    = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL
 		},
 		{
@@ -999,9 +883,9 @@ vkk_defaultRenderer_new(vkk_engine_t* engine)
 	fail_cmd_buffers:
 		vkk_defaultRenderer_deleteFramebuffer(base);
 	fail_framebuffer:
-		vkk_defaultRenderer_deleteMSAA(base);
+		vkk_auxImage_delete(&self->msaa_image);
 	fail_msaa:
-		vkk_defaultRenderer_deleteDepth(base);
+		vkk_auxImage_delete(&self->depth_image);
 	fail_depth:
 		vkDestroyRenderPass(engine->device,
 		                    self->render_pass, NULL);
@@ -1044,8 +928,8 @@ void vkk_defaultRenderer_delete(vkk_renderer_t** _base)
 
 		vkk_commandBuffer_delete(&self->cmd_buffers);
 		vkk_defaultRenderer_deleteFramebuffer(base);
-		vkk_defaultRenderer_deleteMSAA(base);
-		vkk_defaultRenderer_deleteDepth(base);
+		vkk_auxImage_delete(&self->msaa_image);
+		vkk_auxImage_delete(&self->depth_image);
 		vkDestroyRenderPass(engine->device,
 		                    self->render_pass, NULL);
 		vkk_defaultRenderer_deleteSwapchain(base);
@@ -1065,8 +949,8 @@ int vkk_defaultRenderer_resize(vkk_renderer_t* base)
 
 	vkDeviceWaitIdle(engine->device);
 
-	vkk_defaultRenderer_deleteMSAA(base);
-	vkk_defaultRenderer_deleteDepth(base);
+	vkk_auxImage_delete(&self->msaa_image);
+	vkk_auxImage_delete(&self->depth_image);
 	vkk_defaultRenderer_deleteFramebuffer(base);
 	vkk_defaultRenderer_deleteSwapchain(base);
 
@@ -1097,9 +981,9 @@ int vkk_defaultRenderer_resize(vkk_renderer_t* base)
 
 	// failure
 	fail_framebuffer:
-		vkk_defaultRenderer_deleteMSAA(base);
+		vkk_auxImage_delete(&self->msaa_image);
 	fail_msaa:
-		vkk_defaultRenderer_deleteDepth(base);
+		vkk_auxImage_delete(&self->depth_image);
 	fail_depth:
 		vkk_defaultRenderer_deleteSwapchain(base);
 	return 0;
@@ -1109,12 +993,15 @@ int vkk_defaultRenderer_recreate(vkk_renderer_t* base)
 {
 	ASSERT(base);
 
+	vkk_defaultRenderer_t* self;
+	self = (vkk_defaultRenderer_t*) base;
+
 	vkk_engine_t* engine = base->engine;
 
 	vkDeviceWaitIdle(engine->device);
 
-	vkk_defaultRenderer_deleteMSAA(base);
-	vkk_defaultRenderer_deleteDepth(base);
+	vkk_auxImage_delete(&self->msaa_image);
+	vkk_auxImage_delete(&self->depth_image);
 	vkk_defaultRenderer_deleteFramebuffer(base);
 	vkk_defaultRenderer_deleteSwapchain(base);
 	vkk_engine_deleteSurface(engine);
@@ -1149,9 +1036,9 @@ int vkk_defaultRenderer_recreate(vkk_renderer_t* base)
 
 	// failure
 	fail_framebuffer:
-		vkk_defaultRenderer_deleteMSAA(base);
+		vkk_auxImage_delete(&self->msaa_image);
 	fail_msaa:
-		vkk_defaultRenderer_deleteDepth(base);
+		vkk_auxImage_delete(&self->depth_image);
 	fail_depth:
 		vkk_defaultRenderer_deleteSwapchain(base);
 	fail_swapchain:
@@ -1329,17 +1216,6 @@ vkk_defaultRenderer_begin(vkk_renderer_t* base,
 		LOGE("vkBeginCommandBuffer failed");
 		goto fail_begin_cb;
 	}
-
-	// stage only applies to textures
-	VkImage image;
-	image = self->swapchain_images[self->swapchain_frame];
-	vkk_util_imageMemoryBarrierRaw(image, cb, 0,
-	                               VK_IMAGE_LAYOUT_UNDEFINED,
-	                               VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
-	                               0, 1);
-	vkk_util_imageMemoryBarrier(self->depth_image, cb,
-	                            VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL,
-	                            0, 1);
 
 	// the secondary renderers also initialize
 	// viewport and scissor in beginSecondary

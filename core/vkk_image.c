@@ -73,8 +73,7 @@ vkk_image_t* vkk_image_new(vkk_engine_t* engine,
                            vkk_stage_e stage,
                            const void* pixels)
 {
-	// pixels may be NULL for depth image or
-	// image rendering
+	// pixels may be NULL for image rendering
 	ASSERT(engine);
 
 	// check if mipmapped images are a power-of-two
@@ -82,10 +81,6 @@ vkk_image_t* vkk_image_new(vkk_engine_t* engine,
 	uint32_t mip_levels = 1;
 	if(mipmap)
 	{
-		// mipmap does not apply to the depth image
-		ASSERT(format != VKK_IMAGE_FORMAT_DEPTH1X);
-		ASSERT(format != VKK_IMAGE_FORMAT_DEPTH4X);
-
 		uint32_t w = 1;
 		uint32_t h = 1;
 		uint32_t d = 1;
@@ -184,34 +179,10 @@ vkk_image_t* vkk_image_new(vkk_engine_t* engine,
 	#endif
 	int transient_memory = 0;
 
-	if(format == VKK_IMAGE_FORMAT_DEPTH1X)
+	// enable render-to-texture
+	if(pixels == NULL)
 	{
-		usage      = VK_IMAGE_USAGE_TRANSIENT_ATTACHMENT_BIT |
-		             VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT;
-		aspectMask = VK_IMAGE_ASPECT_DEPTH_BIT |
-		             VK_IMAGE_ASPECT_STENCIL_BIT;
-
-		device_memory    = 1;
-		transient_memory = 1;
-	}
-	else if(format == VKK_IMAGE_FORMAT_DEPTH4X)
-	{
-		usage      = VK_IMAGE_USAGE_TRANSIENT_ATTACHMENT_BIT |
-		             VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT;
-		aspectMask = VK_IMAGE_ASPECT_DEPTH_BIT |
-		             VK_IMAGE_ASPECT_STENCIL_BIT;
-		samples    = VK_SAMPLE_COUNT_4_BIT;
-
-		device_memory    = 1;
-		transient_memory = 1;
-	}
-	else
-	{
-		if(pixels == NULL)
-		{
-			// enable render-to-texture
-			usage |= VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
-		}
+		usage |= VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
 	}
 
 	VkImageCreateInfo i_info =
@@ -382,8 +353,6 @@ size_t vkk_image_size(vkk_image_t* self,
 		1,  // VKK_IMAGE_FORMAT_R8
 		4,  // VKK_IMAGE_FORMAT_RF32
 		2,  // VKK_IMAGE_FORMAT_RF16
-		4,  // VKK_IMAGE_FORMAT_DEPTH1X
-		16, // VKK_IMAGE_FORMAT_DEPTH4X
 	};
 
 	*_width  = self->width;

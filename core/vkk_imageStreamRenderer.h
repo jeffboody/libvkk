@@ -25,6 +25,7 @@
 #define vkk_imageStreamRenderer_H
 
 #include "../vkk.h"
+#include "vkk_auxImage.h"
 #include "vkk_commandBuffer.h"
 #include "vkk_memory.h"
 #include "vkk_renderer.h"
@@ -36,12 +37,10 @@ typedef struct
 	vkk_image_t**   images;
 	VkImageView*    image_views;
 	VkRenderPass    render_pass;
-	vkk_image_t*    depth_image;
+	vkk_auxImage_t* depth_image;
 
-	// msaa buffer
-	VkImage       msaa_image;
-	vkk_memory_t* msaa_memory;
-	VkImageView   msaa_image_view;
+	// msaa buffer (optional)
+	vkk_auxImage_t* msaa_image;
 
 	VkFramebuffer*       framebuffers;
 	vkk_commandBuffer_t* cmd_buffers;
