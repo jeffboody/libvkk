@@ -71,8 +71,11 @@ typedef struct
 	double  ts_expired;
 
 	// synchronization
-	// one per swapchain image
+	// semaphore_count is swapchain_image_count + 1 to ensure
+	// that there always exists an unused semaphore for
+	// vkAcquireNextImageKHR
 	uint32_t     semaphore_index;
+	uint32_t     semaphore_count;
 	VkSemaphore* semaphore_acquire;
 	VkSemaphore* semaphore_submit;
 } vkk_defaultRenderer_t;

@@ -73,7 +73,7 @@ vkk_defaultRenderer_endSemaphore(vkk_renderer_t* base,
 	*semaphore_submit    = self->semaphore_submit[idx];
 
 	++idx;
-	self->semaphore_index = idx%self->swapchain_image_count;
+	self->semaphore_index = idx%self->semaphore_count;
 }
 
 static int
@@ -836,8 +836,9 @@ vkk_defaultRenderer_newSemaphores(vkk_renderer_t* base)
 	vkk_engine_t* engine = base->engine;
 
 	self->semaphore_index   = 0;
+	self->semaphore_count   = self->swapchain_image_count + 1;
 	self->semaphore_acquire = (VkSemaphore*)
-	                          CALLOC(self->swapchain_image_count,
+	                          CALLOC(self->semaphore_count,
 	                                 sizeof(VkSemaphore));
 	if(self->semaphore_acquire == NULL)
 	{
@@ -846,7 +847,7 @@ vkk_defaultRenderer_newSemaphores(vkk_renderer_t* base)
 	}
 
 	self->semaphore_submit = (VkSemaphore*)
-	                         CALLOC(self->swapchain_image_count,
+	                         CALLOC(self->semaphore_count,
 	                                sizeof(VkSemaphore));
 	if(self->semaphore_submit == NULL)
 	{
@@ -855,7 +856,7 @@ vkk_defaultRenderer_newSemaphores(vkk_renderer_t* base)
 	}
 
 	int i;
-	for(i = 0; i < self->swapchain_image_count; ++i)
+	for(i = 0; i < self->semaphore_count; ++i)
 	{
 		VkSemaphoreCreateInfo sa_info =
 		{
@@ -1027,7 +1028,7 @@ void vkk_defaultRenderer_delete(vkk_renderer_t** _base)
 		FREE(base->wait_array);
 
 		int i;
-		for(i = 0; i < self->swapchain_image_count; ++i)
+		for(i = 0; i < self->semaphore_count; ++i)
 		{
 			vkDestroySemaphore(engine->device,
 			                   self->semaphore_submit[i],
