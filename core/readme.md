@@ -647,8 +647,15 @@ The graphics pipeline supports a transparency blending mode
 
 The vertex and fragment shaders are specified by providing
 a path to the SPIR-V shader in the resource file. The
-cull\_back, depth\_test and depth\_write flags enable the
+cull\_mode, depth\_test and depth\_write flags enable the
 corresponding functionality.
+
+	typedef enum
+	{
+		VKK_CULL_MODE_NONE  = 0,
+		VKK_CULL_MODE_BACK  = 1,
+		VKK_CULL_MODE_FRONT = 2,
+	} vkk_cullMode_e;
 
 	typedef struct
 	{
@@ -660,7 +667,7 @@ corresponding functionality.
 		vkk_vertexBufferInfo_t* vbi;
 		vkk_primitive_e         primitive;
 		int                     primitive_restart;
-		int                     cull_back;
+		vkk_cullMode_e          cull_mode;
 		int                     depth_test;
 		int                     depth_write;
 		vkk_blendMode_e         blend_mode;

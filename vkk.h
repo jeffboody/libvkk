@@ -97,6 +97,15 @@ typedef enum
 
 typedef enum
 {
+	VKK_CULL_MODE_NONE  = 0,
+	VKK_CULL_MODE_BACK  = 1,
+	VKK_CULL_MODE_FRONT = 2,
+} vkk_cullMode_e;
+
+#define VKK_CULL_MODE_COUNT 3
+
+typedef enum
+{
 	VKK_SAMPLER_FILTER_NEAREST = 0,
 	VKK_SAMPLER_FILTER_LINEAR  = 1,
 } vkk_samplerFilter_e;
@@ -267,7 +276,7 @@ typedef struct
 	vkk_vertexBufferInfo_t* vbi;
 	vkk_primitive_e         primitive;
 	int                     primitive_restart;
-	int                     cull_back;
+	vkk_cullMode_e          cull_mode;
 	int                     depth_test;
 	int                     depth_write;
 	vkk_blendMode_e         blend_mode;

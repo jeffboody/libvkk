@@ -214,9 +214,16 @@ vkk_graphicsPipeline_new(vkk_engine_t* engine,
 		.pScissors     = &scissor
 	};
 
-	VkCullModeFlags cullMode;
-	cullMode = gpi->cull_back ? VK_CULL_MODE_BACK_BIT :
-	                            VK_CULL_MODE_NONE;
+	VkCullModeFlags cullMode = VK_CULL_MODE_NONE;
+	if(gpi->cull_mode == VKK_CULL_MODE_BACK)
+	{
+		cullMode = VK_CULL_MODE_BACK_BIT;
+	}
+	else if(gpi->cull_mode == VKK_CULL_MODE_FRONT)
+	{
+		cullMode = VK_CULL_MODE_FRONT_BIT;
+	}
+
 	VkPipelineRasterizationStateCreateInfo prs_info =
 	{
 		.sType                   = VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO,
