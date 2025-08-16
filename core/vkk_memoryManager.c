@@ -613,9 +613,7 @@ void vkk_memoryManager_free(vkk_memoryManager_t* self,
 			miter = cc_map_findp(self->pools,
 			                     sizeof(vkk_memoryPoolKey_t), &key);
 
-			vkk_memoryPool_t* tmp;
-			tmp = (vkk_memoryPool_t*) cc_map_val(miter);
-			assert(tmp == pool);
+			assert(pool == ((vkk_memoryPool_t*) cc_map_val(miter)));
 
 			cc_map_remove(self->pools, &miter);
 			vkk_memoryManager_poolUnlock(self, pool);
