@@ -375,7 +375,7 @@ vkk_vgRendererImageState_new(vkk_vgRenderer_t* vg_rend,
 		.fs         = "vkk/vg/shaders/image_frag.spv",
 		.vb_count   = 1,
 		.vbi        = &vbi_image,
-		.cull_back  = 1,
+		.cull_mode  = VKK_CULL_MODE_BACK,
 		.primitive  = VKK_PRIMITIVE_TRIANGLE_STRIP,
 		.blend_mode = VKK_BLEND_MODE_TRANSPARENCY,
 	};
