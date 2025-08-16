@@ -1351,27 +1351,17 @@ void android_main(struct android_app* app)
 
 		// poll for native events
 		int   id;
-		int   outEvents;
-		void* outData;
 		int   rendering = vkk_platform_rendering(platform);
-		id = ALooper_pollAll(rendering ? 0 : -1,
-		                     NULL, &outEvents, &outData);
+		struct android_poll_source* source;
+		id = ALooper_pollOnce(rendering ? 0 : -1,
+		                      NULL, NULL, (void**) &source);
 		while(id > 0)
 		{
-			if((id == LOOPER_ID_MAIN) ||
-			   (id == LOOPER_ID_INPUT))
+			if(source &&
+			   ((id == LOOPER_ID_MAIN) ||
+			    (id == LOOPER_ID_INPUT)))
 			{
-				struct android_poll_source* source;
-				source = (struct android_poll_source*)
-				         outData;
-				if(source)
-				{
-					source->process(app, source);
-				}
-			}
-			else if(id == LOOPER_ID_USER)
-			{
-				// ignore user events
+				source->process(app, source);
 			}
 
 			// check for exit
@@ -1385,8 +1375,9 @@ void android_main(struct android_app* app)
 			}
 
 			rendering = vkk_platform_rendering(platform);
-			id = ALooper_pollAll(rendering ? 0 : -1,
-		                         NULL, &outEvents, &outData);
+			id = ALooper_pollOnce(rendering ? 0 : -1,
+		                          NULL, NULL,
+			                      (void**) &source);
 		}
 
 		// workaround for android_native_app_glue which does not
