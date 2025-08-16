@@ -193,8 +193,8 @@ vkk_vgLineBuilder_buildContour(vkk_vgLineBuilder_t* self,
 			cc_vec2f_normalize(&e);
 
 			// compute p,q tangent to the end point
-			cc_vec3f_t e3 = { e.x, e.y, 0.0f  };
-			cc_vec3f_t up = { 0.0f, 0.0f, 1.0f };
+			cc_vec3f_t e3 = { .x=e.x,  .y=e.y,  .z=0.0f  };
+			cc_vec3f_t up = { .x=0.0f, .y=0.0f, .z=1.0f };
 			cc_vec3f_t v;
 			cc_vec3f_cross_copy(&e3, &up, &v);
 			cc_vec3f_normalize(&v);
@@ -235,13 +235,13 @@ vkk_vgLineBuilder_buildContour(vkk_vgLineBuilder_t* self,
 		cc_vec2f_subv_copy(c2, b2, &bc);
 		cc_vec2f_normalize_copy(&ab, &uab);
 		cc_vec2f_normalize_copy(&bc, &ubc);
-		cc_vec3f_t uab3 = { uab.x, uab.y, 0.0f };
-		cc_vec3f_t ubc3 = { ubc.x, ubc.y, 0.0f };
+		cc_vec3f_t uab3 = { .x=uab.x, .y=uab.y, .z=0.0f };
+		cc_vec3f_t ubc3 = { .x=ubc.x, .y=ubc.y, .z=0.0f };
 
 		// compute the tangent vectors to ab and bc
 		cc_vec3f_t vab;
 		cc_vec3f_t vbc;
-		cc_vec3f_t up = { 0.0f,  0.0f,  1.0f };
+		cc_vec3f_t up = { .x=0.0f, .y=0.0f, .z=1.0f };
 		cc_vec3f_cross_copy(&uab3, &up, &vab);
 		cc_vec3f_cross_copy(&ubc3, &up, &vbc);
 		cc_vec3f_normalize(&vab);
