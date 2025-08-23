@@ -88,11 +88,11 @@ typedef struct vkk_uiScreen_s
 	cc_vec2f_t action_coord1;
 	cc_vec2f_t action_dragv;
 
-	// content rect
-	uint32_t content_rect_top;
-	uint32_t content_rect_left;
-	uint32_t content_rect_width;
-	uint32_t content_rect_height;
+	// inset
+	int inset_top;
+	int inset_left;
+	int inset_bottom;
+	int inset_right;
 
 	// UI scale factor
 	int scale;
@@ -136,8 +136,8 @@ vkk_uiScreen_t* vkk_uiScreen_new(size_t wsize,
 void            vkk_uiScreen_delete(vkk_uiScreen_t** _self);
 void            vkk_uiScreen_eventAction(vkk_uiScreen_t* self,
                                          vkk_platformEvent_t* event);
-void            vkk_uiScreen_eventContentRect(vkk_uiScreen_t* self,
-                                              vkk_platformEventContentRect_t* e);
+void            vkk_uiScreen_eventInset(vkk_uiScreen_t* self,
+                                        vkk_platformEventInset_t* e);
 void            vkk_uiScreen_eventDensity(vkk_uiScreen_t* self,
                                           float density);
 int             vkk_uiScreen_eventKey(vkk_uiScreen_t* self,

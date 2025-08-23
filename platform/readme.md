@@ -45,7 +45,7 @@ sensor events for accelerometer, magnetometer, gyroscope and
 GPS sensors. Additional events are generated for human input
 devices such as keyboards, mice, touchscreens and joysticks.
 And finally, events are also generated for Android specific
-changes to screen density, the content rect and permissions.
+changes to screen density, the inset and permissions.
 
 	typedef enum
 	{
@@ -63,7 +63,7 @@ changes to screen density, the content rect and permissions.
 		VKK_PLATFORM_EVENTTYPE_KEY_DOWN          = 10,
 		VKK_PLATFORM_EVENTTYPE_KEY_UP            = 11,
 		VKK_PLATFORM_EVENTTYPE_MAGNETOMETER      = 12,
-		VKK_PLATFORM_EVENTTYPE_CONTENT_RECT      = 13,
+		VKK_PLATFORM_EVENTTYPE_INSET             = 13,
 		VKK_PLATFORM_EVENTTYPE_PERMISSION_STATUS = 14,
 		VKK_PLATFORM_EVENTTYPE_LOW_MEMORY        = 15,
 		VKK_PLATFORM_EVENTTYPE_MEMORY_INFO       = 16,
@@ -136,7 +136,7 @@ changes to screen density, the content rect and permissions.
 		int l;
 		int b;
 		int r;
-	} vkk_platformEventContentRect_t;
+	} vkk_platformEventInset_t;
 
 	typedef enum
 	{
@@ -174,7 +174,7 @@ changes to screen density, the content rect and permissions.
 			vkk_platformEventGyroscope_t     gyroscope;
 			vkk_platformEventKey_t           key;
 			vkk_platformEventMagnetometer_t  magnetometer;
-			vkk_platformEventContentRect_t   content_rect;
+			vkk_platformEventInset_t         inset;
 			vkk_platformEventPermission_t    permission;
 			vkk_platformEventMemoryInfo_t    memory_info;
 		};

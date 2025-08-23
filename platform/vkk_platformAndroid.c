@@ -312,27 +312,6 @@ onAppCmd(struct android_app* app, int32_t cmd)
 		vkk_engine_delete(&platform->engine);
 		platform->running = 0;
 	}
-	else if(cmd == APP_CMD_CONTENT_RECT_CHANGED)
-	{
-		LOGD("APP_CMD_CONTENT_RECT_CHANGED: t=%i, l=%i, b=%i, r=%i",
-		     app->contentRect.top, app->contentRect.left,
-		     app->contentRect.bottom, app->contentRect.right);
-
-		if(platform->priv)
-		{
-			vkk_platformEvent_t ve =
-			{
-				.type           = VKK_PLATFORM_EVENTTYPE_CONTENT_RECT,
-				.ts             = cc_timestamp(),
-				.content_rect.t = app->contentRect.top,
-				.content_rect.l = app->contentRect.left,
-				.content_rect.b = app->contentRect.bottom,
-				.content_rect.r = app->contentRect.right,
-			};
-
-			(*onEvent)(platform->priv, &ve);
-		}
-	}
 	else if(cmd == APP_CMD_LOW_MEMORY)
 	{
 		LOGD("APP_CMD_LOW_MEMORY");
@@ -1120,6 +1099,29 @@ Java_com_jeffboody_vkk_VKKNativeActivity_NativeMagnetometer(JNIEnv* env,
 }
 
 JNIEXPORT void JNICALL
+Java_com_jeffboody_vkk_VKKNativeActivity_NativeInset(JNIEnv* env,
+                                                     jobject obj,
+                                                     jint t,
+                                                     jint l,
+                                                     jint b,
+                                                     jint r)
+{
+	ASSERT(env);
+
+	if(platform)
+	{
+		vkk_platformEvent_t* e = vkk_platform_dequeue(platform);
+		e->type    = VKK_PLATFORM_EVENTTYPE_INSET;
+		e->ts      = cc_timestamp();
+		e->inset.t = t;
+		e->inset.l = l;
+		e->inset.b = b;
+		e->inset.r = r;
+		vkk_platform_enqueue(platform);
+	}
+}
+
+JNIEXPORT void JNICALL
 Java_com_jeffboody_vkk_VKKNativeActivity_NativeDocument(JNIEnv* env,
                                                         jobject obj,
                                                         jstring uri,
@@ -1254,17 +1256,6 @@ static void check_memory(void)
 	}
 }
 
-static void
-onContentRectChanged(ANativeActivity* activity,
-                     const ARect* rect)
-{
-	struct android_app* android_app;
-	android_app = (struct android_app*) activity->instance;
-	pthread_mutex_lock(&android_app->mutex);
-	android_app->pendingContentRect = *rect;
-	pthread_mutex_unlock(&android_app->mutex);
-}
-
 /***********************************************************
 * android_main                                             *
 ***********************************************************/
@@ -1285,10 +1276,6 @@ void android_main(struct android_app* app)
 	{
 		goto fail_bfs;
 	}
-
-	// workaround for android_native_app_glue which does not
-	// implement APP_CMD_CONTENT_RECT_CHANGED
-	app->activity->callbacks->onContentRectChanged = onContentRectChanged;
 
 	// remove resource.pak
 	char fname[256];
@@ -1379,19 +1366,6 @@ void android_main(struct android_app* app)
 		                          NULL, NULL,
 			                      (void**) &source);
 		}
-
-		// workaround for android_native_app_glue which does not
-		// implement APP_CMD_CONTENT_RECT_CHANGED
-		pthread_mutex_lock(&app->mutex);
-		if((app->contentRect.top    != app->pendingContentRect.top)    ||
-		   (app->contentRect.left   != app->pendingContentRect.left)   ||
-		   (app->contentRect.bottom != app->pendingContentRect.bottom) ||
-		   (app->contentRect.right  != app->pendingContentRect.right))
-		{
-			app->contentRect = app->pendingContentRect;
-			onAppCmd(app, APP_CMD_CONTENT_RECT_CHANGED);
-		}
-		pthread_mutex_unlock(&app->mutex);
 
 		// poll for JNI events
 		if(platform->priv)

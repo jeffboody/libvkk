@@ -1393,17 +1393,17 @@ vkk_uiScreen_eventAction(vkk_uiScreen_t* self,
 }
 
 void
-vkk_uiScreen_eventContentRect(vkk_uiScreen_t* self,
-                              vkk_platformEventContentRect_t* e)
+vkk_uiScreen_eventInset(vkk_uiScreen_t* self,
+                        vkk_platformEventInset_t* e)
 {
 	ASSERT(self);
 	ASSERT(e);
 
-	self->content_rect_top    = e->t;
-	self->content_rect_left   = e->l;
-	self->content_rect_width  = e->r - e->l;
-	self->content_rect_height = e->b - e->t;
-	self->layout_dirty        = 1;
+	self->inset_top    = e->t;
+	self->inset_left   = e->l;
+	self->inset_right  = e->r;
+	self->inset_bottom = e->b;
+	self->layout_dirty = 1;
 }
 
 void
@@ -1693,23 +1693,11 @@ void vkk_uiScreen_draw(vkk_uiScreen_t* self)
 	{
 		cc_rect1f_t clip =
 		{
-			.t = 0.0f,
-			.l = 0.0f,
-			.w = w,
-			.h = h,
+			.t = self->inset_top,
+			.l = self->inset_left,
+			.w = w - self->inset_left - self->inset_right,
+			.h = h - self->inset_top - self->inset_bottom,
 		};
-
-		// override the clip with content_rect
-		if((self->content_rect_width  > 0)  &&
-		   (self->content_rect_height > 0)  &&
-		   (self->content_rect_width  <= w) &&
-		   (self->content_rect_height <= h))
-		{
-			clip.t = self->content_rect_top;
-			clip.l = self->content_rect_left;
-			clip.w = self->content_rect_width;
-			clip.h = self->content_rect_height;
-		}
 
 		float layout_w = clip.w;
 		float layout_h = clip.h;
