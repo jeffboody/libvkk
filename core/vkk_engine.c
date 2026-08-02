@@ -415,11 +415,20 @@ static int vkk_engine_newDevice(vkk_engine_t* self)
 {
 	ASSERT(self);
 
+	#ifdef ANDROID
+	uint32_t    extension_count   = 2;
+	const char* extension_names[] =
+	{
+		VK_KHR_SWAPCHAIN_EXTENSION_NAME,
+		VK_GOOGLE_DISPLAY_TIMING_EXTENSION_NAME,
+	};
+	#else
 	uint32_t    extension_count   = 1;
 	const char* extension_names[] =
 	{
-		VK_KHR_SWAPCHAIN_EXTENSION_NAME
+		VK_KHR_SWAPCHAIN_EXTENSION_NAME,
 	};
+	#endif
 
 	if(vkk_engine_hasDeviceExtensions(self,
 	                                  extension_count,
@@ -1281,6 +1290,39 @@ vkk_engine_defaultRenderer(vkk_engine_t* self)
 	return self->renderer;
 }
 
+#ifdef ANDROID
+void vkk_engine_framePacing(vkk_engine_t* self,
+                            double frame_dt,
+                            double input_latency)
+{
+	ASSERT(self);
+
+	double s2ns = 1000000000.0;
+
+	// Note: input_latency=0 is listed on Galaxy Tab S10
+	if((frame_dt <= 0.0) || (input_latency < 0.0))
+	{
+		frame_dt      = 0.0;
+		input_latency = 0.0;
+	}
+	else if(input_latency > 2.0*frame_dt)
+	{
+		// clamp input latency for triple buffering
+		input_latency = 2.0*frame_dt;
+	}
+
+	self->frame_dt      = (int64_t) (s2ns*frame_dt);
+	self->input_latency = (int64_t) (s2ns*input_latency);
+}
+#else
+void vkk_engine_framePacing(vkk_engine_t* self,
+                            double frame_dt,
+                            double input_latency)
+{
+	ASSERT(self);
+}
+#endif
+
 void
 vkk_engine_platformCmd(vkk_engine_t* self, int cmd)
 {
@@ -1481,7 +1523,7 @@ vkk_engine_t* vkk_engine_new(vkk_platform_t* platform,
 
 	self->version.major = 1;
 	self->version.minor = 1;
-	self->version.patch = 75;
+	self->version.patch = 76;
 
 	// app info
 	snprintf(self->app_name, 256, "%s", app_name);
@@ -1782,6 +1824,25 @@ int vkk_engine_recreate(vkk_engine_t* self)
 	}
 	return 1;
 }
+
+#ifdef ANDROID
+void vkk_engine_updateFramePacing(vkk_engine_t* self,
+                                  uint64_t desiredPresentTime)
+{
+	ASSERT(self);
+
+	#ifdef ANDROID
+	self->presentTime.desiredPresentTime = desiredPresentTime;
+	++self->presentTime.presentID;
+	#endif
+}
+#else
+void vkk_engine_updateFramePacing(vkk_engine_t* self,
+                                  uint64_t desiredPresentTime)
+{
+	ASSERT(self);
+}
+#endif
 
 void vkk_engine_mipmapImage(vkk_engine_t* self,
                             vkk_image_t* image,

@@ -25,6 +25,7 @@
 #define vkk_platformAndroid_H
 
 #include <android_native_app_glue.h>
+#include <android/choreographer.h>
 
 #include "../platform/vkk_platformCmdInfo.h"
 #include "../vkk.h"
@@ -32,11 +33,22 @@
 
 #define VKK_EVENTQ_BUFSIZE 256
 
+#define VKK_VSYNC_EPSILON 4000000
+
+typedef struct
+{
+	int64_t start;
+	int64_t queue;
+	int64_t deadline;
+	int64_t present;
+} vkk_choreographerTimeline_t;
+
 typedef struct vkk_platform_s
 {
 	struct android_app* app;
 
 	int    running;
+	int    swapping;
 	int    paused;
 	int    has_window;
 	float  density;
@@ -67,6 +79,10 @@ typedef struct vkk_platform_s
 	int                 event_tail;
 	vkk_platformEvent_t event_buffer[VKK_EVENTQ_BUFSIZE];
 	vkk_platformEvent_t event_document;
+
+	AChoreographer*             choreographer;
+	int64_t                     frame;
+	vkk_choreographerTimeline_t timeline;
 
 	// document state
 	int                        document_fd;

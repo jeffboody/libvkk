@@ -308,6 +308,9 @@ void            vkk_engine_imageCaps(vkk_engine_t* self,
                                      vkk_imageFormat_e format,
                                      vkk_imageCaps_t* caps);
 float           vkk_engine_maxAnisotropy(vkk_engine_t* self);
+void            vkk_engine_framePacing(vkk_engine_t* self,
+                                       double frame_dt,
+                                       double input_latency);
 vkk_renderer_t* vkk_engine_defaultRenderer(vkk_engine_t* self);
 void            vkk_engine_platformCmd(vkk_engine_t* self,
                                        int cmd);

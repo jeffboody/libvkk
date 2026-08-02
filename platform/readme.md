@@ -19,7 +19,8 @@ callback may be used on Linux when no display is required
 	typedef void* (*vkk_platformOnCreate_fn)(vkk_engine_t* engine);
 	typedef void  (*vkk_platformOnDestroy_fn)(void** _priv);
 	typedef void  (*vkk_platformOnPause_fn)(void* priv);
-	typedef void  (*vkk_platformOnDraw_fn)(void* priv);
+	typedef void  (*vkk_platformOnDraw_fn)(void* priv,
+	                                       double frame_dt);
 	typedef void  (*vkk_platformOnEvent_fn)(void* priv,
 	                                        vkk_platformEvent_t* event);
 	typedef void  (*vkk_platformOnMain_fn)(void* priv, int argc,

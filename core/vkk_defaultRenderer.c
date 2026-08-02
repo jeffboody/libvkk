@@ -35,6 +35,9 @@
 #include "vkk_image.h"
 #include "vkk_memoryManager.h"
 #include "vkk_util.h"
+#ifdef ANDROID
+	#include "../platform/vkk_platformAndroid.h"
+#endif
 
 /***********************************************************
 * private                                                  *
@@ -1373,6 +1376,21 @@ void vkk_defaultRenderer_end(vkk_renderer_t* base)
 		.pImageIndices      = &self->swapchain_frame,
 		.pResults           = NULL
 	};
+
+	// frame pacing
+	#ifdef ANDROID
+	int64_t epsilon = VKK_VSYNC_EPSILON;
+	VkPresentTimesInfoGOOGLE timingInfo = {
+		.sType = VK_STRUCTURE_TYPE_PRESENT_TIMES_INFO_GOOGLE,
+		.swapchainCount = 1,
+		.pTimes = &engine->presentTime,
+	};
+	if(engine->presentTime.desiredPresentTime > epsilon)
+	{
+		engine->presentTime.desiredPresentTime -= epsilon;
+		p_info.pNext = &timingInfo;
+	}
+	#endif
 
 	VkResult present;
 	present = vkQueuePresentKHR(engine->queue[VKK_QUEUE_FOREGROUND],

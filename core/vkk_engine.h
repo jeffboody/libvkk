@@ -134,6 +134,13 @@ typedef struct vkk_engine_s
 	VkSurfaceKHR     surface;
 	VkPhysicalDevice physical_device;
 
+	// frame pacing
+	#ifdef ANDROID
+	VkPresentTimeGOOGLE presentTime;
+	int64_t frame_dt;
+	int64_t input_latency;
+	#endif
+
 	// device capabilities
 	float    max_anisotropy;
 	uint32_t msaa_sample_count;
@@ -183,6 +190,8 @@ int           vkk_engine_recreate(vkk_engine_t* self);
  * engine util function
  */
 
+void             vkk_engine_updateFramePacing(vkk_engine_t* self,
+                                              uint64_t desiredPresentTime);
 void             vkk_engine_mipmapImage(vkk_engine_t* self,
                                         vkk_image_t* image,
                                         VkCommandBuffer cb);

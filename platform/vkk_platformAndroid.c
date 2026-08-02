@@ -22,6 +22,7 @@
  */
 
 #include <android_native_app_glue.h>
+#include <android/surface_control.h>
 #include <android/window.h>
 #include <sys/stat.h>
 #include <sys/types.h>
@@ -43,6 +44,38 @@
 #include "vkk_platformAndroid.h"
 
 static vkk_platform_t* platform = NULL;
+
+/***********************************************************
+* Android choreographer timestamp                          *
+***********************************************************/
+
+#include <time.h>
+#include <stdint.h>
+
+static int64_t getCurrentTimeNanos()
+{
+	struct timespec ts;
+	clock_gettime(CLOCK_MONOTONIC, &ts);
+	return (int64_t)ts.tv_sec * 1000000000LL + ts.tv_nsec;
+}
+
+static void
+vkk_choreographerTimeline_copy(vkk_choreographerTimeline_t* src,
+                               vkk_choreographerTimeline_t* dst)
+{
+	ASSERT(src);
+	ASSERT(dst);
+
+	memcpy(dst, src, sizeof(vkk_choreographerTimeline_t));
+}
+
+static void
+vkk_choreographerTimeline_reset(vkk_choreographerTimeline_t* self)
+{
+	ASSERT(self);
+
+	memset(self, 0, sizeof(vkk_choreographerTimeline_t));
+}
 
 /***********************************************************
 * protected Android list initialization                    *
@@ -214,10 +247,178 @@ static int shiftKeycode(int keycode, int meta)
 * android app interface                                    *
 ***********************************************************/
 
-static vkk_platformEvent_t*
-vkk_platform_dequeue(vkk_platform_t* self);
+static int vkk_platform_running(void)
+{
+	if(platform && platform->running && platform->has_window)
+	{
+		return 1;
+	}
 
-static void vkk_platform_enqueue(vkk_platform_t* self);
+	return 0;
+}
+
+static int vkk_platform_swapping(void)
+{
+	if(platform && platform->swapping)
+	{
+		return 1;
+	}
+
+	return 0;
+}
+
+static void
+vkk_platform_draw(vkk_platform_t* self,
+                  vkk_choreographerTimeline_t* timeline)
+{
+	ASSERT(self);
+	ASSERT(timeline);
+
+	vkk_platformOnDraw_fn onDraw;
+	onDraw = VKK_PLATFORM_INFO.onDraw;
+
+	// update frame pacing
+	vkk_engine_updateFramePacing(self->engine,
+	                             (uint64_t) timeline->present);
+
+	// draw frame
+	int started = self->timeline.present ? 1 : 0;
+	double t0 = ((double) self->timeline.present)/1000000000.0;
+	double t1 = ((double) timeline->present)/1000000000.0;
+	(*onDraw)(self->priv, started ? t1 - t0 : 0.0);
+
+	// update timeline
+	++self->frame;
+	timeline->queue = getCurrentTimeNanos();
+	LOGD("DRAW: frame=%" PRId64 ", start=%" PRId64 ", queue=%" PRId64
+	     ", deadline=%" PRId64 ", present=%" PRId64
+	     ", cpuRemaining=%" PRId64 ", gpuRemaining=%" PRId64,
+	     self->frame,
+	     (timeline->start - self->timeline.start)/1000,
+	     (timeline->queue - timeline->start)/1000,
+	     (timeline->deadline - timeline->start)/1000,
+	     (timeline->present - timeline->start)/1000,
+	     (timeline->deadline - timeline->queue)/1000,
+	     (timeline->present - timeline->queue)/1000);
+	vkk_choreographerTimeline_copy(timeline, &self->timeline);
+}
+
+static void
+vkk_platform_vsyncCallback(const AChoreographerFrameCallbackData* callbackData,
+                           void* data)
+
+{
+	vkk_choreographerTimeline_t  desired_timeline = { 0 };
+	vkk_choreographerTimeline_t  timeline = { 0 };
+	vkk_choreographerTimeline_t* last_timeline;
+
+	// Note: Android does not unregister the vsyncCallback
+	// when assigning it to NULL
+	if(vkk_platform_swapping() == 0)
+	{
+		// cancel vsync callback
+		return;
+	}
+
+	// initialize frame pacing
+	int     custom        = 1;
+	int64_t frame_dt      = platform->engine->frame_dt;
+	int64_t input_latency = platform->engine->input_latency;
+	int64_t restart;
+	int64_t epsilon = VKK_VSYNC_EPSILON;
+	last_timeline = &platform->timeline;
+	if(frame_dt <= 0)
+	{
+		custom   = 0;
+		frame_dt = last_timeline->deadline - last_timeline->start;
+	}
+	restart = last_timeline->start + frame_dt - epsilon;
+
+	// start timeline
+	timeline.start = AChoreographerFrameCallbackData_getFrameTimeNanos(callbackData);
+	if(timeline.start < restart)
+	{
+		// skip frames until restart
+		LOGD("SKIP: start=%" PRId64 ", remaining=%" PRId64,
+		     timeline.start, (restart - timeline.start)/1000);
+
+		// refresh callback
+		AChoreographer_postVsyncCallback(platform->choreographer,
+		                                 vkk_platform_vsyncCallback,
+		                                 NULL);
+		return;
+	}
+
+	LOGD("START: start=%" PRId64 ", frame_dt=%" PRId64
+	     ", input_latency=%" PRId64 ", custom=%i",
+	     timeline.start, frame_dt/1000, input_latency/1000,
+	     custom);
+
+	// initialize the preferred timeline
+	size_t idx = AChoreographerFrameCallbackData_getPreferredFrameTimelineIndex(callbackData);
+	timeline.deadline = AChoreographerFrameCallbackData_getFrameTimelineDeadlineNanos(callbackData, idx);
+	timeline.present = AChoreographerFrameCallbackData_getFrameTimelineExpectedPresentationTimeNanos(callbackData, idx);
+	vkk_choreographerTimeline_copy(&timeline, &desired_timeline);
+
+	// optionally select a custom timeline
+	// Choreographer timelines provide inconsistent results
+	// when selecting a non-native refresh rate
+	#if 0
+		int    i;
+		size_t len = AChoreographerFrameCallbackData_getFrameTimelinesLength(callbackData);
+		for(i = 0; i < len; ++i)
+		{
+			// inspect timelines
+			timeline.deadline = AChoreographerFrameCallbackData_getFrameTimelineDeadlineNanos(callbackData, (size_t) i);
+			timeline.present = AChoreographerFrameCallbackData_getFrameTimelineExpectedPresentationTimeNanos(callbackData, (size_t) i);
+
+			LOGD("TIMELINE%i: deadline=%" PRId64 ":%" PRId64
+			     ", present=%" PRId64 ":%" PRId64,
+			     i,
+			     (timeline.deadline - timeline.start)/1000,
+			     timeline.deadline,
+			     (timeline.present - timeline.start)/1000,
+			     timeline.present);
+
+			// optionally select a custom timeline
+			// 1) select minimum frame_dt >= desired
+			//    (e.g. maximum fps <= desired)
+			// 2) select maximum input_latency <= desired
+			// 3) assume timelines are sorted low-to-high by present
+			// 4) equality is represented by an epsilon threshold
+			if(custom &&
+			   ((timeline.deadline - timeline.start) >
+			    (frame_dt - epsilon)) &&
+			   ((timeline.present - timeline.start) <
+			    (frame_dt + input_latency + epsilon)))
+			{
+				vkk_choreographerTimeline_copy(&timeline,
+				                               &desired_timeline);
+			}
+		}
+	#else
+		if(custom)
+		{
+			desired_timeline.deadline = desired_timeline.start + frame_dt;
+			desired_timeline.present  = desired_timeline.start + frame_dt + input_latency;
+		}
+	#endif
+
+	LOGD("TIMELINE: deadline=%" PRId64 ":%" PRId64
+	     ", present=%" PRId64 ":%" PRId64,
+	     (desired_timeline.deadline - desired_timeline.start)/1000,
+	     desired_timeline.deadline,
+	     (desired_timeline.present - desired_timeline.start)/1000,
+	     desired_timeline.present);
+
+	// draw frame
+	vkk_platform_draw(platform, &desired_timeline);
+
+	// refresh callback
+	AChoreographer_postVsyncCallback(platform->choreographer,
+	                                 vkk_platform_vsyncCallback,
+	                                 NULL);
+}
 
 static void
 onAppCmd(struct android_app* app, int32_t cmd)
@@ -270,28 +471,34 @@ onAppCmd(struct android_app* app, int32_t cmd)
 			vkk_engine_recreate(platform->engine);
 		}
 		platform->has_window = 0;
+		platform->swapping   = 0;
 	}
 	else if(cmd == APP_CMD_RESUME)
 	{
 		LOGD("APP_CMD_RESUME");
 		platform->running = 1;
+
+		vkk_choreographerTimeline_reset(&platform->timeline);
 	}
-	else if((cmd == APP_CMD_PAUSE) ||
-	        (cmd == APP_CMD_STOP))
+	else if((cmd == APP_CMD_PAUSE) || (cmd == APP_CMD_STOP))
 	{
-		LOGD("APP_CMD_PAUSE");
-
-		if(platform->priv && (platform->paused == 0))
+		if(platform->running || (platform->paused == 0))
 		{
-			if(platform->engine)
-			{
-				vkk_engine_deviceWaitIdle(platform->engine);
-			}
+			LOGD("APP_CMD_PAUSE");
+			platform->running  = 0;
+			platform->swapping = 0;
 
-			(*onPause)(platform->priv);
-			platform->paused = 1;
+			if(platform->priv && (platform->paused == 0))
+			{
+				if(platform->engine)
+				{
+					vkk_engine_deviceWaitIdle(platform->engine);
+				}
+
+				(*onPause)(platform->priv);
+				platform->paused = 1;
+			}
 		}
-		platform->running = 0;
 	}
 	else if(cmd == APP_CMD_DESTROY)
 	{
@@ -310,7 +517,8 @@ onAppCmd(struct android_app* app, int32_t cmd)
 		(*onDestroy)(&platform->priv);
 		pthread_mutex_unlock(&platform->priv_mutex);
 		vkk_engine_delete(&platform->engine);
-		platform->running = 0;
+		platform->running  = 0;
+		platform->swapping = 0;
 	}
 	else if(cmd == APP_CMD_LOW_MEMORY)
 	{
@@ -599,6 +807,13 @@ vkk_platform_new(struct android_app* app)
 		goto fail_cond_init;
 	}
 
+	self->choreographer = AChoreographer_getInstance();
+	if(self->choreographer == NULL)
+	{
+		LOGE("choreographer failed");
+		goto fail_choreographer;
+	}
+
 	self->app         = app;
 	self->paused      = 1;
 	self->document_fd = -1;
@@ -610,6 +825,8 @@ vkk_platform_new(struct android_app* app)
 	return self;
 
 	// failure
+	fail_choreographer:
+		pthread_cond_destroy(&self->event_cond);
 	fail_cond_init:
 		pthread_mutex_destroy(&self->event_mutex);
 	fail_event_mutex:
@@ -706,69 +923,6 @@ static void vkk_platform_enqueue(vkk_platform_t* self)
 	}
 
 	pthread_mutex_unlock(&self->event_mutex);
-}
-
-static int vkk_platform_rendering(vkk_platform_t* self)
-{
-	ASSERT(self);
-
-	if(self->running && self->has_window)
-	{
-		return 1;
-	}
-
-	return 0;
-}
-
-static void vkk_platform_draw(vkk_platform_t* self)
-{
-	ASSERT(self);
-
-	vkk_platformOnCreate_fn onCreate;
-	vkk_platformOnDraw_fn   onDraw;
-	onCreate = VKK_PLATFORM_INFO.onCreate;
-	onDraw   = VKK_PLATFORM_INFO.onDraw;
-
-	if(vkk_platform_rendering(self) == 0)
-	{
-		return;
-	}
-
-	// create engine
-	if(self->engine == NULL)
-	{
-		const char* internal_path;
-		const char* external_path;
-		internal_path = self->app->activity->internalDataPath;
-		external_path = self->app->activity->externalDataPath;
-		self->engine = vkk_engine_new(self,
-		                              VKK_PLATFORM_INFO.app_name,
-		                              VKK_PLATFORM_INFO.app_dir,
-		                              &VKK_PLATFORM_INFO.app_version,
-		                              internal_path,
-		                              external_path);
-		if(self->engine == NULL)
-		{
-			return;
-		}
-	}
-
-	// create renderer
-	if(self->priv == NULL)
-	{
-		pthread_mutex_lock(&platform->priv_mutex);
-		self->priv = (*onCreate)(self->engine);
-		pthread_mutex_unlock(&platform->priv_mutex);
-		if(self->priv == NULL)
-		{
-			return;
-		}
-
-		self->density = 1.0f;
-	}
-
-	(*onDraw)(self->priv);
-	self->paused = 0;
 }
 
 /***********************************************************
@@ -1338,9 +1492,10 @@ void android_main(struct android_app* app)
 
 		// poll for native events
 		int   id;
-		int   rendering = vkk_platform_rendering(platform);
+		int   running = vkk_platform_running();
+		int   timeout = 4; // milliseconds
 		struct android_poll_source* source;
-		id = ALooper_pollOnce(rendering ? 0 : -1,
+		id = ALooper_pollOnce(running ? timeout : -1,
 		                      NULL, NULL, (void**) &source);
 		while(id > 0)
 		{
@@ -1361,8 +1516,8 @@ void android_main(struct android_app* app)
 				return;
 			}
 
-			rendering = vkk_platform_rendering(platform);
-			id = ALooper_pollOnce(rendering ? 0 : -1,
+			running = vkk_platform_running();
+			id = ALooper_pollOnce(running ? timeout : -1,
 		                          NULL, NULL,
 			                      (void**) &source);
 		}
@@ -1395,7 +1550,54 @@ void android_main(struct android_app* app)
 			}
 		}
 
-		vkk_platform_draw(platform);
+		if(vkk_platform_running())
+		{
+			// create engine
+			if(platform->engine == NULL)
+			{
+				const char* internal_path;
+				const char* external_path;
+				internal_path = platform->app->activity->internalDataPath;
+				external_path = platform->app->activity->externalDataPath;
+				platform->engine = vkk_engine_new(platform,
+				                                  VKK_PLATFORM_INFO.app_name,
+				                                  VKK_PLATFORM_INFO.app_dir,
+				                                  &VKK_PLATFORM_INFO.app_version,
+				                                  internal_path,
+				                                  external_path);
+				if(platform->engine == NULL)
+				{
+					return;
+				}
+			}
+
+			// create renderer
+			if(platform->priv == NULL)
+			{
+				vkk_platformOnCreate_fn onCreate;
+				onCreate = VKK_PLATFORM_INFO.onCreate;
+
+				pthread_mutex_lock(&platform->priv_mutex);
+				platform->priv = (*onCreate)(platform->engine);
+				pthread_mutex_unlock(&platform->priv_mutex);
+				if(platform->priv == NULL)
+				{
+					return;
+				}
+
+				platform->density = 1.0f;
+			}
+
+			// register vsync callback
+			if(platform->swapping == 0)
+			{
+				platform->swapping = 1;
+				AChoreographer_postVsyncCallback(platform->choreographer,
+				                                 vkk_platform_vsyncCallback,
+				                                 NULL);
+			}
+			platform->paused = 0;
+		}
 	}
 
 	// dead code

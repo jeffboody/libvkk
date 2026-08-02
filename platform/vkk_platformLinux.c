@@ -1001,7 +1001,7 @@ int main(int argc, char** argv)
 			// draw event
 			if(platform->running)
 			{
-				(*onDraw)(platform->priv);
+				(*onDraw)(platform->priv, 0.016);
 				platform->paused = 0;
 			}
 		}

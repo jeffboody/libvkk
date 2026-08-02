@@ -296,7 +296,8 @@ typedef struct
 typedef void* (*vkk_platformOnCreate_fn)(vkk_engine_t* engine);
 typedef void  (*vkk_platformOnDestroy_fn)(void** _priv);
 typedef void  (*vkk_platformOnPause_fn)(void* priv);
-typedef void  (*vkk_platformOnDraw_fn)(void* priv);
+typedef void  (*vkk_platformOnDraw_fn)(void* priv,
+                                       double frame_dt);
 typedef int   (*vkk_platformOnEvent_fn)(void* priv,
                                         vkk_platformEvent_t* event);
 typedef int   (*vkk_platformOnMain_fn)(vkk_engine_t* engine,

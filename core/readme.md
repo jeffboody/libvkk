@@ -115,6 +115,44 @@ query for the renderer that can draw to the display.
 
 	vkk_renderer_t* vkk_engine_defaultRenderer(vkk_engine_t* self);
 
+The vkk\_engine\_framePacing() function can be used to
+provide a hint in seconds for the desired refresh rate and
+input latency. Passing 0.0 for frame\_dt uses the default
+frame pacing.
+
+	void vkk_engine_framePacing(vkk_engine_t* self,
+	                            double frame_dt,
+	                            double input_latency);
+
+Consider the following guidelines when providing a custom
+frame pacing hint.
+
+1. Select a two frame input latency timeline to fully
+   utilize triple buffering for >60 fps rendering (e.g.
+   1/fps frame\_dt and 2/fps input\_latency). Keep in mind
+   that input latency is not generally perceivable at these
+   rates and GPU deadlines are very tight.
+2. Select a two frame input latency timeline to fully
+   utilize triple buffering at 60 fps rendering for heavy
+   GPU workloads (e.g. 16.6ms frame\_dt and 33.3ms
+   input\_latency).
+3. Select a one frame input latency timeline to partially
+   utilize triple buffering at 60 fps rendering for light
+   GPU workloads (e.g. 16.6ms frame\_dt and 16.6ms
+   input\_latency).
+4. Select a long input latency timeline at 30 fps
+   rendering (e.g. 33.3ms frame\_dt and 33.3ms
+   input\_latency) for CPU and GPU bound workloads.
+5. Select a short input latency timeline at 30 fps
+   rendering (e.g. 33.3ms frame\_dt and 16.6ms
+   input\_latency) for CPU bound workloads.
+6. Avoid one frame input latency timelines for
+   non-fullscreen applications (e.g. multilayer) since the
+   compositor may require GPU rendering to have completed
+   before buffer latching is allowed.
+7. Some GPUs do not properly support two frame input latency
+   timelines resulting in heavy janks.
+
 The vkk\_engine\_platformCmd() functions allows the app to
 send commands to the platform. For example, there are
 commands to turn on/off device sensors, play sounds, show
