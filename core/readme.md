@@ -110,6 +110,11 @@ transparency blending.
 	                          vkk_imageFormat_e format,
 	                          vkk_imageCaps_t* caps);
 
+The vkk\_engine\_maxAnisotropy() function can be used to
+query the max anisotropy supported by the device.
+
+	float vkk_engine_maxAnisotropy(vkk_engine_t* self);
+
 The vkk\_engine\_defaultRenderer() function can be used to
 query for the renderer that can draw to the display.
 
